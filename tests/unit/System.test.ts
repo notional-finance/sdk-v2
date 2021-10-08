@@ -2,7 +2,7 @@ import {BigNumber, ethers} from 'ethers';
 import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
 import {System} from '../../src/system';
-import MockSystem, {systemQueryResult, notionalProxy} from './MockSystem';
+import MockSystem, {systemQueryResult, notionalProxy} from '../mocks/MockSystem';
 import {assetTypeNum, convertAssetType, getNowSeconds} from '../../src/libs/utils';
 import CashGroup from '../../src/system/CashGroup';
 

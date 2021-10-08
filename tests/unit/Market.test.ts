@@ -4,7 +4,7 @@ import {BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR} from '../../src/config/con
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import {System, Market} from '../../src/system';
 
 describe('Market', () => {

@@ -4,7 +4,7 @@ import {getNowSeconds} from '../../src/libs/utils';
 import {RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR} from '../../src/config/constants';
 import GraphClient from '../../src/GraphClient';
 import {System, NTokenValue, CashGroup} from '../../src/system';
-import MockSystem, {systemQueryResult, notionalProxy} from './MockSystem';
+import MockSystem, {systemQueryResult, notionalProxy} from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
 

@@ -2,7 +2,7 @@ import {BigNumber, ethers} from 'ethers';
 import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {Asset, Balance, AssetType} from '../../src/libs/types';
-import MockSystem, {systemQueryResult} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
 import {System} from '../../src/system';

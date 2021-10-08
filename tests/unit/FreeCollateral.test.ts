@@ -4,7 +4,7 @@ import GraphClient from '../../src/GraphClient';
 import {
   System, FreeCollateral, NTokenValue, CashGroup,
 } from '../../src/system';
-import MockSystem, {systemQueryResult, notionalProxy} from './MockSystem';
+import MockSystem, {systemQueryResult, notionalProxy} from '../mocks/MockSystem';
 import {SECONDS_IN_MONTH} from '../../src/config/constants';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
