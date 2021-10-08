@@ -1,0 +1,66 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "import",
+    "@typescript-eslint"
+  ],
+  "env": {
+    "browser": true,
+    "commonjs": true
+  },
+  "extends": [
+    "airbnb-typescript"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2019,
+    "project": ["./tsconfig.json"]
+  },
+  "rules": {
+    "semi": [2, "always"],
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
+    "max-len": [2, 120],
+    "no-unused-vars": "off",
+    "import/no-named-as-default": 0,
+    "import/no-named-as-default-member": 0,
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
+    "@typescript-eslint/lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
+    "no-underscore-dangle": ["error", { "allowAfterThis": true }],
+    "object-curly-spacing": ["error", "never"],
+    "@typescript-eslint/object-curly-spacing": ["error", "never"],
+    "import/no-cycle": "off",
+    "class-methods-use-this": "off",
+    "no-console": ["warn"]
+  },
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts"]
+    },
+    "import/resolver": {
+      // use <root>/tsconfig.json
+      "typescript": {
+        "alwaysTryTypes": true // always try to resolve types under `<root>@types` directory even it doesn't contain any source code, like `@types/unist`
+      }
+    }
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.spec.ts"
+      ],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
+}

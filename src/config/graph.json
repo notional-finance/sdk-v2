@@ -1,0 +1,10 @@
+{
+  "local:http": "http://127.0.0.1:8000/subgraphs/name/notional-finance/local-v2",
+  "local:poll": 5000,
+  "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2",
+  "kovan:poll": 5000,
+  "rinkeby:http": "https://api.thegraph.com/subgraphs/name/notional-finance/rinkeby",
+  "rinkeby:poll": 5000,
+  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet",
+  "mainnet:poll": 7000
+}

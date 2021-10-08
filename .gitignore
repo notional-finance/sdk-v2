@@ -1,0 +1,5 @@
+lib/
+coverage/
+src/typechain
+*.tsbuildinfo
+node_modules
