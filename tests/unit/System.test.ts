@@ -1,21 +1,21 @@
 import {BigNumber, ethers} from 'ethers';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
 import {System} from '../../src/system';
-import MockSystem, {systemQueryResult, notionalProxy} from '../mocks/MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import {assetTypeNum, convertAssetType, getNowSeconds} from '../../src/libs/utils';
 import CashGroup from '../../src/system/CashGroup';
 
 import {SECONDS_IN_QUARTER} from '../../src/config/constants';
 import {AssetType} from '../../src/libs/types';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import MockNotionalProxy from '../mocks/MockNotionalProxy';
 
 describe('System tests', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
   const system = new MockSystem(
     systemQueryResult,
     ({} as unknown) as GraphClient,
-    (notionalProxy as unknown) as NotionalTypechain,
+    MockNotionalProxy,
     provider,
   );
   System.overrideSystem((system as unknown) as System);
