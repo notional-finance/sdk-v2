@@ -27,7 +27,7 @@
     "test:unit": "yarn run build && yarn run jest --selectProjects unit",
     "test:integration": "yarn run build && yarn run testenv:up && yarn run jest --selectProjects integration && yarn run testenv:down",
     "test": "yarn run build && yarn run testenv:up && yarn run jest && yarn run testenv:down",
-    "publish": "npm publish"
+    "publish": "npm publish --access=public"
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^3.0.0",
