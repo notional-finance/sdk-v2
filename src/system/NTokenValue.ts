@@ -141,7 +141,9 @@ export default class NTokenValue {
   public static getNTokenStatus(currencyId: number) {
     const {liquidityTokens, fCash} = NTokenValue.getNTokenPortfolio(currencyId);
 
-    if (liquidityTokens[0].hasMatured) return NTokenStatus.MarketsNotInitialized;
+    // If there are no liquidity tokens then the markets have not been initialized for the first time,
+    // but mint and redeem are still possible.
+    if (liquidityTokens.length > 0 && liquidityTokens[0].hasMatured) return NTokenStatus.MarketsNotInitialized;
     if (fCash.filter((f) => !liquidityTokens.find((lt) => lt.maturity === f.maturity)).length) {
       // If residual fCash is in the nToken account this calculation will not work. nTokens can still
       // be redeemed but will have residual fCash assets.
@@ -165,12 +167,8 @@ export default class NTokenValue {
     } = NTokenValue.getNTokenPortfolio(currencyId);
     nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
 
-    if (liquidityTokens[0].hasMatured) throw Error(NTokenStatus.MarketsNotInitialized);
-    if (fCash.filter((f) => !liquidityTokens.find((lt) => lt.maturity === f.maturity)).length) {
-      // If residual fCash is in the nToken account this calculation will not work. nTokens can still
-      // be redeemed but will have residual fCash assets.
-      throw Error(NTokenStatus.nTokenHasResidual);
-    }
+    const status = NTokenValue.getNTokenStatus(currencyId);
+    if (status !== NTokenStatus.Ok) throw Error(status);
 
     // This is the redeemer's share of the cash balance
     const cashBalanceShare = cashBalance.scale(nTokenBalance.n, totalSupply.n);

@@ -50,6 +50,9 @@ export default class MockSystem extends System {
           integralTotalSupply: BigNumber.from(0),
           lastSupplyChangeTime: BigNumber.from(getNowSeconds() - SECONDS_IN_YEAR),
         });
+        this.nTokenCashBalance.set(k, pv);
+        this.nTokenLiquidityTokens.set(k, []);
+        this.nTokenfCash.set(k, []);
       }
     });
 
