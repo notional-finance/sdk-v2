@@ -1,10 +1,10 @@
 {
   "name": "@notional-finance/sdk-v2",
-  "version": "0.0.4",
-  "description": "Notional Finance SDK",
+  "version": "0.0.1",
+  "description": "Notional Finance SDK V2",
   "author": "Jeff Wu <jeff@notional.finance>",
   "homepage": "https://notional.finance",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "keywords": [
@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/notional-finance/notional.git"
+    "url": "git+https://github.com/notional-finance/sdk-v2.git"
   },
   "scripts": {
     "clean": "rm -Rf coverage lib node_modules tsconfig.build.tsbuildinfo",
@@ -26,7 +26,8 @@
     "testenv:down": "cd ../subgraph-v2 && docker-compose down",
     "test:unit": "yarn run build && yarn run jest --selectProjects unit",
     "test:integration": "yarn run build && yarn run testenv:up && yarn run jest --selectProjects integration && yarn run testenv:down",
-    "test": "yarn run build && yarn run testenv:up && yarn run jest && yarn run testenv:down"
+    "test": "yarn run build && yarn run testenv:up && yarn run jest && yarn run testenv:down",
+    "publish": "npm publish"
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^3.0.0",
