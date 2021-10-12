@@ -9,7 +9,7 @@ import {AssetType} from '../../src/libs/types';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 
 describe('Cash Group', () => {
   const blockTime = getNowSeconds();

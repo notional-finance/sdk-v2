@@ -1,21 +1,21 @@
 import {BigNumber, ethers} from 'ethers';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
 import {System} from '../../src/system';
-import MockSystem, {systemQueryResult, notionalProxy} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import {assetTypeNum, convertAssetType, getNowSeconds} from '../../src/libs/utils';
 import CashGroup from '../../src/system/CashGroup';
 
 import {SECONDS_IN_QUARTER} from '../../src/config/constants';
 import {AssetType} from '../../src/libs/types';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import MockNotionalProxy from '../mocks/MockNotionalProxy';
 
 describe('System tests', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
   const system = new MockSystem(
     systemQueryResult,
     ({} as unknown) as GraphClient,
-    (notionalProxy as unknown) as NotionalTypechain,
+    MockNotionalProxy,
     provider,
   );
   System.overrideSystem((system as unknown) as System);
@@ -42,7 +42,7 @@ describe('System tests', () => {
     }
   });
 
-  it('settles fCash assets', async (done) => {
+  it('settles fCash assets', (done) => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER;
     const assetRate = BigNumber.from('195000000000000000000000000');
@@ -65,7 +65,7 @@ describe('System tests', () => {
     });
   });
 
-  it('settles liquidity token assets with settled fCash', async (done) => {
+  it('settles liquidity token assets with settled fCash', (done) => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER;
     const assetRate = BigNumber.from('195000000000000000000000000');
@@ -97,7 +97,7 @@ describe('System tests', () => {
     });
   });
 
-  it('settles liquidity token assets with fCash', async (done) => {
+  it('settles liquidity token assets with fCash', (done) => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER * 2;
     const settlementDate = tRef + SECONDS_IN_QUARTER;

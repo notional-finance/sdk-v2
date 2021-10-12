@@ -3,7 +3,7 @@ import {
 } from 'ethers';
 import GraphClient from '../../src/GraphClient';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import MockSystem, {systemQueryResult} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import Notional from '../../src/Notional';
 import {NoteERC20} from '../../src/typechain/NoteERC20';

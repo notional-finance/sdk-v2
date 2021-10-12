@@ -1,15 +1,15 @@
 import {BigNumber, ethers} from 'ethers';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
 import {
   System, FreeCollateral, NTokenValue, CashGroup,
 } from '../../src/system';
-import MockSystem, {systemQueryResult, notionalProxy} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import {SECONDS_IN_MONTH} from '../../src/config/constants';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
 import {getNowSeconds} from '../../src/libs/utils';
 import MockAccountData from './AccountData.test';
+import MockNotionalProxy from '../mocks/MockNotionalProxy';
 
 describe('calculates free collateral', () => {
   let system: System;
@@ -20,7 +20,7 @@ describe('calculates free collateral', () => {
     system = new MockSystem(
       systemQueryResult,
       ({} as unknown) as GraphClient,
-      (notionalProxy as unknown) as NotionalTypechain,
+      MockNotionalProxy,
       provider,
     );
     System.overrideSystem(system);

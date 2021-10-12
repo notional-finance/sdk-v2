@@ -6,7 +6,7 @@ import {BalanceSummary} from '../../src/account';
 import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import {SECONDS_IN_DAY} from '../../src/config/constants';
 import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from './MockSystem';
+import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import MockAccountData from './AccountData.test';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {System} from '../../src/system';

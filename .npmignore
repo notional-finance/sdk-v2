@@ -1,0 +1,6 @@
+.github
+tests
+*.tsbuildinfo
+coverage
+.prettierrc.js
+.eslintrc.json
