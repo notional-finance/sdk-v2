@@ -42,7 +42,7 @@ describe('System tests', () => {
     }
   });
 
-  it('settles fCash assets', async (done) => {
+  it('settles fCash assets', (done) => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER;
     const assetRate = BigNumber.from('195000000000000000000000000');
@@ -65,7 +65,7 @@ describe('System tests', () => {
     });
   });
 
-  it('settles liquidity token assets with settled fCash', async (done) => {
+  it('settles liquidity token assets with settled fCash', (done) => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER;
     const assetRate = BigNumber.from('195000000000000000000000000');
@@ -97,7 +97,7 @@ describe('System tests', () => {
     });
   });
 
-  it('settles liquidity token assets with fCash', async (done) => {
+  it('settles liquidity token assets with fCash', (done) => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER * 2;
     const settlementDate = tRef + SECONDS_IN_QUARTER;
