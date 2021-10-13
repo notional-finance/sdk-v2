@@ -184,9 +184,10 @@ export default class Account extends AccountRefresh {
     }
 
     const currency = System.getSystem().getCurrencyBySymbol(symbol);
-    const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
+    const isUnderlying = currency.underlyingSymbol === symbol;
+    const contract = isUnderlying ? currency.contract : (currency.underlyingContract as ERC20);
     const allowance = await contract.allowance(this.address, this.notionalProxy.address);
-    return TypedBigNumber.from(allowance, BigNumberType.ExternalUnderlying, symbol);
+    return TypedBigNumber.fromBalance(allowance, symbol, false);
   }
 
   /**
