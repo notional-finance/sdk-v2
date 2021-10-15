@@ -10,6 +10,7 @@ import {AssetType} from '../../src/libs/types';
 import {getNowSeconds} from '../../src/libs/utils';
 import MockAccountData from './AccountData.test';
 import MockNotionalProxy from '../mocks/MockNotionalProxy';
+import {AccountData} from '../../src/account';
 
 describe('calculates free collateral', () => {
   let system: System;
@@ -245,18 +246,26 @@ describe('calculates free collateral', () => {
     });
 
     it('calculates borrowing requirements for stable / stable with no account data', () => {
+      const accountData = AccountData.emptyAccountData();
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
+
       const {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
-        undefined,
+        accountData,
         blockTime,
       );
 
@@ -269,18 +278,26 @@ describe('calculates free collateral', () => {
     });
 
     it('calculates borrowing requirements for stable / crypto with no account data', () => {
+      const accountData = AccountData.emptyAccountData();
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
+
       const {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         1,
         200,
-        undefined,
+        accountData,
         blockTime,
       );
 
@@ -310,6 +327,15 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {
         minCollateral,
@@ -317,9 +343,6 @@ describe('calculates free collateral', () => {
         minCollateralRatio,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -350,6 +373,15 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {
         minCollateral,
@@ -357,9 +389,6 @@ describe('calculates free collateral', () => {
         minCollateralRatio,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -392,6 +421,15 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {
         minCollateral,
@@ -399,9 +437,6 @@ describe('calculates free collateral', () => {
         minCollateralRatio,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -434,6 +469,15 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {
         minCollateral,
@@ -441,9 +485,6 @@ describe('calculates free collateral', () => {
         minCollateralRatio,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -478,15 +519,21 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {
         minCollateral,
         targetCollateral,
         targetCollateralRatio,
       } = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -523,11 +570,17 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {minCollateral, targetCollateral, minCollateralRatio} = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -569,11 +622,17 @@ describe('calculates free collateral', () => {
         [],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {targetCollateral} = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
@@ -619,23 +678,29 @@ describe('calculates free collateral', () => {
             hasMatured: false,
             settlementDate: maturity,
             isIdiosyncratic: false,
-          }
+          },
         ],
         true,
       );
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
 
       const {targetCollateral, minCollateral} = FreeCollateral.calculateBorrowRequirement(
-        borrowfCashAmount,
-        maturity,
-        borrowCurrencyId,
         collateralCurrencyId,
         200,
         accountData,
         blockTime,
       );
 
-      expect(minCollateral.isZero()).toBeTruthy()
-      expect(targetCollateral.isZero()).toBeTruthy()
+      expect(minCollateral.isZero()).toBeTruthy();
+      expect(targetCollateral.isZero()).toBeTruthy();
     });
 
     it('can override ETH rate', () => {

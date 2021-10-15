@@ -190,12 +190,9 @@ export default class FreeCollateral {
   /**
    * Calculates borrow requirements for a given amount of fCash and a target collateral ratio
    *
-   * @param borrowfCashAmount fcash amount to borrow (must be negative)
-   * @param maturity maturity of the fcash to borrow
-   * @param borrowCurrencyId currency id of the fcash asset
    * @param collateralCurrencyId currency to collateralize this asset by
    * @param bufferedRatio the target post haircut / buffer collateral ratio
-   * @param accountData account data copy object, will b updated in place
+   * @param accountData account data object with borrow amounts applied
    * @param blockTime
    * @returns
    *   - minCollateral: minimum amount of collateral required for the borrow
@@ -204,12 +201,9 @@ export default class FreeCollateral {
    *   - targetCollateralRatio: target buffered/haircut collateral ratio
    */
   public static calculateBorrowRequirement(
-    borrowfCashAmount: TypedBigNumber,
-    maturity: number,
-    borrowCurrencyId: number,
     collateralCurrencyId: number,
     _bufferedRatio: number,
-    accountData: AccountData = AccountData.emptyAccountData(),
+    accountData: AccountData,
     blockTime = getNowSeconds(),
   ): {
       minCollateral: TypedBigNumber;
@@ -217,19 +211,8 @@ export default class FreeCollateral {
       minCollateralRatio: number | null;
       targetCollateralRatio: number | null;
     } {
-    if (!borrowfCashAmount.isNegative()) throw new Error('Borrow fCash amount must be negative');
     const bufferedRatio = Math.trunc(_bufferedRatio);
     if (bufferedRatio < 100) throw new RangeError('Buffered ratio must be more than 100');
-
-    accountData.updateAsset({
-      currencyId: borrowCurrencyId,
-      maturity,
-      assetType: AssetType.fCash,
-      notional: borrowfCashAmount,
-      hasMatured: false,
-      settlementDate: maturity,
-      isIdiosyncratic: false,
-    });
 
     // prettier-ignore
     const {
