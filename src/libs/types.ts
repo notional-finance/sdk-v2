@@ -136,17 +136,15 @@ export interface TradeHistory {
   transactionHash: string;
   blockTime: Date;
   currencyId: number;
-
   tradeType: TradeType;
   settlementDate: BigNumber | null;
   maturityLength: number | null;
   maturity: BigNumber;
-
   netAssetCash: TypedBigNumber;
   netUnderlyingCash: TypedBigNumber;
   netfCash: TypedBigNumber;
-
   netLiquidityTokens: TypedBigNumber | null;
+  tradedInterestRate: number;
 }
 
 export interface BalanceHistory {

@@ -51,13 +51,15 @@ export default class AssetSummary {
     return this.currency.symbol;
   }
 
-  public rateOfReturnString(locale = 'en-US', precision = 3) {
-    // TODO: override this if there is no actual IRR
-    // TODO: change this to look at the last rate lent or borrowed
+  public internalRateOfReturnString(locale = 'en-US', precision = 3) {
     return `${this.irr.toLocaleString(locale, {
       maximumFractionDigits: precision,
       minimumFractionDigits: precision,
     })}%`;
+  }
+
+  public mostRecentTradedRate() {
+    return this.history[this.history.length - 1].tradedInterestRate;
   }
 
   constructor(
