@@ -123,8 +123,15 @@ describe('nToken value', () => {
     expect(incentives.toString()).toBe(BigNumber.from(0.01e8).toString());
   });
 
-  it('gets redeem ntoken values', () => {
+  it('gets smaller redeem ntoken values', () => {
     const assetCash = TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI');
+    const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
+    const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
+    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -4);
+  });
+
+  it('gets larger redeem ntoken values', () => {
+    const assetCash = TypedBigNumber.from(1_000_000e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
     const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
     expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -4);

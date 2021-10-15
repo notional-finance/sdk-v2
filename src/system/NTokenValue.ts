@@ -129,11 +129,16 @@ export default class NTokenValue {
       // If the nToken redeem value is too high (diff < 0), we reduce the nTokenRedeem amount by
       // the proportion of the total supply. If the nToken redeem value is too low (diff > 0), increase
       // the nTokenRedeem amount by the proportion of the total supply
-      nTokenRedeem = nTokenRedeem.add(totalSupply.scale(diff.n, nTokenPV.n));
+      const updateAmount = totalSupply.scale(diff.n, nTokenPV.n);
+      // If the diff is so small it rounds down to zero when we convert to an nToken balance then
+      // we can break at this point, the calculation will not converge after this
+      if (updateAmount.isZero()) break;
+
+      nTokenRedeem = nTokenRedeem.add(updateAmount);
       redeemValue = NTokenValue.getAssetFromRedeemNToken(currencyId, nTokenRedeem);
       diff = assetCashAmountInternal.sub(redeemValue);
       totalLoops += 1;
-      if (totalLoops > 250) throw Error('Unable to converge on nTokenRedeem');
+      if (totalLoops > 50) throw Error('Unable to converge on nTokenRedeem');
     }
 
     return nTokenRedeem;
