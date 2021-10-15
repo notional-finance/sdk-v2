@@ -111,7 +111,7 @@ export default class NTokenValue {
   public static getNTokenRedeemFromAsset(
     currencyId: number,
     assetCashAmountInternal: TypedBigNumber,
-    precision = BigNumber.from(1e4),
+    precision = BigNumber.from(1e2),
   ) {
     const {totalSupply, nTokenPV} = NTokenValue.getNTokenFactors(currencyId);
 
@@ -121,10 +121,11 @@ export default class NTokenValue {
     let redeemValue = NTokenValue.getAssetFromRedeemNToken(currencyId, nTokenRedeem);
     // We always want to redeem value slightly less than the specified amount, if we were to
     // redeem slightly more then it could result in a free collateral failure. We continue to
-    // loop while assetCash - redeemValue < 0 or assetCash - redeemValue > precision
+    // loop while assetCash - redeemValue < 0 or assetCash - redeemValue > precision. Note that
+    // we allow negative one as a diff due to rounding issues
     let diff = assetCashAmountInternal.sub(redeemValue);
     let totalLoops = 0;
-    while (diff.isNegative() || diff.n.gt(precision)) {
+    while (diff.n.lt(-1) || diff.n.gt(precision)) {
       // If the nToken redeem value is too high (diff < 0), we reduce the nTokenRedeem amount by
       // the proportion of the total supply. If the nToken redeem value is too low (diff > 0), increase
       // the nTokenRedeem amount by the proportion of the total supply
