@@ -36,6 +36,7 @@ describe('Asset Summary', () => {
     netUnderlyingCash: TypedBigNumber.from(-95e8, BigNumberType.InternalUnderlying, 'DAI'),
     netfCash: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
     netLiquidityTokens: null,
+    tradedInterestRate: 0,
   };
 
   it('produces irr for a lend fcash asset', () => {
