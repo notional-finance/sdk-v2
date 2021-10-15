@@ -111,7 +111,7 @@ export default class NTokenValue {
   public static getNTokenRedeemFromAsset(
     currencyId: number,
     assetCashAmountInternal: TypedBigNumber,
-    precision = BigNumber.from(1e4),
+    precision = BigNumber.from(1e2),
   ) {
     const {totalSupply, nTokenPV} = NTokenValue.getNTokenFactors(currencyId);
 
@@ -121,18 +121,24 @@ export default class NTokenValue {
     let redeemValue = NTokenValue.getAssetFromRedeemNToken(currencyId, nTokenRedeem);
     // We always want to redeem value slightly less than the specified amount, if we were to
     // redeem slightly more then it could result in a free collateral failure. We continue to
-    // loop while assetCash - redeemValue < 0 or assetCash - redeemValue > precision
+    // loop while assetCash - redeemValue < 0 or assetCash - redeemValue > precision. Note that
+    // we allow negative one as a diff due to rounding issues
     let diff = assetCashAmountInternal.sub(redeemValue);
     let totalLoops = 0;
-    while (diff.isNegative() || diff.n.gt(precision)) {
+    while (diff.n.lt(-1) || diff.n.gt(precision)) {
       // If the nToken redeem value is too high (diff < 0), we reduce the nTokenRedeem amount by
       // the proportion of the total supply. If the nToken redeem value is too low (diff > 0), increase
       // the nTokenRedeem amount by the proportion of the total supply
-      nTokenRedeem = nTokenRedeem.add(totalSupply.scale(diff.n, nTokenPV.n));
+      const updateAmount = totalSupply.scale(diff.n, nTokenPV.n);
+      // If the diff is so small it rounds down to zero when we convert to an nToken balance then
+      // we can break at this point, the calculation will not converge after this
+      if (updateAmount.isZero()) break;
+
+      nTokenRedeem = nTokenRedeem.add(updateAmount);
       redeemValue = NTokenValue.getAssetFromRedeemNToken(currencyId, nTokenRedeem);
       diff = assetCashAmountInternal.sub(redeemValue);
       totalLoops += 1;
-      if (totalLoops > 250) throw Error('Unable to converge on nTokenRedeem');
+      if (totalLoops > 50) throw Error('Unable to converge on nTokenRedeem');
     }
 
     return nTokenRedeem;

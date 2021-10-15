@@ -190,12 +190,9 @@ export default class FreeCollateral {
   /**
    * Calculates borrow requirements for a given amount of fCash and a target collateral ratio
    *
-   * @param borrowfCashAmount fcash amount to borrow (must be negative)
-   * @param maturity maturity of the fcash to borrow
-   * @param borrowCurrencyId currency id of the fcash asset
    * @param collateralCurrencyId currency to collateralize this asset by
    * @param bufferedRatio the target post haircut / buffer collateral ratio
-   * @param accountData account data object, if it exists
+   * @param accountData account data object with borrow amounts applied
    * @param blockTime
    * @returns
    *   - minCollateral: minimum amount of collateral required for the borrow
@@ -204,12 +201,9 @@ export default class FreeCollateral {
    *   - targetCollateralRatio: target buffered/haircut collateral ratio
    */
   public static calculateBorrowRequirement(
-    borrowfCashAmount: TypedBigNumber,
-    maturity: number,
-    borrowCurrencyId: number,
     collateralCurrencyId: number,
     _bufferedRatio: number,
-    accountData?: AccountData,
+    accountData: AccountData,
     blockTime = getNowSeconds(),
   ): {
       minCollateral: TypedBigNumber;
@@ -217,51 +211,24 @@ export default class FreeCollateral {
       minCollateralRatio: number | null;
       targetCollateralRatio: number | null;
     } {
-    const system = System.getSystem();
-    if (!borrowfCashAmount.isNegative()) throw new Error('Borrow fCash amount must be negative');
-    const cashGroup = system.getCashGroup(borrowCurrencyId);
     const bufferedRatio = Math.trunc(_bufferedRatio);
-    if (!cashGroup) throw new Error(`Cash group for ${borrowCurrencyId} not found`);
     if (bufferedRatio < 100) throw new RangeError('Buffered ratio must be more than 100');
 
-    let netETHDebt = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHDebtWithBuffer = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHCollateralWithHaircut = FreeCollateral.getZeroUnderlying(ETH);
-    let borrowNetAvailable = FreeCollateral.getZeroUnderlying(borrowCurrencyId);
-    let collateralNetAvailable = FreeCollateral.getZeroUnderlying(collateralCurrencyId);
-
-    if (accountData) {
-      let netUnderlyingAvailable: Map<number, TypedBigNumber>;
-      // prettier-ignore
-      ({
-        netETHCollateralWithHaircut,
-        netETHDebt,
-        netETHDebtWithBuffer,
-        netUnderlyingAvailable,
-      } = FreeCollateral.getFreeCollateral(
-        accountData,
-        blockTime,
-      ));
-      borrowNetAvailable = netUnderlyingAvailable.get(borrowCurrencyId) || borrowNetAvailable;
-      collateralNetAvailable = netUnderlyingAvailable.get(collateralCurrencyId) || collateralNetAvailable;
-    }
-
-    const borrowAmountHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
-      maturity,
-      borrowfCashAmount,
-      true,
-      blockTime,
-    );
-
-    // Updates the net ETH amounts to take into account the new debt, netting for
-    // local currency purposes only
-    ({netETHCollateralWithHaircut, netETHDebt, netETHDebtWithBuffer} = FreeCollateral.updateNetETHAmounts(
-      borrowAmountHaircutPV,
+    // prettier-ignore
+    const {
       netETHCollateralWithHaircut,
       netETHDebt,
       netETHDebtWithBuffer,
-      borrowNetAvailable,
-    ));
+      netUnderlyingAvailable,
+    } = FreeCollateral.getFreeCollateral(
+      accountData,
+      blockTime,
+    );
+
+    const collateralNetAvailable = (
+      netUnderlyingAvailable.get(collateralCurrencyId)
+      || FreeCollateral.getZeroUnderlying(collateralCurrencyId)
+    );
 
     return FreeCollateral.calculateTargetCollateral(
       netETHCollateralWithHaircut,
@@ -272,47 +239,6 @@ export default class FreeCollateral {
       bufferedRatio,
     );
   }
-
-  /* eslint-disable no-param-reassign */
-  private static updateNetETHAmounts(
-    borrowAmountHaircutPV: TypedBigNumber,
-    netETHCollateralWithHaircut: TypedBigNumber,
-    netETHDebt: TypedBigNumber,
-    netETHDebtWithBuffer: TypedBigNumber,
-    borrowNetAvailable: TypedBigNumber,
-  ) {
-    if (borrowNetAvailable.isNegative() || borrowNetAvailable.isZero()) {
-      // If local net is already in debt then borrowAmount is added to netETHDebt
-      netETHDebtWithBuffer = netETHDebtWithBuffer.add(borrowAmountHaircutPV.toETH(useHaircut).abs());
-      netETHDebt = netETHDebt.add(borrowAmountHaircutPV.toETH(noHaircut).abs());
-    } else if (borrowNetAvailable.gte(borrowAmountHaircutPV.abs())) {
-      // If there's enough local to net off then this is the change to ETH collateral
-      // Formula here is:
-      //  netETHBorrowBefore = convertToETH(borrowNetAvailable) * haircut
-      //  netETHBorrowAfter = convertToETH(borrowNetAvailable - borrowAmountHaircutPV) * haircut
-      //  netETHCollateralWithHaircutFinal = netETHCollateralWithHaircut - (netETHBorrowBefore - netETHBorrowAfter)
-      const netCollateralDifferenceWithHaircut = borrowNetAvailable
-        .toETH(useHaircut)
-        .sub(borrowNetAvailable.add(borrowAmountHaircutPV).toETH(useHaircut));
-      netETHCollateralWithHaircut = netETHCollateralWithHaircut.sub(netCollateralDifferenceWithHaircut);
-    } else {
-      // In this case it's a partial thing so we add/subtract to both.
-      // First, we reduce the collateral by the borrowNetAvailable
-      netETHCollateralWithHaircut = netETHCollateralWithHaircut.sub(borrowNetAvailable.toETH(useHaircut));
-
-      // Second we add whatever remaining debt there is after accounting for the borrowNetAvailable
-      const netBorrowCurrencyDebt = borrowAmountHaircutPV.add(borrowNetAvailable);
-      netETHDebtWithBuffer = netETHDebtWithBuffer.add(netBorrowCurrencyDebt.toETH(useHaircut).abs());
-      netETHDebt = netETHDebt.add(netBorrowCurrencyDebt.toETH(noHaircut).abs());
-    }
-
-    return {
-      netETHCollateralWithHaircut,
-      netETHDebtWithBuffer,
-      netETHDebt,
-    };
-  }
-  /* eslint-enable no-param-reassign */
 
   /**
    * Returns the amount of target collateral required to achieve the given buffered ratio

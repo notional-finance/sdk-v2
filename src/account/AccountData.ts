@@ -68,6 +68,10 @@ export default class AccountData {
     );
   }
 
+  public static emptyAccountData() {
+    return AccountData.copyAccountData();
+  }
+
   /**
    * Copies an account data object for simulation
    * @param account if undefined, will return an empty account data object
@@ -192,6 +196,8 @@ export default class AccountData {
    */
   public updateAsset(asset: Asset) {
     if (!this.isCopy) throw Error('Cannot update assets on non copy');
+    if (asset.hasMatured) throw Error('Cannot add matured asset to account copy');
+
     // eslint-disable-next-line no-underscore-dangle
     this.portfolio = AccountData._updateAsset(this.portfolio, asset, this.bitmapCurrencyId);
     const {symbol} = System.getSystem().getCurrencyById(asset.currencyId);

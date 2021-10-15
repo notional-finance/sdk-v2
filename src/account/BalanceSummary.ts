@@ -124,15 +124,13 @@ export default class BalanceSummary {
 
     if (withdrawAmountInternalAsset.gt(this.maxWithdrawValueAssetCash)) {
       throw new Error('Cannot withdraw, over maximum value');
-    } else if (!canWithdrawNToken) {
+    } else if (!canWithdrawNToken || !this.nTokenBalance || this.nTokenBalance.isZero()) {
       // If the nToken cannot be withdrawn, only return cash amounts
-      const cashWithdraw = withdrawAmountInternalAsset.lte(this.assetCashBalance)
-        ? withdrawAmountInternalAsset
-        : this.assetCashBalance;
+      const cashWithdraw = TypedBigNumber.min(withdrawAmountInternalAsset, this.assetCashBalance);
       const nTokenRedeem = this.nTokenBalance?.copy(0);
       return {cashWithdraw, nTokenRedeem};
-    } else if (preferCash || !this.nTokenBalance || this.nTokenBalance.isZero()) {
-      // Cash preference supersedes nToken (or nToken balance does not exist)
+    } else if (preferCash) {
+      // Cash preference supersedes nToken
       if (withdrawAmountInternalAsset.lte(this.assetCashBalance)) {
         // Cash is sufficient to cover the withdraw
         return {
@@ -143,7 +141,13 @@ export default class BalanceSummary {
       // Withdraw all cash and some part of the nToken balance
       const requiredNTokenRedeem = withdrawAmountInternalAsset.sub(this.assetCashBalance);
       const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(this.currencyId, requiredNTokenRedeem);
-      return {cashWithdraw: this.assetCashBalance, nTokenRedeem};
+
+      return {
+        cashWithdraw: this.assetCashBalance,
+        // Cap the nTokenRedeem at the balance, it may go slightly over due to the reverse approximation inside
+        // getNTokenRedeemFromAsset
+        nTokenRedeem: TypedBigNumber.min(nTokenRedeem, this.nTokenBalance),
+      };
     } else {
       // nToken supersedes cash and we know there is some nToken balance
       const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(this.currencyId, withdrawAmountInternalAsset);

@@ -53,6 +53,16 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
   }
 
+  static max(a: TypedBigNumber, b: TypedBigNumber): TypedBigNumber {
+    a.checkMatch(b);
+    return a.gte(b) ? a : b;
+  }
+
+  static min(a: TypedBigNumber, b: TypedBigNumber): TypedBigNumber {
+    a.checkMatch(b);
+    return a.lte(b) ? a : b;
+  }
+
   checkType(type: BigNumberType) {
     if (this.type !== type) throw TypeError(`Invalid TypedBigNumber type ${this.type} != ${type}`);
   }
