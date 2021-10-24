@@ -164,7 +164,7 @@ export const systemQueryResult = {
         incentiveEmissionRate: null,
         leverageThresholds: null,
         name: 'nToken Ether',
-        pvHaircutPercentage: null,
+        pvHaircutPercentage: 85,
         symbol: 'nETH',
         tokenAddress: '0x71b170fd23d4e6e68347acf98fe7f71209d25c90',
       },

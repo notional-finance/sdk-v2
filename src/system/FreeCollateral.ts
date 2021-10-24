@@ -4,6 +4,7 @@ import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import {Asset, AssetType} from '../libs/types';
 import {INTERNAL_TOKEN_PRECISION, ETHER_CURRENCY_ID} from '../config/constants';
+import NTokenValue from './NTokenValue';
 
 const useHaircut = true;
 const noHaircut = false;
@@ -121,7 +122,10 @@ export default class FreeCollateral {
 
     let nTokenValue = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     if (nTokenBalance && nTokenBalance.isPositive()) {
-      nTokenValue = nTokenBalance.toUnderlying(useInternal);
+      const nToken = system.getNToken(currencyId)!;
+      nTokenValue = nTokenBalance
+        .toAssetCash(useInternal).scale(nToken.pvHaircutPercentage, 100)
+        .toUnderlying(useInternal);
     }
 
     return {
@@ -193,6 +197,7 @@ export default class FreeCollateral {
    * @param collateralCurrencyId currency to collateralize this asset by
    * @param bufferedRatio the target post haircut / buffer collateral ratio
    * @param accountData account data object with borrow amounts applied
+   * @param mintNTokenCollateral true if collateral should be minted as nTokens
    * @param blockTime
    * @returns
    *   - minCollateral: minimum amount of collateral required for the borrow
@@ -204,6 +209,7 @@ export default class FreeCollateral {
     collateralCurrencyId: number,
     _bufferedRatio: number,
     accountData: AccountData,
+    mintNTokenCollateral = false,
     blockTime = getNowSeconds(),
   ): {
       minCollateral: TypedBigNumber;
@@ -231,7 +237,7 @@ export default class FreeCollateral {
       || FreeCollateral.getZeroUnderlying(collateralCurrencyId)
     );
 
-    const {minCollateral, targetCollateral}  =FreeCollateral.calculateTargetCollateral(
+    let {minCollateral, targetCollateral} = FreeCollateral.calculateTargetCollateral(
       netETHCollateralWithHaircut,
       netETHDebtWithBuffer,
       collateralCurrencyId,
@@ -240,21 +246,49 @@ export default class FreeCollateral {
     );
 
     const minCollateralCopy = AccountData.copyAccountData(accountData);
-    minCollateralCopy.updateBalance(collateralCurrencyId, minCollateral.toAssetCash(true));
-    const minFC = FreeCollateral.getFreeCollateral(minCollateralCopy, blockTime)
-    
     const targetCollateralCopy = AccountData.copyAccountData(accountData);
-    targetCollateralCopy.updateBalance(collateralCurrencyId, targetCollateral.toAssetCash(true))
-    const targetFC = FreeCollateral.getFreeCollateral(targetCollateralCopy, blockTime)
+    if (mintNTokenCollateral) {
+      const nToken = System.getSystem().getNToken(collateralCurrencyId);
+      if (!nToken) throw Error(`nToken not found for ${collateralCurrencyId}`);
+      const minAssetCash = minCollateral.toAssetCash(useInternal).scale(100, nToken.pvHaircutPercentage);
+      const targetAssetCash = targetCollateral.toAssetCash(useInternal).scale(100, nToken.pvHaircutPercentage);
+      minCollateral = NTokenValue.getNTokensToMint(collateralCurrencyId, minAssetCash);
+      targetCollateral = NTokenValue.getNTokensToMint(collateralCurrencyId, targetAssetCash);
 
+      minCollateralCopy.updateBalance(
+        collateralCurrencyId,
+        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        minCollateral,
+      );
+
+      targetCollateralCopy.updateBalance(
+        collateralCurrencyId,
+        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        targetCollateral,
+      );
+    } else {
+      minCollateralCopy.updateBalance(collateralCurrencyId, minCollateral.toAssetCash(useInternal));
+      targetCollateralCopy.updateBalance(collateralCurrencyId, targetCollateral.toAssetCash(useInternal));
+    }
+
+    const minFC = FreeCollateral.getFreeCollateral(minCollateralCopy, blockTime);
+    const targetFC = FreeCollateral.getFreeCollateral(targetCollateralCopy, blockTime);
     return {
       minCollateral,
       targetCollateral,
-      minCollateralRatio: FreeCollateral.calculateCollateralRatio(minFC.netETHCollateral, minFC.netETHDebt),
-      minBufferedRatio: FreeCollateral.calculateCollateralRatio(minFC.netETHCollateralWithHaircut, minFC.netETHDebtWithBuffer),
-      targetCollateralRatio: FreeCollateral.calculateCollateralRatio(targetFC.netETHCollateral, targetFC.netETHDebt),
-      targetBufferedRatio: FreeCollateral.calculateCollateralRatio(targetFC.netETHCollateralWithHaircut, targetFC.netETHDebtWithBuffer),
-    }
+      minCollateralRatio: FreeCollateral.calculateCollateralRatio(
+        minFC.netETHCollateral, minFC.netETHDebt,
+      ),
+      minBufferedRatio: FreeCollateral.calculateCollateralRatio(
+        minFC.netETHCollateralWithHaircut, minFC.netETHDebtWithBuffer,
+      ),
+      targetCollateralRatio: FreeCollateral.calculateCollateralRatio(
+        targetFC.netETHCollateral, targetFC.netETHDebt,
+      ),
+      targetBufferedRatio: FreeCollateral.calculateCollateralRatio(
+        targetFC.netETHCollateralWithHaircut, targetFC.netETHDebtWithBuffer,
+      ),
+    };
   }
 
   /**
@@ -357,7 +391,7 @@ export default class FreeCollateral {
 
     // It's possible that no collateral payment is required due to other collateral
     if (collateralDebtPayment.isNegative()) {
-      return FreeCollateral.getZeroUnderlying(collateralCurrencyId)
+      return FreeCollateral.getZeroUnderlying(collateralCurrencyId);
     }
 
     if (collateralDebtPayment.lt(collateralDebtETH)) {
