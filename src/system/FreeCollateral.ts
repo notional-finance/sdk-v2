@@ -4,6 +4,7 @@ import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import {Asset, AssetType} from '../libs/types';
 import {INTERNAL_TOKEN_PRECISION, ETHER_CURRENCY_ID} from '../config/constants';
+import NTokenValue from './NTokenValue';
 
 const useHaircut = true;
 const noHaircut = false;
@@ -112,7 +113,6 @@ export default class FreeCollateral {
 
     assetCashBalanceInternal.check(BigNumberType.InternalAsset, symbol);
     nTokenBalance?.check(BigNumberType.nToken, nTokenSymbol);
-    // This makes a copy of the array so we can net off fCash
     const {liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCashGroupValue(
       currencyId,
       portfolio,
@@ -121,7 +121,10 @@ export default class FreeCollateral {
 
     let nTokenValue = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     if (nTokenBalance && nTokenBalance.isPositive()) {
-      nTokenValue = nTokenBalance.toUnderlying(useInternal);
+      const nToken = system.getNToken(currencyId)!;
+      nTokenValue = nTokenBalance
+        .toAssetCash(useInternal).scale(nToken.pvHaircutPercentage, 100)
+        .toUnderlying(useInternal);
     }
 
     return {
@@ -155,7 +158,7 @@ export default class FreeCollateral {
         .filter((a) => a.assetType !== AssetType.fCash)
         .reduce((underlyingPV, lt) => {
           // eslint-disable-next-line prefer-const
-          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, true);
+          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, useHaircut);
           const index = currencyAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
           if (index > -1) {
             // net off fCash if it exists
@@ -170,7 +173,7 @@ export default class FreeCollateral {
           const fCashHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
             lt.maturity,
             fCashClaim,
-            true,
+            useHaircut,
             blockTime,
           );
           return underlyingPV.add(fCashHaircutPV).add(assetCashClaim.toUnderlying());
@@ -180,7 +183,7 @@ export default class FreeCollateral {
       fCashUnderlyingPV = currencyAssets
         .filter((a) => a.assetType === AssetType.fCash)
         .reduce((underlyingPV, a) => underlyingPV.add(
-          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, true, blockTime),
+          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, useHaircut, blockTime),
         ), fCashUnderlyingPV);
     }
 
@@ -193,6 +196,7 @@ export default class FreeCollateral {
    * @param collateralCurrencyId currency to collateralize this asset by
    * @param bufferedRatio the target post haircut / buffer collateral ratio
    * @param accountData account data object with borrow amounts applied
+   * @param mintNTokenCollateral true if collateral should be minted as nTokens
    * @param blockTime
    * @returns
    *   - minCollateral: minimum amount of collateral required for the borrow
@@ -204,12 +208,15 @@ export default class FreeCollateral {
     collateralCurrencyId: number,
     _bufferedRatio: number,
     accountData: AccountData,
+    mintNTokenCollateral = false,
     blockTime = getNowSeconds(),
   ): {
       minCollateral: TypedBigNumber;
       targetCollateral: TypedBigNumber;
       minCollateralRatio: number | null;
+      minBufferedRatio: number | null;
       targetCollateralRatio: number | null;
+      targetBufferedRatio: number | null;
     } {
     const bufferedRatio = Math.trunc(_bufferedRatio);
     if (bufferedRatio < 100) throw new RangeError('Buffered ratio must be more than 100');
@@ -217,7 +224,6 @@ export default class FreeCollateral {
     // prettier-ignore
     const {
       netETHCollateralWithHaircut,
-      netETHDebt,
       netETHDebtWithBuffer,
       netUnderlyingAvailable,
     } = FreeCollateral.getFreeCollateral(
@@ -230,14 +236,58 @@ export default class FreeCollateral {
       || FreeCollateral.getZeroUnderlying(collateralCurrencyId)
     );
 
-    return FreeCollateral.calculateTargetCollateral(
+    let {minCollateral, targetCollateral} = FreeCollateral.calculateTargetCollateral(
       netETHCollateralWithHaircut,
-      netETHDebt,
       netETHDebtWithBuffer,
       collateralCurrencyId,
       collateralNetAvailable,
       bufferedRatio,
     );
+
+    const minCollateralCopy = AccountData.copyAccountData(accountData);
+    const targetCollateralCopy = AccountData.copyAccountData(accountData);
+    if (mintNTokenCollateral) {
+      const nToken = System.getSystem().getNToken(collateralCurrencyId);
+      if (!nToken) throw Error(`nToken not found for ${collateralCurrencyId}`);
+      const minAssetCash = minCollateral.toAssetCash(useInternal).scale(100, nToken.pvHaircutPercentage);
+      const targetAssetCash = targetCollateral.toAssetCash(useInternal).scale(100, nToken.pvHaircutPercentage);
+      minCollateral = NTokenValue.getNTokensToMint(collateralCurrencyId, minAssetCash);
+      targetCollateral = NTokenValue.getNTokensToMint(collateralCurrencyId, targetAssetCash);
+
+      minCollateralCopy.updateBalance(
+        collateralCurrencyId,
+        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        minCollateral,
+      );
+
+      targetCollateralCopy.updateBalance(
+        collateralCurrencyId,
+        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        targetCollateral,
+      );
+    } else {
+      minCollateralCopy.updateBalance(collateralCurrencyId, minCollateral.toAssetCash(useInternal));
+      targetCollateralCopy.updateBalance(collateralCurrencyId, targetCollateral.toAssetCash(useInternal));
+    }
+
+    const minFC = FreeCollateral.getFreeCollateral(minCollateralCopy, blockTime);
+    const targetFC = FreeCollateral.getFreeCollateral(targetCollateralCopy, blockTime);
+    return {
+      minCollateral,
+      targetCollateral,
+      minCollateralRatio: FreeCollateral.calculateCollateralRatio(
+        minFC.netETHCollateral, minFC.netETHDebt,
+      ),
+      minBufferedRatio: FreeCollateral.calculateCollateralRatio(
+        minFC.netETHCollateralWithHaircut, minFC.netETHDebtWithBuffer,
+      ),
+      targetCollateralRatio: FreeCollateral.calculateCollateralRatio(
+        targetFC.netETHCollateral, targetFC.netETHDebt,
+      ),
+      targetBufferedRatio: FreeCollateral.calculateCollateralRatio(
+        targetFC.netETHCollateralWithHaircut, targetFC.netETHDebtWithBuffer,
+      ),
+    };
   }
 
   /**
@@ -249,11 +299,10 @@ export default class FreeCollateral {
    * @param collateralCurrencyId
    * @param collateralNetAvailable
    * @param bufferedRatio
-   * @returns
+   * @returns minCollateral and targetCollateral in collateral currency asset cash denomination
    */
   public static calculateTargetCollateral(
     netETHCollateralWithHaircut: TypedBigNumber,
-    netETHDebt: TypedBigNumber,
     netETHDebtWithBuffer: TypedBigNumber,
     collateralCurrencyId: number,
     collateralNetAvailable: TypedBigNumber,
@@ -261,8 +310,6 @@ export default class FreeCollateral {
   ): {
       minCollateral: TypedBigNumber;
       targetCollateral: TypedBigNumber;
-      minCollateralRatio: number | null;
-      targetCollateralRatio: number | null;
     } {
     // Minimum required ratio has multiplier of 1
     const minEthRequired = netETHCollateralWithHaircut.gte(netETHDebtWithBuffer)
@@ -271,16 +318,6 @@ export default class FreeCollateral {
 
     // Scale the netETHDebt with buffer to the buffered ratio and remove any existing collateral we have
     let targetEthRequired = netETHDebtWithBuffer.scale(bufferedRatio, 100).sub(netETHCollateralWithHaircut);
-
-    const minCollateralRatio = FreeCollateral.calculateCollateralRatio(
-      netETHCollateralWithHaircut.add(minEthRequired),
-      netETHDebt,
-    );
-
-    const targetCollateralRatio = FreeCollateral.calculateCollateralRatio(
-      netETHCollateralWithHaircut.add(targetEthRequired),
-      netETHDebt,
-    );
 
     // Cannot require negative ETH
     if (targetEthRequired.isNegative()) {
@@ -292,8 +329,6 @@ export default class FreeCollateral {
       return {
         minCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
         targetCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
-        minCollateralRatio,
-        targetCollateralRatio,
       };
     }
 
@@ -303,8 +338,6 @@ export default class FreeCollateral {
       return {
         minCollateral: minEthRequired.fromETH(collateralCurrencyId, useHaircut),
         targetCollateral: targetEthRequired.fromETH(collateralCurrencyId, useHaircut),
-        minCollateralRatio,
-        targetCollateralRatio,
       };
     }
 
@@ -312,20 +345,18 @@ export default class FreeCollateral {
     const collateralDebtETHBuffer = collateralNetAvailable.toETH(useHaircut).abs();
     const collateralDebtETH = collateralNetAvailable.toETH(noHaircut).abs();
 
-    const {requiredCollateral: minCollateral, collateralRatio: minRatio} = FreeCollateral.getRequiredCollateral(
+    const minCollateral = FreeCollateral.getRequiredCollateral(
       netETHCollateralWithHaircut,
       netETHDebtWithBuffer,
-      netETHDebt,
       collateralDebtETHBuffer,
       collateralDebtETH,
       100, // min buffered ratio is 1-1
       collateralCurrencyId,
     );
 
-    const {requiredCollateral: targetCollateral, collateralRatio: targetRatio} = FreeCollateral.getRequiredCollateral(
+    const targetCollateral = FreeCollateral.getRequiredCollateral(
       netETHCollateralWithHaircut,
       netETHDebtWithBuffer,
-      netETHDebt,
       collateralDebtETHBuffer,
       collateralDebtETH,
       bufferedRatio,
@@ -335,15 +366,12 @@ export default class FreeCollateral {
     return {
       minCollateral,
       targetCollateral,
-      minCollateralRatio: minRatio,
-      targetCollateralRatio: targetRatio,
     };
   }
 
   private static getRequiredCollateral(
     netETHCollateralWithHaircut: TypedBigNumber,
     netETHDebtWithBuffer: TypedBigNumber,
-    netETHDebt: TypedBigNumber,
     collateralDebtETHBuffer: TypedBigNumber,
     collateralDebtETH: TypedBigNumber,
     bufferedRatio: number,
@@ -362,22 +390,12 @@ export default class FreeCollateral {
 
     // It's possible that no collateral payment is required due to other collateral
     if (collateralDebtPayment.isNegative()) {
-      return {
-        requiredCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
-        collateralRatio: this.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebt),
-      };
+      return FreeCollateral.getZeroUnderlying(collateralCurrencyId);
     }
 
     if (collateralDebtPayment.lt(collateralDebtETH)) {
       // Do not apply haircut to the debt repayment, the buffer has been included above.
-      const requiredCollateral = collateralDebtPayment.fromETH(collateralCurrencyId, noHaircut);
-      // NOTE: this will return the collateral ratio which is not the same as the buffered ratio if the buffers and
-      // haircuts are not the same.
-      const collateralRatio = this.calculateCollateralRatio(
-        netETHCollateralWithHaircut,
-        netETHDebt.sub(collateralDebtPayment),
-      );
-      return {requiredCollateral, collateralRatio};
+      return collateralDebtPayment.fromETH(collateralCurrencyId, noHaircut);
     }
 
     // If we reach here, paying off the debt is insufficient to reach the target buffered ratio
@@ -393,13 +411,7 @@ export default class FreeCollateral {
     const totalCollateralETH = additionalCollateralETH.add(collateralDebtETH);
 
     // Do not use haircut here, it is already applied in the calculation above
-    const requiredCollateral = totalCollateralETH.fromETH(collateralCurrencyId, noHaircut);
-    const collateralRatio = this.calculateCollateralRatio(
-      netETHCollateralWithHaircut.add(additionalCollateralETH),
-      netETHDebt.sub(collateralDebtETH),
-    );
-
-    return {requiredCollateral, collateralRatio};
+    return totalCollateralETH.fromETH(collateralCurrencyId, noHaircut);
   }
 
   /**

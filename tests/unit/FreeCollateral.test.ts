@@ -261,11 +261,14 @@ describe('calculates free collateral', () => {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
+        minBufferedRatio,
         targetCollateralRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -273,8 +276,10 @@ describe('calculates free collateral', () => {
       const usdcTargetCollateral = (borrowAmountHaircutPV * -2.1) / 0.95;
       expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(105);
-      expect(targetCollateralRatio).toBeCloseTo(210);
+      expect(minCollateralRatio).toBeCloseTo(110, -1);
+      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
     it('calculates borrowing requirements for stable / crypto with no account data', () => {
@@ -293,11 +298,14 @@ describe('calculates free collateral', () => {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
+        minBufferedRatio,
         targetCollateralRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         1,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -305,8 +313,47 @@ describe('calculates free collateral', () => {
       const ethTargetCollateral = (borrowAmountHaircutPV * -2.1) / 100 / 0.7;
       expect(minCollateral.toNumber()).toBeCloseTo(ethCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(ethTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(105);
-      expect(targetCollateralRatio).toBeCloseTo(210);
+      expect(minCollateralRatio).toBeCloseTo(150, -1);
+      expect(targetCollateralRatio).toBeCloseTo(300, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
+    });
+
+    it.only('calculates borrowing requirements for stable / crypto with nTokens', () => {
+      const accountData = AccountData.emptyAccountData();
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
+
+      const {
+        minCollateral,
+        targetCollateral,
+        minCollateralRatio,
+        minBufferedRatio,
+        targetCollateralRatio,
+        targetBufferedRatio,
+      } = FreeCollateral.calculateBorrowRequirement(
+        1,
+        200,
+        accountData,
+        true,
+        blockTime,
+      );
+
+      const ethCollateral = (borrowAmountHaircutPV * -1.05) / 0.7 / 0.85;
+      const ethTargetCollateral = (borrowAmountHaircutPV * -2.1) / 0.7 / 0.85;
+      expect(minCollateral.toNumber()).toBeCloseTo(ethCollateral, -3);
+      expect(targetCollateral.toNumber()).toBeCloseTo(ethTargetCollateral, -3);
+      expect(minCollateralRatio).toBeCloseTo(150, -1);
+      expect(targetCollateralRatio).toBeCloseTo(300, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
     it('calculates borrowing requirements when local collateral can net off', () => {
@@ -341,11 +388,14 @@ describe('calculates free collateral', () => {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
+        minBufferedRatio,
         targetCollateralRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -353,6 +403,8 @@ describe('calculates free collateral', () => {
       expect(targetCollateral.toNumber()).toBe(0);
       expect(minCollateralRatio).toBeNull();
       expect(targetCollateralRatio).toBeNull();
+      expect(minBufferedRatio).toBeNull();
+      expect(targetBufferedRatio).toBeNull();
     });
 
     it('calculates borrowing requirements when local collateral can partially net off', () => {
@@ -387,11 +439,14 @@ describe('calculates free collateral', () => {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
+        minBufferedRatio,
         targetCollateralRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -399,8 +454,10 @@ describe('calculates free collateral', () => {
       const usdcTargetCollateral = ((borrowAmountHaircutPV + 50e8) * -2.1) / 0.95;
       expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(105);
-      expect(targetCollateralRatio).toBeCloseTo(210);
+      expect(minCollateralRatio).toBeCloseTo(110, -1);
+      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
     it('calculates borrowing requirements when local collateral is in debt', () => {
@@ -435,11 +492,14 @@ describe('calculates free collateral', () => {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
+        minBufferedRatio,
         targetCollateralRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -447,8 +507,10 @@ describe('calculates free collateral', () => {
       const usdcTargetCollateral = ((borrowAmountHaircutPV - 50e8) * -2.1) / 0.95;
       expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(105);
-      expect(targetCollateralRatio).toBeCloseTo(210);
+      expect(minCollateralRatio).toBeCloseTo(110, -1);
+      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
     it('calculates borrowing requirements when collateral is positive', () => {
@@ -483,11 +545,14 @@ describe('calculates free collateral', () => {
         minCollateral,
         targetCollateral,
         minCollateralRatio,
+        minBufferedRatio,
         targetCollateralRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -497,8 +562,10 @@ describe('calculates free collateral', () => {
       const usdcTargetCollateral = (borrowAmountHaircutPV * -2.1) / 0.95 - 10e8;
       expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(105);
-      expect(targetCollateralRatio).toBeCloseTo(210);
+      expect(minCollateralRatio).toBeCloseTo(110, -1);
+      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
     it('calculates borrowing requirements when more collateral than ratio', () => {
@@ -528,21 +595,33 @@ describe('calculates free collateral', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       });
+      const {
+        netETHCollateral, netETHCollateralWithHaircut, netETHDebt, netETHDebtWithBuffer,
+      } = FreeCollateral.getFreeCollateral(accountData);
+      const collateralRatioBefore = FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
+      const bufferedRatioBefore = FreeCollateral.calculateCollateralRatio(
+        netETHCollateralWithHaircut, netETHDebtWithBuffer,
+      );
 
       const {
         minCollateral,
         targetCollateral,
         targetCollateralRatio,
+        minBufferedRatio,
+        targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
       expect(minCollateral.toNumber()).toBe(0);
       expect(targetCollateral.toNumber()).toBe(0);
-      expect(targetCollateralRatio).toBeCloseTo(210);
+      expect(targetCollateralRatio).toBeCloseTo(collateralRatioBefore!);
+      expect(minBufferedRatio).toBeCloseTo(bufferedRatioBefore!);
+      expect(targetBufferedRatio).toBeCloseTo(bufferedRatioBefore!);
     });
 
     it('calculates borrowing requirements when net collateral is negative but no eth required', () => {
@@ -580,25 +659,36 @@ describe('calculates free collateral', () => {
         isIdiosyncratic: false,
       });
 
-      const {minCollateral, targetCollateral, minCollateralRatio} = FreeCollateral.calculateBorrowRequirement(
+      const {
+        netETHCollateral, netETHCollateralWithHaircut, netETHDebt, netETHDebtWithBuffer,
+      } = FreeCollateral.getFreeCollateral(accountData);
+      const collateralRatioBefore = FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
+      const bufferedRatioBefore = FreeCollateral.calculateCollateralRatio(
+        netETHCollateralWithHaircut, netETHDebtWithBuffer,
+      );
+
+      const {
+        minCollateral, targetCollateral, minCollateralRatio, minBufferedRatio,
+      } = FreeCollateral.calculateBorrowRequirement(
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
       expect(minCollateral.toNumber()).toBe(0);
-      expect(minCollateralRatio).toBeCloseTo(175.64, -1);
+      expect(minCollateralRatio).toBeCloseTo(collateralRatioBefore!);
+      expect(minBufferedRatio).toBeCloseTo(bufferedRatioBefore!);
       const assetCashBalance = targetCollateral.toAssetCash();
 
-      accountData.updateBalance(
-        collateralCurrencyId,
-        assetCashBalance,
-        TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
-      );
-      const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = FreeCollateral.getFreeCollateral(accountData);
+      accountData.updateBalance(collateralCurrencyId, assetCashBalance);
+      const {
+        netETHCollateralWithHaircut: netETHAfter,
+        netETHDebtWithBuffer: netDebtAfter,
+      } = FreeCollateral.getFreeCollateral(accountData);
       // Expect that the buffered collateral ratio afterwards is about 200
-      expect(FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer)).toBeCloseTo(
+      expect(FreeCollateral.calculateCollateralRatio(netETHAfter, netDebtAfter)).toBeCloseTo(
         200,
         0,
       );
@@ -636,6 +726,7 @@ describe('calculates free collateral', () => {
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
@@ -696,6 +787,7 @@ describe('calculates free collateral', () => {
         collateralCurrencyId,
         200,
         accountData,
+        false,
         blockTime,
       );
 
