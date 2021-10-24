@@ -113,7 +113,6 @@ export default class FreeCollateral {
 
     assetCashBalanceInternal.check(BigNumberType.InternalAsset, symbol);
     nTokenBalance?.check(BigNumberType.nToken, nTokenSymbol);
-    // This makes a copy of the array so we can net off fCash
     const {liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCashGroupValue(
       currencyId,
       portfolio,
@@ -159,7 +158,7 @@ export default class FreeCollateral {
         .filter((a) => a.assetType !== AssetType.fCash)
         .reduce((underlyingPV, lt) => {
           // eslint-disable-next-line prefer-const
-          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, true);
+          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, useHaircut);
           const index = currencyAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
           if (index > -1) {
             // net off fCash if it exists
@@ -174,7 +173,7 @@ export default class FreeCollateral {
           const fCashHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
             lt.maturity,
             fCashClaim,
-            true,
+            useHaircut,
             blockTime,
           );
           return underlyingPV.add(fCashHaircutPV).add(assetCashClaim.toUnderlying());
@@ -184,7 +183,7 @@ export default class FreeCollateral {
       fCashUnderlyingPV = currencyAssets
         .filter((a) => a.assetType === AssetType.fCash)
         .reduce((underlyingPV, a) => underlyingPV.add(
-          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, true, blockTime),
+          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, useHaircut, blockTime),
         ), fCashUnderlyingPV);
     }
 
