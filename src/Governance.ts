@@ -57,25 +57,31 @@ export interface ProposalState {
   lastUpdateTimestamp: number;
 }
 
+export interface ProposalQueryType {
+  id: string;
+  startBlock: number;
+  endBlock: number;
+  targets: Array<string>;
+  values: Array<string>;
+  calldatas: Array<string>;
+  proposer: Delegate;
+  votes: Array<Vote>;
+  history: Array<ProposalState>;
+  lastUpdateBlockHash: string;
+  lastUpdateBlockNumber: number;
+  lastUpdateTimestamp: number;
+  lastUpdateTransactionHash: string;
+  isCancelled: boolean;
+  isExecuted: boolean;
+  createdAt: number;
+}
+
 export interface ProposalQueryResult {
-  proposal: {
-    targets: Array<string>;
-    values: Array<string>;
-    calldatas: Array<string>;
-    proposer: Delegate;
-    startBlock: number;
-    endBlock: number;
-    votes: Array<Vote>;
-    history: Array<ProposalState>;
-    lastUpdateBlockHash: string;
-    lastUpdateBlockNumber: number;
-    lastUpdateTimestamp: number;
-    lastUpdateTransactionHash: string;
-  };
+  proposal: ProposalQueryType;
 }
 
 export interface AllProposalsQueryResult {
-  proposals: Array<{id: string}>;
+  proposals: ProposalQueryType[];
 }
 
 export interface AllDelegatesQueryResult {
@@ -100,7 +106,12 @@ function allProposalsQuery() {
       }
       proposer {
         id
+        lastUpdateBlockHash
+        lastUpdateBlockNumber
+        lastUpdateTimestamp
+        lastUpdateTransactionHash
       }
+      history
       targets
       values
       calldatas
@@ -183,8 +194,8 @@ export default class Governance {
     private apolloClient: GraphClient,
   ) {}
 
-  public getContract() {
-    return new Contract(this.governorAddress, GovernorABI, this.signer) as Governor;
+  public getContract(signer = this.signer) {
+    return new Contract(this.governorAddress, GovernorABI, signer) as Governor;
   }
 
   public async getProposalById(id: string) {

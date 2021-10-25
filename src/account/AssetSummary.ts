@@ -31,6 +31,7 @@ interface TradeHistoryQueryResult {
     netUnderlyingCash: string;
     netfCash: string;
     netLiquidityTokens: string | null;
+    maturity: string;
   }[];
 }
 
@@ -59,6 +60,7 @@ export default class AssetSummary {
   }
 
   public mostRecentTradedRate() {
+    if (this.history.length === 0) return undefined;
     return this.history[this.history.length - 1].tradedInterestRate;
   }
 
@@ -103,6 +105,7 @@ export default class AssetSummary {
         netUnderlyingCash
         netfCash
         netLiquidityTokens
+        maturity
       }
     }`;
   }
@@ -117,6 +120,7 @@ export default class AssetSummary {
 
     return queryResult.trades.map((t) => {
       const currencyId = Number(t.currency.id);
+      const maturity = BigNumber.from(t.maturity);
       const currency = System.getSystem().getCurrencyById(currencyId);
       const underlyingSymbol = currency.underlyingSymbol || currency.symbol;
       const assetSymbol = currency.symbol;
@@ -126,10 +130,11 @@ export default class AssetSummary {
         underlyingSymbol,
       );
       const netfCash = TypedBigNumber.from(t.netfCash, BigNumberType.InternalUnderlying, underlyingSymbol);
+
       const tradedInterestRate = Market.exchangeToInterestRate(
         Market.exchangeRate(netfCash, netUnderlyingCash),
         t.timestamp,
-        t.market!.maturity,
+        maturity.toNumber(),
       );
 
       return {
@@ -141,8 +146,7 @@ export default class AssetSummary {
         tradeType: t.tradeType as TradeType,
         settlementDate: t.market ? BigNumber.from(t.market.settlementDate) : null,
         maturityLength: t.market ? t.market.marketMaturityLengthSeconds : null,
-        // TODO: this has to come from the trade itself...
-        maturity: BigNumber.from(t.market!.maturity),
+        maturity: BigNumber.from(t.maturity),
         netAssetCash: TypedBigNumber.from(t.netAssetCash, BigNumberType.InternalAsset, assetSymbol),
         netfCash,
         netUnderlyingCash,
