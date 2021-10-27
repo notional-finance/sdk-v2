@@ -232,6 +232,7 @@ export default class AssetSummary {
         try {
           irr = cashFlows.length > 1 ? xirr(cashFlows) : 0;
         } catch (e) {
+          console.error(e);
           // If the xirr calculation fails then leave as a zero, this can happen when the time frame is too short
           irr = 0;
         }

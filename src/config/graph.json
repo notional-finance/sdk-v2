@@ -3,8 +3,6 @@
   "local:poll": 5000,
   "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2",
   "kovan:poll": 5000,
-  "rinkeby:http": "https://api.thegraph.com/subgraphs/name/notional-finance/rinkeby",
-  "rinkeby:poll": 5000,
-  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet",
+  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2",
   "mainnet:poll": 7000
 }

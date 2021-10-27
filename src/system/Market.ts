@@ -1,6 +1,8 @@
 import {BigNumber} from 'ethers';
 import {getNowSeconds} from '../libs/utils';
-import {INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR} from '../config/constants';
+import {
+  INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR, MAX_MARKET_PROPORTION,
+} from '../config/constants';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 
 interface MarketData {
@@ -447,6 +449,8 @@ export default class Market {
   }
 
   private static logProportion(_proportion: BigNumber) {
+    if (_proportion.gte(MAX_MARKET_PROPORTION)) throw new Error('Insufficient liquidity');
+
     const ratio = _proportion.mul(RATE_PRECISION).div(BigNumber.from(RATE_PRECISION).sub(_proportion));
     if (ratio.lte(0)) throw new Error('Insufficient liquidity');
     const logValue = Math.log(ratio.toNumber() / RATE_PRECISION);

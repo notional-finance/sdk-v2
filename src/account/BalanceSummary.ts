@@ -356,12 +356,21 @@ export default class BalanceSummary {
             )
             : [];
 
-          const cTokenYield = cashBalanceCashFlows.length === 0 ? 0 : xirr(cashBalanceCashFlows);
-          const nTokenTotalYield = nTokenCashFlows.length === 0 ? 0 : xirr(nTokenCashFlows);
-          // To get the yield from trading fees on the nToken we denominate the cash flows in asset cash
-          // and get the rate of return denominated in asset cash terms. This what the nToken accrues in asset cash
-          // fees from trading
-          const nTokenTradingYield = nTokenAssetCashFlows.length === 0 ? 0 : xirr(nTokenAssetCashFlows);
+          let cTokenYield = 0;
+          let nTokenTotalYield = 0;
+          let nTokenTradingYield = 0;
+          try {
+            cTokenYield = cashBalanceCashFlows.length === 0 ? 0 : xirr(cashBalanceCashFlows);
+            nTokenTotalYield = nTokenCashFlows.length === 0 ? 0 : xirr(nTokenCashFlows);
+            // To get the yield from trading fees on the nToken we denominate the cash flows in asset cash
+            // and get the rate of return denominated in asset cash terms. This what the nToken accrues in asset cash
+            // fees from trading
+            nTokenTradingYield = nTokenAssetCashFlows.length === 0 ? 0 : xirr(nTokenAssetCashFlows);
+          } catch (error) {
+            // If xirr throws an error just log it to the console
+            console.error(error);
+          }
+
           const claimableIncentives = v.nTokenBalance
             ? NTokenValue.getClaimableIncentives(
               v.currencyId,
