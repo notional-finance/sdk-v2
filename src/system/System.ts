@@ -19,6 +19,7 @@ import {
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   ETHER_CURRENCY_ID,
   RATE_PRECISION,
+  NOTE_CURRENCY_ID,
 } from '../config/constants';
 
 import {IAggregator} from '../typechain/IAggregator';
@@ -30,6 +31,7 @@ import GraphClient from '../GraphClient';
 import {Market, CashGroup} from '.';
 import {AccountData} from '../account';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
+import NoteETHRateProvider from './NoteETHRateProvider';
 
 const ERC20ABI = require('../abi/ERC20.json');
 const IAggregatorABI = require('../abi/IAggregator.json');
@@ -145,11 +147,11 @@ interface SystemQueryResult {
 }
 
 interface IETHRateProvider {
-  getETHRate();
+  getETHRate(): {ethRateConfig: EthRate, ethRate: BigNumber};
 }
 
 interface INTokenAssetCashPVProvider {
-  getNTokenAssetCashPV();
+  getNTokenAssetCashPV(): TypedBigNumber;
 }
 
 export default class System {
@@ -224,6 +226,8 @@ export default class System {
         this.parseQueryResult(result);
       }, refreshConfigurationDataIntervalMs);
     }
+
+    this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider());
   }
 
   public destroy() {

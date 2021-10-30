@@ -514,6 +514,7 @@ export default class BalanceSummary {
     system: System,
   ) {
     const {ethRateConfig} = system.getETHRate(balance.currencyId);
+    if (!ethRateConfig) throw Error(`Cannot find ethRateConfig for currency ${balance.currencyId}`);
     const multiplier = localNetAvailable.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
     let fcLocal: TypedBigNumber;
     if (multiplier === 0) {

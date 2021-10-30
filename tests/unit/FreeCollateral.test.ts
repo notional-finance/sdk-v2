@@ -11,6 +11,7 @@ import {getNowSeconds} from '../../src/libs/utils';
 import MockAccountData from './AccountData.test';
 import MockNotionalProxy from '../mocks/MockNotionalProxy';
 import {AccountData} from '../../src/account';
+import {IAggregator} from '../../src/typechain/IAggregator';
 
 describe('calculates free collateral', () => {
   let system: System;
@@ -819,6 +820,7 @@ describe('calculates free collateral', () => {
       system.setETHRateProvider(collateralCurrencyId, {
         getETHRate: () => ({
           ethRateConfig: {
+            rateOracle: null as unknown as IAggregator,
             haircut: 96,
             buffer: 105,
             mustInvert: false,

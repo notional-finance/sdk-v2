@@ -22,6 +22,9 @@ export const MAX_PORTFOLIO_ASSETS = 7;
 export const MAX_BITMAP_ASSETS = 20;
 export const ETHER_CURRENCY_ID = 1;
 export const SECONDS_PER_BLOCK = 13;
+// This value is not actually stored in the smart contract system, we use it here
+// to ensure that we do not clash with any other currency ids
+export const NOTE_CURRENCY_ID = 2 ** 32 - 1;
 
 export function secondsPerBlock(chainId: number) {
   switch (chainId) {

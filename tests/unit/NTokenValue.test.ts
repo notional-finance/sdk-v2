@@ -142,4 +142,11 @@ describe('nToken value', () => {
     // Supply rate is 5% and fCash is yielding 4%
     expect(blendedYield / RATE_PRECISION).toBeCloseTo(0.045);
   });
+
+  it('calculates the nToken incentive yield', () => {
+    const incentiveYield = NTokenValue.getNTokenIncentiveYield(2);
+    // Underlying PV is 200,000e8, token value is 175,000e8 per annum
+    // Incentive rate should be ~87.5%
+    expect(incentiveYield / RATE_PRECISION).toBeCloseTo(0.875);
+  });
 });
