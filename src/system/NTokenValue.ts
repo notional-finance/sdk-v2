@@ -2,7 +2,9 @@ import {BigNumber} from 'ethers';
 import {System, Market, CashGroup} from '.';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
-import {INTERNAL_TOKEN_PRECISION, PERCENTAGE_BASIS, SECONDS_IN_YEAR} from '../config/constants';
+import {
+  INTERNAL_TOKEN_PRECISION, PERCENTAGE_BASIS, SECONDS_IN_YEAR, RATE_PRECISION,
+} from '../config/constants';
 import {Asset, NTokenStatus} from '../libs/types';
 
 export default class NTokenValue {
@@ -267,6 +269,21 @@ export default class NTokenValue {
     );
 
     return totalUnderlying.isZero() ? 0 : numerator.n.div(totalUnderlying.n).toNumber();
+  }
+
+  public static getNTokenIncentiveYield(currencyId: number) {
+    const {nToken, nTokenPV} = NTokenValue.getNTokenFactors(currencyId);
+    const annualIncentivesLocalValue = TypedBigNumber.fromBalance(
+      nToken.incentiveEmissionRate,
+      'NOTE',
+      true,
+    ).toETH(false).fromETH(currencyId, false);
+
+    return annualIncentivesLocalValue
+      .scale(INTERNAL_TOKEN_PRECISION, nTokenPV.toUnderlying().n)
+      // Convert this to 1e9 rate precision for consistency
+      .scale(RATE_PRECISION, INTERNAL_TOKEN_PRECISION)
+      .toNumber();
   }
 
   public static getClaimableIncentives(
