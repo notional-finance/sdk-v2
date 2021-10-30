@@ -178,4 +178,10 @@ describe('Typed Big Number', () => {
     const ethValue = TypedBigNumber.from(-1e8, BigNumberType.InternalUnderlying, 'USDT').toETH(true);
     expect(ethValue.toString()).toEqual(BigNumber.from(-0.0105e8).toString());
   });
+
+  it('converts to NOTE to other currencies', () => {
+    const noteTokens = TypedBigNumber.fromBalance(1e8, 'NOTE', true);
+    expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0175e8).toString());
+    expect(noteTokens.toETH(false).fromETH(3).toString()).toEqual(BigNumber.from(1.75e8).toString());
+  });
 });
