@@ -69,15 +69,13 @@ export const calculate = (
   return resultRate;
 };
 
-// This normalization denominator is somewhat arbitrary, choosing a value that is too large
-// will result in XIRR unable to converge
-const D_N = 100_000_000;
+const D_N = 365 * 86400;
 
 export const normalize = (flows: ReadonlyArray<CashFlow>): ReadonlyArray<CashFlowNormalized> => {
   const flowsN = flows
     .map<CashFlowNormalized>(({amount, date}) => ({
       amount,
-      date: date.getTime(),
+      date: date.getTime() / 1000,
     }))
     .sort((a, b) => a.date - b.date);
   const firstDate: number = flowsN[0].date;

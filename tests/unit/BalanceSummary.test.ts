@@ -193,7 +193,7 @@ describe('Balance Summary', () => {
     const cTokenBalance = {...baseBalanceHistory};
     cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
     cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      95e8,
+      20e8,
       BigNumberType.InternalUnderlying,
       'DAI',
     );
@@ -224,12 +224,15 @@ describe('Balance Summary', () => {
       false,
     );
     const cTokenBalance = {...baseBalanceHistory};
-    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
+    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cDAI');
     cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      95e8,
+      -20e8,
       BigNumberType.InternalUnderlying,
       'DAI',
     );
+    cTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nDAI');
+    cTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cDAI');
+    cTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(50e8, BigNumberType.InternalUnderlying, 'DAI');
     const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
