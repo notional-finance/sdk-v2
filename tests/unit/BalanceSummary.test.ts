@@ -172,7 +172,70 @@ describe('Balance Summary', () => {
     expect(summary[0].cTokenYield).toBeCloseTo(0.23);
   });
 
-  // these need to be calculated in memory
-  it.todo('it returns underlying available to withdraw');
-  it.todo('it returns claimable incentives');
+  it('it returns the entire balance to withdraw if there is no debt', () => {
+    const data = new MockAccountData(
+      0,
+      false,
+      false,
+      0,
+      [
+        {
+          currencyId: 2,
+          cashBalance: TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI'),
+          nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+          lastClaimTime: BigNumber.from(0),
+          lastClaimIntegralSupply: BigNumber.from(0),
+        },
+      ],
+      [],
+      false,
+    );
+    const cTokenBalance = {...baseBalanceHistory};
+    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
+      95e8,
+      BigNumberType.InternalUnderlying,
+      'DAI',
+    );
+    const tradeHistory = [cTokenBalance];
+    const currentTime = blockTime + 45 * SECONDS_IN_DAY;
+
+    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0]
+    expect(summary.isWithdrawable).toBeTruthy()
+    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual("1000.0")
+  });
+
+  it('it returns the prorata balance to withdraw if there is debt', () => {
+    const data = new MockAccountData(
+      0,
+      true,
+      false,
+      0,
+      [
+        {
+          currencyId: 2,
+          cashBalance: TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cDAI'),
+          nTokenBalance: TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nDAI'),
+          lastClaimTime: BigNumber.from(0),
+          lastClaimIntegralSupply: BigNumber.from(0),
+        },
+      ],
+      [],
+      false,
+    );
+    const cTokenBalance = {...baseBalanceHistory};
+    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
+      95e8,
+      BigNumberType.InternalUnderlying,
+      'DAI',
+    );
+    const tradeHistory = [cTokenBalance];
+    const currentTime = blockTime + 45 * SECONDS_IN_DAY;
+
+    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0]
+    expect(summary.isWithdrawable).toBeTruthy()
+    // ntoken value == 2500, haircut value is: 2250, net asset value is 1250
+    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual("1250.0")
+  });
 });
