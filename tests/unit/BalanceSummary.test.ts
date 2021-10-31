@@ -200,9 +200,9 @@ describe('Balance Summary', () => {
     const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0]
-    expect(summary.isWithdrawable).toBeTruthy()
-    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual("1000.0")
+    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0];
+    expect(summary.isWithdrawable).toBeTruthy();
+    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual('1000.0');
   });
 
   it('it returns the prorata balance to withdraw if there is debt', () => {
@@ -233,9 +233,9 @@ describe('Balance Summary', () => {
     const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0]
-    expect(summary.isWithdrawable).toBeTruthy()
+    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0];
+    expect(summary.isWithdrawable).toBeTruthy();
     // ntoken value == 2500, haircut value is: 2250, net asset value is 1250
-    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual("1250.0")
+    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual('1250.0');
   });
 });

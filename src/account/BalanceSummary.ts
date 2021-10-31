@@ -386,7 +386,7 @@ export default class BalanceSummary {
           const localNetAvailable = netUnderlyingAvailable.get(v.currencyId)
             || TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
           const maxWithdrawValueAssetCash = BalanceSummary.getMaxWithdrawData(
-            v, fcAggregate, localNetAvailable, system, accountData.hasAssetDebt || accountData.hasCashDebt
+            v, fcAggregate, localNetAvailable, system, accountData.hasAssetDebt || accountData.hasCashDebt,
           );
 
           return new BalanceSummary(
@@ -512,7 +512,7 @@ export default class BalanceSummary {
     fcAggregate: TypedBigNumber,
     localNetAvailable: TypedBigNumber,
     system: System,
-    hasDebt: boolean
+    hasDebt: boolean,
   ) {
     let nTokenAssetPV: TypedBigNumber | undefined;
     if (NTokenValue.getNTokenStatus(balance.currencyId) === NTokenStatus.Ok) {
@@ -522,7 +522,7 @@ export default class BalanceSummary {
     }
 
     const totalAccountAssetValue = nTokenAssetPV ? balance.cashBalance.add(nTokenAssetPV) : balance.cashBalance;
-    if (!hasDebt) return totalAccountAssetValue
+    if (!hasDebt) return totalAccountAssetValue;
 
     const {ethRateConfig} = system.getETHRate(balance.currencyId);
     if (!ethRateConfig) throw Error(`Cannot find ethRateConfig for currency ${balance.currencyId}`);
