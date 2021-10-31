@@ -3,9 +3,10 @@ import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {Asset, Balance, AssetType} from '../../src/libs/types';
 import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import GraphClient from '../../src/GraphClient';
 import {System} from '../../src/system';
+import {getNowSeconds} from '../../src/libs/utils';
+import MockNotionalProxy from '../mocks/MockNotionalProxy';
 
 export default class MockAccountData extends AccountData {
   constructor(
@@ -26,7 +27,7 @@ describe('Account Data', () => {
   const system = new MockSystem(
     systemQueryResult,
     ({} as unknown) as GraphClient,
-    ({} as unknown) as NotionalTypechain,
+    MockNotionalProxy,
     provider,
   );
   System.overrideSystem((system as unknown) as System);
@@ -160,5 +161,32 @@ describe('Account Data', () => {
     expect(accountDataCopy.portfolio[1]).toEqual(asset2);
   });
 
-  it.todo('settles matured cash balances');
+  it('settles matured cash balances', (done) => {
+    const accountResult = {
+      accountContext: {
+        nextSettleTime: 0,
+        hasDebt: '0x00',
+        assetArrayLength: 1,
+        bitmapCurrencyId: 0,
+        activeCurrencies: '',
+      },
+      accountBalances: [],
+      portfolio: [{
+        currencyId: BigNumber.from(2),
+        maturity: BigNumber.from(getNowSeconds() - 1000),
+        assetType: BigNumber.from(1),
+        notional: BigNumber.from(1000e8),
+        storageSlot: BigNumber.from(0),
+        storageState: 0,
+      }],
+    };
+
+    AccountData.load(accountResult).then((a) => {
+      expect(a.cashBalance(2)?.toString()).toEqual('50000.0');
+      expect(a.portfolio.length).toEqual(0);
+      done();
+    }).catch(() => {
+      done();
+    });
+  });
 });
