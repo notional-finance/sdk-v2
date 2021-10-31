@@ -14,7 +14,6 @@ module.exports = {
     },
   ],
   coverageReporters: ["text", "html"],
-  collectCoverage: true,
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/typechain/**"
