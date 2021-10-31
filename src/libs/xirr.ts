@@ -69,7 +69,9 @@ export const calculate = (
   return resultRate;
 };
 
-const D_N = 365.0 * 86400000;
+// This normalization denominator is somewhat arbitrary, choosing a value that is too large
+// will result in XIRR unable to converge
+const D_N = 100_000_000;
 
 export const normalize = (flows: ReadonlyArray<CashFlow>): ReadonlyArray<CashFlowNormalized> => {
   const flowsN = flows
