@@ -386,7 +386,7 @@ export default class BalanceSummary {
           const localNetAvailable = netUnderlyingAvailable.get(v.currencyId)
             || TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
           const maxWithdrawValueAssetCash = BalanceSummary.getMaxWithdrawData(
-            v, fcAggregate, localNetAvailable, system,
+            v, fcAggregate, localNetAvailable, system, accountData.hasAssetDebt || accountData.hasCashDebt,
           );
 
           return new BalanceSummary(
@@ -512,7 +512,18 @@ export default class BalanceSummary {
     fcAggregate: TypedBigNumber,
     localNetAvailable: TypedBigNumber,
     system: System,
+    hasDebt: boolean,
   ) {
+    let nTokenAssetPV: TypedBigNumber | undefined;
+    if (NTokenValue.getNTokenStatus(balance.currencyId) === NTokenStatus.Ok) {
+      // We don't need to take the haircut on the nTokenBalance because this is already taken into
+      // account in the free collateral calculation.
+      nTokenAssetPV = balance.nTokenBalance?.toAssetCash(true);
+    }
+
+    const totalAccountAssetValue = nTokenAssetPV ? balance.cashBalance.add(nTokenAssetPV) : balance.cashBalance;
+    if (!hasDebt) return totalAccountAssetValue;
+
     const {ethRateConfig} = system.getETHRate(balance.currencyId);
     if (!ethRateConfig) throw Error(`Cannot find ethRateConfig for currency ${balance.currencyId}`);
     const multiplier = localNetAvailable.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
@@ -531,13 +542,6 @@ export default class BalanceSummary {
     }
 
     const fcLocalAsset = fcLocal.toAssetCash(true);
-    // Check that the nToken is able to be redeemed at the current time
-    let nTokenAssetPV: TypedBigNumber | undefined;
-    if (NTokenValue.getNTokenStatus(balance.currencyId) === NTokenStatus.Ok) {
-      nTokenAssetPV = balance.nTokenBalance?.toAssetCash(true);
-    }
-
-    const totalAccountAssetValue = nTokenAssetPV ? balance.cashBalance.add(nTokenAssetPV) : balance.cashBalance;
     return fcLocalAsset.lt(totalAccountAssetValue) ? fcLocalAsset : totalAccountAssetValue;
   }
 }

@@ -131,8 +131,7 @@ export default class AccountData {
           lastClaimTime: v.lastClaimTime,
           lastClaimIntegralSupply: v.lastClaimIntegralSupply,
         };
-      })
-      .filter((b) => b.currencyId !== 0);
+      });
   }
 
   public static async load(result: GetAccountResult): Promise<AccountData> {

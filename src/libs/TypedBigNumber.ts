@@ -398,8 +398,8 @@ class TypedBigNumber {
 
   toUSD() {
     // Converts value to USD using the USDC conversion rate
-    const USDC = 3
-    return this.toETH(false).fromETH(USDC, false)
+    const USDC = 3;
+    return this.toETH(false).fromETH(USDC, false);
   }
 
   toJSON(_?: string): any {

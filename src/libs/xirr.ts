@@ -69,13 +69,13 @@ export const calculate = (
   return resultRate;
 };
 
-const D_N = 365.0 * 86400000;
+const D_N = 365 * 86400;
 
 export const normalize = (flows: ReadonlyArray<CashFlow>): ReadonlyArray<CashFlowNormalized> => {
   const flowsN = flows
     .map<CashFlowNormalized>(({amount, date}) => ({
       amount,
-      date: date.getTime(),
+      date: date.getTime() / 1000,
     }))
     .sort((a, b) => a.date - b.date);
   const firstDate: number = flowsN[0].date;

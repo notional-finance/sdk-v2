@@ -24,8 +24,8 @@ const MockNotionalProxy = {
 
     return Promise.resolve({
       rateOracle: '0x0',
-      rate: BigNumber.from(1e8),
-      underlyingDecimals: BigNumber.from(1e8),
+      rate: BigNumber.from('200000000000000000000000000'),
+      underlyingDecimals: ethers.constants.WeiPerEther,
     });
   },
 
