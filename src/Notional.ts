@@ -13,7 +13,12 @@ import {SystemEvents} from './system/System';
 // eslint-disable import/no-named-as-default import/no-named-as-default-member
 import TransactionBuilder from './TransactionBuilder';
 import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
-import {INTERNAL_TOKEN_DECIMAL_PLACES} from './config/constants';
+import {
+  DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
+  DEFAULT_DATA_REFRESH_INTERVAL,
+  INTERNAL_TOKEN_DECIMAL_PLACES,
+  LOCAL_DATA_REFRESH_INTERVAL,
+} from './config/constants';
 
 /* ABI imports */
 const NoteERC20ABI = require('./abi/NoteERC20.json');
@@ -58,6 +63,7 @@ export default class Notional extends TransactionBuilder {
     let addresses: any;
     let graphEndpoint: string;
     let pollInterval: number;
+    let refreshDataInterval = DEFAULT_DATA_REFRESH_INTERVAL;
 
     switch (chainId) {
       case 1:
@@ -74,6 +80,7 @@ export default class Notional extends TransactionBuilder {
         addresses = localAddresses;
         graphEndpoint = graphEndpoints['local:http'];
         pollInterval = Number(graphEndpoints['local:poll']);
+        refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
         break;
       default:
         throw new Error(`Undefined chainId: ${chainId}`);
@@ -94,6 +101,8 @@ export default class Notional extends TransactionBuilder {
       graphClient,
       notionalProxy,
       signer.provider as ethers.providers.JsonRpcBatchProvider,
+      refreshDataInterval,
+      DEFAULT_CONFIGURATION_REFRESH_INTERVAL
     );
 
     // await for the first data refresh before returning

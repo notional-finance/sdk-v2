@@ -12,8 +12,10 @@ export const SECONDS_IN_WEEK = SECONDS_IN_DAY * 6;
 export const SECONDS_IN_MONTH = SECONDS_IN_DAY * 30;
 export const SECONDS_IN_QUARTER = 90 * SECONDS_IN_DAY;
 export const SECONDS_IN_YEAR = SECONDS_IN_QUARTER * 4;
-// 15 seconds for underlying data
-export const DEFAULT_DATA_REFRESH_INTERVAL = 15 * 1000;
+// 15 seconds for underlying data on local
+export const LOCAL_DATA_REFRESH_INTERVAL = 15 * 1000;
+// 3 min for underlying data on chain
+export const DEFAULT_DATA_REFRESH_INTERVAL = 180 * 1000;
 // 30 minutes for configuration data
 export const DEFAULT_CONFIGURATION_REFRESH_INTERVAL = 1800 * 1000;
 
