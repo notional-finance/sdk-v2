@@ -1,6 +1,6 @@
 import {BigNumber} from 'ethers';
 import {IAggregator} from '../typechain/IAggregator';
-import System from './System';
+import {System} from '.';
 
 // This uses a hardcoded price for the NOTE token, in the future we will upgrade this to get the
 // price from some other price oracle
