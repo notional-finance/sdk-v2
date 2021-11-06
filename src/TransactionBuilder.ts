@@ -24,9 +24,8 @@ export default abstract class TransactionBuilder {
       proxy.estimateGas[methodName].apply(proxy, methodArgs),
     ]);
 
-    // Add 2% to the estimated gas limit to reduce the risk of
-    // out of gas errors
-    txn.gasLimit = gasLimit.add(gasLimit.div(50));
+    // Add 5% to the estimated gas limit to reduce the risk of out of gas errors
+    txn.gasLimit = gasLimit.add(gasLimit.div(20));
     return txn;
   }
 
