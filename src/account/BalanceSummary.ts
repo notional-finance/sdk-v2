@@ -7,7 +7,7 @@ import {xirr, CashFlow, convertBigNumber} from '../libs/xirr';
 import AccountData from './AccountData';
 import GraphClient from '../GraphClient';
 import {
-  System, Market, FreeCollateral, NTokenValue,
+  System, FreeCollateral, NTokenValue,
 } from '../system';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 
@@ -91,16 +91,23 @@ export default class BalanceSummary {
     return totalUnderlyingValue.sub(netUnderlyingDeposit);
   }
 
+  private static formatYieldRate(rate: number, locale = 'en-US', precision = 3) {
+    return `${(rate * 100).toLocaleString(locale, {
+      maximumFractionDigits: precision,
+      minimumFractionDigits: precision,
+    })}%`;
+  }
+
   public get cTokenYieldDisplayString() {
-    return Market.formatInterestRate(this.cTokenYield);
+    return BalanceSummary.formatYieldRate(this.cTokenYield);
   }
 
   public get nTokenYieldDisplayString() {
-    return Market.formatInterestRate(this.nTokenYield);
+    return BalanceSummary.formatYieldRate(this.nTokenYield);
   }
 
   public get totalYieldDisplayString() {
-    return Market.formatInterestRate(this.nTokenTotalYield);
+    return BalanceSummary.formatYieldRate(this.nTokenTotalYield);
   }
 
   public get assetCashBalanceDisplayString() {
