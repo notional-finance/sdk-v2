@@ -578,11 +578,19 @@ export default class System {
     return this.nTokenIncentiveFactors.get(currencyId);
   }
 
-  public setETHRateProvider(currencyId: number, provider: IETHRateProvider) {
+  public setETHRateProvider(currencyId: number, provider: IETHRateProvider | null) {
+    if (!provider) {
+      this.ethRateProviders.delete(currencyId);
+      return;
+    }
     this.ethRateProviders.set(currencyId, provider);
   }
 
-  public setNTokenAssetCashPVProvider(currencyId: number, provider: INTokenAssetCashPVProvider) {
+  public setNTokenAssetCashPVProvider(currencyId: number, provider: INTokenAssetCashPVProvider | null) {
+    if (!provider) {
+      this.nTokenAssetCashPVProviders.delete(currencyId);
+      return;
+    }
     this.nTokenAssetCashPVProviders.set(currencyId, provider);
   }
 
