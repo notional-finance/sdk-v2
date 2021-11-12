@@ -1,0 +1,730 @@
+{
+  "refreshDataIntervalMs": 180000,
+  "refreshConfigurationDataIntervalMs": 1800000,
+  "_lastUpdateBlockNumber": 28339944,
+  "_lastUpdateTimestamp": "2021-11-12T23:13:44.000Z",
+  "ethRateData": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        {
+          "type": "BigNumber",
+          "hex": "0x0de0b6b3a7640000"
+        }
+      ],
+      [
+        2,
+        {
+          "type": "BigNumber",
+          "hex": "0x2386f26fc10000"
+        }
+      ],
+      [
+        3,
+        {
+          "type": "BigNumber",
+          "hex": "0xbefe6f672000"
+        }
+      ],
+      [
+        4,
+        {
+          "type": "BigNumber",
+          "hex": "0x8ac7230489e80000"
+        }
+      ],
+      [
+        5,
+        {
+          "type": "BigNumber",
+          "hex": "0x2386f26fc10000"
+        }
+      ]
+    ]
+  },
+  "assetRateData": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        {
+          "type": "BigNumber",
+          "hex": "0xa56fa5b9ea9d973e77d437"
+        }
+      ],
+      [
+        2,
+        {
+          "type": "BigNumber",
+          "hex": "0xa56fa5b99019bd710a3ac1"
+        }
+      ],
+      [
+        3,
+        {
+          "type": "BigNumber",
+          "hex": "0xb5e620f4832d"
+        }
+      ],
+      [
+        4,
+        {
+          "type": "BigNumber",
+          "hex": "0x470de4df821767"
+        }
+      ],
+      [
+        5,
+        {
+          "type": "BigNumber",
+          "hex": "0xa56fa5b99019a5c8000000"
+        }
+      ]
+    ]
+  },
+  "nTokenAssetCashPV": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        {
+          "type": "BigNumber",
+          "hex": "0xfa9d52e2a1",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cETH"
+        }
+      ],
+      [
+        2,
+        {
+          "type": "BigNumber",
+          "hex": "0x1592e2eb96b47f7d",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cDAI"
+        }
+      ],
+      [
+        3,
+        {
+          "type": "BigNumber",
+          "hex": "0x07cd7b96858c0630",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cUSDC"
+        }
+      ],
+      [
+        4,
+        {
+          "type": "BigNumber",
+          "hex": "0x0c92d6cbd94de6",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cWBTC"
+        }
+      ],
+      [
+        5,
+        {
+          "type": "BigNumber",
+          "hex": "0xe3d436c6d326",
+          "bigNumberType": "Internal Asset",
+          "symbol": "caDAI"
+        }
+      ]
+    ]
+  },
+  "nTokenTotalSupply": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        {
+          "type": "BigNumber",
+          "hex": "0xfa02530806",
+          "bigNumberType": "nToken",
+          "symbol": "nETH"
+        }
+      ],
+      [
+        2,
+        {
+          "type": "BigNumber",
+          "hex": "0x139bc542130b348f",
+          "bigNumberType": "nToken",
+          "symbol": "nDAI"
+        }
+      ],
+      [
+        3,
+        {
+          "type": "BigNumber",
+          "hex": "0x060895e88def32c8",
+          "bigNumberType": "nToken",
+          "symbol": "nUSDC"
+        }
+      ],
+      [
+        4,
+        {
+          "type": "BigNumber",
+          "hex": "0x0be50e66cd31f9",
+          "bigNumberType": "nToken",
+          "symbol": "nWBTC"
+        }
+      ],
+      [
+        5,
+        {
+          "type": "BigNumber",
+          "hex": "0xe3d4138489a8",
+          "bigNumberType": "nToken",
+          "symbol": "naDAI"
+        }
+      ]
+    ]
+  },
+  "nTokenIncentiveFactors": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        {
+          "integralTotalSupply": {
+            "type": "BigNumber",
+            "hex": "0x294276583b7c7df8"
+          },
+          "lastSupplyChangeTime": {
+            "type": "BigNumber",
+            "hex": "0x618daaa0"
+          }
+        }
+      ],
+      [
+        2,
+        {
+          "integralTotalSupply": {
+            "type": "BigNumber",
+            "hex": "0x0326497edd9fb67719a7a4"
+          },
+          "lastSupplyChangeTime": {
+            "type": "BigNumber",
+            "hex": "0x618e8e78"
+          }
+        }
+      ],
+      [
+        3,
+        {
+          "integralTotalSupply": {
+            "type": "BigNumber",
+            "hex": "0x01bf36d4f96fc4ea688a88"
+          },
+          "lastSupplyChangeTime": {
+            "type": "BigNumber",
+            "hex": "0x618e91a0"
+          }
+        }
+      ],
+      [
+        4,
+        {
+          "integralTotalSupply": {
+            "type": "BigNumber",
+            "hex": "0x01ad1e146681f1d2e540"
+          },
+          "lastSupplyChangeTime": {
+            "type": "BigNumber",
+            "hex": "0x618d5084"
+          }
+        }
+      ],
+      [
+        5,
+        {
+          "integralTotalSupply": {
+            "type": "BigNumber",
+            "hex": "0x00"
+          },
+          "lastSupplyChangeTime": {
+            "type": "BigNumber",
+            "hex": "0x617c6e80"
+          }
+        }
+      ]
+    ]
+  },
+  "nTokenCashBalance": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        {
+          "type": "BigNumber",
+          "hex": "0x0ef55f34",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cETH"
+        }
+      ],
+      [
+        2,
+        {
+          "type": "BigNumber",
+          "hex": "0x05a4b235e794",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cDAI"
+        }
+      ],
+      [
+        3,
+        {
+          "type": "BigNumber",
+          "hex": "0x010c3f2448b0",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cUSDC"
+        }
+      ],
+      [
+        4,
+        {
+          "type": "BigNumber",
+          "hex": "0x00",
+          "bigNumberType": "Internal Asset",
+          "symbol": "cWBTC"
+        }
+      ],
+      [
+        5,
+        {
+          "type": "BigNumber",
+          "hex": "0x00",
+          "bigNumberType": "Internal Asset",
+          "symbol": "caDAI"
+        }
+      ]
+    ]
+  },
+  "nTokenLiquidityTokens": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        [
+          {
+            "currencyId": 1,
+            "maturity": 1640736000,
+            "assetType": "LiquidityToken_3Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x7b9a03ab66",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cETH"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 1,
+            "maturity": 1648512000,
+            "assetType": "LiquidityToken_6Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x8808034320",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cETH"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        2,
+        [
+          {
+            "currencyId": 2,
+            "maturity": 1640736000,
+            "assetType": "LiquidityToken_3Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x099338596243331f",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 2,
+            "maturity": 1648512000,
+            "assetType": "LiquidityToken_6Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x0c7546199c34b9f2",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 2,
+            "maturity": 1664064000,
+            "assetType": "LiquidityToken_1Year",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x0f966eeeaffaf3c1",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        3,
+        [
+          {
+            "currencyId": 3,
+            "maturity": 1640736000,
+            "assetType": "LiquidityToken_3Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x019ebc7d8b7b4fb7",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cUSDC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 3,
+            "maturity": 1648512000,
+            "assetType": "LiquidityToken_6Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x01989c6fcf74665c",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cUSDC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 3,
+            "maturity": 1664064000,
+            "assetType": "LiquidityToken_1Year",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x03039e2fe15b9027",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cUSDC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        4,
+        [
+          {
+            "currencyId": 4,
+            "maturity": 1640736000,
+            "assetType": "LiquidityToken_3Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x04fd5481c33bbf",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cWBTC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 4,
+            "maturity": 1648512000,
+            "assetType": "LiquidityToken_6Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x08c3bd5662c578",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "cWBTC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        5,
+        [
+          {
+            "currencyId": 5,
+            "maturity": 1640736000,
+            "assetType": "LiquidityToken_3Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x38f504e1226a",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "caDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 5,
+            "maturity": 1648512000,
+            "assetType": "LiquidityToken_6Month",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x4fbd6d3b302e",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "caDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 5,
+            "maturity": 1664064000,
+            "assetType": "LiquidityToken_1Year",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "0x5b21a1683710",
+              "bigNumberType": "Liquidity Token",
+              "symbol": "caDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ]
+    ]
+  },
+  "nTokenfCash": {
+    "dataType": "Map",
+    "value": [
+      [
+        1,
+        [
+          {
+            "currencyId": 1,
+            "maturity": 1640736000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x0286fa1396",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "ETH"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 1,
+            "maturity": 1648512000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x02ce2e99f8",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "ETH"
+            },
+            "hasMatured": false,
+            "settlementDate": 1648512000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        2,
+        [
+          {
+            "currencyId": 2,
+            "maturity": 1640736000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x4824ecaa07aded",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "DAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 2,
+            "maturity": 1648512000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x60cd2b655e7037",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "DAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1648512000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 2,
+            "maturity": 1664064000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x7ef13c0b06dd89",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "DAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1664064000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        3,
+        [
+          {
+            "currencyId": 3,
+            "maturity": 1640736000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x08a94d736b12fe",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "USDC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 3,
+            "maturity": 1648512000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x0891957a10a73d",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "USDC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1648512000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 3,
+            "maturity": 1664064000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x0fcf277573cb09",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "USDC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1664064000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        4,
+        [
+          {
+            "currencyId": 4,
+            "maturity": 1640736000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x19f0241e094d",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "WBTC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 4,
+            "maturity": 1648512000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x3652055c58f7",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "WBTC"
+            },
+            "hasMatured": false,
+            "settlementDate": 1648512000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ],
+      [
+        5,
+        [
+          {
+            "currencyId": 5,
+            "maturity": 1640736000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x01b56e39f43b",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "aDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1640736000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 5,
+            "maturity": 1648512000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x0264671def86",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "aDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1648512000,
+            "isIdiosyncratic": false
+          },
+          {
+            "currencyId": 5,
+            "maturity": 1664064000,
+            "assetType": "fCash",
+            "notional": {
+              "type": "BigNumber",
+              "hex": "-0x02bbe38fed2c",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "aDAI"
+            },
+            "hasMatured": false,
+            "settlementDate": 1664064000,
+            "isIdiosyncratic": false
+          }
+        ]
+      ]
+    ]
+  }
+}
