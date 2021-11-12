@@ -59,11 +59,14 @@ export default class Notional extends TransactionBuilder {
    * @param chainId the name of the network to connect to
    * @param provider the signer to use to interact with the contract
    */
-  public static async load(chainId: number, provider: ethers.providers.Provider) {
+  public static async load(
+    chainId: number,
+    provider: ethers.providers.Provider,
+    refreshDataInterval = DEFAULT_DATA_REFRESH_INTERVAL
+  ) {
     let addresses: any;
     let graphEndpoint: string;
     let pollInterval: number;
-    let refreshDataInterval = DEFAULT_DATA_REFRESH_INTERVAL;
 
     switch (chainId) {
       case 1:
