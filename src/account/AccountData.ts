@@ -93,7 +93,8 @@ export default class AccountData {
     );
   }
 
-  public static parsePortfolio(portfolio: AssetResult[], system: System): Asset[] {
+  public static parsePortfolio(portfolio: AssetResult[]): Asset[] {
+    const system = System.getSystem();
     return portfolio.map((v) => {
       const currency = system.getCurrencyById(v.currencyId.toNumber());
       const underlyingSymbol = system.getUnderlyingSymbol(v.currencyId.toNumber());
@@ -116,7 +117,8 @@ export default class AccountData {
     });
   }
 
-  public static parseBalances(accountBalances: BalanceResult[], system: System): Balance[] {
+  public static parseBalances(accountBalances: BalanceResult[]): Balance[] {
+    const system = System.getSystem();
     return accountBalances
       .filter((v) => v.currencyId !== 0)
       .map((v) => {
@@ -136,8 +138,8 @@ export default class AccountData {
 
   public static async load(result: GetAccountResult): Promise<AccountData> {
     const system = System.getSystem();
-    const portfolio = AccountData.parsePortfolio(result.portfolio, system);
-    const balances = AccountData.parseBalances(result.accountBalances, system);
+    const portfolio = AccountData.parsePortfolio(result.portfolio);
+    const balances = AccountData.parseBalances(result.accountBalances);
 
     // eslint-disable-next-line
     const bitmapCurrencyId =
