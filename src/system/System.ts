@@ -174,15 +174,11 @@ export default class System {
   }
 
   public static getSystem() {
-    if (!this._systemInstance) {
-      console.log('in here', this._systemInstance)
-      throw Error('System not initialized');
-    }
+    if (!this._systemInstance) throw Error('System not initialized');
     return this._systemInstance;
   }
 
   public static overrideSystem(system: System) {
-    console.log('overridden')
     // NOTE: this should only be used for testing
     this._systemInstance = system;
   }

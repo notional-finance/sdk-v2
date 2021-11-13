@@ -1,7 +1,7 @@
 import {BigNumber, ethers} from 'ethers';
-import {TypedBigNumber, BigNumberType} from '../../lib';
-import {SECONDS_IN_YEAR} from '../../lib/config/constants';
-import {getNowSeconds} from '../../lib/libs/utils';
+import {TypedBigNumber, BigNumberType} from '../../src';
+import {SECONDS_IN_YEAR} from '../../src/config/constants';
+import {getNowSeconds} from '../../src/libs/utils';
 import {Market, CashGroup} from '../../src/system';
 import Blockchain from '../../src/system/datasource/Blockchain';
 
@@ -35,7 +35,6 @@ export default class MockCache extends Blockchain {
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     this.nTokens.forEach((_, k) => {
-      console.log('ntoken', k)
       const {symbol} = this.currencies.get(k)!;
       const nTokenSymbol = this.nTokens.get(k)?.symbol;
       if (nTokenSymbol) {

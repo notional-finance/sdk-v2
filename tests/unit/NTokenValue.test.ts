@@ -80,7 +80,7 @@ describe('nToken value', () => {
     );
   });
 
-  it.only('converts ntokens to ntoken value', () => {
+  it('converts ntokens to ntoken value', () => {
     const nTokenValue = NTokenValue.convertNTokenToInternalAsset(
       3,
       TypedBigNumber.from(100e8, BigNumberType.nToken, 'nUSDC'),

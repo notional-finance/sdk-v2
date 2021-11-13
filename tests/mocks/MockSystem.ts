@@ -256,9 +256,7 @@ export default class MockSystem extends System {
       this.eventEmitter,
       30000,
     );
-    this.dataSource.refreshData().catch((e) => {
-      console.log('rejected during refresh', e)
-    });
+    this.dataSource.refreshData()
   }
 
   public setNTokenPortfolio(
