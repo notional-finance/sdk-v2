@@ -239,6 +239,7 @@ export default class MockSystem extends System {
     const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
     super(
       systemQueryResult,
+      9999,
       ({} as unknown) as GraphClient,
       ({} as unknown) as NotionalTypechain,
       provider,
@@ -256,7 +257,7 @@ export default class MockSystem extends System {
       this.eventEmitter,
       30000,
     );
-    this.dataSource.refreshData()
+    this.dataSource.refreshData();
   }
 
   public setNTokenPortfolio(

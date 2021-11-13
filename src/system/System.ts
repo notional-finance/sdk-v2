@@ -193,6 +193,7 @@ export default class System {
 
   constructor(
     data: SystemQueryResult,
+    chainId: number,
     private graphClient: GraphClient,
     private notionalProxy: NotionalProxy,
     private batchProvider: ethers.providers.JsonRpcBatchProvider,
@@ -217,6 +218,8 @@ export default class System {
       );
     } else {
       this.dataSource = new Cache(
+        chainId,
+        this.cashGroups,
         this.eventEmitter,
         refreshIntervalMS,
       );
@@ -243,13 +246,15 @@ export default class System {
     graphClient: GraphClient,
     notionalProxy: NotionalProxy,
     batchProvider: ethers.providers.JsonRpcBatchProvider,
-    refreshDataSource: DataSourceType,
+    chainId: number,
+    refreshDataSource,
     refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
     refreshConfigurationDataIntervalMs = DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   ) {
     const data = await graphClient.queryOrThrow<SystemQueryResult>(systemConfigurationQuery);
     return new System(
       data,
+      chainId,
       graphClient,
       notionalProxy,
       batchProvider,

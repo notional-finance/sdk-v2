@@ -19,6 +19,7 @@ import {
   INTERNAL_TOKEN_DECIMAL_PLACES,
   LOCAL_DATA_REFRESH_INTERVAL,
 } from './config/constants';
+import {DataSourceType} from './system/datasource';
 
 /* ABI imports */
 const NoteERC20ABI = require('./abi/NoteERC20.json');
@@ -62,7 +63,8 @@ export default class Notional extends TransactionBuilder {
   public static async load(
     chainId: number,
     provider: ethers.providers.Provider,
-    refreshDataInterval = DEFAULT_DATA_REFRESH_INTERVAL
+    refreshDataInterval = DEFAULT_DATA_REFRESH_INTERVAL,
+    dataSourceType = DataSourceType.Cache
   ) {
     let addresses: any;
     let graphEndpoint: string;
@@ -84,6 +86,7 @@ export default class Notional extends TransactionBuilder {
         graphEndpoint = graphEndpoints['local:http'];
         pollInterval = Number(graphEndpoints['local:poll']);
         refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
+        dataSourceType = DataSourceType.Blockchain;
         break;
       default:
         throw new Error(`Undefined chainId: ${chainId}`);
@@ -104,6 +107,8 @@ export default class Notional extends TransactionBuilder {
       graphClient,
       notionalProxy,
       signer.provider as ethers.providers.JsonRpcBatchProvider,
+      chainId,
+      dataSourceType,
       refreshDataInterval,
       DEFAULT_CONFIGURATION_REFRESH_INTERVAL
     );
