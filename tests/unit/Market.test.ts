@@ -1,23 +1,16 @@
-import {BigNumber, ethers} from 'ethers';
+import {BigNumber} from 'ethers';
 import {getNowSeconds} from '../../src/libs/utils';
 import {BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR} from '../../src/config/constants';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
-import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
+import MockSystem from '../mocks/MockSystem';
 import {System, Market} from '../../src/system';
 
 describe('Market', () => {
   const blockTime = getNowSeconds();
   const maturity = blockTime + SECONDS_IN_YEAR;
-  const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    ({} as unknown) as NotionalTypechain,
-    provider,
-  );
-  System.overrideSystem((system as unknown) as System);
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => { system.destroy(); });
 
   const getMarket = () => new Market(2, 1, maturity, 30000000000, 30 * BASIS_POINT, 50, 60 * 10, 'cDAI', 'DAI');
 

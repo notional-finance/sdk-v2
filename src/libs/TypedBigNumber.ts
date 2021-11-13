@@ -56,8 +56,8 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
   }
 
-  static fromObject(value: { type: string, hex: string, bigNumberType: BigNumberType, symbol: string}) {
-    return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol)
+  static fromObject(value: {type: string, hex: string, bigNumberType: BigNumberType, symbol: string}) {
+    return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
   }
 
   static max(a: TypedBigNumber, b: TypedBigNumber): TypedBigNumber {

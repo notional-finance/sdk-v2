@@ -163,7 +163,7 @@ export default class System {
   protected assetRate = new Map<number, AssetRate>();
   protected cashGroups = new Map<number, CashGroup>();
   protected nTokens = new Map<number, nToken>();
-  protected dataSource: DataSource;
+  public dataSource: DataSource;
 
   public get lastUpdateBlockNumber() {
     return this.dataSource.lastUpdateBlockNumber;
@@ -174,11 +174,15 @@ export default class System {
   }
 
   public static getSystem() {
-    if (!this._systemInstance) throw Error('System not initialized');
+    if (!this._systemInstance) {
+      console.log('in here', this._systemInstance)
+      throw Error('System not initialized');
+    }
     return this._systemInstance;
   }
 
   public static overrideSystem(system: System) {
+    console.log('overridden')
     // NOTE: this should only be used for testing
     this._systemInstance = system;
   }
@@ -364,7 +368,7 @@ export default class System {
       });
 
     this.eventEmitter.emit(SystemEvents.CONFIGURATION_UPDATE);
-    this.dataSource.refreshData();
+    if (this.dataSource) this.dataSource.refreshData();
   }
 
   public getNotionalProxy() {
