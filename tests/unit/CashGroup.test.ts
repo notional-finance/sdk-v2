@@ -7,21 +7,16 @@ import {
 import {CashGroup, Market, System} from '../../src/system';
 import {AssetType} from '../../src/libs/types';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
-import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
+import MockSystem from '../mocks/MockSystem';
 
 describe('Cash Group', () => {
   const blockTime = getNowSeconds();
   const fCashHaircutBasisPoints = 30 * BASIS_POINT;
   const debtBufferBasisPoints = 60 * BASIS_POINT;
-  const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    ({} as unknown) as NotionalTypechain,
-    provider,
-  );
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => { system.destroy(); });
+
   let cashGroup: CashGroup;
 
   beforeAll(() => {

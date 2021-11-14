@@ -1,12 +1,10 @@
-import {BigNumber, ethers} from 'ethers';
+import {BigNumber} from 'ethers';
 import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {Asset, Balance, AssetType} from '../../src/libs/types';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
-import GraphClient from '../../src/GraphClient';
+import MockSystem from '../mocks/MockSystem';
 import {System} from '../../src/system';
 import {getNowSeconds} from '../../src/libs/utils';
-import MockNotionalProxy from '../mocks/MockNotionalProxy';
 
 export default class MockAccountData extends AccountData {
   constructor(
@@ -23,14 +21,12 @@ export default class MockAccountData extends AccountData {
 }
 
 describe('Account Data', () => {
-  const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    MockNotionalProxy,
-    provider,
-  );
-  System.overrideSystem((system as unknown) as System);
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => {
+    system.destroy();
+  });
+
   const accountData = new MockAccountData(
     0,
     false,

@@ -3,20 +3,14 @@ import {
 } from 'ethers';
 import GraphClient from '../../src/GraphClient';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
+import MockSystem from '../mocks/MockSystem';
 import Notional from '../../src/Notional';
 import {NoteERC20} from '../../src/typechain/NoteERC20';
 import Governance from '../../src/Governance';
 
 describe('Typed Big Number', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    ({} as unknown) as NotionalTypechain,
-    provider,
-  );
+  const system = new MockSystem();
   const notional = new Notional(
     ({} as unknown) as NoteERC20,
     ({} as unknown) as GraphClient,

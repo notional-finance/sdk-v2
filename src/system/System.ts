@@ -8,18 +8,16 @@ import {
   AssetType,
   Currency,
   EthRate,
-  IncentiveFactors,
   nToken,
   SettlementMarket,
   TokenType,
 } from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 import {
-  DEFAULT_DATA_REFRESH_INTERVAL,
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
-  ETHER_CURRENCY_ID,
   RATE_PRECISION,
   NOTE_CURRENCY_ID,
+  DEFAULT_DATA_REFRESH_INTERVAL,
 } from '../config/constants';
 
 import {IAggregator} from '../typechain/IAggregator';
@@ -29,9 +27,11 @@ import {Notional as NotionalProxy} from '../typechain/Notional';
 import {ERC20} from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
 import {Market, CashGroup} from '.';
-import {AccountData} from '../account';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import NoteETHRateProvider from './NoteETHRateProvider';
+import {DataSource, DataSourceType} from './datasource';
+import Blockchain from './datasource/Blockchain';
+import Cache from './datasource/Cache';
 
 const ERC20ABI = require('../abi/ERC20.json');
 const IAggregatorABI = require('../abi/IAggregator.json');
@@ -163,17 +163,14 @@ export default class System {
   protected assetRate = new Map<number, AssetRate>();
   protected cashGroups = new Map<number, CashGroup>();
   protected nTokens = new Map<number, nToken>();
-
-  // Mutable data
-  protected _lastUpdateBlockNumber = 0;
-  protected _lastUpdateTimestamp = new Date(0);
+  public dataSource: DataSource;
 
   public get lastUpdateBlockNumber() {
-    return this._lastUpdateBlockNumber;
+    return this.dataSource.lastUpdateBlockNumber;
   }
 
   public get lastUpdateTimestamp() {
-    return this._lastUpdateTimestamp;
+    return this.dataSource.lastUpdateTimestamp;
   }
 
   public static getSystem() {
@@ -186,14 +183,6 @@ export default class System {
     this._systemInstance = system;
   }
 
-  protected ethRateData = new Map<number, BigNumber>();
-  protected assetRateData = new Map<number, BigNumber>();
-  protected nTokenAssetCashPV = new Map<number, TypedBigNumber>();
-  protected nTokenTotalSupply = new Map<number, TypedBigNumber>();
-  protected nTokenIncentiveFactors = new Map<number, IncentiveFactors>();
-  protected nTokenCashBalance = new Map<number, TypedBigNumber>();
-  protected nTokenLiquidityTokens = new Map<number, Asset[]>();
-  protected nTokenfCash = new Map<number, Asset[]>();
   protected settlementRates = new Map<string, BigNumber>();
   protected settlementMarkets = new Map<string, SettlementMarket>();
 
@@ -204,21 +193,39 @@ export default class System {
 
   constructor(
     data: SystemQueryResult,
+    chainId: number,
     private graphClient: GraphClient,
     private notionalProxy: NotionalProxy,
     private batchProvider: ethers.providers.JsonRpcBatchProvider,
-    public refreshDataIntervalMs?: number,
+    public dataSourceType: DataSourceType,
+    public refreshIntervalMS: number,
     public refreshConfigurationDataIntervalMs?: number,
   ) {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
     this.parseQueryResult(data);
-
-    if (refreshDataIntervalMs) {
-      this.dataRefreshInterval = setInterval(async () => {
-        await this.refreshData();
-      }, refreshDataIntervalMs);
+    if (dataSourceType === DataSourceType.Blockchain) {
+      this.dataSource = new Blockchain(
+        notionalProxy,
+        batchProvider,
+        this.currencies,
+        this.ethRates,
+        this.assetRate,
+        this.cashGroups,
+        this.nTokens,
+        this.eventEmitter,
+        refreshIntervalMS,
+      );
+    } else {
+      this.dataSource = new Cache(
+        chainId,
+        this.cashGroups,
+        this.eventEmitter,
+        refreshIntervalMS,
+      );
     }
+
+    this.dataRefreshInterval = this.dataSource.startRefresh();
 
     if (refreshConfigurationDataIntervalMs) {
       this.configurationRefreshInterval = setInterval(async () => {
@@ -239,16 +246,20 @@ export default class System {
     graphClient: GraphClient,
     notionalProxy: NotionalProxy,
     batchProvider: ethers.providers.JsonRpcBatchProvider,
-    refreshDataIntervalMs = DEFAULT_DATA_REFRESH_INTERVAL,
+    chainId: number,
+    refreshDataSource,
+    refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
     refreshConfigurationDataIntervalMs = DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   ) {
     const data = await graphClient.queryOrThrow<SystemQueryResult>(systemConfigurationQuery);
     return new System(
       data,
+      chainId,
       graphClient,
       notionalProxy,
       batchProvider,
-      refreshDataIntervalMs,
+      refreshDataSource,
+      refreshIntervalMS,
       refreshConfigurationDataIntervalMs,
     );
   }
@@ -358,140 +369,7 @@ export default class System {
       });
 
     this.eventEmitter.emit(SystemEvents.CONFIGURATION_UPDATE);
-    this.refreshData();
-  }
-
-  protected async refreshData() {
-    const promises = new Array<any>();
-    this.ethRates.forEach((e, k) => {
-      if (k === ETHER_CURRENCY_ID) {
-        // Set the eth rate for Ether as 1-1
-        if (!this.ethRateData.has(1)) {
-          this.ethRateData.set(k, BigNumber.from(ethers.constants.WeiPerEther));
-        }
-        return;
-      }
-
-      promises.push(
-        e.rateOracle.latestAnswer().then((r) => {
-          let rate = r;
-          if (e.mustInvert) {
-            const rateDecimals = BigNumber.from(10).pow(e.rateDecimalPlaces);
-            rate = rateDecimals.mul(rateDecimals).div(r);
-          }
-
-          const typedRate = BigNumber.from(rate);
-
-          if (!this.ethRateData.get(k)?.eq(typedRate)) {
-            this.eventEmitter.emit(SystemEvents.ETH_RATE_UPDATE, k);
-            this.ethRateData.set(k, typedRate);
-          }
-        }),
-      );
-    });
-
-    this.assetRate.forEach((a, k) => {
-      if (a.rateAdapter.address === ethers.constants.AddressZero) return;
-      // Uses static call to get a more accurate value
-      promises.push(
-        a.rateAdapter.callStatic.getExchangeRateStateful().then((r) => {
-          const rate = BigNumber.from(r);
-          if (!this.assetRateData.get(k)?.eq(rate)) {
-            this.eventEmitter.emit(SystemEvents.ASSET_RATE_UPDATE, k);
-            this.assetRateData.set(k, rate);
-          }
-        }),
-      );
-
-      if (this.cashGroups.has(k)) {
-        // It is possible to have an asset rate without a cash group (i.e. a non traded
-        // cToken asset)
-        promises.push(
-          a.rateAdapter.getAnnualizedSupplyRate().then((r) => {
-            if (this.cashGroups.get(k)!.blockSupplyRate !== r.toNumber()) {
-              this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, k);
-              this.cashGroups.get(k)!.setBlockSupplyRate(r);
-            }
-          }),
-        );
-      }
-    });
-
-    this.nTokens.forEach((n, k) => {
-      promises.push(
-        n.contract.getPresentValueAssetDenominated().then((r) => {
-          const {symbol} = this.getCurrencyById(k);
-          const pv = TypedBigNumber.from(r, BigNumberType.InternalAsset, symbol);
-
-          if (!this.nTokenAssetCashPV.get(k)?.eq(pv)) {
-            this.eventEmitter.emit(SystemEvents.NTOKEN_PV_UPDATE, k);
-            this.nTokenAssetCashPV.set(k, pv);
-          }
-        }),
-      );
-
-      promises.push(
-        this.notionalProxy
-          .connect(this.batchProvider)
-          .getNTokenAccount(n.contract.address)
-          .then((r) => {
-            const nTokenSymbol = this.nTokens.get(k)?.symbol;
-            const {symbol} = this.getCurrencyById(k);
-            if (!nTokenSymbol) throw Error(`unknown nToken ${k}`);
-            const supply = TypedBigNumber.from(r.totalSupply, BigNumberType.nToken, nTokenSymbol);
-            const cashBalance = TypedBigNumber.from(r.cashBalance, BigNumberType.InternalAsset, symbol);
-
-            if (!this.nTokenTotalSupply.get(k)?.eq(supply)) {
-              this.eventEmitter.emit(SystemEvents.NTOKEN_SUPPLY_UPDATE, k);
-              this.nTokenTotalSupply.set(k, supply);
-              this.nTokenIncentiveFactors.set(k, {
-                integralTotalSupply: r.integralTotalSupply,
-                lastSupplyChangeTime: r.lastSupplyChangeTime,
-              });
-            }
-
-            if (!this.nTokenCashBalance.get(k)?.eq(cashBalance)) {
-              this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, k);
-              this.nTokenCashBalance.set(k, cashBalance);
-            }
-          }),
-      );
-
-      promises.push(
-        this.notionalProxy.getNTokenPortfolio(n.contract.address).then((value) => {
-          const {liquidityTokens, netfCashAssets} = value;
-          this.nTokenLiquidityTokens.set(k, AccountData.parsePortfolio(liquidityTokens, this));
-          this.nTokenfCash.set(k, AccountData.parsePortfolio(netfCashAssets, this));
-          this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, k);
-        }),
-      );
-    });
-
-    this.cashGroups.forEach((c, k) => {
-      promises.push(
-        this.notionalProxy
-          .connect(this.batchProvider)
-          .getActiveMarkets(k)
-          .then((m) => {
-            m.forEach((v, i) => {
-              const hasChanged = c.markets[i].setMarket(v);
-              if (hasChanged) {
-                this.eventEmitter.emit(SystemEvents.MARKET_UPDATE, c.markets[i].marketKey);
-              }
-            });
-          }),
-      );
-    });
-
-    promises.push(
-      this.batchProvider.getBlock('latest').then((b) => {
-        this._lastUpdateBlockNumber = b.number;
-        this._lastUpdateTimestamp = new Date(b.timestamp * 1000);
-      }),
-    );
-
-    await Promise.all(promises);
-    this.eventEmitter.emit(SystemEvents.DATA_REFRESH);
+    if (this.dataSource) this.dataSource.refreshData();
   }
 
   public getNotionalProxy() {
@@ -540,7 +418,7 @@ export default class System {
 
   public getAssetRate(currencyId: number) {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
-    const assetRate = this.assetRateData.get(currencyId);
+    const assetRate = this.dataSource.assetRateData.get(currencyId);
     return {underlyingDecimalPlaces, assetRate};
   }
 
@@ -550,7 +428,7 @@ export default class System {
       return ethRateProvider.getETHRate();
     }
     const ethRateConfig = this.ethRates.get(currencyId);
-    const ethRate = this.ethRateData.get(currencyId);
+    const ethRate = this.dataSource.ethRateData.get(currencyId);
     return {ethRateConfig, ethRate};
   }
 
@@ -559,23 +437,23 @@ export default class System {
     if (nTokenAssetCashPVProvider) {
       return nTokenAssetCashPVProvider.getNTokenAssetCashPV();
     }
-    return this.nTokenAssetCashPV.get(currencyId);
+    return this.dataSource.nTokenAssetCashPV.get(currencyId);
   }
 
   public getNTokenTotalSupply(currencyId: number) {
-    return this.nTokenTotalSupply.get(currencyId);
+    return this.dataSource.nTokenTotalSupply.get(currencyId);
   }
 
   public getNTokenPortfolio(currencyId: number) {
-    const cashBalance = this.nTokenCashBalance.get(currencyId);
-    const liquidityTokens = this.nTokenLiquidityTokens.get(currencyId);
-    const fCash = this.nTokenfCash.get(currencyId);
+    const cashBalance = this.dataSource.nTokenCashBalance.get(currencyId);
+    const liquidityTokens = this.dataSource.nTokenLiquidityTokens.get(currencyId);
+    const fCash = this.dataSource.nTokenfCash.get(currencyId);
 
     return {cashBalance, liquidityTokens, fCash};
   }
 
   public getNTokenIncentiveFactors(currencyId: number) {
-    return this.nTokenIncentiveFactors.get(currencyId);
+    return this.dataSource.nTokenIncentiveFactors.get(currencyId);
   }
 
   public setETHRateProvider(currencyId: number, provider: IETHRateProvider) {
@@ -635,7 +513,7 @@ export default class System {
     if (settlementRate.underlyingDecimals.isZero()) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
-      const assetRate = this.assetRateData.get(currencyId);
+      const assetRate = this.dataSource.assetRateData.get(currencyId);
       const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
       if (!assetRate || !underlyingDecimalPlaces) throw new Error(`Asset rate data for ${currencyId} is not found`);
 

@@ -1,138 +1,13 @@
 import {BigNumber, ethers} from 'ethers';
-import {System, CashGroup, Market} from '../../src/system';
-import {getNowSeconds} from '../../src/libs/utils';
-import {SECONDS_IN_YEAR} from '../../src/config/constants';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import {System} from '../../src/system';
+import TypedBigNumber from '../../src/libs/TypedBigNumber';
 import {Asset} from '../../src/libs/types';
+import GraphClient from '../../src/GraphClient';
+import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
+import {DataSourceType} from '../../src/system/datasource';
+import MockCache from './MockCache';
 
-export default class MockSystem extends System {
-  protected async refreshData() {
-    this.ethRates.forEach((_, k) => {
-      if (k === 1) {
-        this.ethRateData.set(k, BigNumber.from(ethers.constants.WeiPerEther));
-      } else {
-        const r = BigNumber.from(ethers.constants.WeiPerEther).div(100);
-        this.ethRateData.set(k, r);
-      }
-    });
-
-    this.assetRate.forEach((a, k) => {
-      if (a.rateAdapter.address === ethers.constants.AddressZero) return;
-      // Uses static call to get a more accurate value
-      let r: BigNumber;
-      if (k === 1 || k === 2) {
-        r = BigNumber.from('200000000000000000000000000');
-      } else if (k === 3 || k === 4) {
-        r = BigNumber.from('200000000000000');
-      } else {
-        r = BigNumber.from('20000000000000000');
-      }
-      this.assetRateData.set(k, r);
-
-      const supplyRate = BigNumber.from(0.05e9);
-      this.cashGroups.get(k)!.setBlockSupplyRate(supplyRate);
-    });
-
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    this.nTokens.forEach((_, k) => {
-      const {symbol} = this.getCurrencyById(k);
-      const nTokenSymbol = this.nTokens.get(k)?.symbol;
-      if (nTokenSymbol) {
-        const pv = TypedBigNumber.from(ethers.constants.WeiPerEther, BigNumberType.InternalAsset, symbol);
-        const supply = TypedBigNumber.from(
-          ethers.constants.WeiPerEther.mul(2),
-          BigNumberType.nToken,
-          nTokenSymbol,
-        );
-        this.nTokenAssetCashPV.set(k, pv);
-        this.nTokenTotalSupply.set(k, supply);
-        this.nTokenIncentiveFactors.set(k, {
-          integralTotalSupply: BigNumber.from(0),
-          lastSupplyChangeTime: BigNumber.from(getNowSeconds() - SECONDS_IN_YEAR),
-        });
-        this.nTokenCashBalance.set(k, pv);
-        this.nTokenLiquidityTokens.set(k, []);
-        this.nTokenfCash.set(k, []);
-      }
-    });
-
-    this.cashGroups.forEach((c, k) => {
-      const lastImpliedRate = BigNumber.from(0.1e9);
-      const oracleRate = BigNumber.from(0.09e9);
-      const v = {
-        totalAssetCash: BigNumber.from(5000e8),
-        totalLiquidity: BigNumber.from(5000e8),
-        totalfCash: BigNumber.from(100e8),
-        previousTradeTime: BigNumber.from(getNowSeconds() - 60 * 5),
-        lastImpliedRate,
-        oracleRate,
-      };
-      const markets = new Array<Market>();
-      const tRef = CashGroup.getTimeReference(getNowSeconds());
-      const currency = this.getCurrencyById(k);
-
-      for (let i = 1; i <= 2; i += 1) {
-        const market = new Market(
-          1,
-          i,
-          CashGroup.getMaturityForMarketIndex(i, tRef),
-          10,
-          c.totalFeeBasisPoints,
-          c.reserveFeeSharePercent,
-          c.rateOracleTimeWindowSeconds,
-          currency.symbol,
-          currency.underlyingSymbol || currency.symbol,
-        );
-
-        market.setMarket(v);
-        markets.push(market);
-      }
-      // eslint-disable-next-line no-param-reassign
-      c.markets = markets;
-    });
-    /* eslint-enable @typescript-eslint/no-unused-vars */
-  }
-
-  public setNTokenPortfolio(
-    currencyId: number,
-    cashBalance: TypedBigNumber,
-    pv: TypedBigNumber,
-    totalSupply: TypedBigNumber,
-    liquidityTokens: Asset[],
-    fCash: Asset[],
-  ) {
-    this.nTokenCashBalance.set(currencyId, cashBalance);
-    this.nTokenLiquidityTokens.set(currencyId, liquidityTokens);
-    this.nTokenfCash.set(currencyId, fCash);
-    this.nTokenAssetCashPV.set(currencyId, pv);
-    this.nTokenTotalSupply.set(currencyId, totalSupply);
-  }
-
-  public setSettlementRate(
-    currencyId: number,
-    maturity: number,
-    rate: BigNumber,
-  ) {
-    const key = `${currencyId}:${maturity}`;
-    this.settlementRates.set(key, rate);
-  }
-
-  public setSettlementMarket(
-    currencyId: number,
-    maturity: number,
-    market: {
-      settlementDate: number,
-      totalfCash: TypedBigNumber,
-      totalAssetCash: TypedBigNumber,
-      totalLiquidity: TypedBigNumber
-    },
-  ) {
-    const key = `${currencyId}:${market.settlementDate}:${maturity}`;
-    this.settlementMarkets.set(key, market);
-  }
-}
-
-export const systemQueryResult = {
+const systemQueryResult = {
   currencies: [
     {
       assetExchangeRate: {
@@ -358,3 +233,68 @@ export const systemQueryResult = {
     },
   ],
 };
+
+export default class MockSystem extends System {
+  constructor() {
+    const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
+    super(
+      systemQueryResult,
+      9999,
+      ({} as unknown) as GraphClient,
+      ({} as unknown) as NotionalTypechain,
+      provider,
+      DataSourceType.Cache,
+      30000,
+    );
+    this.dataSource = new MockCache(
+      ({} as unknown) as NotionalTypechain,
+      provider,
+      this.currencies,
+      this.ethRates,
+      this.assetRate,
+      this.cashGroups,
+      this.nTokens,
+      this.eventEmitter,
+      30000,
+    );
+    this.dataSource.refreshData();
+  }
+
+  public setNTokenPortfolio(
+    currencyId: number,
+    cashBalance: TypedBigNumber,
+    pv: TypedBigNumber,
+    totalSupply: TypedBigNumber,
+    liquidityTokens: Asset[],
+    fCash: Asset[],
+  ) {
+    this.dataSource.nTokenCashBalance.set(currencyId, cashBalance);
+    this.dataSource.nTokenLiquidityTokens.set(currencyId, liquidityTokens);
+    this.dataSource.nTokenfCash.set(currencyId, fCash);
+    this.dataSource.nTokenAssetCashPV.set(currencyId, pv);
+    this.dataSource.nTokenTotalSupply.set(currencyId, totalSupply);
+  }
+
+  public setSettlementRate(
+    currencyId: number,
+    maturity: number,
+    rate: BigNumber,
+  ) {
+    const key = `${currencyId}:${maturity}`;
+    this.settlementRates.set(key, rate);
+  }
+
+  public setSettlementMarket(
+    currencyId: number,
+    maturity: number,
+    market: {
+      settlementDate: number,
+      totalfCash: TypedBigNumber,
+      totalAssetCash: TypedBigNumber,
+      totalLiquidity: TypedBigNumber
+    },
+  ) {
+    const key = `${currencyId}:${market.settlementDate}:${maturity}`;
+    this.settlementMarkets.set(key, market);
+  }
+}

@@ -1,26 +1,18 @@
 import {BigNumber, ethers} from 'ethers';
 import {getNowSeconds} from '../../src/libs/utils';
 import {RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR} from '../../src/config/constants';
-import GraphClient from '../../src/GraphClient';
 import {System, NTokenValue, CashGroup} from '../../src/system';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
+import MockSystem from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
-import MockNotionalProxy from '../mocks/MockNotionalProxy';
 
 describe('nToken value', () => {
-  let system: System;
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => { system.destroy(); });
 
-  beforeEach(() => {
-    // This provider is not used, it's just a dummy
-    const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-    system = new MockSystem(
-      systemQueryResult,
-      ({} as unknown) as GraphClient,
-      MockNotionalProxy,
-      provider,
-    );
-    System.overrideSystem(system);
+  beforeAll(async () => {
+    system.dataSource.refreshData().catch((e) => console.log('on rejected outside', e));
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const cashGroup = system.getCashGroup(2);
     cashGroup.markets[0].setMarket({
