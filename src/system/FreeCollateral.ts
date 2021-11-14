@@ -1,4 +1,4 @@
-import {System} from '.';
+import {System, Market} from '.';
 import {AccountData} from '../account';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
@@ -37,13 +37,20 @@ export default class FreeCollateral {
     let netETHDebtWithBuffer = FreeCollateral.getZeroUnderlying(ETH);
 
     account.accountBalances.forEach((b) => {
-      const value = FreeCollateral.netCurrencyAvailable(
+      const {nTokenValue, liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCurrencyComponents(
         b.currencyId,
         b.cashBalance,
         b.nTokenBalance,
         account.portfolio,
         blockTime,
       );
+
+      // calculates the net value underlying
+      const value = b.cashBalance.toUnderlying()
+        .add(nTokenValue)
+        .add(liquidityTokenUnderlyingPV)
+        .add(fCashUnderlyingPV);
+
       netUnderlyingAvailable.set(b.currencyId, value);
 
       if (value.isNegative()) {
@@ -62,29 +69,6 @@ export default class FreeCollateral {
       netETHCollateral,
       netUnderlyingAvailable,
     };
-  }
-
-  private static netCurrencyAvailable(
-    currencyId: number,
-    assetCashBalanceInternal: TypedBigNumber,
-    nTokenBalance: TypedBigNumber | undefined,
-    portfolio: Asset[],
-    blockTime = getNowSeconds(),
-  ): TypedBigNumber {
-    const {nTokenValue, liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCurrencyComponents(
-      currencyId,
-      assetCashBalanceInternal,
-      nTokenBalance,
-      portfolio,
-      blockTime,
-    );
-
-    // TypedBigNumber will ensure these are all in internal underlying
-    return assetCashBalanceInternal
-      .toUnderlying()
-      .add(nTokenValue)
-      .add(liquidityTokenUnderlyingPV)
-      .add(fCashUnderlyingPV);
   }
 
   /**
@@ -139,11 +123,19 @@ export default class FreeCollateral {
    * @param currencyId
    * @param portfolio
    * @param blockTime
+   * @param marketOverrides can be used to simulate different markets
+   * @param haircut can be set to false to simulate ntoken portfolio
    * @returns
    *  - liquidityTokenUnderlyingPV: present value of the liquidity token
    *  - fCashUnderlyingPV: present value of the underlying fcash
    */
-  public static getCashGroupValue(currencyId: number, portfolio: Asset[], blockTime = getNowSeconds()) {
+  public static getCashGroupValue(
+    currencyId: number,
+    portfolio: Asset[],
+    blockTime = getNowSeconds(),
+    marketOverrides?: Market[],
+    haircut = useHaircut,
+  ) {
     const system = System.getSystem();
     // This creates a copy of the assets so that we can modify it in memory
     const currencyAssets = portfolio.filter((a) => a.currencyId === currencyId).slice();
@@ -158,7 +150,13 @@ export default class FreeCollateral {
         .filter((a) => a.assetType !== AssetType.fCash)
         .reduce((underlyingPV, lt) => {
           // eslint-disable-next-line prefer-const
-          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, useHaircut);
+          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(
+            lt.assetType,
+            lt.notional,
+            haircut,
+            marketOverrides,
+          );
+
           const index = currencyAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
           if (index > -1) {
             // net off fCash if it exists
@@ -173,8 +171,9 @@ export default class FreeCollateral {
           const fCashHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
             lt.maturity,
             fCashClaim,
-            useHaircut,
+            haircut,
             blockTime,
+            marketOverrides,
           );
           return underlyingPV.add(fCashHaircutPV).add(assetCashClaim.toUnderlying());
         }, liquidityTokenUnderlyingPV);
@@ -183,7 +182,7 @@ export default class FreeCollateral {
       fCashUnderlyingPV = currencyAssets
         .filter((a) => a.assetType === AssetType.fCash)
         .reduce((underlyingPV, a) => underlyingPV.add(
-          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, useHaircut, blockTime),
+          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, haircut, blockTime),
         ), fCashUnderlyingPV);
     }
 
