@@ -50,6 +50,35 @@ export default class Cache extends DataSource {
 
   async refreshData() {
     const parsedObject = JSON.parse(await this.getCacheData(), this.parseMap);
+
+    parsedObject.cashGroups.forEach((value: any, key: number) => {
+      const currentCashGroup = this.cashGroups.get(key);
+      if (!currentCashGroup) throw Error(`Configuration mismatch during refresh for cash group ${key}`);
+      /* eslint-disable no-underscore-dangle */
+      const newBlockSupplyRate = BigNumber.from(value._blockSupplyRate);
+
+      if (currentCashGroup.blockSupplyRate !== newBlockSupplyRate.toNumber()) {
+        this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, key);
+        currentCashGroup.setBlockSupplyRate(newBlockSupplyRate);
+      }
+
+      value.markets.forEach((m, i) => {
+        const marketValue = {
+          totalfCash: BigNumber.from(m._market.totalfCash),
+          totalAssetCash: BigNumber.from(m._market.totalAssetCash),
+          totalLiquidity: BigNumber.from(m._market.totalLiquidity),
+          lastImpliedRate: BigNumber.from(m._market.lastImpliedRate),
+          oracleRate: BigNumber.from(m._market.oracleRate),
+          previousTradeTime: BigNumber.from(m._market.previousTradeTime),
+        };
+        const hasChanged = currentCashGroup.markets[i].setMarket(marketValue);
+        if (hasChanged) {
+          this.eventEmitter.emit(SystemEvents.MARKET_UPDATE, currentCashGroup.markets[i].marketKey);
+        }
+      /* eslint-enable no-underscore-dangle */
+      });
+    });
+
     parsedObject.ethRateData.forEach((value: any, key: number) => {
       this.ethRateData.set(key, BigNumber.from(value));
       this.eventEmitter.emit(SystemEvents.ETH_RATE_UPDATE, key);
