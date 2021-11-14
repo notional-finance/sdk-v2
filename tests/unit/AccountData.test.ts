@@ -185,4 +185,15 @@ describe('Account Data', () => {
       done();
     });
   });
+
+  describe.only('loan to value ratio', () => {
+    it('no debt', () => {
+      const {totalETHDebts, ltv} = accountData.loanToValueRatio()
+      expect(totalETHDebts.isZero()).toBeTruthy()
+      expect(ltv).toBe(0)
+    })
+
+    // todo more tests
+
+  })
 });

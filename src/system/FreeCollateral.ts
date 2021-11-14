@@ -415,18 +415,20 @@ export default class FreeCollateral {
   }
 
   /**
-   * Calculates a collateral ratio as a percentage
+   * Calculates a collateral ratio as a percentage. Collateral ratios can be null if ETH debt is zero. If using
+   * buffered and haircut values then collateral ratios are liquidatable when they are below 100. There is no
+   * upper bound to a collateral ratio figure. Collateral ratios use net debt values.
    *
-   * @param netETHCollateralWithHaircut
+   * @param netETHCollateral
    * @param netETHDebt
    * @returns collateral ratio scaled by 100 as a number
    */
-  public static calculateCollateralRatio(netETHCollateralWithHaircut: TypedBigNumber, netETHDebt: TypedBigNumber) {
+  public static calculateCollateralRatio(netETHCollateral: TypedBigNumber, netETHDebt: TypedBigNumber) {
     if (netETHDebt.isZero()) return null;
-    netETHCollateralWithHaircut.check(BigNumberType.InternalUnderlying, 'ETH');
+    netETHCollateral.check(BigNumberType.InternalUnderlying, 'ETH');
     netETHDebt.check(BigNumberType.InternalUnderlying, 'ETH');
 
-    const collateralRatioNumber = netETHCollateralWithHaircut.scale(INTERNAL_TOKEN_PRECISION, netETHDebt.n).toNumber();
+    const collateralRatioNumber = netETHCollateral.scale(INTERNAL_TOKEN_PRECISION, netETHDebt.n).toNumber();
     return (collateralRatioNumber / INTERNAL_TOKEN_PRECISION) * 100;
   }
 }

@@ -1,9 +1,11 @@
 import {BigNumber, utils} from 'ethers';
-import {MAX_BALANCES, MAX_BITMAP_ASSETS, MAX_PORTFOLIO_ASSETS} from '../config/constants';
+import {
+  INTERNAL_TOKEN_PRECISION, MAX_BALANCES, MAX_BITMAP_ASSETS, MAX_PORTFOLIO_ASSETS,
+} from '../config/constants';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {Asset, AssetType, Balance} from '../libs/types';
 import {assetTypeNum, convertAssetType, getNowSeconds} from '../libs/utils';
-import {System, CashGroup} from '../system';
+import {System, CashGroup, FreeCollateral} from '../system';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -205,6 +207,105 @@ export default class AccountData {
 
     // Do this to ensure that there is a balance slot set for the asset
     this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, symbol));
+  }
+
+  /**
+   * Calculates loan to value ratio. A loan to value ratio is the total value of debts in ETH divided by
+   * the total value of collateral in ETH. It does not use any net currency values.
+   */
+  public loanToValueRatio() {
+    const system = System.getSystem();
+    // All values in this method are denominated in ETH
+
+    /* eslint-disable @typescript-eslint/no-shadow */
+    /* eslint-disable no-param-reassign */
+    const {
+      cashDebts,
+      cashAssets,
+    } = this.accountBalances.reduce(({cashDebts, cashAssets}, b) => {
+      if (b.cashBalance.isNegative()) {
+        cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
+      } else if (b.cashBalance.isPositive()) {
+        cashAssets = cashDebts.add(b.cashBalance.toETH(false));
+      }
+
+      if (b.nTokenBalance?.isPositive()) {
+        cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
+      }
+
+      return {cashDebts, cashAssets};
+    }, {
+      cashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+    });
+
+    const {
+      fCashDebts,
+      fCashAssets,
+      cashClaims,
+    } = this.portfolio.reduce(({fCashDebts, fCashAssets, cashClaims}, a) => {
+      const cashGroup = system.getCashGroup(a.currencyId);
+      let fCashNotional: TypedBigNumber;
+      if (a.assetType !== AssetType.fCash) {
+        const {
+          fCashClaim,
+          assetCashClaim,
+        } = cashGroup.getLiquidityTokenValue(a.assetType, a.notional, false);
+        cashClaims = cashClaims.add(assetCashClaim.toETH(false));
+        fCashNotional = fCashClaim;
+      } else {
+        fCashNotional = a.notional;
+      }
+
+      const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, fCashNotional, false).toETH(false);
+      if (ethPV.isPositive()) {
+        fCashAssets = fCashAssets.add(ethPV);
+      } else {
+        fCashDebts = fCashDebts.add(ethPV.abs());
+      }
+      return {fCashDebts, fCashAssets, cashClaims};
+    }, {
+      fCashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
+      fCashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashClaims: TypedBigNumber.fromBalance(0, 'ETH', true),
+    });
+    /* eslint-enable @typescript-eslint/no-shadow */
+    /* eslint-enable no-param-reassign */
+
+    const totalETHValue = cashAssets.add(fCashAssets).add(cashClaims);
+    const totalETHDebts = cashDebts.add(fCashDebts);
+    const ltv = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
+      / INTERNAL_TOKEN_PRECISION) * 100;
+
+    return {
+      totalETHDebts,
+      totalETHValue,
+      ltv,
+    };
+  }
+
+  /**
+   * Calculates a collateral ratio, this uses the net value of currencies in the free collateral figure without
+   * applying any buffers or haircuts. This is used as a user friendly way of showing free collateral.
+   */
+  public collateralRatio() {
+    const {
+      netETHCollateral,
+      netETHDebt,
+    } = FreeCollateral.getFreeCollateral(this);
+    return FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
+  }
+
+  /**
+   * Calculates a buffered collateral ratio, this uses the net value of currencies in the free collateral figure
+   * after applying buffers and haircuts. An account is liquidatable when this is below 100.
+   */
+  public bufferedCollateralRatio() {
+    const {
+      netETHCollateralWithHaircut,
+      netETHDebtWithBuffer,
+    } = FreeCollateral.getFreeCollateral(this);
+    return FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer);
   }
 
   private static _updateBalance(
