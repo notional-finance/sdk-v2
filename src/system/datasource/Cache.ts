@@ -7,7 +7,7 @@ import {SystemEvents} from '../System';
 import CashGroup from '../CashGroup';
 
 export default class Cache extends DataSource {
-  private cacheURL: string;
+  private cacheURL: string | null;
 
   constructor(
     chainId: number,
@@ -21,11 +21,11 @@ export default class Cache extends DataSource {
         this.cacheURL = 'https://api.notional.finance/v1/system';
         break;
       case 42:
-        this.cacheURL = 'https://kovan.api.notional.finance/v1/system';
+        this.cacheURL = 'http://kovan.api.notional.finance/v1/system';
         break;
       case 9999:
         // This is used to bypass the error during mocks
-        this.cacheURL = '';
+        this.cacheURL = null;
         break;
       default:
         throw Error('Unknown cache url');
@@ -43,12 +43,14 @@ export default class Cache extends DataSource {
   }
 
   async getCacheData(): Promise<any> {
+    if (this.cacheURL === null) return '{}';
     const result = await fetch(this.cacheURL);
     if (result.status >= 400) throw Error(`Error from cache server ${this.cacheURL}`);
     return result.text();
   }
 
   async refreshData() {
+    if (this.cacheURL === null) return;
     const parsedObject = JSON.parse(await this.getCacheData(), this.parseMap);
 
     parsedObject.cashGroups.forEach((value: any, key: number) => {

@@ -14,8 +14,8 @@ import {SystemEvents} from './system/System';
 import TransactionBuilder from './TransactionBuilder';
 import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
 import {
+  CACHE_DATA_REFRESH_INTERVAL,
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
-  DEFAULT_DATA_REFRESH_INTERVAL,
   INTERNAL_TOKEN_DECIMAL_PLACES,
   LOCAL_DATA_REFRESH_INTERVAL,
 } from './config/constants';
@@ -63,7 +63,7 @@ export default class Notional extends TransactionBuilder {
   public static async load(
     chainId: number,
     provider: ethers.providers.Provider,
-    refreshDataInterval = DEFAULT_DATA_REFRESH_INTERVAL,
+    refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
     dataSourceType = DataSourceType.Cache
   ) {
     let addresses: any;

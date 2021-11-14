@@ -14,6 +14,8 @@ export const SECONDS_IN_QUARTER = 90 * SECONDS_IN_DAY;
 export const SECONDS_IN_YEAR = SECONDS_IN_QUARTER * 4;
 // 15 seconds for underlying data on local
 export const LOCAL_DATA_REFRESH_INTERVAL = 15 * 1000;
+// 15 seconds when using the cache
+export const CACHE_DATA_REFRESH_INTERVAL = 15 * 1000;
 // 3 min for underlying data on chain
 export const DEFAULT_DATA_REFRESH_INTERVAL = 180 * 1000;
 // 30 minutes for configuration data

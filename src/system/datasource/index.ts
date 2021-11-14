@@ -28,6 +28,8 @@ export abstract class DataSource {
   ) {}
 
   startRefresh() {
+    // Kick off the initial refresh of data
+    this.refreshData();
     return setInterval(async () => {
       await this.refreshData();
     }, this.refreshIntervalMS);
