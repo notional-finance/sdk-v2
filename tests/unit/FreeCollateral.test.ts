@@ -7,7 +7,7 @@ import {SECONDS_IN_MONTH} from '../../src/config/constants';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
 import {getNowSeconds} from '../../src/libs/utils';
-import MockAccountData from './AccountData.test';
+import MockAccountData from '../mocks/MockAccountData';
 import {AccountData} from '../../src/account';
 import {IAggregator} from '../../src/typechain/IAggregator';
 

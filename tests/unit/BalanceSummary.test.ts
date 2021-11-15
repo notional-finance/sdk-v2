@@ -5,7 +5,7 @@ import {getNowSeconds} from '../../src/libs/utils';
 import {BalanceSummary} from '../../src/account';
 import {SECONDS_IN_DAY} from '../../src/config/constants';
 import MockSystem from '../mocks/MockSystem';
-import MockAccountData from './AccountData.test';
+import MockAccountData from '../mocks/MockAccountData';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {System} from '../../src/system';
 

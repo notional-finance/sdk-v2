@@ -1,24 +1,11 @@
 import {BigNumber} from 'ethers';
 import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {Asset, Balance, AssetType} from '../../src/libs/types';
+import {AssetType} from '../../src/libs/types';
 import MockSystem from '../mocks/MockSystem';
 import {System} from '../../src/system';
 import {getNowSeconds} from '../../src/libs/utils';
-
-export default class MockAccountData extends AccountData {
-  constructor(
-    public nextSettleTime: number,
-    public hasCashDebt: boolean,
-    public hasAssetDebt: boolean,
-    public bitmapCurrencyId: number | undefined,
-    public accountBalances: Balance[],
-    public portfolio: Asset[],
-    public isCopy: boolean,
-  ) {
-    super(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, accountBalances, portfolio, isCopy);
-  }
-}
+import MockAccountData from '../mocks/MockAccountData';
 
 describe('Account Data', () => {
   const system = new MockSystem();
