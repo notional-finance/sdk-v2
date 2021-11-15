@@ -12,12 +12,6 @@ const useInternal = true;
 const ETH = ETHER_CURRENCY_ID;
 
 export default class FreeCollateral {
-  private static getZeroUnderlying(currencyId: number) {
-    const system = System.getSystem();
-    const underlyingSymbol = system.getUnderlyingSymbol(currencyId);
-    return TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
-  }
-
   /**
    * Returns components of the free collateral figure
    * @param account
@@ -31,10 +25,10 @@ export default class FreeCollateral {
    */
   public static getFreeCollateral(account: AccountData, blockTime = getNowSeconds()) {
     const netUnderlyingAvailable = new Map<number, TypedBigNumber>();
-    let netETHCollateralWithHaircut = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHCollateral = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHDebt = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHDebtWithBuffer = FreeCollateral.getZeroUnderlying(ETH);
+    let netETHCollateralWithHaircut = TypedBigNumber.getZeroUnderlying(ETH);
+    let netETHCollateral = TypedBigNumber.getZeroUnderlying(ETH);
+    let netETHDebt = TypedBigNumber.getZeroUnderlying(ETH);
+    let netETHDebtWithBuffer = TypedBigNumber.getZeroUnderlying(ETH);
 
     account.accountBalances.forEach((b) => {
       const {nTokenValue, liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCurrencyComponents(
@@ -139,8 +133,8 @@ export default class FreeCollateral {
     const system = System.getSystem();
     // This creates a copy of the assets so that we can modify it in memory
     const currencyAssets = portfolio.filter((a) => a.currencyId === currencyId).slice();
-    let liquidityTokenUnderlyingPV = FreeCollateral.getZeroUnderlying(currencyId);
-    let fCashUnderlyingPV = FreeCollateral.getZeroUnderlying(currencyId);
+    let liquidityTokenUnderlyingPV = TypedBigNumber.getZeroUnderlying(currencyId);
+    let fCashUnderlyingPV = TypedBigNumber.getZeroUnderlying(currencyId);
 
     if (currencyAssets.length > 0) {
       const cashGroup = system.getCashGroup(currencyId);
@@ -232,7 +226,7 @@ export default class FreeCollateral {
 
     const collateralNetAvailable = (
       netUnderlyingAvailable.get(collateralCurrencyId)
-      || FreeCollateral.getZeroUnderlying(collateralCurrencyId)
+      || TypedBigNumber.getZeroUnderlying(collateralCurrencyId)
     );
 
     let {minCollateral, targetCollateral} = FreeCollateral.calculateTargetCollateral(
@@ -255,13 +249,13 @@ export default class FreeCollateral {
 
       minCollateralCopy.updateBalance(
         collateralCurrencyId,
-        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        TypedBigNumber.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
         minCollateral,
       );
 
       targetCollateralCopy.updateBalance(
         collateralCurrencyId,
-        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        TypedBigNumber.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
         targetCollateral,
       );
     } else {
@@ -312,7 +306,7 @@ export default class FreeCollateral {
     } {
     // Minimum required ratio has multiplier of 1
     const minEthRequired = netETHCollateralWithHaircut.gte(netETHDebtWithBuffer)
-      ? FreeCollateral.getZeroUnderlying(ETH)
+      ? TypedBigNumber.getZeroUnderlying(ETH)
       : netETHDebtWithBuffer.sub(netETHCollateralWithHaircut);
 
     // Scale the netETHDebt with buffer to the buffered ratio and remove any existing collateral we have
@@ -320,14 +314,14 @@ export default class FreeCollateral {
 
     // Cannot require negative ETH
     if (targetEthRequired.isNegative()) {
-      targetEthRequired = FreeCollateral.getZeroUnderlying(ETH);
+      targetEthRequired = TypedBigNumber.getZeroUnderlying(ETH);
     }
 
     if (minEthRequired.isZero() && targetEthRequired.isZero()) {
       // If this is the case then the account is sufficiently collateralized
       return {
-        minCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
-        targetCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
+        minCollateral: TypedBigNumber.getZeroUnderlying(collateralCurrencyId),
+        targetCollateral: TypedBigNumber.getZeroUnderlying(collateralCurrencyId),
       };
     }
 
@@ -389,7 +383,7 @@ export default class FreeCollateral {
 
     // It's possible that no collateral payment is required due to other collateral
     if (collateralDebtPayment.isNegative()) {
-      return FreeCollateral.getZeroUnderlying(collateralCurrencyId);
+      return TypedBigNumber.getZeroUnderlying(collateralCurrencyId);
     }
 
     if (collateralDebtPayment.lt(collateralDebtETH)) {

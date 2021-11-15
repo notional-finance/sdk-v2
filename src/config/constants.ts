@@ -29,6 +29,8 @@ export const SECONDS_PER_BLOCK = 13;
 // This value is not actually stored in the smart contract system, we use it here
 // to ensure that we do not clash with any other currency ids
 export const NOTE_CURRENCY_ID = 2 ** 32 - 1;
+export const MAX_INTEREST_RATE = 0.18e9;
+export const MIN_INTEREST_RATE = 0;
 
 export function secondsPerBlock(chainId: number) {
   switch (chainId) {

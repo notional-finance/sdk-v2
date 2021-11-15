@@ -27,6 +27,12 @@ class TypedBigNumber {
     }
   }
 
+  static getZeroUnderlying(currencyId: number) {
+    const system = System.getSystem();
+    const underlyingSymbol = system.getUnderlyingSymbol(currencyId);
+    return new TypedBigNumber(BigNumber.from(0), BigNumberType.InternalUnderlying, underlyingSymbol);
+  }
+
   static getType(symbol: string, isInternal: boolean) {
     if (symbol === 'NOTE') {
       return BigNumberType.NOTE;
