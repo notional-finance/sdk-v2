@@ -48,6 +48,13 @@ export default class Market {
     return this.market.totalLiquidity.toDisplayString();
   }
 
+  public get fCashUtilization(): number {
+    return this.market.totalfCash.scale(
+      RATE_PRECISION,
+      this.market.totalfCash.add(this.market.totalAssetCash.toUnderlying()).n,
+    ).toNumber() / RATE_PRECISION;
+  }
+
   public get hasLiquidity(): boolean {
     return !this.market.totalLiquidity.isZero();
   }
@@ -345,18 +352,21 @@ export default class Market {
     );
 
     const expValue = ((simulatedExchangeRate - rateAnchor.toNumber()) * rateScalar.toNumber()) / RATE_PRECISION;
-    const exp = Math.exp(expValue);
+    const exp = Math.exp(expValue / RATE_PRECISION);
     const simulatedProportion = Math.floor((exp / (1 + exp)) * RATE_PRECISION);
 
     // Rough avg, todo: why?
-    const tradedExchangeRate = currentExchangeRate + (simulatedExchangeRate - currentExchangeRate) / 2;
+    const tradedExchangeRate = Math.floor(currentExchangeRate + (simulatedExchangeRate - currentExchangeRate) / 2);
+    const cashAmountToTradeDenom = Math.floor(tradedExchangeRate
+      // Multiply by RATE_PRECISION to bring denomination back to 1e9
+      + ((simulatedProportion / (RATE_PRECISION - simulatedProportion)) * RATE_PRECISION));
 
     // Calculate the amount of cash required to trade the market to the given interest rate
     const cashAmountToTradeNum = this._market.totalfCash.scale(
       simulatedProportion,
       RATE_PRECISION - simulatedProportion,
     ).sub(this._market.totalfCash);
-    const cashAmountToTradeDenom = tradedExchangeRate + (simulatedProportion / (RATE_PRECISION - simulatedProportion));
+
     const cashAmountToTrade = cashAmountToTradeNum.scale(RATE_PRECISION, cashAmountToTradeDenom);
     const fCashAmountToTrade = Market.fCashFromExchangeRate(tradedExchangeRate, cashAmountToTrade);
     const totalfCash = this._market.totalfCash.add(fCashAmountToTrade);
