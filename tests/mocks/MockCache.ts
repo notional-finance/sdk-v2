@@ -76,7 +76,7 @@ export default class MockCache extends Blockchain {
           1,
           i,
           CashGroup.getMaturityForMarketIndex(i, tRef),
-          10,
+          c.rateScalars[i - 1],
           c.totalFeeBasisPoints,
           c.reserveFeeSharePercent,
           c.rateOracleTimeWindowSeconds,

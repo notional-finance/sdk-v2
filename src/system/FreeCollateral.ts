@@ -176,7 +176,13 @@ export default class FreeCollateral {
       fCashUnderlyingPV = currencyAssets
         .filter((a) => a.assetType === AssetType.fCash)
         .reduce((underlyingPV, a) => underlyingPV.add(
-          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, haircut, blockTime),
+          cashGroup.getfCashPresentValueUnderlyingInternal(
+            a.maturity,
+            a.notional,
+            haircut,
+            blockTime,
+            marketOverrides
+          ),
         ), fCashUnderlyingPV);
     }
 
