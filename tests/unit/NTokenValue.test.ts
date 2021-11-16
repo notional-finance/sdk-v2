@@ -1,12 +1,15 @@
 import {BigNumber, ethers} from 'ethers';
 import {getNowSeconds} from '../../src/libs/utils';
-import {RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR} from '../../src/config/constants';
+import {
+  NOTE_CURRENCY_ID, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
+} from '../../src/config/constants';
 import GraphClient from '../../src/GraphClient';
 import {System, NTokenValue, CashGroup} from '../../src/system';
 import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
 import MockNotionalProxy from '../mocks/MockNotionalProxy';
+import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
 
 describe('nToken value', () => {
   let system: System;
@@ -144,6 +147,8 @@ describe('nToken value', () => {
   });
 
   it('calculates the nToken incentive yield', () => {
+    const priceProvider = system.getETHProvider(NOTE_CURRENCY_ID) as NoteETHRateProvider;
+    priceProvider.noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
     const incentiveYield = NTokenValue.getNTokenIncentiveYield(2);
     // Underlying PV is 200,000e8, token value is 175,000e8 per annum
     // Incentive rate should be ~87.5%

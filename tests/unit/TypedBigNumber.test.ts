@@ -8,6 +8,8 @@ import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import Notional from '../../src/Notional';
 import {NoteERC20} from '../../src/typechain/NoteERC20';
 import Governance from '../../src/Governance';
+import {NOTE_CURRENCY_ID} from '../../src/config/constants';
+import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
 
 describe('Typed Big Number', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
@@ -179,9 +181,12 @@ describe('Typed Big Number', () => {
     expect(ethValue.toString()).toEqual(BigNumber.from(-0.0105e8).toString());
   });
 
-  it('converts to NOTE to other currencies', () => {
+  it('converts to NOTE to other currencies', (done) => {
     const noteTokens = TypedBigNumber.fromBalance(1e8, 'NOTE', true);
+    const priceProvider = system.getETHProvider(NOTE_CURRENCY_ID) as NoteETHRateProvider;
+    priceProvider.noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
     expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0175e8).toString());
     expect(noteTokens.toETH(false).fromETH(3).toString()).toEqual(BigNumber.from(1.75e8).toString());
+    setTimeout(() => { done(); }, 500);
   });
 });
