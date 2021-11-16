@@ -182,8 +182,9 @@ export default class BalanceSummary {
     public nTokenYield: number,
     public nTokenTotalYield: number,
     public maxWithdrawValueAssetCash: TypedBigNumber,
-    system: System,
+    public maxBorrowCapacity: TypedBigNumber,
   ) {
+    const system = System.getSystem();
     this.currency = system.getCurrencyById(this.currencyId);
     this.nToken = system.getNToken(this.currencyId);
   }
@@ -410,7 +411,7 @@ export default class BalanceSummary {
             nTokenTradingYield,
             nTokenTotalYield,
             maxWithdrawValueAssetCash,
-            system,
+            BalanceSummary.getBorrowCapacity(v.currencyId, fcAggregate),
           );
         })
         // Ensure that there is some balance for each summary
@@ -507,12 +508,18 @@ export default class BalanceSummary {
     }, [] as CashFlow[]);
   }
 
+  private static getBorrowCapacity(
+    currencyId: number,
+    fcAggregate: TypedBigNumber,
+  ) {
+    // Convert fcAggregate from ETH undoing the haircuts
+    if (!fcAggregate.isPositive()) return TypedBigNumber.getZeroUnderlying(currencyId);
+    return fcAggregate.fromETH(currencyId, true);
+  }
+
   /**
    * Gets the currencies that can be withdrawn from the account
-   * @returns An array of objects with three values:
-   *  - currency id
-   *  - maxCashBalanceWithdraw denominated in asset terms
-   *  - maxNTokenRedeem denominated in ntoken balance terms
+   * @returns the maximum an account can withdraw in this balance in asset cash terms
    */
   private static getMaxWithdrawData(
     balance: Balance,
