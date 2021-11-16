@@ -320,7 +320,7 @@ describe('calculates free collateral', () => {
       expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
-    it.only('calculates borrowing requirements for stable / crypto with nTokens', () => {
+    it('calculates borrowing requirements for stable / crypto with nTokens', () => {
       const accountData = AccountData.emptyAccountData();
       accountData.updateAsset({
         currencyId: borrowCurrencyId,

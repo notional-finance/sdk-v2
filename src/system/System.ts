@@ -544,6 +544,10 @@ export default class System {
     return {underlyingDecimalPlaces, assetRate};
   }
 
+  public getETHProvider(currencyId: number) {
+    return this.ethRateProviders.get(currencyId);
+  }
+
   public getETHRate(currencyId: number) {
     const ethRateProvider = this.ethRateProviders.get(currencyId);
     if (ethRateProvider) {
