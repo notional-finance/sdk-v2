@@ -1,5 +1,5 @@
-import { AccountData } from "../../src/account";
-import { Balance, Asset } from "../../src/libs/types";
+import {AccountData} from '../../src/account';
+import {Balance, Asset} from '../../src/libs/types';
 
 export default class MockAccountData extends AccountData {
   constructor(
@@ -14,4 +14,3 @@ export default class MockAccountData extends AccountData {
     super(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, accountBalances, portfolio, isCopy);
   }
 }
-

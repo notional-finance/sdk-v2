@@ -132,7 +132,7 @@ export default class FreeCollateral {
   ) {
     const system = System.getSystem();
     // This creates a copy of the assets so that we can modify it in memory
-    const currencyAssets = portfolio.filter((a) => a.currencyId === currencyId).slice();
+    const currencyAssets = portfolio.filter((a) => a.currencyId === currencyId).map((a) => ({...a}));
     let liquidityTokenUnderlyingPV = TypedBigNumber.getZeroUnderlying(currencyId);
     let fCashUnderlyingPV = TypedBigNumber.getZeroUnderlying(currencyId);
 
@@ -181,7 +181,7 @@ export default class FreeCollateral {
             a.notional,
             haircut,
             blockTime,
-            marketOverrides
+            marketOverrides,
           ),
         ), fCashUnderlyingPV);
     }
