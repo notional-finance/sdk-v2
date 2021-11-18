@@ -40,11 +40,13 @@ export default class InterestRateRisk {
         id, accountData, minLocalCollateral, false,
       );
 
-      map.set(id, {
-        currentWeightedAvgInterestRate,
-        upperLiquidationInterestRate,
-        lowerLiquidationInterestRate,
-      });
+      if (upperLiquidationInterestRate !== null || lowerLiquidationInterestRate !== null) {
+        map.set(id, {
+          currentWeightedAvgInterestRate,
+          upperLiquidationInterestRate,
+          lowerLiquidationInterestRate,
+        });
+      }
 
       return map;
     }, new Map<number, {
