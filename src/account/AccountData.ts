@@ -226,11 +226,11 @@ export default class AccountData {
       if (b.cashBalance.isNegative()) {
         cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
       } else if (b.cashBalance.isPositive()) {
-        cashAssets = cashDebts.add(b.cashBalance.toETH(false));
+        cashAssets = cashAssets.add(b.cashBalance.toETH(false));
       }
 
       if (b.nTokenBalance?.isPositive()) {
-        cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
+        cashAssets = cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
       }
 
       return {cashDebts, cashAssets};
@@ -252,6 +252,7 @@ export default class AccountData {
           assetCashClaim,
         } = cashGroup.getLiquidityTokenValue(a.assetType, a.notional, false);
         cashClaims = cashClaims.add(assetCashClaim.toETH(false));
+        // No need to net off here because we are not doing any haircuts
         fCashNotional = fCashClaim;
       } else {
         fCashNotional = a.notional;
@@ -274,8 +275,11 @@ export default class AccountData {
 
     const totalETHValue = cashAssets.add(fCashAssets).add(cashClaims);
     const totalETHDebts = cashDebts.add(fCashDebts);
-    const ltv = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
+    let ltv: number | null = null;
+    if (!totalETHValue.isZero()) {
+      ltv = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
       / INTERNAL_TOKEN_PRECISION) * 100;
+    }
 
     return {
       totalETHDebts,

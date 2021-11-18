@@ -175,7 +175,33 @@ describe('Account Data', () => {
 
   describe('loan to value ratio', () => {
     it('no debt', () => {
-      const {totalETHDebts, ltv} = accountData.loanToValueRatio();
+      const {totalETHDebts, totalETHValue, ltv} = accountData.loanToValueRatio();
+      expect(totalETHValue.toNumber()).toBe(100e8);
+      expect(totalETHDebts.isZero()).toBeTruthy();
+      expect(ltv).toBe(0);
+    });
+
+    it('ntoken value', () => {
+      const accountData2 = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [],
+        false,
+      );
+
+      const {totalETHDebts, totalETHValue, ltv} = accountData2.loanToValueRatio();
+      expect(totalETHValue.toNumber()).toBe(150e8);
       expect(totalETHDebts.isZero()).toBeTruthy();
       expect(ltv).toBe(0);
     });
