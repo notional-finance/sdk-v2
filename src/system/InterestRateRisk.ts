@@ -7,7 +7,7 @@ import {
   BASIS_POINT, MAX_INTEREST_RATE, MIN_INTEREST_RATE, PERCENTAGE_BASIS,
 } from '../config/constants';
 import TypedBigNumber from '../libs/TypedBigNumber';
-import {Asset, AssetType} from '../libs/types';
+import {Asset} from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 
 export default class InterestRateRisk {
@@ -97,19 +97,17 @@ export default class InterestRateRisk {
     const riskyCollateralCurrencies = new Set<number>();
 
     accountData.portfolio.forEach((a) => {
-      if (a.assetType === AssetType.fCash && a.notional.isNegative()) {
-        debtCurrencies.add(a.currencyId);
-      } else {
+      if (a.notional.isPositive()) {
         // Liquidity tokens and positive fCash are subject to interest rate risk
         riskyCollateralCurrencies.add(a.currencyId);
+      } else {
+        debtCurrencies.add(a.currencyId);
       }
     });
 
     accountData.accountBalances.forEach((b) => {
       if (b.nTokenBalance?.isPositive()) {
         riskyCollateralCurrencies.add(b.currencyId);
-      } else if (b.cashBalance.isNegative()) {
-        debtCurrencies.add(b.currencyId);
       } else if (b.cashBalance.isPositive() && debtCurrencies.has(b.currencyId)) {
         // In this case, the account is holding a cash balance against an fCash
         // debt and it may be that interest rates move such that the cash is insufficient
@@ -119,9 +117,7 @@ export default class InterestRateRisk {
     });
 
     // Returns the intersection between debt currencies and risky collateral currencies
-    return Array.from(
-      new Set([...debtCurrencies].filter((d) => riskyCollateralCurrencies.has(d))),
-    ).sort();
+    return Array.from(riskyCollateralCurrencies.values()).sort();
   }
 
   /**

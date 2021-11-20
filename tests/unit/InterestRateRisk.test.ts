@@ -143,7 +143,7 @@ describe('calculates interest rate risk', () => {
     ];
 
     const risky = InterestRateRisk.getRiskyCurrencies(accountData);
-    expect(risky).toStrictEqual([2, 3, 4]);
+    expect(risky).toStrictEqual([1, 2, 3, 4]);
   });
 
   it('gets weighted average interest rate', () => {
