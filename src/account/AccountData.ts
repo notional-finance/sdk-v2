@@ -1,6 +1,10 @@
 import {BigNumber, utils} from 'ethers';
 import {
-  INTERNAL_TOKEN_PRECISION, MAX_BALANCES, MAX_BITMAP_ASSETS, MAX_PORTFOLIO_ASSETS,
+  ETHER_CURRENCY_ID,
+  INTERNAL_TOKEN_PRECISION,
+  MAX_BALANCES,
+  MAX_BITMAP_ASSETS,
+  MAX_PORTFOLIO_ASSETS,
 } from '../config/constants';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {Asset, AssetType, Balance} from '../libs/types';
@@ -286,6 +290,37 @@ export default class AccountData {
       totalETHValue,
       ltv,
     };
+  }
+
+  public getLiquidationPrice(
+    collateralId: number,
+    debtCurrencyId: number,
+  ) {
+    // We represent everything as FX to ETH so in the case that the collateral is in ETH we
+    // vary the debt currency id
+    const targetId = collateralId === ETHER_CURRENCY_ID ? debtCurrencyId : collateralId;
+    const {
+      netETHCollateralWithHaircut,
+      netETHDebtWithBuffer,
+      netUnderlyingAvailable,
+    } = FreeCollateral.getFreeCollateral(this);
+    const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
+    const targetCurrencyFC = aggregateFC.fromETH(targetId, true);
+    const netUnderlying = netUnderlyingAvailable.get(targetId);
+
+    if (!netUnderlying) throw Error('Invalid target currency when calculating liquidation price');
+    const fcSurplusProportion = targetCurrencyFC.scale(INTERNAL_TOKEN_PRECISION, netUnderlying.n);
+    // This is the max exchange rate decrease as a portion of a single token in internal token precision, can
+    // see this as the liquidation price of a single unit of ETH
+    const maxExchangeRateDecrease = fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).sub(fcSurplusProportion);
+    // Convert to the debt currency denomination
+    return collateralId === ETHER_CURRENCY_ID
+      // If using the debt currency this will do 1 / maxExchangeRateDecrease.toETH(), returning a TypedNumber
+      // in the debt currency denomination
+      ? maxExchangeRateDecrease.copy(INTERNAL_TOKEN_PRECISION)
+        .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n)
+      // Convert from collateral to debt via ETH
+      : maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
   }
 
   /**

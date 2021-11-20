@@ -208,4 +208,88 @@ describe('Account Data', () => {
 
     // todo more tests
   });
+
+  describe('liquidation price', () => {
+    it('gets liquidation price with ETH collateral', () => {
+      const account = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [
+          {
+            currencyId: 2,
+            maturity: getNowSeconds() + 1000,
+            assetType: AssetType.fCash,
+            notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
+            hasMatured: false,
+            settlementDate: getNowSeconds() + 1000,
+            isIdiosyncratic: true,
+          },
+        ],
+        false,
+      );
+
+      const liquidationPrice = account.getLiquidationPrice(1, 2);
+      expect(liquidationPrice.symbol).toBe('DAI');
+      expect(liquidationPrice.toNumber()).toBeCloseTo(73.076e8, -6);
+    });
+
+    it('gets liquidation price with USDC collateral', () => {
+      const account = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 3,
+            cashBalance: TypedBigNumber.from(6000e8, BigNumberType.InternalAsset, 'cUSDC'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [
+          {
+            currencyId: 2,
+            maturity: getNowSeconds() + 1000,
+            assetType: AssetType.fCash,
+            notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
+            hasMatured: false,
+            settlementDate: getNowSeconds() + 1000,
+            isIdiosyncratic: true,
+          },
+        ],
+        false,
+      );
+
+      const liquidationPrice = account.getLiquidationPrice(3, 2);
+      expect(liquidationPrice.symbol).toBe('DAI');
+      expect(liquidationPrice.toNumber()).toBeCloseTo(0.921e8, -6);
+    });
+  });
 });
