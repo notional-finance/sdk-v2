@@ -121,14 +121,14 @@ describe('nToken value', () => {
     const assetCash = TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash, blockTime);
     const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem, blockTime);
-    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -4);
+    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -3);
   });
 
   it('gets larger redeem ntoken values', () => {
     const assetCash = TypedBigNumber.from(500_000e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
     const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
-    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -4);
+    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -3);
   });
 
   it('calculates the nToken blended yield', () => {

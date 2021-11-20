@@ -33,11 +33,11 @@ export default class InterestRateRisk {
       );
 
       const upperLiquidationInterestRate = InterestRateRisk.findLiquidationRate(
-        id, accountData, minLocalCollateral, true,
+        id, accountData, minLocalCollateral, true, blockTime,
       );
 
       const lowerLiquidationInterestRate = InterestRateRisk.findLiquidationRate(
-        id, accountData, minLocalCollateral, false,
+        id, accountData, minLocalCollateral, false, blockTime,
       );
 
       if (upperLiquidationInterestRate !== null || lowerLiquidationInterestRate !== null) {

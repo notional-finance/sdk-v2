@@ -338,7 +338,7 @@ export default class AccountData {
       / INTERNAL_TOKEN_PRECISION) * 100;
       haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
       / INTERNAL_TOKEN_PRECISION) * 100;
-      maxLoanToValue = (loanToValue / haircutLoanToValue) * 100
+      maxLoanToValue = (loanToValue / haircutLoanToValue) * 100;
     }
 
     return {
@@ -346,7 +346,7 @@ export default class AccountData {
       totalETHValue,
       loanToValue,
       haircutLoanToValue,
-      maxLoanToValue
+      maxLoanToValue,
     };
   }
 

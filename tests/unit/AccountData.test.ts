@@ -236,10 +236,10 @@ describe('Account Data', () => {
         netETHCollateralWithHaircut,
         netETHDebtWithBuffer,
       } = FreeCollateral.getFreeCollateral(accountData2);
-      expect(netETHCollateralWithHaircut.sub(netETHDebtWithBuffer).isZero()).toBeTruthy()
+      expect(netETHCollateralWithHaircut.sub(netETHDebtWithBuffer).isZero()).toBeTruthy();
       const {haircutLoanToValue, maxLoanToValue, loanToValue} = accountData2.loanToValueRatio();
-      expect(haircutLoanToValue).toBe(100)
-      expect(maxLoanToValue).toBe(loanToValue)
+      expect(haircutLoanToValue).toBe(100);
+      expect(maxLoanToValue).toBe(loanToValue);
     });
 
     // todo more tests
