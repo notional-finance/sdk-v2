@@ -324,6 +324,22 @@ export default class AccountData {
   }
 
   /**
+   * @returns The maximum LTV ratio the account can handle, above this it will be liquidated
+   */
+  public maxLoanToValue() {
+    const {
+      netETHCollateral,
+      netETHDebt,
+      netETHCollateralWithHaircut,
+      netETHDebtWithBuffer,
+    } = FreeCollateral.getFreeCollateral(this);
+    const collateralRatio = FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
+    const bufferedRatio = FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer);
+
+    return (!collateralRatio || !bufferedRatio) ? null : (bufferedRatio / collateralRatio) * 100;
+  }
+
+  /**
    * Calculates a collateral ratio, this uses the net value of currencies in the free collateral figure without
    * applying any buffers or haircuts. This is used as a user friendly way of showing free collateral.
    */
