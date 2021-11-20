@@ -3,7 +3,7 @@ import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
 import MockSystem from '../mocks/MockSystem';
-import {System} from '../../src/system';
+import {FreeCollateral, System} from '../../src/system';
 import {getNowSeconds} from '../../src/libs/utils';
 import MockAccountData from '../mocks/MockAccountData';
 
@@ -175,10 +175,10 @@ describe('Account Data', () => {
 
   describe('loan to value ratio', () => {
     it('no debt', () => {
-      const {totalETHDebts, totalETHValue, ltv} = accountData.loanToValueRatio();
+      const {totalETHDebts, totalETHValue, loanToValue} = accountData.loanToValueRatio();
       expect(totalETHValue.toNumber()).toBe(100e8);
       expect(totalETHDebts.isZero()).toBeTruthy();
-      expect(ltv).toBe(0);
+      expect(loanToValue).toBe(0);
     });
 
     it('ntoken value', () => {
@@ -200,10 +200,46 @@ describe('Account Data', () => {
         false,
       );
 
-      const {totalETHDebts, totalETHValue, ltv} = accountData2.loanToValueRatio();
+      const {totalETHDebts, totalETHValue, loanToValue} = accountData2.loanToValueRatio();
       expect(totalETHValue.toNumber()).toBe(150e8);
       expect(totalETHDebts.isZero()).toBeTruthy();
-      expect(ltv).toBe(0);
+      expect(loanToValue).toBe(0);
+    });
+
+    it('haircut ltv is 100 when fc is zero', () => {
+      const accountData2 = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(52.5e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(-3500e8, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [],
+        false,
+      );
+
+      const {
+        netETHCollateralWithHaircut,
+        netETHDebtWithBuffer,
+      } = FreeCollateral.getFreeCollateral(accountData2);
+      expect(netETHCollateralWithHaircut.sub(netETHDebtWithBuffer).isZero()).toBeTruthy()
+      const {haircutLoanToValue, maxLoanToValue, loanToValue} = accountData2.loanToValueRatio();
+      expect(haircutLoanToValue).toBe(100)
+      expect(maxLoanToValue).toBe(loanToValue)
     });
 
     // todo more tests

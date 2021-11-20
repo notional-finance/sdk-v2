@@ -226,69 +226,127 @@ export default class AccountData {
     const {
       cashDebts,
       cashAssets,
-    } = this.accountBalances.reduce(({cashDebts, cashAssets}, b) => {
+      cashDebtsWithBuffer,
+      cashAssetsWithHaircut,
+    } = this.accountBalances.reduce(({
+      cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut,
+    }, b) => {
       if (b.cashBalance.isNegative()) {
         cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
+        cashDebtsWithBuffer = cashDebtsWithBuffer.add(b.cashBalance.toETH(true).abs());
       } else if (b.cashBalance.isPositive()) {
         cashAssets = cashAssets.add(b.cashBalance.toETH(false));
+        cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.cashBalance.toETH(true));
       }
 
       if (b.nTokenBalance?.isPositive()) {
         cashAssets = cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
+        cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.nTokenBalance.toAssetCash().toETH(false));
       }
 
-      return {cashDebts, cashAssets};
+      return {
+        cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut,
+      };
     }, {
       cashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
       cashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
     });
 
     const {
       fCashDebts,
       fCashAssets,
       cashClaims,
-    } = this.portfolio.reduce(({fCashDebts, fCashAssets, cashClaims}, a) => {
+      cashClaimsWithHaircut,
+      fCashAssetsWithHaircut,
+      fCashDebtsWithBuffer,
+    } = this.portfolio.reduce(({
+      fCashDebts,
+      fCashAssets,
+      cashClaims,
+      cashClaimsWithHaircut,
+      fCashAssetsWithHaircut,
+      fCashDebtsWithBuffer,
+    }, a) => {
       const cashGroup = system.getCashGroup(a.currencyId);
       let fCashNotional: TypedBigNumber;
+      let fCashNotionalHaircut: TypedBigNumber;
       if (a.assetType !== AssetType.fCash) {
         const {
           fCashClaim,
           assetCashClaim,
         } = cashGroup.getLiquidityTokenValue(a.assetType, a.notional, false);
+        const {
+          fCashClaim: fCashClaimHaircut,
+          assetCashClaim: assetCashClaimHaircut,
+        } = cashGroup.getLiquidityTokenValue(a.assetType, a.notional, true);
         cashClaims = cashClaims.add(assetCashClaim.toETH(false));
+        cashClaimsWithHaircut = cashClaimsWithHaircut.add(assetCashClaimHaircut.toETH(true));
         // No need to net off here because we are not doing any haircuts
         fCashNotional = fCashClaim;
+        fCashNotionalHaircut = fCashClaimHaircut;
       } else {
         fCashNotional = a.notional;
+        fCashNotionalHaircut = a.notional;
       }
 
       const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, fCashNotional, false).toETH(false);
+      const ethHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
+        a.maturity, fCashNotionalHaircut, true,
+      ).toETH(true);
       if (ethPV.isPositive()) {
         fCashAssets = fCashAssets.add(ethPV);
       } else {
         fCashDebts = fCashDebts.add(ethPV.abs());
       }
-      return {fCashDebts, fCashAssets, cashClaims};
+
+      if (ethHaircutPV.isPositive()) {
+        fCashAssetsWithHaircut = fCashAssetsWithHaircut.add(ethHaircutPV);
+      } else {
+        fCashDebtsWithBuffer = fCashDebtsWithBuffer.add(ethHaircutPV);
+      }
+
+      return {
+        fCashDebts,
+        fCashAssets,
+        cashClaims,
+        cashClaimsWithHaircut,
+        fCashAssetsWithHaircut,
+        fCashDebtsWithBuffer,
+      };
     }, {
       fCashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
       fCashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
       cashClaims: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashClaimsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
+      fCashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
+      fCashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
     });
     /* eslint-enable @typescript-eslint/no-shadow */
     /* eslint-enable no-param-reassign */
 
     const totalETHValue = cashAssets.add(fCashAssets).add(cashClaims);
     const totalETHDebts = cashDebts.add(fCashDebts);
-    let ltv: number | null = null;
+    const totalETHValueHaircut = cashAssetsWithHaircut.add(fCashAssetsWithHaircut).add(cashClaimsWithHaircut);
+    const totalETHDebtsBuffer = cashDebtsWithBuffer.add(fCashDebtsWithBuffer);
+    let loanToValue: number | null = null;
+    let haircutLoanToValue: number | null = null;
+    let maxLoanToValue: number | null = null;
     if (!totalETHValue.isZero()) {
-      ltv = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
+      loanToValue = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
       / INTERNAL_TOKEN_PRECISION) * 100;
+      haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
+      / INTERNAL_TOKEN_PRECISION) * 100;
+      maxLoanToValue = (loanToValue / haircutLoanToValue) * 100
     }
 
     return {
       totalETHDebts,
       totalETHValue,
-      ltv,
+      loanToValue,
+      haircutLoanToValue,
+      maxLoanToValue
     };
   }
 
@@ -321,22 +379,6 @@ export default class AccountData {
         .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n)
       // Convert from collateral to debt via ETH
       : maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
-  }
-
-  /**
-   * @returns The maximum LTV ratio the account can handle, above this it will be liquidated
-   */
-  public maxLoanToValue() {
-    const {
-      netETHCollateral,
-      netETHDebt,
-      netETHCollateralWithHaircut,
-      netETHDebtWithBuffer,
-    } = FreeCollateral.getFreeCollateral(this);
-    const collateralRatio = FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
-    const bufferedRatio = FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer);
-
-    return (!collateralRatio || !bufferedRatio) ? null : (bufferedRatio / collateralRatio) * 100;
   }
 
   /**
