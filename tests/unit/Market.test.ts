@@ -1,23 +1,16 @@
-import {BigNumber, ethers} from 'ethers';
+import {BigNumber} from 'ethers';
 import {getNowSeconds} from '../../src/libs/utils';
 import {BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR} from '../../src/config/constants';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
-import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
+import MockSystem from '../mocks/MockSystem';
 import {System, Market} from '../../src/system';
 
 describe('Market', () => {
   const blockTime = getNowSeconds();
   const maturity = blockTime + SECONDS_IN_YEAR;
-  const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    ({} as unknown) as NotionalTypechain,
-    provider,
-  );
-  System.overrideSystem((system as unknown) as System);
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => { system.destroy(); });
 
   const getMarket = () => new Market(2, 1, maturity, 30000000000, 30 * BASIS_POINT, 50, 60 * 10, 'cDAI', 'DAI');
 
@@ -228,6 +221,40 @@ describe('Market', () => {
       Market.cashFromExchangeRate(exchangeRate, fCash);
     }).toThrowError();
   });
-});
 
-// test settled assets in account
+  it('returns a simulated market at 18% interest', () => {
+    const market = getMarket();
+    const lastImpliedRate = BigNumber.from(0.1e9);
+    const oracleRate = BigNumber.from(0.1e9);
+    market.setMarket({
+      totalAssetCash: BigNumber.from(50000e8),
+      totalLiquidity: BigNumber.from(50000e8),
+      totalfCash: BigNumber.from(1000e8),
+      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      lastImpliedRate,
+      oracleRate,
+    });
+
+    const override = market.getSimulatedMarket(0.18e9, blockTime);
+    expect(override.marketOracleRate(blockTime)).toBe(0.18e9);
+    expect(override.fCashUtilization).toBeCloseTo(0.9405, 3);
+  });
+
+  it('returns a simulated market at 0% interest', () => {
+    const market = getMarket();
+    const lastImpliedRate = BigNumber.from(0.1e9);
+    const oracleRate = BigNumber.from(0.1e9);
+    market.setMarket({
+      totalAssetCash: BigNumber.from(50000e8),
+      totalLiquidity: BigNumber.from(50000e8),
+      totalfCash: BigNumber.from(1000e8),
+      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      lastImpliedRate,
+      oracleRate,
+    });
+
+    const override = market.getSimulatedMarket(0, blockTime);
+    expect(override.marketOracleRate(blockTime)).toBe(0);
+    expect(override.fCashUtilization).toBeCloseTo(0.0408, 3);
+  });
+});

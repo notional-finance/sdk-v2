@@ -14,6 +14,8 @@ export const SECONDS_IN_QUARTER = 90 * SECONDS_IN_DAY;
 export const SECONDS_IN_YEAR = SECONDS_IN_QUARTER * 4;
 // 15 seconds for underlying data on local
 export const LOCAL_DATA_REFRESH_INTERVAL = 15 * 1000;
+// 15 seconds when using the cache
+export const CACHE_DATA_REFRESH_INTERVAL = 15 * 1000;
 // 3 min for underlying data on chain
 export const DEFAULT_DATA_REFRESH_INTERVAL = 180 * 1000;
 // 30 minutes for configuration data
@@ -27,6 +29,8 @@ export const SECONDS_PER_BLOCK = 13;
 // This value is not actually stored in the smart contract system, we use it here
 // to ensure that we do not clash with any other currency ids
 export const NOTE_CURRENCY_ID = 2 ** 32 - 1;
+export const MAX_INTEREST_RATE = 0.18e9;
+export const MIN_INTEREST_RATE = 0;
 
 export function secondsPerBlock(chainId: number) {
   switch (chainId) {

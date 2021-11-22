@@ -1,32 +1,20 @@
-import {BigNumber, ethers} from 'ethers';
-import GraphClient from '../../src/GraphClient';
+import {BigNumber} from 'ethers';
 import {
   System, FreeCollateral, NTokenValue, CashGroup,
 } from '../../src/system';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
+import MockSystem from '../mocks/MockSystem';
 import {SECONDS_IN_MONTH} from '../../src/config/constants';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
 import {getNowSeconds} from '../../src/libs/utils';
-import MockAccountData from './AccountData.test';
-import MockNotionalProxy from '../mocks/MockNotionalProxy';
+import MockAccountData from '../mocks/MockAccountData';
 import {AccountData} from '../../src/account';
 import {IAggregator} from '../../src/typechain/IAggregator';
 
 describe('calculates free collateral', () => {
-  let system: System;
-
-  beforeEach(() => {
-    // This provider is not used, it's just a dummy
-    const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-    system = new MockSystem(
-      systemQueryResult,
-      ({} as unknown) as GraphClient,
-      MockNotionalProxy,
-      provider,
-    );
-    System.overrideSystem(system);
-  });
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => { system.destroy(); });
 
   describe('calculates free collateral', () => {
     const blockTime = CashGroup.getTimeReference(getNowSeconds());

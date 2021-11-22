@@ -1,26 +1,19 @@
-import {BigNumber, ethers} from 'ethers';
+import {BigNumber} from 'ethers';
 import CashGroup from '../../src/system/CashGroup';
 import {AssetType, TradeType} from '../../src/libs/types';
 import {AssetSummary} from '../../src/account';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import {SECONDS_IN_DAY, SECONDS_IN_QUARTER} from '../../src/config/constants';
-import GraphClient from '../../src/GraphClient';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
-import MockAccountData from './AccountData.test';
+import MockSystem from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {System} from '../../src/system';
+import MockAccountData from '../mocks/MockAccountData';
 
 describe('Asset Summary', () => {
   const blockTime = CashGroup.getTimeReference(1621857396);
   const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
-  const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    ({} as unknown) as NotionalTypechain,
-    provider,
-  );
-  System.overrideSystem((system as unknown) as System);
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => system.destroy());
 
   const baseTradeHistory = {
     id: 'xxx',

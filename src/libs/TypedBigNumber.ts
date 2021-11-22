@@ -27,6 +27,12 @@ class TypedBigNumber {
     }
   }
 
+  static getZeroUnderlying(currencyId: number) {
+    const system = System.getSystem();
+    const underlyingSymbol = system.getUnderlyingSymbol(currencyId);
+    return new TypedBigNumber(BigNumber.from(0), BigNumberType.InternalUnderlying, underlyingSymbol);
+  }
+
   static getType(symbol: string, isInternal: boolean) {
     if (symbol === 'NOTE') {
       return BigNumberType.NOTE;
@@ -54,6 +60,10 @@ class TypedBigNumber {
     // eslint-disable-next-line no-underscore-dangle
     if (value._isBigNumber) return new TypedBigNumber(value, type, symbol);
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
+  }
+
+  static fromObject(value: {type: string, hex: string, bigNumberType: BigNumberType, symbol: string}) {
+    return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
   }
 
   static max(a: TypedBigNumber, b: TypedBigNumber): TypedBigNumber {

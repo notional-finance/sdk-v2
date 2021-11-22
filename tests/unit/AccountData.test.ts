@@ -1,36 +1,19 @@
-import {BigNumber, ethers} from 'ethers';
+import {BigNumber} from 'ethers';
 import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {Asset, Balance, AssetType} from '../../src/libs/types';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
-import GraphClient from '../../src/GraphClient';
-import {System} from '../../src/system';
+import {AssetType} from '../../src/libs/types';
+import MockSystem from '../mocks/MockSystem';
+import {FreeCollateral, System} from '../../src/system';
 import {getNowSeconds} from '../../src/libs/utils';
-import MockNotionalProxy from '../mocks/MockNotionalProxy';
-
-export default class MockAccountData extends AccountData {
-  constructor(
-    public nextSettleTime: number,
-    public hasCashDebt: boolean,
-    public hasAssetDebt: boolean,
-    public bitmapCurrencyId: number | undefined,
-    public accountBalances: Balance[],
-    public portfolio: Asset[],
-    public isCopy: boolean,
-  ) {
-    super(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, accountBalances, portfolio, isCopy);
-  }
-}
+import MockAccountData from '../mocks/MockAccountData';
 
 describe('Account Data', () => {
-  const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-  const system = new MockSystem(
-    systemQueryResult,
-    ({} as unknown) as GraphClient,
-    MockNotionalProxy,
-    provider,
-  );
-  System.overrideSystem((system as unknown) as System);
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => {
+    system.destroy();
+  });
+
   const accountData = new MockAccountData(
     0,
     false,
@@ -187,6 +170,162 @@ describe('Account Data', () => {
       done();
     }).catch(() => {
       done();
+    });
+  });
+
+  describe('loan to value ratio', () => {
+    it('no debt', () => {
+      const {totalETHDebts, totalETHValue, loanToValue} = accountData.loanToValueRatio();
+      expect(totalETHValue.toNumber()).toBe(100e8);
+      expect(totalETHDebts.isZero()).toBeTruthy();
+      expect(loanToValue).toBe(0);
+    });
+
+    it('ntoken value', () => {
+      const accountData2 = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [],
+        false,
+      );
+
+      const {totalETHDebts, totalETHValue, loanToValue} = accountData2.loanToValueRatio();
+      expect(totalETHValue.toNumber()).toBe(150e8);
+      expect(totalETHDebts.isZero()).toBeTruthy();
+      expect(loanToValue).toBe(0);
+    });
+
+    it('haircut ltv is 100 when fc is zero', () => {
+      const accountData2 = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(52.5e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(-3500e8, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [],
+        false,
+      );
+
+      const {
+        netETHCollateralWithHaircut,
+        netETHDebtWithBuffer,
+      } = FreeCollateral.getFreeCollateral(accountData2);
+      expect(netETHCollateralWithHaircut.sub(netETHDebtWithBuffer).isZero()).toBeTruthy();
+      const {haircutLoanToValue, maxLoanToValue, loanToValue} = accountData2.loanToValueRatio();
+      expect(haircutLoanToValue).toBe(100);
+      expect(maxLoanToValue).toBe(loanToValue);
+    });
+
+    // todo more tests
+  });
+
+  describe('liquidation price', () => {
+    it('gets liquidation price with ETH collateral', () => {
+      const account = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [
+          {
+            currencyId: 2,
+            maturity: getNowSeconds() + 1000,
+            assetType: AssetType.fCash,
+            notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
+            hasMatured: false,
+            settlementDate: getNowSeconds() + 1000,
+            isIdiosyncratic: true,
+          },
+        ],
+        false,
+      );
+
+      const liquidationPrice = account.getLiquidationPrice(1, 2);
+      expect(liquidationPrice.symbol).toBe('DAI');
+      expect(liquidationPrice.toNumber()).toBeCloseTo(73.076e8, -6);
+    });
+
+    it('gets liquidation price with USDC collateral', () => {
+      const account = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 3,
+            cashBalance: TypedBigNumber.from(6000e8, BigNumberType.InternalAsset, 'cUSDC'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [
+          {
+            currencyId: 2,
+            maturity: getNowSeconds() + 1000,
+            assetType: AssetType.fCash,
+            notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
+            hasMatured: false,
+            settlementDate: getNowSeconds() + 1000,
+            isIdiosyncratic: true,
+          },
+        ],
+        false,
+      );
+
+      const liquidationPrice = account.getLiquidationPrice(3, 2);
+      expect(liquidationPrice.symbol).toBe('DAI');
+      expect(liquidationPrice.toNumber()).toBeCloseTo(0.921e8, -6);
     });
   });
 });

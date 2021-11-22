@@ -1,4 +1,4 @@
-import {System} from '.';
+import {System, Market} from '.';
 import {AccountData} from '../account';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
@@ -12,12 +12,6 @@ const useInternal = true;
 const ETH = ETHER_CURRENCY_ID;
 
 export default class FreeCollateral {
-  private static getZeroUnderlying(currencyId: number) {
-    const system = System.getSystem();
-    const underlyingSymbol = system.getUnderlyingSymbol(currencyId);
-    return TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
-  }
-
   /**
    * Returns components of the free collateral figure
    * @param account
@@ -31,19 +25,25 @@ export default class FreeCollateral {
    */
   public static getFreeCollateral(account: AccountData, blockTime = getNowSeconds()) {
     const netUnderlyingAvailable = new Map<number, TypedBigNumber>();
-    let netETHCollateralWithHaircut = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHCollateral = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHDebt = FreeCollateral.getZeroUnderlying(ETH);
-    let netETHDebtWithBuffer = FreeCollateral.getZeroUnderlying(ETH);
+    let netETHCollateralWithHaircut = TypedBigNumber.getZeroUnderlying(ETH);
+    let netETHCollateral = TypedBigNumber.getZeroUnderlying(ETH);
+    let netETHDebt = TypedBigNumber.getZeroUnderlying(ETH);
+    let netETHDebtWithBuffer = TypedBigNumber.getZeroUnderlying(ETH);
 
     account.accountBalances.forEach((b) => {
-      const value = FreeCollateral.netCurrencyAvailable(
+      const {nTokenValue, cashGroupPV} = FreeCollateral.getCurrencyComponents(
         b.currencyId,
         b.cashBalance,
         b.nTokenBalance,
         account.portfolio,
         blockTime,
       );
+
+      // calculates the net value underlying
+      const value = b.cashBalance.toUnderlying()
+        .add(nTokenValue)
+        .add(cashGroupPV);
+
       netUnderlyingAvailable.set(b.currencyId, value);
 
       if (value.isNegative()) {
@@ -62,29 +62,6 @@ export default class FreeCollateral {
       netETHCollateral,
       netUnderlyingAvailable,
     };
-  }
-
-  private static netCurrencyAvailable(
-    currencyId: number,
-    assetCashBalanceInternal: TypedBigNumber,
-    nTokenBalance: TypedBigNumber | undefined,
-    portfolio: Asset[],
-    blockTime = getNowSeconds(),
-  ): TypedBigNumber {
-    const {nTokenValue, liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCurrencyComponents(
-      currencyId,
-      assetCashBalanceInternal,
-      nTokenBalance,
-      portfolio,
-      blockTime,
-    );
-
-    // TypedBigNumber will ensure these are all in internal underlying
-    return assetCashBalanceInternal
-      .toUnderlying()
-      .add(nTokenValue)
-      .add(liquidityTokenUnderlyingPV)
-      .add(fCashUnderlyingPV);
   }
 
   /**
@@ -113,7 +90,7 @@ export default class FreeCollateral {
 
     assetCashBalanceInternal.check(BigNumberType.InternalAsset, symbol);
     nTokenBalance?.check(BigNumberType.nToken, nTokenSymbol);
-    const {liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCashGroupValue(
+    const cashGroupPV = FreeCollateral.getCashGroupValue(
       currencyId,
       portfolio,
       blockTime,
@@ -127,11 +104,62 @@ export default class FreeCollateral {
         .toUnderlying(useInternal);
     }
 
-    return {
-      nTokenValue,
-      liquidityTokenUnderlyingPV,
-      fCashUnderlyingPV,
-    };
+    return {nTokenValue, cashGroupPV};
+  }
+
+  /**
+   * Returns the net fCash positions and cash claims from a portfolio
+   * @param currencyId
+   * @param portfolio
+   * @param marketOverrides
+   * @param haircut
+   * @returns
+   */
+  public static getNetfCashPositions(
+    currencyId: number,
+    portfolio: Asset[],
+    marketOverrides?: Market[],
+    haircut = useHaircut,
+  ) {
+    const system = System.getSystem();
+    const cashGroup = system.getCashGroup(currencyId);
+    // This creates a copy of the assets so that we can modify it in memory
+    const fCashAssets = portfolio
+      .filter((a) => a.currencyId === currencyId && a.assetType === AssetType.fCash)
+      .map((a) => ({...a}));
+    let totalCashClaims = TypedBigNumber.getZeroUnderlying(currencyId);
+
+    portfolio
+      .filter((a) => a.assetType !== AssetType.fCash)
+      .forEach((lt) => {
+        // eslint-disable-next-line prefer-const
+        let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(
+          lt.assetType,
+          lt.notional,
+          haircut,
+          marketOverrides,
+        );
+
+        totalCashClaims = totalCashClaims.add(assetCashClaim.toUnderlying());
+
+        const index = fCashAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
+        if (index > -1) {
+          // net off fCash if it exists
+          fCashAssets[index].notional = fCashAssets[index].notional.add(fCashClaim);
+        } else {
+          fCashAssets.push({
+            currencyId,
+            maturity: lt.maturity,
+            assetType: AssetType.fCash,
+            notional: fCashClaim,
+            hasMatured: false,
+            settlementDate: lt.maturity,
+            isIdiosyncratic: false,
+          });
+        }
+      });
+
+    return {fCashAssets, totalCashClaims};
   }
 
   /**
@@ -139,55 +167,39 @@ export default class FreeCollateral {
    * @param currencyId
    * @param portfolio
    * @param blockTime
+   * @param marketOverrides can be used to simulate different markets
+   * @param haircut can be set to false to simulate ntoken portfolio
    * @returns
    *  - liquidityTokenUnderlyingPV: present value of the liquidity token
    *  - fCashUnderlyingPV: present value of the underlying fcash
    */
-  public static getCashGroupValue(currencyId: number, portfolio: Asset[], blockTime = getNowSeconds()) {
+  public static getCashGroupValue(
+    currencyId: number,
+    portfolio: Asset[],
+    blockTime = getNowSeconds(),
+    marketOverrides?: Market[],
+    haircut = useHaircut,
+  ) {
     const system = System.getSystem();
+    const cashGroup = system.getCashGroup(currencyId);
     // This creates a copy of the assets so that we can modify it in memory
-    const currencyAssets = portfolio.filter((a) => a.currencyId === currencyId).slice();
-    let liquidityTokenUnderlyingPV = FreeCollateral.getZeroUnderlying(currencyId);
-    let fCashUnderlyingPV = FreeCollateral.getZeroUnderlying(currencyId);
+    const {totalCashClaims, fCashAssets} = FreeCollateral.getNetfCashPositions(
+      currencyId,
+      portfolio,
+      marketOverrides,
+      haircut,
+    );
+    const fCashUnderlyingPV = fCashAssets.reduce((underlyingPV, a) => underlyingPV.add(
+      cashGroup.getfCashPresentValueUnderlyingInternal(
+        a.maturity,
+        a.notional,
+        haircut,
+        blockTime,
+        marketOverrides,
+      ),
+    ), TypedBigNumber.getZeroUnderlying(currencyId));
 
-    if (currencyAssets.length > 0) {
-      const cashGroup = system.getCashGroup(currencyId);
-
-      // Filters and reduces for liquidity token value
-      liquidityTokenUnderlyingPV = currencyAssets
-        .filter((a) => a.assetType !== AssetType.fCash)
-        .reduce((underlyingPV, lt) => {
-          // eslint-disable-next-line prefer-const
-          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, useHaircut);
-          const index = currencyAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
-          if (index > -1) {
-            // net off fCash if it exists
-            fCashClaim = fCashClaim.add(currencyAssets[index].notional);
-            currencyAssets[index].notional = TypedBigNumber.from(
-              0,
-              currencyAssets[index].notional.type,
-              currencyAssets[index].notional.symbol,
-            );
-          }
-
-          const fCashHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
-            lt.maturity,
-            fCashClaim,
-            useHaircut,
-            blockTime,
-          );
-          return underlyingPV.add(fCashHaircutPV).add(assetCashClaim.toUnderlying());
-        }, liquidityTokenUnderlyingPV);
-
-      // Filters and reduces for liquidity token value
-      fCashUnderlyingPV = currencyAssets
-        .filter((a) => a.assetType === AssetType.fCash)
-        .reduce((underlyingPV, a) => underlyingPV.add(
-          cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, useHaircut, blockTime),
-        ), fCashUnderlyingPV);
-    }
-
-    return {liquidityTokenUnderlyingPV, fCashUnderlyingPV};
+    return fCashUnderlyingPV.add(totalCashClaims.toUnderlying());
   }
 
   /**
@@ -233,7 +245,7 @@ export default class FreeCollateral {
 
     const collateralNetAvailable = (
       netUnderlyingAvailable.get(collateralCurrencyId)
-      || FreeCollateral.getZeroUnderlying(collateralCurrencyId)
+      || TypedBigNumber.getZeroUnderlying(collateralCurrencyId)
     );
 
     let {minCollateral, targetCollateral} = FreeCollateral.calculateTargetCollateral(
@@ -256,13 +268,13 @@ export default class FreeCollateral {
 
       minCollateralCopy.updateBalance(
         collateralCurrencyId,
-        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        TypedBigNumber.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
         minCollateral,
       );
 
       targetCollateralCopy.updateBalance(
         collateralCurrencyId,
-        FreeCollateral.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
+        TypedBigNumber.getZeroUnderlying(collateralCurrencyId).toAssetCash(useInternal),
         targetCollateral,
       );
     } else {
@@ -313,7 +325,7 @@ export default class FreeCollateral {
     } {
     // Minimum required ratio has multiplier of 1
     const minEthRequired = netETHCollateralWithHaircut.gte(netETHDebtWithBuffer)
-      ? FreeCollateral.getZeroUnderlying(ETH)
+      ? TypedBigNumber.getZeroUnderlying(ETH)
       : netETHDebtWithBuffer.sub(netETHCollateralWithHaircut);
 
     // Scale the netETHDebt with buffer to the buffered ratio and remove any existing collateral we have
@@ -321,14 +333,14 @@ export default class FreeCollateral {
 
     // Cannot require negative ETH
     if (targetEthRequired.isNegative()) {
-      targetEthRequired = FreeCollateral.getZeroUnderlying(ETH);
+      targetEthRequired = TypedBigNumber.getZeroUnderlying(ETH);
     }
 
     if (minEthRequired.isZero() && targetEthRequired.isZero()) {
       // If this is the case then the account is sufficiently collateralized
       return {
-        minCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
-        targetCollateral: FreeCollateral.getZeroUnderlying(collateralCurrencyId),
+        minCollateral: TypedBigNumber.getZeroUnderlying(collateralCurrencyId),
+        targetCollateral: TypedBigNumber.getZeroUnderlying(collateralCurrencyId),
       };
     }
 
@@ -390,7 +402,7 @@ export default class FreeCollateral {
 
     // It's possible that no collateral payment is required due to other collateral
     if (collateralDebtPayment.isNegative()) {
-      return FreeCollateral.getZeroUnderlying(collateralCurrencyId);
+      return TypedBigNumber.getZeroUnderlying(collateralCurrencyId);
     }
 
     if (collateralDebtPayment.lt(collateralDebtETH)) {
@@ -415,18 +427,20 @@ export default class FreeCollateral {
   }
 
   /**
-   * Calculates a collateral ratio as a percentage
+   * Calculates a collateral ratio as a percentage. Collateral ratios can be null if ETH debt is zero. If using
+   * buffered and haircut values then collateral ratios are liquidatable when they are below 100. There is no
+   * upper bound to a collateral ratio figure. Collateral ratios use net debt values.
    *
-   * @param netETHCollateralWithHaircut
+   * @param netETHCollateral
    * @param netETHDebt
    * @returns collateral ratio scaled by 100 as a number
    */
-  public static calculateCollateralRatio(netETHCollateralWithHaircut: TypedBigNumber, netETHDebt: TypedBigNumber) {
+  public static calculateCollateralRatio(netETHCollateral: TypedBigNumber, netETHDebt: TypedBigNumber) {
     if (netETHDebt.isZero()) return null;
-    netETHCollateralWithHaircut.check(BigNumberType.InternalUnderlying, 'ETH');
+    netETHCollateral.check(BigNumberType.InternalUnderlying, 'ETH');
     netETHDebt.check(BigNumberType.InternalUnderlying, 'ETH');
 
-    const collateralRatioNumber = netETHCollateralWithHaircut.scale(INTERNAL_TOKEN_PRECISION, netETHDebt.n).toNumber();
+    const collateralRatioNumber = netETHCollateral.scale(INTERNAL_TOKEN_PRECISION, netETHDebt.n).toNumber();
     return (collateralRatioNumber / INTERNAL_TOKEN_PRECISION) * 100;
   }
 }

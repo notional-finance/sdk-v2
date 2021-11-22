@@ -1,29 +1,20 @@
 import {BigNumber, ethers} from 'ethers';
 import {getNowSeconds} from '../../src/libs/utils';
-import {
-  NOTE_CURRENCY_ID, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
-} from '../../src/config/constants';
-import GraphClient from '../../src/GraphClient';
+import {RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR} from '../../src/config/constants';
 import {System, NTokenValue, CashGroup} from '../../src/system';
-import MockSystem, {systemQueryResult} from '../mocks/MockSystem';
+import MockSystem from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
-import MockNotionalProxy from '../mocks/MockNotionalProxy';
 import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
 
 describe('nToken value', () => {
-  let system: System;
+  const system = new MockSystem();
+  System.overrideSystem(system);
+  afterAll(() => { system.destroy(); });
+  const blockTime = CashGroup.getTimeReference(getNowSeconds());
 
-  beforeEach(() => {
-    // This provider is not used, it's just a dummy
-    const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
-    system = new MockSystem(
-      systemQueryResult,
-      ({} as unknown) as GraphClient,
-      MockNotionalProxy,
-      provider,
-    );
-    System.overrideSystem(system);
+  beforeAll(async () => {
+    system.dataSource.refreshData();
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const cashGroup = system.getCashGroup(2);
     cashGroup.markets[0].setMarket({
@@ -46,8 +37,8 @@ describe('nToken value', () => {
     (system as MockSystem).setNTokenPortfolio(
       2,
       TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
-      TypedBigNumber.from(10000000e8, BigNumberType.InternalAsset, 'cDAI'),
-      TypedBigNumber.from(10000e8, BigNumberType.nToken, 'nDAI'),
+      TypedBigNumber.from(1862606860875000, BigNumberType.InternalAsset, 'cDAI'),
+      TypedBigNumber.from(1_000_000e8, BigNumberType.nToken, 'nDAI'),
       [
         {
           currencyId: 2,
@@ -73,7 +64,7 @@ describe('nToken value', () => {
           currencyId: 2,
           maturity: tRef + SECONDS_IN_QUARTER,
           assetType: AssetType.fCash,
-          notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
+          notional: TypedBigNumber.from(-10000e8, BigNumberType.InternalUnderlying, 'DAI'),
           hasMatured: false,
           settlementDate: tRef + SECONDS_IN_QUARTER,
           isIdiosyncratic: false,
@@ -82,7 +73,7 @@ describe('nToken value', () => {
           currencyId: 2,
           maturity: tRef + SECONDS_IN_QUARTER * 2,
           assetType: AssetType.fCash,
-          notional: TypedBigNumber.from(-150e8, BigNumberType.InternalUnderlying, 'DAI'),
+          notional: TypedBigNumber.from(-15000e8, BigNumberType.InternalUnderlying, 'DAI'),
           hasMatured: false,
           settlementDate: tRef + SECONDS_IN_QUARTER * 2,
           isIdiosyncratic: false,
@@ -115,29 +106,30 @@ describe('nToken value', () => {
   });
 
   it('gets claimable incentives', () => {
-    const blockTime = getNowSeconds();
+    const currentTime = getNowSeconds();
     const incentives = NTokenValue.getClaimableIncentives(
       3,
       TypedBigNumber.from(2000e8, BigNumberType.nToken, 'nUSDC'),
-      blockTime - SECONDS_IN_YEAR,
+      currentTime - SECONDS_IN_YEAR,
       BigNumber.from(ethers.constants.WeiPerEther),
-      blockTime,
+      currentTime,
     );
     expect(incentives.toString()).toBe(BigNumber.from(0.01e8).toString());
   });
 
   it('gets smaller redeem ntoken values', () => {
+    // InterestRateRisk.getNTokenSimulatedValue(TypedBigNumber.fromBalance(100, 'nDAI', true), undefined, blockTime)
     const assetCash = TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI');
-    const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
-    const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
-    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -4);
+    const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash, blockTime);
+    const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem, blockTime);
+    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -3);
   });
 
   it('gets larger redeem ntoken values', () => {
-    const assetCash = TypedBigNumber.from(1_000_000e8, BigNumberType.InternalAsset, 'cDAI');
+    const assetCash = TypedBigNumber.from(500_000e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
     const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
-    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -4);
+    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -3);
   });
 
   it('calculates the nToken blended yield', () => {
@@ -150,8 +142,8 @@ describe('nToken value', () => {
     const priceProvider = system.getETHProvider(NOTE_CURRENCY_ID) as NoteETHRateProvider;
     priceProvider.noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
     const incentiveYield = NTokenValue.getNTokenIncentiveYield(2);
-    // Underlying PV is 200,000e8, token value is 175,000e8 per annum
+    // Underlying PV is 372,528e8, token value is 175,000e8 per annum
     // Incentive rate should be ~87.5%
-    expect(incentiveYield / RATE_PRECISION).toBeCloseTo(0.875);
+    expect(incentiveYield / RATE_PRECISION).toBeCloseTo(0.469);
   });
 });

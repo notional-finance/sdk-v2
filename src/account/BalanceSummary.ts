@@ -182,8 +182,8 @@ export default class BalanceSummary {
     public nTokenYield: number,
     public nTokenTotalYield: number,
     public maxWithdrawValueAssetCash: TypedBigNumber,
-    system: System,
   ) {
+    const system = System.getSystem();
     this.currency = system.getCurrencyById(this.currencyId);
     this.nToken = system.getNToken(this.currencyId);
   }
@@ -410,7 +410,6 @@ export default class BalanceSummary {
             nTokenTradingYield,
             nTokenTotalYield,
             maxWithdrawValueAssetCash,
-            system,
           );
         })
         // Ensure that there is some balance for each summary
@@ -509,10 +508,7 @@ export default class BalanceSummary {
 
   /**
    * Gets the currencies that can be withdrawn from the account
-   * @returns An array of objects with three values:
-   *  - currency id
-   *  - maxCashBalanceWithdraw denominated in asset terms
-   *  - maxNTokenRedeem denominated in ntoken balance terms
+   * @returns the maximum an account can withdraw in this balance in asset cash terms
    */
   private static getMaxWithdrawData(
     balance: Balance,
