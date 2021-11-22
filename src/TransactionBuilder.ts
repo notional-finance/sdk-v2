@@ -450,6 +450,48 @@ export default abstract class TransactionBuilder {
   }
 
   /**
+   * Deleverages a leveraged nToken position, redeems nTokens and repays a borrow
+   * using the cash from the nToken redemption.
+   *
+   * @param address
+   * @param repayAsset
+   * @param redeemNTokenAmount
+   * @param lendfCashAmount
+   * @param minLendSlippage
+   * @param overrides
+   * @returns
+   */
+  public deleverageNToken(
+    address: string,
+    repayAsset: Asset,
+    redeemNTokenAmount: TypedBigNumber,
+    lendfCashAmount: TypedBigNumber,
+    minLendSlippage: number,
+    overrides = {} as Overrides,
+  ) {
+    if (repayAsset.notional.isPositive() || repayAsset.maturity < getNowSeconds()) {
+      throw new Error('Cannot repay borrow asset');
+    }
+    if (repayAsset.currencyId !== redeemNTokenAmount.currencyId) {
+      throw new Error('Currency mismatch');
+    }
+    const marketIndex = CashGroup.getMarketIndexForMaturity(repayAsset.maturity);
+    const currency = this.system.getCurrencyById(repayAsset.currencyId);
+
+    const deleverageAction = {
+      depositAction: DepositActionType.RedeemNToken,
+      currencyId: currency.id,
+      depositActionAmount: redeemNTokenAmount.n,
+      withdrawAmountInternalPrecision: TypedBigNumber.getZeroUnderlying(currency.id),
+      withdrawEntireCashBalance: false,
+      redeemToUnderlying: false,
+      trades: [this.encodeTradeType(TradeActionType.Lend, marketIndex, lendfCashAmount, minLendSlippage, 0)],
+    };
+
+    return this.populateTxnAndGas(address, 'batchBalanceAndTradeAction', [address, [deleverageAction], overrides]);
+  }
+
+  /**
    * Moves a lending asset from one maturity to another by borrowing from the current market and using the cash to lend
    * in the roll to market.
    *

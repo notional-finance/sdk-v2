@@ -31,7 +31,7 @@ export default class FreeCollateral {
     let netETHDebtWithBuffer = TypedBigNumber.getZeroUnderlying(ETH);
 
     account.accountBalances.forEach((b) => {
-      const {nTokenValue, liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCurrencyComponents(
+      const {nTokenValue, cashGroupPV} = FreeCollateral.getCurrencyComponents(
         b.currencyId,
         b.cashBalance,
         b.nTokenBalance,
@@ -42,8 +42,7 @@ export default class FreeCollateral {
       // calculates the net value underlying
       const value = b.cashBalance.toUnderlying()
         .add(nTokenValue)
-        .add(liquidityTokenUnderlyingPV)
-        .add(fCashUnderlyingPV);
+        .add(cashGroupPV);
 
       netUnderlyingAvailable.set(b.currencyId, value);
 
@@ -91,7 +90,7 @@ export default class FreeCollateral {
 
     assetCashBalanceInternal.check(BigNumberType.InternalAsset, symbol);
     nTokenBalance?.check(BigNumberType.nToken, nTokenSymbol);
-    const {liquidityTokenUnderlyingPV, fCashUnderlyingPV} = FreeCollateral.getCashGroupValue(
+    const cashGroupPV = FreeCollateral.getCashGroupValue(
       currencyId,
       portfolio,
       blockTime,
@@ -105,11 +104,62 @@ export default class FreeCollateral {
         .toUnderlying(useInternal);
     }
 
-    return {
-      nTokenValue,
-      liquidityTokenUnderlyingPV,
-      fCashUnderlyingPV,
-    };
+    return {nTokenValue, cashGroupPV};
+  }
+
+  /**
+   * Returns the net fCash positions and cash claims from a portfolio
+   * @param currencyId
+   * @param portfolio
+   * @param marketOverrides
+   * @param haircut
+   * @returns
+   */
+  public static getNetfCashPositions(
+    currencyId: number,
+    portfolio: Asset[],
+    marketOverrides?: Market[],
+    haircut = useHaircut,
+  ) {
+    const system = System.getSystem();
+    const cashGroup = system.getCashGroup(currencyId);
+    // This creates a copy of the assets so that we can modify it in memory
+    const fCashAssets = portfolio
+      .filter((a) => a.currencyId === currencyId && a.assetType === AssetType.fCash)
+      .map((a) => ({...a}));
+    let totalCashClaims = TypedBigNumber.getZeroUnderlying(currencyId);
+
+    portfolio
+      .filter((a) => a.assetType !== AssetType.fCash)
+      .forEach((lt) => {
+        // eslint-disable-next-line prefer-const
+        let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(
+          lt.assetType,
+          lt.notional,
+          haircut,
+          marketOverrides,
+        );
+
+        totalCashClaims = totalCashClaims.add(assetCashClaim.toUnderlying());
+
+        const index = fCashAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
+        if (index > -1) {
+          // net off fCash if it exists
+          fCashAssets[index].notional = fCashAssets[index].notional.add(fCashClaim);
+        } else {
+          fCashAssets.push({
+            currencyId,
+            maturity: lt.maturity,
+            assetType: AssetType.fCash,
+            notional: fCashClaim,
+            hasMatured: false,
+            settlementDate: lt.maturity,
+            isIdiosyncratic: false,
+          });
+        }
+      });
+
+    return {fCashAssets, totalCashClaims};
   }
 
   /**
@@ -131,62 +181,25 @@ export default class FreeCollateral {
     haircut = useHaircut,
   ) {
     const system = System.getSystem();
+    const cashGroup = system.getCashGroup(currencyId);
     // This creates a copy of the assets so that we can modify it in memory
-    const currencyAssets = portfolio.filter((a) => a.currencyId === currencyId).map((a) => ({...a}));
-    let liquidityTokenUnderlyingPV = TypedBigNumber.getZeroUnderlying(currencyId);
-    let fCashUnderlyingPV = TypedBigNumber.getZeroUnderlying(currencyId);
+    const {totalCashClaims, fCashAssets} = FreeCollateral.getNetfCashPositions(
+      currencyId,
+      portfolio,
+      marketOverrides,
+      haircut,
+    );
+    const fCashUnderlyingPV = fCashAssets.reduce((underlyingPV, a) => underlyingPV.add(
+      cashGroup.getfCashPresentValueUnderlyingInternal(
+        a.maturity,
+        a.notional,
+        haircut,
+        blockTime,
+        marketOverrides,
+      ),
+    ), TypedBigNumber.getZeroUnderlying(currencyId));
 
-    if (currencyAssets.length > 0) {
-      const cashGroup = system.getCashGroup(currencyId);
-
-      // Filters and reduces for liquidity token value
-      liquidityTokenUnderlyingPV = currencyAssets
-        .filter((a) => a.assetType !== AssetType.fCash)
-        .reduce((underlyingPV, lt) => {
-          // eslint-disable-next-line prefer-const
-          let {assetCashClaim, fCashClaim} = cashGroup.getLiquidityTokenValue(
-            lt.assetType,
-            lt.notional,
-            haircut,
-            marketOverrides,
-          );
-
-          const index = currencyAssets.findIndex((a) => a.assetType === AssetType.fCash && lt.maturity === a.maturity);
-          if (index > -1) {
-            // net off fCash if it exists
-            fCashClaim = fCashClaim.add(currencyAssets[index].notional);
-            currencyAssets[index].notional = TypedBigNumber.from(
-              0,
-              currencyAssets[index].notional.type,
-              currencyAssets[index].notional.symbol,
-            );
-          }
-
-          const fCashHaircutPV = cashGroup.getfCashPresentValueUnderlyingInternal(
-            lt.maturity,
-            fCashClaim,
-            haircut,
-            blockTime,
-            marketOverrides,
-          );
-          return underlyingPV.add(fCashHaircutPV).add(assetCashClaim.toUnderlying());
-        }, liquidityTokenUnderlyingPV);
-
-      // Filters and reduces for liquidity token value
-      fCashUnderlyingPV = currencyAssets
-        .filter((a) => a.assetType === AssetType.fCash)
-        .reduce((underlyingPV, a) => underlyingPV.add(
-          cashGroup.getfCashPresentValueUnderlyingInternal(
-            a.maturity,
-            a.notional,
-            haircut,
-            blockTime,
-            marketOverrides,
-          ),
-        ), fCashUnderlyingPV);
-    }
-
-    return {liquidityTokenUnderlyingPV, fCashUnderlyingPV};
+    return fCashUnderlyingPV.add(totalCashClaims.toUnderlying());
   }
 
   /**

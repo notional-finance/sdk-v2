@@ -226,10 +226,7 @@ export default class InterestRateRisk {
       .getMarkets(currencyId)
       .map((m) => m.getSimulatedMarket(interestRate, blockTime));
 
-    const {
-      liquidityTokenUnderlyingPV: portfolioLTValue,
-      fCashUnderlyingPV: portfoliofCashValue,
-    } = FreeCollateral.getCashGroupValue(
+    const cashGroupPV = FreeCollateral.getCashGroupValue(
       currencyId,
       portfolio,
       blockTime,
@@ -247,8 +244,7 @@ export default class InterestRateRisk {
     return cashBalance
       .toUnderlying()
       .add(nTokenValue)
-      .add(portfolioLTValue)
-      .add(portfoliofCashValue);
+      .add(cashGroupPV);
   }
 
   /**
@@ -272,10 +268,7 @@ export default class InterestRateRisk {
     } = NTokenValue.getNTokenPortfolio(nTokenBalance.currencyId);
     const {nToken, totalSupply} = NTokenValue.getNTokenFactors(nTokenBalance.currencyId);
 
-    const {
-      liquidityTokenUnderlyingPV,
-      fCashUnderlyingPV,
-    } = FreeCollateral.getCashGroupValue(
+    const cashGroupPV = FreeCollateral.getCashGroupValue(
       nTokenBalance.currencyId,
       [...liquidityTokens].concat([...fCash]),
       blockTime,
@@ -283,9 +276,7 @@ export default class InterestRateRisk {
       false, // turn off haircuts when calculating nToken value
     );
 
-    const nTokenPV = cashBalance.toUnderlying()
-      .add(liquidityTokenUnderlyingPV)
-      .add(fCashUnderlyingPV);
+    const nTokenPV = cashBalance.toUnderlying().add(cashGroupPV);
 
     // Calculate haircut account value
     return nTokenPV

@@ -182,7 +182,6 @@ export default class BalanceSummary {
     public nTokenYield: number,
     public nTokenTotalYield: number,
     public maxWithdrawValueAssetCash: TypedBigNumber,
-    public maxBorrowCapacity: TypedBigNumber,
   ) {
     const system = System.getSystem();
     this.currency = system.getCurrencyById(this.currencyId);
@@ -411,7 +410,6 @@ export default class BalanceSummary {
             nTokenTradingYield,
             nTokenTotalYield,
             maxWithdrawValueAssetCash,
-            BalanceSummary.getBorrowCapacity(v.currencyId, fcAggregate),
           );
         })
         // Ensure that there is some balance for each summary
@@ -506,15 +504,6 @@ export default class BalanceSummary {
       cashFlows.push({amount: convertBigNumber(netCash.n), date: h.blockTime});
       return cashFlows;
     }, [] as CashFlow[]);
-  }
-
-  private static getBorrowCapacity(
-    currencyId: number,
-    fcAggregate: TypedBigNumber,
-  ) {
-    // Convert fcAggregate from ETH undoing the haircuts
-    if (!fcAggregate.isPositive()) return TypedBigNumber.getZeroUnderlying(currencyId);
-    return fcAggregate.fromETH(currencyId, true);
   }
 
   /**
