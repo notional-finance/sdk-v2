@@ -7,12 +7,20 @@ import {System} from '.';
 // price from some other price oracle
 export default class NoteETHRateProvider {
   private coinGeckoURL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
-  public noteUSDPrice: BigNumber = BigNumber.from(0);
+  private _noteUSDPrice: BigNumber = BigNumber.from(0);
 
-  constructor() {
-    setTimeout(async () => {
-      await this.fetchUSDPrice();
-    });
+  get noteUSDPrice() {
+    return this._noteUSDPrice;
+  }
+
+  constructor(price?: BigNumber) {
+    if (price) {
+      this._noteUSDPrice = price;
+    } else {
+      setTimeout(async () => {
+        await this.fetchUSDPrice();
+      });
+    }
   }
 
   private async fetchUSDPrice() {
@@ -36,7 +44,7 @@ export default class NoteETHRateProvider {
 
       // Convert USD Price to BigNumber in 18 decimals, uses the first 8 decimals of the avgUSDPrice,
       // using 18 decimals will overflow in javascript math
-      this.noteUSDPrice = BigNumber.from(Math.floor(avgUSDPrice * (10 ** 8))).mul(10 ** 10);
+      this._noteUSDPrice = BigNumber.from(Math.floor(avgUSDPrice * (10 ** 8))).mul(10 ** 10);
     } catch (e) {
       console.error(e);
     }

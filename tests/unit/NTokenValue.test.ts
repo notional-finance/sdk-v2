@@ -141,8 +141,10 @@ describe('nToken value', () => {
   });
 
   it('calculates the nToken incentive yield', () => {
-    const priceProvider = system.getETHProvider(NOTE_CURRENCY_ID) as NoteETHRateProvider;
-    priceProvider.noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
+    system.setETHRateProvider(
+      NOTE_CURRENCY_ID,
+      new NoteETHRateProvider(BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100)),
+    );
     const incentiveYield = NTokenValue.getNTokenIncentiveYield(2);
     // Underlying PV is 372,528e8, token value is 175,000e8 per annum
     // Incentive rate should be ~87.5%

@@ -216,6 +216,8 @@ export default class System {
         this.eventEmitter,
         refreshIntervalMS,
       );
+      // This will fetch the NOTE price via CoinGecko
+      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider());
     } else {
       this.dataSource = new Cache(
         chainId,
@@ -233,8 +235,6 @@ export default class System {
         this.parseQueryResult(result);
       }, refreshConfigurationDataIntervalMs);
     }
-
-    this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider());
   }
 
   public destroy() {

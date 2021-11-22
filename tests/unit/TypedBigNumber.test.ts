@@ -178,10 +178,15 @@ describe('Typed Big Number', () => {
 
   it('converts to NOTE to other currencies', (done) => {
     const noteTokens = TypedBigNumber.fromBalance(1e8, 'NOTE', true);
-    const priceProvider = system.getETHProvider(NOTE_CURRENCY_ID) as NoteETHRateProvider;
-    priceProvider.noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
+    let noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
+    system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
     expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0175e8).toString());
     expect(noteTokens.toETH(false).fromETH(3).toString()).toEqual(BigNumber.from(1.75e8).toString());
+
+    noteUSDPrice = BigNumber.from(275).mul(ethers.constants.WeiPerEther).div(100);
+    system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
+    expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0275e8).toString());
+
     setTimeout(() => { done(); }, 500);
   });
 });
