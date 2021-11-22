@@ -44,8 +44,10 @@ describe('Cache Refresh', () => {
   ));
   const cache: Cache = new Cache(1, cashGroups, eventEmitter, 10000);
   const mockResult = fs.readFileSync(`${__dirname}/../mocks/MockCacheResult.json`).toString();
+  const mockSetETHRateProvider = jest.fn(() => {});
   System.overrideSystem(({
     getCurrencyBySymbol: () => ({id: 1}),
+    setETHRateProvider: mockSetETHRateProvider,
   } as unknown) as System);
 
   beforeEach(() => {
@@ -63,7 +65,10 @@ describe('Cache Refresh', () => {
       expect(cache.nTokenLiquidityTokens.size).toBe(5);
       expect(cache.nTokenfCash.size).toBe(5);
       expect(cashGroups.get(1)!.markets.length).toBe(2);
-      expect(cashGroups.get(1)!.markets[1].totalfCashDisplayString).toBe('147.516');
+      expect(cashGroups.get(1)!.markets[1].totalfCashDisplayString).toBe('180.621');
+      expect(mockSetETHRateProvider.mock.calls.length).toBe(1);
+      const calls = mockSetETHRateProvider.mock.calls[0] as any[];
+      expect(calls[1].noteUSDPrice.toString()).toBe('13171509610000000000');
       done();
     });
   });
