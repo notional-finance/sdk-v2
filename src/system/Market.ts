@@ -48,6 +48,13 @@ export default class Market {
     return this.market.totalLiquidity.toDisplayString();
   }
 
+  public get fCashUtilization(): number {
+    return this.market.totalfCash.scale(
+      RATE_PRECISION,
+      this.market.totalfCash.add(this.market.totalAssetCash.toUnderlying()).n,
+    ).toNumber() / RATE_PRECISION;
+  }
+
   public get hasLiquidity(): boolean {
     return !this.market.totalLiquidity.isZero();
   }
@@ -328,6 +335,67 @@ export default class Market {
     return this.iterateRates(cashAmount, blockTime);
   }
 
+  public getSimulatedMarket(interestRate: number, blockTime: number) {
+    // eslint-disable-next-line max-len
+    // Adapted from: https://github.com/T-Woodward/Notional-Governance/blob/63ecc334baf040d394288865282c14fbda1da100/cashMarketV2.py#L199-L229
+    const {
+      rateAnchor,
+      totalCashUnderlying,
+      currentExchangeRate,
+      rateScalar,
+    } = this.getExchangeRateFactors(blockTime);
+
+    const simulatedExchangeRate = Market.interestToExchangeRate(
+      interestRate,
+      blockTime,
+      this.maturity,
+    );
+
+    const expValue = ((simulatedExchangeRate - rateAnchor.toNumber()) * rateScalar.toNumber()) / RATE_PRECISION;
+    const exp = Math.exp(expValue / RATE_PRECISION);
+    const simulatedProportion = Math.floor((exp / (1 + exp)) * RATE_PRECISION);
+
+    // Rough avg, todo: why?
+    const tradedExchangeRate = Math.floor(currentExchangeRate + (simulatedExchangeRate - currentExchangeRate) / 2);
+    const cashAmountToTradeDenom = Math.floor(tradedExchangeRate
+      // Multiply by RATE_PRECISION to bring denomination back to 1e9
+      + ((simulatedProportion / (RATE_PRECISION - simulatedProportion)) * RATE_PRECISION));
+
+    // Calculate the amount of cash required to trade the market to the given interest rate
+    const cashAmountToTradeNum = this._market.totalfCash.scale(
+      simulatedProportion,
+      RATE_PRECISION - simulatedProportion,
+    ).sub(this._market.totalfCash);
+
+    const cashAmountToTrade = cashAmountToTradeNum.scale(RATE_PRECISION, cashAmountToTradeDenom);
+    const fCashAmountToTrade = Market.fCashFromExchangeRate(tradedExchangeRate, cashAmountToTrade);
+    const totalfCash = this._market.totalfCash.add(fCashAmountToTrade);
+    const totalAssetCash = totalCashUnderlying.sub(cashAmountToTrade).toAssetCash();
+
+    const newMarket = new Market(
+      this.currencyId,
+      this.marketIndex,
+      this.maturity,
+      this.rateScalar,
+      this.totalFee,
+      this.reserveFeeShare,
+      this.rateOracleTimeWindow,
+      this.assetSymbol,
+      this.underlyingSymbol,
+    );
+
+    newMarket.setMarket({
+      totalfCash: totalfCash.n,
+      totalAssetCash: totalAssetCash.n,
+      totalLiquidity: this._market.totalLiquidity.n,
+      lastImpliedRate: BigNumber.from(interestRate),
+      oracleRate: BigNumber.from(interestRate),
+      previousTradeTime: BigNumber.from(blockTime),
+    });
+
+    return newMarket;
+  }
+
   /** * Private Methods ** */
   private getExchangeRateFactors(blockTime: number) {
     const timeToMaturity = this.timeToMaturity(blockTime);
@@ -349,6 +417,7 @@ export default class Market {
       totalCashUnderlying,
       rateAnchor,
       timeToMaturity,
+      currentExchangeRate: exchangeRate,
     };
   }
 

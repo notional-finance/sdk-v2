@@ -1,9 +1,15 @@
 import {BigNumber, utils} from 'ethers';
-import {MAX_BALANCES, MAX_BITMAP_ASSETS, MAX_PORTFOLIO_ASSETS} from '../config/constants';
+import {
+  ETHER_CURRENCY_ID,
+  INTERNAL_TOKEN_PRECISION,
+  MAX_BALANCES,
+  MAX_BITMAP_ASSETS,
+  MAX_PORTFOLIO_ASSETS,
+} from '../config/constants';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {Asset, AssetType, Balance} from '../libs/types';
 import {assetTypeNum, convertAssetType, getNowSeconds} from '../libs/utils';
-import {System, CashGroup} from '../system';
+import {System, CashGroup, FreeCollateral} from '../system';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -205,6 +211,196 @@ export default class AccountData {
 
     // Do this to ensure that there is a balance slot set for the asset
     this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, symbol));
+  }
+
+  /**
+   * Calculates loan to value ratio. A loan to value ratio is the total value of debts in ETH divided by
+   * the total value of collateral in ETH. It does not use any net currency values.
+   */
+  public loanToValueRatio() {
+    const system = System.getSystem();
+    // All values in this method are denominated in ETH
+
+    /* eslint-disable @typescript-eslint/no-shadow */
+    /* eslint-disable no-param-reassign */
+    const {
+      cashDebts,
+      cashAssets,
+      cashDebtsWithBuffer,
+      cashAssetsWithHaircut,
+      cashGroups,
+    } = this.accountBalances.reduce(({
+      cashDebts,
+      cashAssets,
+      cashDebtsWithBuffer,
+      cashAssetsWithHaircut,
+      cashGroups,
+    }, b) => {
+      if (b.cashBalance.isNegative()) {
+        cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
+        cashDebtsWithBuffer = cashDebtsWithBuffer.add(b.cashBalance.toETH(true).abs());
+      } else if (b.cashBalance.isPositive()) {
+        cashAssets = cashAssets.add(b.cashBalance.toETH(false));
+        cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.cashBalance.toETH(true));
+      }
+
+      if (b.nTokenBalance?.isPositive()) {
+        cashAssets = cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
+        cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.nTokenBalance.toAssetCash().toETH(true));
+      }
+
+      const {
+        totalCashClaims,
+        fCashAssets,
+      } = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, false);
+      const {
+        totalCashClaims: totalCashClaimsHaircut,
+        fCashAssets: fCashAssetsHaircut,
+      } = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, true);
+
+      cashAssets = cashAssets.add(totalCashClaims.toETH(false));
+      cashAssetsWithHaircut = cashAssetsWithHaircut.add(totalCashClaimsHaircut.toETH(true));
+      if (fCashAssets.length > 0 || fCashAssetsHaircut.length > 0) {
+        cashGroups.push({currencyId: b.currencyId, noHaircut: fCashAssets, haircut: fCashAssetsHaircut});
+      }
+
+      return {
+        cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups,
+      };
+    }, {
+      cashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
+      cashGroups: Array<{currencyId: number, noHaircut: Asset[], haircut: Asset[]}>(),
+    });
+
+    const {
+      fCashDebts,
+      fCashAssets,
+      fCashAssetsWithHaircut,
+      fCashDebtsWithBuffer,
+    } = cashGroups.reduce(({
+      fCashDebts,
+      fCashAssets,
+      fCashAssetsWithHaircut,
+      fCashDebtsWithBuffer,
+    }, {currencyId, haircut, noHaircut}) => {
+      const cashGroup = system.getCashGroup(currencyId);
+
+      noHaircut.forEach((a) => {
+        const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false).toETH(false);
+        if (a.notional.isPositive()) {
+          fCashAssets = fCashAssets.add(ethPV);
+        } else {
+          fCashDebts = fCashDebts.add(ethPV);
+        }
+      });
+
+      haircut.forEach((a) => {
+        const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, true).toETH(true);
+        if (a.notional.isPositive()) {
+          fCashAssetsWithHaircut = fCashAssetsWithHaircut.add(ethPV);
+        } else {
+          fCashDebtsWithBuffer = fCashDebtsWithBuffer.add(ethPV);
+        }
+      });
+
+      return {
+        fCashDebts,
+        fCashAssets,
+        fCashAssetsWithHaircut,
+        fCashDebtsWithBuffer,
+      };
+    }, {
+      fCashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
+      fCashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+      fCashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
+      fCashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
+    });
+    /* eslint-enable @typescript-eslint/no-shadow */
+    /* eslint-enable no-param-reassign */
+
+    const totalETHValue = cashAssets.add(fCashAssets);
+    const totalETHDebts = cashDebts.add(fCashDebts);
+    const totalETHValueHaircut = cashAssetsWithHaircut.add(fCashAssetsWithHaircut);
+    const totalETHDebtsBuffer = cashDebtsWithBuffer.add(fCashDebtsWithBuffer);
+    let loanToValue: number | null = null;
+    let haircutLoanToValue: number | null = null;
+    let maxLoanToValue: number | null = null;
+    if (!totalETHValue.isZero()) {
+      loanToValue = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
+      / INTERNAL_TOKEN_PRECISION) * 100;
+      haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
+      / INTERNAL_TOKEN_PRECISION) * 100;
+      maxLoanToValue = (loanToValue / haircutLoanToValue) * 100;
+    }
+
+    return {
+      totalETHDebts,
+      totalETHValue,
+      loanToValue,
+      haircutLoanToValue,
+      maxLoanToValue,
+    };
+  }
+
+  public getLiquidationPrice(
+    collateralId: number,
+    debtCurrencyId: number,
+  ) {
+    // We represent everything as FX to ETH so in the case that the collateral is in ETH we
+    // vary the debt currency id
+    const targetId = collateralId === ETHER_CURRENCY_ID ? debtCurrencyId : collateralId;
+    const {
+      netETHCollateralWithHaircut,
+      netETHDebtWithBuffer,
+      netUnderlyingAvailable,
+    } = FreeCollateral.getFreeCollateral(this);
+    const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
+    const targetCurrencyFC = aggregateFC.fromETH(targetId, true);
+    const netUnderlying = netUnderlyingAvailable.get(targetId);
+
+    if (!netUnderlying) throw Error('Invalid target currency when calculating liquidation price');
+    const fcSurplusProportion = targetCurrencyFC.scale(INTERNAL_TOKEN_PRECISION, netUnderlying.n).abs();
+    // This is the max exchange rate decrease as a portion of a single token in internal token precision, can
+    // see this as the liquidation price of a single unit of ETH
+    const maxExchangeRateDecrease = collateralId === targetId
+      ? fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).sub(fcSurplusProportion)
+      : fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).add(fcSurplusProportion);
+
+    // Convert to the debt currency denomination
+    return collateralId === ETHER_CURRENCY_ID
+      // If using the debt currency this will do 1 / maxExchangeRateDecrease.toETH(), returning a TypedNumber
+      // in the debt currency denomination
+      ? maxExchangeRateDecrease.copy(INTERNAL_TOKEN_PRECISION)
+        .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n)
+      // Convert from collateral to debt via ETH
+      : maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
+  }
+
+  /**
+   * Calculates a collateral ratio, this uses the net value of currencies in the free collateral figure without
+   * applying any buffers or haircuts. This is used as a user friendly way of showing free collateral.
+   */
+  public collateralRatio() {
+    const {
+      netETHCollateral,
+      netETHDebt,
+    } = FreeCollateral.getFreeCollateral(this);
+    return FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
+  }
+
+  /**
+   * Calculates a buffered collateral ratio, this uses the net value of currencies in the free collateral figure
+   * after applying buffers and haircuts. An account is liquidatable when this is below 100.
+   */
+  public bufferedCollateralRatio() {
+    const {
+      netETHCollateralWithHaircut,
+      netETHDebtWithBuffer,
+    } = FreeCollateral.getFreeCollateral(this);
+    return FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer);
   }
 
   private static _updateBalance(

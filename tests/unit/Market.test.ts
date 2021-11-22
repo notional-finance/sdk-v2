@@ -221,6 +221,40 @@ describe('Market', () => {
       Market.cashFromExchangeRate(exchangeRate, fCash);
     }).toThrowError();
   });
-});
 
-// test settled assets in account
+  it('returns a simulated market at 18% interest', () => {
+    const market = getMarket();
+    const lastImpliedRate = BigNumber.from(0.1e9);
+    const oracleRate = BigNumber.from(0.1e9);
+    market.setMarket({
+      totalAssetCash: BigNumber.from(50000e8),
+      totalLiquidity: BigNumber.from(50000e8),
+      totalfCash: BigNumber.from(1000e8),
+      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      lastImpliedRate,
+      oracleRate,
+    });
+
+    const override = market.getSimulatedMarket(0.18e9, blockTime);
+    expect(override.marketOracleRate(blockTime)).toBe(0.18e9);
+    expect(override.fCashUtilization).toBeCloseTo(0.9405, 3);
+  });
+
+  it('returns a simulated market at 0% interest', () => {
+    const market = getMarket();
+    const lastImpliedRate = BigNumber.from(0.1e9);
+    const oracleRate = BigNumber.from(0.1e9);
+    market.setMarket({
+      totalAssetCash: BigNumber.from(50000e8),
+      totalLiquidity: BigNumber.from(50000e8),
+      totalfCash: BigNumber.from(1000e8),
+      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      lastImpliedRate,
+      oracleRate,
+    });
+
+    const override = market.getSimulatedMarket(0, blockTime);
+    expect(override.marketOracleRate(blockTime)).toBe(0);
+    expect(override.fCashUtilization).toBeCloseTo(0.0408, 3);
+  });
+});

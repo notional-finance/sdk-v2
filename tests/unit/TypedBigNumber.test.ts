@@ -18,6 +18,7 @@ describe('Typed Big Number', () => {
     system,
     provider,
   );
+  afterAll(() => system.destroy());
 
   it('does not allow arithmetic of two different types', () => {
     const t1 = TypedBigNumber.from(100, BigNumberType.ExternalAsset, 'DAI');

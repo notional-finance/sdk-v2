@@ -4,9 +4,9 @@ import {AssetType, TradeType} from '../../src/libs/types';
 import {AssetSummary} from '../../src/account';
 import {SECONDS_IN_DAY, SECONDS_IN_QUARTER} from '../../src/config/constants';
 import MockSystem from '../mocks/MockSystem';
-import MockAccountData from './AccountData.test';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {System} from '../../src/system';
+import MockAccountData from '../mocks/MockAccountData';
 
 describe('Asset Summary', () => {
   const blockTime = CashGroup.getTimeReference(1621857396);
