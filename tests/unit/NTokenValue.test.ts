@@ -1,6 +1,8 @@
 import {BigNumber, ethers} from 'ethers';
 import {getNowSeconds} from '../../src/libs/utils';
-import {RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR} from '../../src/config/constants';
+import {
+  NOTE_CURRENCY_ID, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
+} from '../../src/config/constants';
 import {System, NTokenValue, CashGroup} from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
