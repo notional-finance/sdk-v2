@@ -23,7 +23,7 @@ export default class Cache extends DataSource {
         this.cacheURL = 'https://api.notional.finance/v1/system';
         break;
       case 42:
-        this.cacheURL = 'http://kovan.api.notional.finance/v1/system';
+        this.cacheURL = 'https://kovan.api.notional.finance/v1/system';
         break;
       case 9999:
         // This is used to bypass the error during mocks
