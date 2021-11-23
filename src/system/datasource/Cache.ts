@@ -136,7 +136,8 @@ export default class Cache extends DataSource {
     });
 
     const noteETHProvider = parsedObject.ethRateProviders.get(NOTE_CURRENCY_ID);
-    const noteUSDPrice = BigNumber.from(noteETHProvider.noteUSDPrice);
+    // eslint-disable-next-line no-underscore-dangle
+    const noteUSDPrice = BigNumber.from(noteETHProvider._noteUSDPrice);
     System.getSystem().setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
 
     this.lastUpdateBlockNumber = parsedObject.lastUpdateBlockNumber;

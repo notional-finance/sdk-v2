@@ -765,7 +765,7 @@
         4294967295,
         {
           "coinGeckoURL": "https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1",
-          "noteUSDPrice": {
+          "_noteUSDPrice": {
             "type": "BigNumber",
             "hex": "0xb6ca9a3463b1a400"
           }
