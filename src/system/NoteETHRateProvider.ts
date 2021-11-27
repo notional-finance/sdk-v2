@@ -1,26 +1,47 @@
 import {BigNumber} from 'ethers';
 import fetch from 'cross-fetch';
+import EventEmitter from 'eventemitter3';
 import {IAggregator} from '../typechain/IAggregator';
 import {System} from '.';
+import {SystemEvents} from '..';
 
 // This uses a hardcoded price for the NOTE token, in the future we will upgrade this to get the
 // price from some other price oracle
 export default class NoteETHRateProvider {
   private coinGeckoURL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
   private _noteUSDPrice: BigNumber = BigNumber.from(0);
+  private noteRefreshInterval?: NodeJS.Timeout;
 
   get noteUSDPrice() {
     return this._noteUSDPrice;
   }
 
-  constructor(price?: BigNumber) {
+  constructor(
+    price?: BigNumber,
+    refreshOpts?: {
+      notePriceRefreshIntervalMS: number;
+      eventEmitter: EventEmitter;
+    },
+  ) {
     if (price) {
       this._noteUSDPrice = price;
-    } else {
+    } else if (refreshOpts) {
+      // Fetch price initially immediately
       setTimeout(async () => {
         await this.fetchUSDPrice();
       });
+
+      const {notePriceRefreshIntervalMS, eventEmitter} = refreshOpts;
+      // Interval will update on the refresh cycle
+      this.noteRefreshInterval = setInterval(async () => {
+        await this.fetchUSDPrice();
+        eventEmitter.emit(SystemEvents.NOTE_PRICE_UPDATE);
+      }, notePriceRefreshIntervalMS);
     }
+  }
+
+  public destroy() {
+    if (this.noteRefreshInterval) clearInterval(this.noteRefreshInterval);
   }
 
   private async fetchUSDPrice() {
