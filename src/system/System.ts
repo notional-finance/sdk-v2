@@ -48,6 +48,7 @@ export enum SystemEvents {
   ASSET_RATE_UPDATE = 'ASSET_RATE_UPDATE',
   BLOCK_SUPPLY_RATE_UPDATE = 'BLOCK_SUPPLY_RATE_UPDATE',
   ETH_RATE_UPDATE = 'ETH_RATE_UPDATE',
+  NOTE_PRICE_UPDATE = 'NOTE_PRICE_UPDATE',
 }
 
 const systemConfigurationQuery = gql`
@@ -217,7 +218,13 @@ export default class System {
         refreshIntervalMS,
       );
       // This will fetch the NOTE price via CoinGecko
-      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider());
+      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider(
+        undefined,
+        {
+          notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
+          eventEmitter: this.eventEmitter,
+        },
+      ));
     } else {
       this.dataSource = new Cache(
         chainId,
