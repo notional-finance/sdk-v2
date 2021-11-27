@@ -9,7 +9,9 @@ import {
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {Asset, AssetType, Balance} from '../libs/types';
 import {assetTypeNum, convertAssetType, getNowSeconds} from '../libs/utils';
-import {System, CashGroup, FreeCollateral} from '../system';
+import {
+  System, CashGroup, FreeCollateral, NTokenValue,
+} from '../system';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -246,7 +248,8 @@ export default class AccountData {
 
       if (b.nTokenBalance?.isPositive()) {
         cashAssets = cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
-        cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.nTokenBalance.toAssetCash().toETH(true));
+        const nTokenHaircut = NTokenValue.convertNTokenToInternalAsset(b.currencyId, b.nTokenBalance, true);
+        cashAssetsWithHaircut = cashAssetsWithHaircut.add(nTokenHaircut.toETH(true));
       }
 
       const {
@@ -293,7 +296,7 @@ export default class AccountData {
         if (a.notional.isPositive()) {
           fCashAssets = fCashAssets.add(ethPV);
         } else {
-          fCashDebts = fCashDebts.add(ethPV);
+          fCashDebts = fCashDebts.add(ethPV.abs());
         }
       });
 
@@ -302,7 +305,7 @@ export default class AccountData {
         if (a.notional.isPositive()) {
           fCashAssetsWithHaircut = fCashAssetsWithHaircut.add(ethPV);
         } else {
-          fCashDebtsWithBuffer = fCashDebtsWithBuffer.add(ethPV);
+          fCashDebtsWithBuffer = fCashDebtsWithBuffer.add(ethPV.abs());
         }
       });
 
@@ -351,12 +354,16 @@ export default class AccountData {
   ) {
     // We represent everything as FX to ETH so in the case that the collateral is in ETH we
     // vary the debt currency id
-    const targetId = collateralId === ETHER_CURRENCY_ID ? debtCurrencyId : collateralId;
     const {
       netETHCollateralWithHaircut,
       netETHDebtWithBuffer,
       netUnderlyingAvailable,
     } = FreeCollateral.getFreeCollateral(this);
+    const collateralAmount = netUnderlyingAvailable.get(collateralId);
+    // There is no collateral in the specified currency so we do not have a liquidation price
+    if (!collateralAmount || collateralAmount.n.lte(0)) return null;
+
+    const targetId = collateralId === ETHER_CURRENCY_ID ? debtCurrencyId : collateralId;
     const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
     const targetCurrencyFC = aggregateFC.fromETH(targetId, true);
     const netUnderlying = netUnderlyingAvailable.get(targetId);

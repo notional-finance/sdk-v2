@@ -229,6 +229,8 @@ export default class FreeCollateral {
       minBufferedRatio: number | null;
       targetCollateralRatio: number | null;
       targetBufferedRatio: number | null;
+      minCollateralCopy: AccountData;
+      targetCollateralCopy: AccountData;
     } {
     const bufferedRatio = Math.trunc(_bufferedRatio);
     if (bufferedRatio < 100) throw new RangeError('Buffered ratio must be more than 100');
@@ -299,6 +301,8 @@ export default class FreeCollateral {
       targetBufferedRatio: FreeCollateral.calculateCollateralRatio(
         targetFC.netETHCollateralWithHaircut, targetFC.netETHDebtWithBuffer,
       ),
+      minCollateralCopy,
+      targetCollateralCopy,
     };
   }
 
