@@ -1,5 +1,5 @@
 import {BigNumber, ethers} from 'ethers';
-import {TypedBigNumber, BigNumberType} from '../../src';
+import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {SECONDS_IN_YEAR} from '../../src/config/constants';
 import {getNowSeconds} from '../../src/libs/utils';
 import {Market, CashGroup} from '../../src/system';
