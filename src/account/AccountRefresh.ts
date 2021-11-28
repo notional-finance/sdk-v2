@@ -20,6 +20,35 @@ export enum AccountEvents {
   ACCOUNT_TRANSACTION_MINED = 'ACCOUNT_TRANSACTION_MINED',
 }
 
+interface AssetResult {
+  currencyId: BigNumber;
+  maturity: BigNumber;
+  assetType: BigNumber;
+  notional: BigNumber;
+  storageSlot: BigNumber;
+  storageState: number;
+}
+
+interface BalanceResult {
+  currencyId: number;
+  cashBalance: BigNumber;
+  nTokenBalance: BigNumber;
+  lastClaimTime: BigNumber;
+  lastClaimIntegralSupply: BigNumber;
+}
+
+export interface GetAccountResult {
+  accountContext: {
+    nextSettleTime: number;
+    hasDebt: string;
+    assetArrayLength: number;
+    bitmapCurrencyId: number;
+    activeCurrencies: string;
+  };
+  accountBalances: BalanceResult[];
+  portfolio: AssetResult[];
+}
+
 export default abstract class AccountRefresh {
   public eventEmitter = new EventEmitter();
   private _lastUpdateBlockNumber: number = 0;
@@ -79,7 +108,7 @@ export default abstract class AccountRefresh {
 
   public async refresh() {
     const [accountResult, block] = await Promise.all([
-      this.notionalProxy.getAccount(this.address).then((r) => AccountData.load(r)),
+      this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r)),
       this.provider.getBlock('latest'),
       this.refreshWalletBalances(),
     ]);
@@ -97,26 +126,28 @@ export default abstract class AccountRefresh {
   }
 
   public async refreshWalletBalances() {
-    const promises = System.getSystem().getAllCurrencies().reduce((p, c) => {
-      if (c.id === ETHER_CURRENCY_ID) {
-        // Special handling for ETH balance
-        p.push(
-          this.provider.getBalance(this.address).then((b) => ({
-            currencyId: ETHER_CURRENCY_ID,
-            balance: b as BigNumber,
-            allowance: ethers.constants.MaxUint256 as BigNumber,
-            isUnderlying: true,
-          })),
-        );
-      }
+    const promises = System.getSystem()
+      .getAllCurrencies()
+      .reduce((p, c) => {
+        if (c.id === ETHER_CURRENCY_ID) {
+          // Special handling for ETH balance
+          p.push(
+            this.provider.getBalance(this.address).then((b) => ({
+              currencyId: ETHER_CURRENCY_ID,
+              balance: b as BigNumber,
+              allowance: ethers.constants.MaxUint256 as BigNumber,
+              isUnderlying: true,
+            })),
+          );
+        }
 
-      if (c.underlyingContract) {
-        p.push(this.fetchBalanceAndAllowance(c.id, c.underlyingContract, true));
-      }
+        if (c.underlyingContract) {
+          p.push(this.fetchBalanceAndAllowance(c.id, c.underlyingContract, true));
+        }
 
-      p.push(this.fetchBalanceAndAllowance(c.id, c.contract, false));
-      return p;
-    }, new Array<ReturnType<AccountRefresh['fetchBalanceAndAllowance']>>());
+        p.push(this.fetchBalanceAndAllowance(c.id, c.contract, false));
+        return p;
+      }, new Array<ReturnType<AccountRefresh['fetchBalanceAndAllowance']>>());
 
     const balances = await Promise.all(promises);
     const block = await this.provider.getBlock('latest');
