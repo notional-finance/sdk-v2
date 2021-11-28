@@ -28,8 +28,8 @@ export default class GraphClient {
     });
   }
 
-  public async queryOrThrow<T>(query: DocumentNode) {
-    const result = await this.apollo.query<T>({query, fetchPolicy: 'network-only'});
+  public async queryOrThrow<T>(query: DocumentNode, variables?: Object) {
+    const result = await this.apollo.query<T>({query, fetchPolicy: 'network-only', variables});
     if (result.error) {
       throw new Error(result.error.message);
     }
