@@ -556,7 +556,7 @@ export default class System {
       },
     );
     if (settlementRateResponse.settlementRates.length === 0) {
-      throw new Error(`Asset rate data for ${currencyId} is not found`);
+      throw new Error(`Settlement rate data for ${currencyId} with maturity ${maturity} is not found`);
     }
 
     const settlementRate = settlementRateResponse.settlementRates[0];
