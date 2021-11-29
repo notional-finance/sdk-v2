@@ -6,7 +6,7 @@ import {gql} from '@apollo/client/core';
 
 import {CashGroup, System} from '../system';
 import GraphClient from '../GraphClient';
-import TypedBigNumber from '../libs/TypedBigNumber';
+import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import AccountData from './AccountData';
 import {AssetType} from '../libs/types';
@@ -95,7 +95,7 @@ export default class AccountsBatch {
     }
 
     const cashBalance = TypedBigNumber.fromBalance(balance.assetCashBalance, currency.symbol, true);
-    const nTokenBalance = TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, false);
+    const nTokenBalance = TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, true);
     const lastClaimTime = BigNumber.from(balance.lastClaimTime);
     const lastClaimIntegralSupply = BigNumber.from(balance.lastClaimIntegralSupply);
 
@@ -112,13 +112,17 @@ export default class AccountsBatch {
     const currencyId = Number(asset.currency.id);
     const {maturity} = asset;
     const assetType = asset.assetType as AssetType;
-    const symbol = System.getSystem().getCurrencyById(currencyId)?.symbol;
+    const currency = System.getSystem().getCurrencyById(currencyId);
 
-    if (!symbol) {
-      throw Error(`Currency ${currencyId} cannot be found.`);
+    if (!currency || !currency.underlyingSymbol) {
+      throw Error(`Invalid currency ${currencyId}.`);
     }
 
-    const notional = TypedBigNumber.fromBalance(asset.notional, symbol, false);
+    const notional =
+      assetType === AssetType.fCash
+        ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
+        : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
+
     const hasMatured = maturity < getNowSeconds();
     const settlementDate = Number(asset.settlementDate);
     const isIdiosyncratic = CashGroup.isIdiosyncratic(maturity);
@@ -142,9 +146,7 @@ export default class AccountsBatch {
    * @returns
    */
   public static async load(graphClient: GraphClient, pageSize: number, pageNumber: number) {
-    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {
-      variables: {pageSize, pageNumber},
-    });
+    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
     const accounts = new Map<string, AccountData>();
     response.accounts.forEach(async (account) => {
       // Ideally, all settlement rates and markets that may be concerned by these accounts would be pre-loaded

@@ -5,7 +5,9 @@ import TypedBigNumber, {BigNumberType} from '../../libs/TypedBigNumber';
 import {ETHER_CURRENCY_ID} from '../../config/constants';
 import {SystemEvents} from '../System';
 import {AccountData} from '../../account';
-import {AssetRate, Currency, EthRate, nToken} from '../../libs/types';
+import {
+  AssetRate, Currency, EthRate, nToken,
+} from '../../libs/types';
 import {Notional as NotionalProxy} from '../../typechain/Notional';
 import CashGroup from '../CashGroup';
 
@@ -123,8 +125,8 @@ export default class Blockchain extends DataSource {
       promises.push(
         this.notionalProxy.getNTokenPortfolio(n.contract.address).then((value) => {
           const {liquidityTokens, netfCashAssets} = value;
-          this.nTokenLiquidityTokens.set(k, AccountData.parsePortfolio(liquidityTokens));
-          this.nTokenfCash.set(k, AccountData.parsePortfolio(netfCashAssets));
+          this.nTokenLiquidityTokens.set(k, AccountData.parsePortfolioFromBlockchain(liquidityTokens));
+          this.nTokenfCash.set(k, AccountData.parsePortfolioFromBlockchain(netfCashAssets));
           this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, k);
         }),
       );

@@ -106,10 +106,9 @@ export default class AccountData {
       const underlyingSymbol = system.getUnderlyingSymbol(v.currencyId.toNumber());
       const maturity = v.maturity.toNumber();
       const assetType = convertAssetType(v.assetType);
-      const notional =
-        assetType === AssetType.fCash
-          ? TypedBigNumber.from(v.notional, BigNumberType.InternalUnderlying, underlyingSymbol)
-          : TypedBigNumber.from(v.notional, BigNumberType.LiquidityToken, currency.symbol);
+      const notional = assetType === AssetType.fCash
+        ? TypedBigNumber.from(v.notional, BigNumberType.InternalUnderlying, underlyingSymbol)
+        : TypedBigNumber.from(v.notional, BigNumberType.LiquidityToken, currency.symbol);
       const settlementDate = CashGroup.getSettlementDate(assetType, maturity);
 
       return {
@@ -235,8 +234,12 @@ export default class AccountData {
 
     /* eslint-disable @typescript-eslint/no-shadow */
     /* eslint-disable no-param-reassign */
-    const {cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups} = this.accountBalances.reduce(
-      ({cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups}, b) => {
+    const {
+      cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups,
+    } = this.accountBalances.reduce(
+      ({
+        cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups,
+      }, b) => {
         if (b.cashBalance.isNegative()) {
           cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
           cashDebtsWithBuffer = cashDebtsWithBuffer.add(b.cashBalance.toETH(true).abs());
@@ -256,8 +259,7 @@ export default class AccountData {
           undefined,
           false,
         );
-        const {totalCashClaims: totalCashClaimsHaircut, fCashAssets: fCashAssetsHaircut} =
-          FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, true);
+        const {totalCashClaims: totalCashClaimsHaircut, fCashAssets: fCashAssetsHaircut} = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, true);
 
         cashAssets = cashAssets.add(totalCashClaims.toETH(false));
         cashAssetsWithHaircut = cashAssetsWithHaircut.add(totalCashClaimsHaircut.toETH(true));
@@ -282,8 +284,12 @@ export default class AccountData {
       },
     );
 
-    const {fCashDebts, fCashAssets, fCashAssetsWithHaircut, fCashDebtsWithBuffer} = cashGroups.reduce(
-      ({fCashDebts, fCashAssets, fCashAssetsWithHaircut, fCashDebtsWithBuffer}, {currencyId, haircut, noHaircut}) => {
+    const {
+      fCashDebts, fCashAssets, fCashAssetsWithHaircut, fCashDebtsWithBuffer,
+    } = cashGroups.reduce(
+      ({
+        fCashDebts, fCashAssets, fCashAssetsWithHaircut, fCashDebtsWithBuffer,
+      }, {currencyId, haircut, noHaircut}) => {
         const cashGroup = system.getCashGroup(currencyId);
 
         noHaircut.forEach((a) => {
@@ -329,12 +335,10 @@ export default class AccountData {
     let haircutLoanToValue: number | null = null;
     let maxLoanToValue: number | null = null;
     if (!totalETHValue.isZero()) {
-      loanToValue =
-        (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber() / INTERNAL_TOKEN_PRECISION) * 100;
-      haircutLoanToValue =
-        (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber() /
-          INTERNAL_TOKEN_PRECISION) *
-        100;
+      loanToValue = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber() / INTERNAL_TOKEN_PRECISION) * 100;
+      haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
+          / INTERNAL_TOKEN_PRECISION)
+        * 100;
       maxLoanToValue = (loanToValue / haircutLoanToValue) * 100;
     }
 
@@ -351,8 +355,7 @@ export default class AccountData {
     // We represent everything as FX to ETH so in the case that the collateral is in ETH we
     // vary the debt currency id
     const targetId = collateralId === ETHER_CURRENCY_ID ? debtCurrencyId : collateralId;
-    const {netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable} =
-      FreeCollateral.getFreeCollateral(this);
+    const {netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable} = FreeCollateral.getFreeCollateral(this);
     const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
     const targetCurrencyFC = aggregateFC.fromETH(targetId, true);
     const netUnderlying = netUnderlyingAvailable.get(targetId);
@@ -361,20 +364,19 @@ export default class AccountData {
     const fcSurplusProportion = targetCurrencyFC.scale(INTERNAL_TOKEN_PRECISION, netUnderlying.n).abs();
     // This is the max exchange rate decrease as a portion of a single token in internal token precision, can
     // see this as the liquidation price of a single unit of ETH
-    const maxExchangeRateDecrease =
-      collateralId === targetId
-        ? fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).sub(fcSurplusProportion)
-        : fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).add(fcSurplusProportion);
+    const maxExchangeRateDecrease = collateralId === targetId
+      ? fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).sub(fcSurplusProportion)
+      : fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).add(fcSurplusProportion);
 
     // Convert to the debt currency denomination
     return collateralId === ETHER_CURRENCY_ID
       ? // If using the debt currency this will do 1 / maxExchangeRateDecrease.toETH(), returning a TypedNumber
-        // in the debt currency denomination
-        maxExchangeRateDecrease
-          .copy(INTERNAL_TOKEN_PRECISION)
-          .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n)
+    // in the debt currency denomination
+      maxExchangeRateDecrease
+        .copy(INTERNAL_TOKEN_PRECISION)
+        .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n)
       : // Convert from collateral to debt via ETH
-        maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
+      maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
   }
 
   /**
@@ -448,10 +450,9 @@ export default class AccountData {
 
       // Sorting is done in place
       portfolio.sort(
-        (a, b) =>
-          a.currencyId - b.currencyId ||
-          assetTypeNum(a.assetType) - assetTypeNum(b.assetType) ||
-          a.maturity - b.maturity,
+        (a, b) => a.currencyId - b.currencyId
+          || assetTypeNum(a.assetType) - assetTypeNum(b.assetType)
+          || a.maturity - b.maturity,
       );
     }
 
