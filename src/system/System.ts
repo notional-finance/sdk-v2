@@ -2,9 +2,7 @@ import {gql} from '@apollo/client/core';
 import {BigNumber, Contract, ethers} from 'ethers';
 import {clearInterval} from 'timers';
 import EventEmitter from 'eventemitter3';
-import {
-  Asset, AssetRate, AssetType, Currency, EthRate, nToken, SettlementMarket, TokenType,
-} from '../libs/types';
+import {Asset, AssetRate, AssetType, Currency, EthRate, nToken, SettlementMarket, TokenType} from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 import {
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
@@ -41,11 +39,12 @@ export enum SystemEvents {
   ASSET_RATE_UPDATE = 'ASSET_RATE_UPDATE',
   BLOCK_SUPPLY_RATE_UPDATE = 'BLOCK_SUPPLY_RATE_UPDATE',
   ETH_RATE_UPDATE = 'ETH_RATE_UPDATE',
+  NOTE_PRICE_UPDATE = 'NOTE_PRICE_UPDATE',
 }
 
 const settlementMarketsQuery = gql`
   query getMarketsAt($currencyId: String!, $settlementDate: Int!) {
-    markets(where: { currency: $currencyId, settlementDate: $settlementDate }) {
+    markets(where: {currency: $currencyId, settlementDate: $settlementDate}) {
       id
       maturity
       totalfCash
@@ -67,7 +66,7 @@ interface SettlementMarketsQueryResponse {
 
 const settlementRateQuery = gql`
   query getSettlementRate($currencyId: String!, $maturity: Int!) {
-    settlementRates(where: { maturity: $maturity, currency: $currencyId }) {
+    settlementRates(where: {maturity: $maturity, currency: $currencyId}) {
       id
       assetExchangeRate {
         id
@@ -490,11 +489,19 @@ export default class System {
     return this.dataSource.nTokenIncentiveFactors.get(currencyId);
   }
 
-  public setETHRateProvider(currencyId: number, provider: IETHRateProvider) {
+  public setETHRateProvider(currencyId: number, provider: IETHRateProvider | null) {
+    if (!provider) {
+      this.ethRateProviders.delete(currencyId);
+      return;
+    }
     this.ethRateProviders.set(currencyId, provider);
   }
 
-  public setNTokenAssetCashPVProvider(currencyId: number, provider: INTokenAssetCashPVProvider) {
+  public setNTokenAssetCashPVProvider(currencyId: number, provider: INTokenAssetCashPVProvider | null) {
+    if (!provider) {
+      this.nTokenAssetCashPVProviders.delete(currencyId);
+      return;
+    }
     this.nTokenAssetCashPVProviders.set(currencyId, provider);
   }
 

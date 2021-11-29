@@ -1,6 +1,4 @@
-import {
-  Signer, Contract, ethers, VoidSigner, utils, BigNumber,
-} from 'ethers';
+import {Signer, Contract, ethers, VoidSigner, utils, BigNumber} from 'ethers';
 import {System} from './system';
 import Governance from './Governance';
 import GraphClient from './GraphClient';
