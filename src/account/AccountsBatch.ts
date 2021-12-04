@@ -118,10 +118,9 @@ export default class AccountsBatch {
       throw Error(`Invalid currency ${currencyId}.`);
     }
 
-    const notional =
-      assetType === AssetType.fCash
-        ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
-        : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
+    const notional = assetType === AssetType.fCash
+      ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
+      : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
 
     const hasMatured = maturity < getNowSeconds();
     const settlementDate = Number(asset.settlementDate);

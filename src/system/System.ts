@@ -263,8 +263,6 @@ export default class System {
         this.eventEmitter,
         refreshIntervalMS,
       );
-    } else {
-      this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
     }
 
     this.dataRefreshInterval = this.dataSource.startRefresh();
