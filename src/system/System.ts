@@ -256,6 +256,14 @@ export default class System {
         this.eventEmitter,
         refreshIntervalMS,
       );
+      // This will fetch the NOTE price via CoinGecko
+      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider(
+        undefined,
+        {
+          notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
+          eventEmitter: this.eventEmitter,
+        },
+      ));
     } else {
       this.dataSource = new Cache(
         chainId,
@@ -273,8 +281,6 @@ export default class System {
         this.parseQueryResult(result);
       }, refreshConfigurationDataIntervalMs);
     }
-
-    this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider());
   }
 
   public destroy() {
@@ -460,6 +466,10 @@ export default class System {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
     const assetRate = this.dataSource.assetRateData.get(currencyId);
     return {underlyingDecimalPlaces, assetRate};
+  }
+
+  public getETHProvider(currencyId: number) {
+    return this.ethRateProviders.get(currencyId);
   }
 
   public getETHRate(currencyId: number) {
