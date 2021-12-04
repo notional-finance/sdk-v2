@@ -3,7 +3,14 @@ import {BigNumber, Contract, ethers} from 'ethers';
 import {clearInterval} from 'timers';
 import EventEmitter from 'eventemitter3';
 import {
-  Asset, AssetRate, AssetType, Currency, EthRate, nToken, SettlementMarket, TokenType,
+  Asset,
+  AssetRate,
+  AssetType,
+  Currency,
+  EthRate,
+  nToken,
+  SettlementMarket,
+  TokenType,
 } from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 import {

@@ -108,7 +108,7 @@ export default class AccountsBatch {
     };
   }
 
-  static parseAsset(asset: AssetResponse) {
+  private static parseAsset(asset: AssetResponse) {
     const currencyId = Number(asset.currency.id);
     const {maturity} = asset;
     const assetType = asset.assetType as AssetType;
@@ -137,11 +137,11 @@ export default class AccountsBatch {
   }
 
   /**
-   * Loads an account object
+   * Loads multiple accounts in a single query.
    *
-   * @param signer
-   * @param provider
-   * @param system
+   * @param graphClient
+   * @param pageSize
+   * @param pageNumber
    * @returns
    */
   public static async load(graphClient: GraphClient, pageSize: number, pageNumber: number) {

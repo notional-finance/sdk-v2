@@ -126,28 +126,26 @@ export default abstract class AccountRefresh {
   }
 
   public async refreshWalletBalances() {
-    const promises = System.getSystem()
-      .getAllCurrencies()
-      .reduce((p, c) => {
-        if (c.id === ETHER_CURRENCY_ID) {
-          // Special handling for ETH balance
-          p.push(
-            this.provider.getBalance(this.address).then((b) => ({
-              currencyId: ETHER_CURRENCY_ID,
-              balance: b as BigNumber,
-              allowance: ethers.constants.MaxUint256 as BigNumber,
-              isUnderlying: true,
-            })),
-          );
-        }
+    const promises = System.getSystem().getAllCurrencies().reduce((p, c) => {
+      if (c.id === ETHER_CURRENCY_ID) {
+        // Special handling for ETH balance
+        p.push(
+          this.provider.getBalance(this.address).then((b) => ({
+            currencyId: ETHER_CURRENCY_ID,
+            balance: b as BigNumber,
+            allowance: ethers.constants.MaxUint256 as BigNumber,
+            isUnderlying: true,
+          })),
+        );
+      }
 
-        if (c.underlyingContract) {
-          p.push(this.fetchBalanceAndAllowance(c.id, c.underlyingContract, true));
-        }
+      if (c.underlyingContract) {
+        p.push(this.fetchBalanceAndAllowance(c.id, c.underlyingContract, true));
+      }
 
-        p.push(this.fetchBalanceAndAllowance(c.id, c.contract, false));
-        return p;
-      }, new Array<ReturnType<AccountRefresh['fetchBalanceAndAllowance']>>());
+      p.push(this.fetchBalanceAndAllowance(c.id, c.contract, false));
+      return p;
+    }, new Array<ReturnType<AccountRefresh['fetchBalanceAndAllowance']>>());
 
     const balances = await Promise.all(promises);
     const block = await this.provider.getBlock('latest');

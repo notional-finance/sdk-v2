@@ -6,5 +6,9 @@ import {AccountData} from './account';
 
 export default Notional;
 export {
-  TypedBigNumber, BigNumberType, SystemEvents, AccountEvents, AccountData,
+  TypedBigNumber,
+  BigNumberType,
+  SystemEvents,
+  AccountEvents,
+  AccountData,
 };
