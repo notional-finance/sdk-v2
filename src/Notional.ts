@@ -4,7 +4,7 @@ import {
 import {System} from './system';
 import Governance from './Governance';
 import GraphClient from './GraphClient';
-import {Account} from './account';
+import {Account, AccountsBatch} from './account';
 
 /* typechain imports */
 import {NoteERC20} from './typechain/NoteERC20';
@@ -64,7 +64,7 @@ export default class Notional extends TransactionBuilder {
     chainId: number,
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
-    dataSourceType = DataSourceType.Cache
+    dataSourceType = DataSourceType.Cache,
   ) {
     let addresses: any;
     let graphEndpoint: string;
@@ -110,7 +110,7 @@ export default class Notional extends TransactionBuilder {
       chainId,
       dataSourceType,
       refreshDataInterval,
-      DEFAULT_CONFIGURATION_REFRESH_INTERVAL
+      DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
     );
 
     // await for the first data refresh before returning
@@ -133,6 +133,10 @@ export default class Notional extends TransactionBuilder {
     );
   }
 
+  public async getAccounts(pageSize: number, pageNumber: number) {
+    return await AccountsBatch.load(this.graphClient, pageSize, pageNumber);
+  }
+
   public parseInput(input: string, symbol: string, isInternal: boolean) {
     const bnType = TypedBigNumber.getType(symbol, isInternal);
     const currency = this.system.getCurrencyBySymbol(symbol);
@@ -147,7 +151,7 @@ export default class Notional extends TransactionBuilder {
     }
 
     try {
-      const value = utils.parseUnits(input.replace(',',''), decimalPlaces);
+      const value = utils.parseUnits(input.replace(',', ''), decimalPlaces);
       return TypedBigNumber.from(BigNumber.from(value), bnType, symbol);
     } catch {
       return undefined;
@@ -156,9 +160,9 @@ export default class Notional extends TransactionBuilder {
 
   public isNotionalContract(counterparty: string) {
     return (
-      (counterparty == this.system.getNotionalProxy().address) ||
-      (counterparty == this.governance.getContract().address) ||
-      (counterparty == this.note.address)
+      counterparty == this.system.getNotionalProxy().address ||
+      counterparty == this.governance.getContract().address ||
+      counterparty == this.note.address
     );
   }
 }

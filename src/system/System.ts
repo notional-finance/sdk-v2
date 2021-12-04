@@ -1,9 +1,11 @@
-import { gql } from '@apollo/client/core';
-import { BigNumber, Contract, ethers } from 'ethers';
-import { clearInterval } from 'timers';
+import {gql} from '@apollo/client/core';
+import {BigNumber, Contract, ethers} from 'ethers';
+import {clearInterval} from 'timers';
 import EventEmitter from 'eventemitter3';
-import { Asset, AssetRate, AssetType, Currency, EthRate, nToken, SettlementMarket, TokenType } from '../libs/types';
-import { getNowSeconds } from '../libs/utils';
+import {
+  Asset, AssetRate, AssetType, Currency, EthRate, nToken, SettlementMarket, TokenType,
+} from '../libs/types';
+import {getNowSeconds} from '../libs/utils';
 import {
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   RATE_PRECISION,
@@ -11,16 +13,16 @@ import {
   DEFAULT_DATA_REFRESH_INTERVAL,
 } from '../config/constants';
 
-import { IAggregator } from '../typechain/IAggregator';
-import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
-import { NTokenERC20 } from '../typechain/NTokenERC20';
-import { Notional as NotionalProxy } from '../typechain/Notional';
-import { ERC20 } from '../typechain/ERC20';
+import {IAggregator} from '../typechain/IAggregator';
+import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
+import {NTokenERC20} from '../typechain/NTokenERC20';
+import {Notional as NotionalProxy} from '../typechain/Notional';
+import {ERC20} from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
-import { Market, CashGroup } from '.';
-import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
+import {Market, CashGroup} from '.';
+import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import NoteETHRateProvider from './NoteETHRateProvider';
-import { DataSource, DataSourceType } from './datasource';
+import {DataSource, DataSourceType} from './datasource';
 import Blockchain from './datasource/Blockchain';
 import Cache from './datasource/Cache';
 
@@ -43,8 +45,8 @@ export enum SystemEvents {
 }
 
 const settlementMarketsQuery = gql`
-  getMarketsAt($currencyId: String!, settlementDate: Int!){
-    markets(where { currency: $currencyId, settlementDate: $settlementDate }) {
+  query getMarketsAt($currencyId: String!, $settlementDate: Int!) {
+    markets(where: { currency: $currencyId, settlementDate: $settlementDate }) {
       id
       maturity
       totalfCash
@@ -65,8 +67,8 @@ interface SettlementMarketsQueryResponse {
 }
 
 const settlementRateQuery = gql`
-  getSettlementRate($currencyId: String!, $maturity: Int!){
-    settlementRates(where {maturity: $maturity, currency: $currencyId}) {
+  query getSettlementRate($currencyId: String!, $maturity: Int!) {
+    settlementRates(where: { maturity: $maturity, currency: $currencyId }) {
       id
       assetExchangeRate {
         id
@@ -185,7 +187,7 @@ interface SystemQueryResult {
 }
 
 interface IETHRateProvider {
-  getETHRate(): { ethRateConfig: EthRate; ethRate: BigNumber };
+  getETHRate(): {ethRateConfig: EthRate; ethRate: BigNumber};
 }
 
 interface INTokenAssetCashPVProvider {
@@ -465,7 +467,7 @@ export default class System {
   public getAssetRate(currencyId: number) {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
     const assetRate = this.dataSource.assetRateData.get(currencyId);
-    return { underlyingDecimalPlaces, assetRate };
+    return {underlyingDecimalPlaces, assetRate};
   }
 
   public getETHProvider(currencyId: number) {
@@ -479,7 +481,7 @@ export default class System {
     }
     const ethRateConfig = this.ethRates.get(currencyId);
     const ethRate = this.dataSource.ethRateData.get(currencyId);
-    return { ethRateConfig, ethRate };
+    return {ethRateConfig, ethRate};
   }
 
   public getNTokenAssetCashPV(currencyId: number) {
@@ -499,7 +501,7 @@ export default class System {
     const liquidityTokens = this.dataSource.nTokenLiquidityTokens.get(currencyId);
     const fCash = this.dataSource.nTokenfCash.get(currencyId);
 
-    return { cashBalance, liquidityTokens, fCash };
+    return {cashBalance, liquidityTokens, fCash};
   }
 
   public getNTokenIncentiveFactors(currencyId: number) {
@@ -570,7 +572,7 @@ export default class System {
     const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
       settlementRateQuery,
       {
-        variables: { currencyId, maturity },
+        variables: {currencyId, maturity},
       },
     );
     if (settlementRateResponse.settlementRates.length === 0) {
@@ -602,7 +604,7 @@ export default class System {
     const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
       settlementMarketsQuery,
       {
-        variables: { currencyId, settlementDate },
+        variables: {currencyId, settlementDate},
       },
     );
     settlementMarkets.markets.forEach((m) => {
