@@ -164,13 +164,15 @@ describe('Account Data', () => {
       }],
     };
 
-    AccountData.load(accountResult).then((a) => {
-      expect(a.cashBalance(2)?.toString()).toEqual('50000.0');
-      expect(a.portfolio.length).toEqual(0);
-      done();
-    }).catch(() => {
-      done();
-    });
+    AccountData.loadFromBlockchain(accountResult)
+      .then((a) => {
+        expect(a.cashBalance(2)?.toString()).toEqual('50000.0');
+        expect(a.portfolio.length).toEqual(0);
+        done();
+      })
+      .catch(() => {
+        done();
+      });
   });
 
   describe('loan to value ratio', () => {
