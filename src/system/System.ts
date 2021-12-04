@@ -265,13 +265,6 @@ export default class System {
         },
       ));
     } else {
-      this.dataSource = new Cache(
-        chainId,
-        this.cashGroups,
-        this.eventEmitter,
-        refreshIntervalMS,
-      );
-    } else {
       this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
     }
 
