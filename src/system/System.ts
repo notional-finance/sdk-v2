@@ -48,6 +48,7 @@ export enum SystemEvents {
   ASSET_RATE_UPDATE = 'ASSET_RATE_UPDATE',
   BLOCK_SUPPLY_RATE_UPDATE = 'BLOCK_SUPPLY_RATE_UPDATE',
   ETH_RATE_UPDATE = 'ETH_RATE_UPDATE',
+  NOTE_PRICE_UPDATE = 'NOTE_PRICE_UPDATE',
 }
 
 const systemConfigurationQuery = gql`
@@ -216,6 +217,14 @@ export default class System {
         this.eventEmitter,
         refreshIntervalMS,
       );
+      // This will fetch the NOTE price via CoinGecko
+      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider(
+        undefined,
+        {
+          notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
+          eventEmitter: this.eventEmitter,
+        },
+      ));
     } else {
       this.dataSource = new Cache(
         chainId,
@@ -233,8 +242,6 @@ export default class System {
         this.parseQueryResult(result);
       }, refreshConfigurationDataIntervalMs);
     }
-
-    this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider());
   }
 
   public destroy() {
@@ -422,6 +429,10 @@ export default class System {
     return {underlyingDecimalPlaces, assetRate};
   }
 
+  public getETHProvider(currencyId: number) {
+    return this.ethRateProviders.get(currencyId);
+  }
+
   public getETHRate(currencyId: number) {
     const ethRateProvider = this.ethRateProviders.get(currencyId);
     if (ethRateProvider) {
@@ -456,11 +467,19 @@ export default class System {
     return this.dataSource.nTokenIncentiveFactors.get(currencyId);
   }
 
-  public setETHRateProvider(currencyId: number, provider: IETHRateProvider) {
+  public setETHRateProvider(currencyId: number, provider: IETHRateProvider | null) {
+    if (!provider) {
+      this.ethRateProviders.delete(currencyId);
+      return;
+    }
     this.ethRateProviders.set(currencyId, provider);
   }
 
-  public setNTokenAssetCashPVProvider(currencyId: number, provider: INTokenAssetCashPVProvider) {
+  public setNTokenAssetCashPVProvider(currencyId: number, provider: INTokenAssetCashPVProvider | null) {
+    if (!provider) {
+      this.nTokenAssetCashPVProviders.delete(currencyId);
+      return;
+    }
     this.nTokenAssetCashPVProviders.set(currencyId, provider);
   }
 

@@ -3,8 +3,10 @@ import EventEmitter from 'eventemitter3';
 import fetch from 'cross-fetch';
 import {DataSource} from '.';
 import TypedBigNumber from '../../libs/TypedBigNumber';
-import {SystemEvents} from '../System';
+import System, {SystemEvents} from '../System';
 import CashGroup from '../CashGroup';
+import {NOTE_CURRENCY_ID} from '../../config/constants';
+import NoteETHRateProvider from '../NoteETHRateProvider';
 
 export default class Cache extends DataSource {
   private cacheURL: string | null;
@@ -21,7 +23,7 @@ export default class Cache extends DataSource {
         this.cacheURL = 'https://api.notional.finance/v1/system';
         break;
       case 42:
-        this.cacheURL = 'http://kovan.api.notional.finance/v1/system';
+        this.cacheURL = 'https://kovan.api.notional.finance/v1/system';
         break;
       case 9999:
         // This is used to bypass the error during mocks
@@ -81,39 +83,39 @@ export default class Cache extends DataSource {
       });
     });
 
-    parsedObject.ethRateData.forEach((value: any, key: number) => {
+    parsedObject.dataSource.ethRateData.forEach((value: any, key: number) => {
       this.ethRateData.set(key, BigNumber.from(value));
       this.eventEmitter.emit(SystemEvents.ETH_RATE_UPDATE, key);
     });
 
-    parsedObject.assetRateData.forEach((value: any, key: number) => {
+    parsedObject.dataSource.assetRateData.forEach((value: any, key: number) => {
       this.assetRateData.set(key, BigNumber.from(value));
       this.eventEmitter.emit(SystemEvents.ASSET_RATE_UPDATE, key);
     });
 
-    parsedObject.nTokenAssetCashPV.forEach((value: any, key: number) => {
+    parsedObject.dataSource.nTokenAssetCashPV.forEach((value: any, key: number) => {
       this.nTokenAssetCashPV.set(key, TypedBigNumber.fromObject(value));
       this.eventEmitter.emit(SystemEvents.NTOKEN_PV_UPDATE, key);
     });
 
-    parsedObject.nTokenTotalSupply.forEach((value: any, key: number) => {
+    parsedObject.dataSource.nTokenTotalSupply.forEach((value: any, key: number) => {
       this.nTokenTotalSupply.set(key, TypedBigNumber.fromObject(value));
       this.eventEmitter.emit(SystemEvents.NTOKEN_SUPPLY_UPDATE, key);
     });
 
-    parsedObject.nTokenIncentiveFactors.forEach((value: any, key: number) => {
+    parsedObject.dataSource.nTokenIncentiveFactors.forEach((value: any, key: number) => {
       this.nTokenIncentiveFactors.set(key, {
         integralTotalSupply: BigNumber.from(value.integralTotalSupply),
         lastSupplyChangeTime: BigNumber.from(value.lastSupplyChangeTime),
       });
     });
 
-    parsedObject.nTokenCashBalance.forEach((value: any, key: number) => {
+    parsedObject.dataSource.nTokenCashBalance.forEach((value: any, key: number) => {
       this.nTokenCashBalance.set(key, TypedBigNumber.fromObject(value));
       this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, key);
     });
 
-    parsedObject.nTokenLiquidityTokens.forEach((value: any, key: number) => {
+    parsedObject.dataSource.nTokenLiquidityTokens.forEach((value: any, key: number) => {
       const newValues = value.map((v: any) => {
         const newValue = v;
         newValue.notional = TypedBigNumber.fromObject(v.notional);
@@ -123,7 +125,7 @@ export default class Cache extends DataSource {
       this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, key);
     });
 
-    parsedObject.nTokenfCash.forEach((value: any, key: number) => {
+    parsedObject.dataSource.nTokenfCash.forEach((value: any, key: number) => {
       const newValues = value.map((v: any) => {
         const newValue = v;
         newValue.notional = TypedBigNumber.fromObject(v.notional);
@@ -132,6 +134,11 @@ export default class Cache extends DataSource {
       this.nTokenfCash.set(key, newValues);
       this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, key);
     });
+
+    const noteETHProvider = parsedObject.ethRateProviders.get(NOTE_CURRENCY_ID);
+    // eslint-disable-next-line no-underscore-dangle
+    const noteUSDPrice = BigNumber.from(noteETHProvider._noteUSDPrice);
+    System.getSystem().setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
 
     this.lastUpdateBlockNumber = parsedObject.lastUpdateBlockNumber;
     this.lastUpdateTimestamp = parsedObject.lastUpdateTimestamp;
