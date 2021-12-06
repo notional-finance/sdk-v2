@@ -1,6 +1,6 @@
 {
   "name": "@notional-finance/sdk-v2",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Notional Finance SDK V2",
   "author": "Jeff Wu <jeff@notional.finance>",
   "homepage": "https://notional.finance",
