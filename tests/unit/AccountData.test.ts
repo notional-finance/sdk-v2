@@ -283,8 +283,8 @@ describe('Account Data', () => {
       );
 
       const liquidationPrice = account.getLiquidationPrice(1, 2);
-      expect(liquidationPrice.symbol).toBe('DAI');
-      expect(liquidationPrice.toNumber()).toBeCloseTo(73.076e8, -6);
+      expect(liquidationPrice?.symbol).toBe('DAI');
+      expect(liquidationPrice?.toNumber()).toBeCloseTo(73.076e8, -6);
     });
 
     it('gets liquidation price with USDC collateral', () => {
@@ -324,8 +324,8 @@ describe('Account Data', () => {
       );
 
       const liquidationPrice = account.getLiquidationPrice(3, 2);
-      expect(liquidationPrice.symbol).toBe('DAI');
-      expect(liquidationPrice.toNumber()).toBeCloseTo(0.921e8, -6);
+      expect(liquidationPrice?.symbol).toBe('DAI');
+      expect(liquidationPrice?.toNumber()).toBeCloseTo(0.921e8, -6);
     });
   });
 });
