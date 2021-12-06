@@ -137,6 +137,15 @@ export default class InterestRateRisk {
     // use this to calculate the liquidation point. If FC is already negative than interest
     // rates may be above or below this point already. It's possible that this currency is
     // not liquidatable but some other currency has caused FC to decrease.
+    const {ethRateConfig} = System.getSystem().getETHRate(currencyId);
+    if (ethRateConfig?.haircut === 0 && aggregateFC.isPositive()) {
+      // If haircut is zero then we will get a divide by zero error when converting aggregateFC
+      // using the haircut. Since positive netLocalUnderlying has no affect on aggregateFC, the
+      // account will become under collateralized when it accrues enough local currency debt to
+      // offset whatever free collateral benefit that exists
+      return aggregateFC.neg().fromETH(currencyId, true);
+    }
+
     const necessaryLocalCurrencyGainOrLoss = aggregateFC.fromETH(currencyId, true);
     return netLocalUnderlying.sub(necessaryLocalCurrencyGainOrLoss);
   }
