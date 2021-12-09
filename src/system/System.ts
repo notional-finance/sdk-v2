@@ -388,7 +388,7 @@ export default class System {
   }
 
   public getTradableCurrencies(): Currency[] {
-    return this.getAllCurrencies().filter((c) => this.cashGroups.has(c.id));
+    return this.getAllCurrencies().filter((c) => this.isTradable(c.id));
   }
 
   public getCurrencyBySymbol(symbol: string): Currency {
@@ -406,6 +406,10 @@ export default class System {
   public getUnderlyingSymbol(id: number): string {
     const currency = this.getCurrencyById(id);
     return currency.underlyingSymbol || currency.symbol;
+  }
+
+  public isTradable(currencyId: number): boolean {
+    return this.cashGroups.has(currencyId);
   }
 
   public getCashGroup(currencyId: number): CashGroup {
