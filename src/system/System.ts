@@ -579,8 +579,10 @@ export default class System {
       throw new Error(`Settlement rate data for ${currencyId} with maturity ${maturity} is not found`);
     }
 
-    const settlementRate = settlementRateResponse.settlementRates[0];
-    if (!settlementRate.assetExchangeRate) {
+    const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
+      && settlementRateResponse.settlementRates[0].assetExchangeRate;
+
+    if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
       const assetRate = this.dataSource.assetRateData.get(currencyId);
@@ -590,6 +592,7 @@ export default class System {
       return assetRate;
     }
 
+    const settlementRate = settlementRateResponse.settlementRates[0];
     const rate = BigNumber.from(settlementRate.rate);
     this.settlementRates.set(key, rate);
     return rate;
