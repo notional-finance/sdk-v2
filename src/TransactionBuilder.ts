@@ -479,10 +479,10 @@ export default abstract class TransactionBuilder {
     const currency = this.system.getCurrencyById(repayAsset.currencyId);
 
     const deleverageAction = {
-      depositAction: DepositActionType.RedeemNToken,
+      actionType: DepositActionType.RedeemNToken,
       currencyId: currency.id,
       depositActionAmount: redeemNTokenAmount.n,
-      withdrawAmountInternalPrecision: TypedBigNumber.getZeroUnderlying(currency.id),
+      withdrawAmountInternalPrecision: TypedBigNumber.getZeroUnderlying(currency.id).n,
       withdrawEntireCashBalance: false,
       redeemToUnderlying: false,
       trades: [this.encodeTradeType(TradeActionType.Lend, marketIndex, lendfCashAmount, minLendSlippage, 0)],
