@@ -186,7 +186,10 @@ const systemQueryResult = {
       hasTransferFee: true,
     },
     {
-      assetExchangeRate: null,
+      assetExchangeRate: {
+        rateAdapterAddress: '0x20d106840b5e2780e9d35f2a64d9f4afb535c14d',
+        underlyingDecimalPlaces: 8,
+      },
       cashGroup: null,
       decimals: '100000000',
       ethExchangeRate: {

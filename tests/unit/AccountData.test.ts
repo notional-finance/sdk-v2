@@ -287,6 +287,45 @@ describe('Account Data', () => {
       expect(liquidationPrice?.toNumber()).toBeCloseTo(73.076e8, -6);
     });
 
+    it('returns null on negative liquidation price', () => {
+      const account = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(50e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(100000e8, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            lastClaimIntegralSupply: BigNumber.from(0),
+          },
+        ],
+        [
+          {
+            currencyId: 1,
+            maturity: getNowSeconds() + 1000,
+            assetType: AssetType.fCash,
+            notional: TypedBigNumber.from(-1e8, BigNumberType.InternalUnderlying, 'ETH'),
+            hasMatured: false,
+            settlementDate: getNowSeconds() + 1000,
+            isIdiosyncratic: true,
+          },
+        ],
+        false,
+      );
+
+      expect(account.getLiquidationPrice(2, 1)).toBeNull();
+    });
+
     it('gets liquidation price with USDC collateral', () => {
       const account = new MockAccountData(
         0,

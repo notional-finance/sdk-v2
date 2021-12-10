@@ -90,11 +90,13 @@ export default class FreeCollateral {
 
     assetCashBalanceInternal.check(BigNumberType.InternalAsset, symbol);
     nTokenBalance?.check(BigNumberType.nToken, nTokenSymbol);
-    const cashGroupPV = FreeCollateral.getCashGroupValue(
-      currencyId,
-      portfolio,
-      blockTime,
-    );
+    const cashGroupPV = system.isTradable(currencyId)
+      ? FreeCollateral.getCashGroupValue(
+        currencyId,
+        portfolio,
+        blockTime,
+      )
+      : TypedBigNumber.getZeroUnderlying(currencyId);
 
     let nTokenValue = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     if (nTokenBalance && nTokenBalance.isPositive()) {
@@ -122,12 +124,14 @@ export default class FreeCollateral {
     haircut = useHaircut,
   ) {
     const system = System.getSystem();
-    const cashGroup = system.getCashGroup(currencyId);
+    let totalCashClaims = TypedBigNumber.getZeroUnderlying(currencyId);
     // This creates a copy of the assets so that we can modify it in memory
     const fCashAssets = portfolio
       .filter((a) => a.currencyId === currencyId && a.assetType === AssetType.fCash)
       .map((a) => ({...a}));
-    let totalCashClaims = TypedBigNumber.getZeroUnderlying(currencyId);
+
+    if (fCashAssets.length === 0) return {fCashAssets, totalCashClaims};
+    const cashGroup = system.getCashGroup(currencyId);
 
     portfolio
       .filter((a) => a.assetType !== AssetType.fCash)

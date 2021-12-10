@@ -131,7 +131,7 @@ describe('nToken value', () => {
     const assetCash = TypedBigNumber.from(500_000e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
     const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
-    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -3);
+    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -5);
   });
 
   it('calculates the nToken blended yield', () => {
