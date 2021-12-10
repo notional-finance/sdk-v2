@@ -21,6 +21,32 @@ describe('calculates free collateral', () => {
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
     const accountData = new MockAccountData(0, false, true, 0, [], [], false);
 
+    it('handles nontradable assets', () => {
+      accountData.accountBalances = [
+        {
+          currencyId: 5,
+          cashBalance: TypedBigNumber.from(50e8, BigNumberType.InternalAsset, 'cWBTC'),
+          nTokenBalance: undefined,
+          lastClaimTime: BigNumber.from(0),
+          lastClaimIntegralSupply: BigNumber.from(0),
+        },
+      ];
+      accountData.portfolio = [];
+
+      // prettier-ignore
+      const {
+        netETHDebt, netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable,
+      } = FreeCollateral.getFreeCollateral(
+        accountData,
+        blockTime,
+      );
+
+      expect(netETHDebt.isZero()).toBeTruthy();
+      expect(netETHDebtWithBuffer.isZero()).toBeTruthy();
+      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThanOrEqual(7e8);
+      expect(netUnderlyingAvailable.get(5)?.isPositive()).toBeTruthy();
+    });
+
     it('for positive fcash', () => {
       accountData.accountBalances = [
         {
@@ -232,6 +258,37 @@ describe('calculates free collateral', () => {
       borrowAmountHaircutPV = cashGroup
         .getfCashPresentValueUnderlyingInternal(maturity, borrowfCashAmount, true, blockTime)
         .toNumber();
+    });
+
+    it('calculates borrowing requires when collateral is a nontradable assets', () => {
+      const accountData = AccountData.emptyAccountData();
+      accountData.updateAsset({
+        currencyId: borrowCurrencyId,
+        maturity,
+        assetType: AssetType.fCash,
+        notional: borrowfCashAmount,
+        hasMatured: false,
+        settlementDate: maturity,
+        isIdiosyncratic: false,
+      });
+
+      const {
+        minCollateralRatio,
+        minBufferedRatio,
+        targetCollateralRatio,
+        targetBufferedRatio,
+      } = FreeCollateral.calculateBorrowRequirement(
+        5,
+        200,
+        accountData,
+        false,
+        blockTime,
+      );
+
+      expect(minCollateralRatio).toBeCloseTo(150, -1);
+      expect(targetCollateralRatio).toBeCloseTo(300, -1);
+      expect(minBufferedRatio).toBeCloseTo(100);
+      expect(targetBufferedRatio).toBeCloseTo(200);
     });
 
     it('calculates borrowing requirements for stable / stable with no account data', () => {
