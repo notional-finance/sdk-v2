@@ -575,9 +575,6 @@ export default class System {
         variables: {currencyId, maturity},
       },
     );
-    if (settlementRateResponse.settlementRates.length === 0) {
-      throw new Error(`Settlement rate data for ${currencyId} with maturity ${maturity} is not found`);
-    }
 
     const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
       && settlementRateResponse.settlementRates[0].assetExchangeRate;
