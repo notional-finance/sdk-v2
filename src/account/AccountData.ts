@@ -360,7 +360,7 @@ export default class AccountData {
   }
 
   /**
-   * Returns components of the free collateral figure.
+   * Returns components of the free collateral figure for this account.
    */
   public getFreeCollateral() {
     return FreeCollateral.getFreeCollateral(this);
