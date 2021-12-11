@@ -51,6 +51,52 @@ export enum SystemEvents {
   NOTE_PRICE_UPDATE = 'NOTE_PRICE_UPDATE',
 }
 
+const settlementMarketsQuery = gql`
+  query getMarketsAt($currencyId: String!, $settlementDate: Int!) {
+    markets(where: { currency: $currencyId, settlementDate: $settlementDate }) {
+      id
+      maturity
+      totalfCash
+      totalAssetCash
+      totalLiquidity
+    }
+  }
+`;
+
+interface SettlementMarketsQueryResponse {
+  markets: {
+    id: string;
+    maturity: number;
+    totalfCash: string;
+    totalAssetCash: string;
+    totalLiquidity: string;
+  }[];
+}
+
+const settlementRateQuery = gql`
+  query getSettlementRate($currencyId: String!, $maturity: Int!) {
+    settlementRates(where: { maturity: $maturity, currency: $currencyId }) {
+      id
+      assetExchangeRate {
+        id
+      }
+      maturity
+      rate
+    }
+  }
+`;
+
+interface SettlementRateQueryResponse {
+  settlementRates: {
+    id: string;
+    assetExchangeRate: {
+      id: string;
+    } | null;
+    maturity: number;
+    rate: string;
+  }[];
+}
+
 const systemConfigurationQuery = gql`
   {
     currencies {
@@ -148,7 +194,7 @@ interface SystemQueryResult {
 }
 
 interface IETHRateProvider {
-  getETHRate(): {ethRateConfig: EthRate, ethRate: BigNumber};
+  getETHRate(): {ethRateConfig: EthRate; ethRate: BigNumber};
 }
 
 interface INTokenAssetCashPVProvider {
@@ -226,12 +272,7 @@ export default class System {
         },
       ));
     } else {
-      this.dataSource = new Cache(
-        chainId,
-        this.cashGroups,
-        this.eventEmitter,
-        refreshIntervalMS,
-      );
+      this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
     }
 
     this.dataRefreshInterval = this.dataSource.startRefresh();
@@ -532,8 +573,17 @@ export default class System {
       return this.settlementRates.get(key)!;
     }
 
-    const settlementRate = await this.notionalProxy.getSettlementRate(currencyId, maturity);
-    if (settlementRate.underlyingDecimals.isZero()) {
+    const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
+      settlementRateQuery,
+      {
+        variables: {currencyId, maturity},
+      },
+    );
+
+    const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
+      && settlementRateResponse.settlementRates[0].assetExchangeRate;
+
+    if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
       const assetRate = this.dataSource.assetRateData.get(currencyId);
@@ -543,8 +593,10 @@ export default class System {
       return assetRate;
     }
 
-    this.settlementRates.set(key, settlementRate.rate);
-    return settlementRate.rate;
+    const settlementRate = settlementRateResponse.settlementRates[0];
+    const rate = BigNumber.from(settlementRate.rate);
+    this.settlementRates.set(key, rate);
+    return rate;
   }
 
   private async getSettlementMarket(currencyId: number, maturity: number, settlementDate: number) {
@@ -553,9 +605,14 @@ export default class System {
       return this.settlementMarkets.get(key)!;
     }
 
-    const settlementMarkets = await this.notionalProxy.getActiveMarketsAtBlockTime(currencyId, settlementDate);
-    settlementMarkets.forEach((m) => {
-      const k = `${currencyId}:${settlementDate}:${m.maturity.toNumber()}`;
+    const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
+      settlementMarketsQuery,
+      {
+        variables: {currencyId, settlementDate},
+      },
+    );
+    settlementMarkets.markets.forEach((m) => {
+      const k = `${currencyId}:${settlementDate}:${m.maturity}`;
       const currency = this.getCurrencyById(currencyId);
       const underlyingSymbol = this.getUnderlyingSymbol(currencyId);
       this.settlementMarkets.set(k, {

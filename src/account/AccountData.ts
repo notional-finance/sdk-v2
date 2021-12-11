@@ -101,7 +101,7 @@ export default class AccountData {
     );
   }
 
-  public static parsePortfolio(portfolio: AssetResult[]): Asset[] {
+  public static parsePortfolioFromBlockchain(portfolio: AssetResult[]): Asset[] {
     const system = System.getSystem();
     return portfolio.map((v) => {
       const currency = system.getCurrencyById(v.currencyId.toNumber());
@@ -125,7 +125,7 @@ export default class AccountData {
     });
   }
 
-  public static parseBalances(accountBalances: BalanceResult[]): Balance[] {
+  public static parseBalancesFromBlockchain(accountBalances: BalanceResult[]): Balance[] {
     const system = System.getSystem();
     return accountBalances
       .filter((v) => v.currencyId !== 0)
@@ -144,14 +144,33 @@ export default class AccountData {
       });
   }
 
-  public static async load(result: GetAccountResult): Promise<AccountData> {
-    const system = System.getSystem();
-    const portfolio = AccountData.parsePortfolio(result.portfolio);
-    const balances = AccountData.parseBalances(result.accountBalances);
+  public static async loadFromBlockchain(result: GetAccountResult): Promise<AccountData> {
+    const portfolio = AccountData.parsePortfolioFromBlockchain(result.portfolio);
+    const balances = AccountData.parseBalancesFromBlockchain(result.accountBalances);
 
     // eslint-disable-next-line
     const bitmapCurrencyId =
       result.accountContext.bitmapCurrencyId === 0 ? undefined : result.accountContext.bitmapCurrencyId;
+
+    return AccountData.load(
+      result.accountContext.nextSettleTime,
+      result.accountContext.hasDebt === '0x02' || result.accountContext.hasDebt === '0x03',
+      result.accountContext.hasDebt === '0x01' || result.accountContext.hasDebt === '0x03',
+      bitmapCurrencyId,
+      balances,
+      portfolio,
+    );
+  }
+
+  public static async load(
+    nextSettleTime: number,
+    hasCashDebt: boolean,
+    hasAssetDebt: boolean,
+    bitmapCurrencyId: number | undefined,
+    balances: Balance[],
+    portfolio: Asset[],
+  ): Promise<AccountData> {
+    const system = System.getSystem();
 
     // Settles matured assets here to cash and fCash assets
     const maturedAssets = portfolio.filter((a) => a.hasMatured);
@@ -168,15 +187,7 @@ export default class AccountData {
       AccountData._updateBalance(balances, asset.currencyId, assetCash, undefined, bitmapCurrencyId);
     }
 
-    return new AccountData(
-      result.accountContext.nextSettleTime,
-      result.accountContext.hasDebt === '0x02' || result.accountContext.hasDebt === '0x03',
-      result.accountContext.hasDebt === '0x01' || result.accountContext.hasDebt === '0x03',
-      bitmapCurrencyId,
-      balances,
-      portfolio,
-      false,
-    );
+    return new AccountData(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, balances, portfolio, false);
   }
 
   /**
@@ -348,10 +359,14 @@ export default class AccountData {
     };
   }
 
-  public getLiquidationPrice(
-    collateralId: number,
-    debtCurrencyId: number,
-  ) {
+  /**
+   * Returns components of the free collateral figure for this account.
+   */
+  public getFreeCollateral() {
+    return FreeCollateral.getFreeCollateral(this);
+  }
+
+  public getLiquidationPrice(collateralId: number, debtCurrencyId: number) {
     // We represent everything as FX to ETH so in the case that the collateral is in ETH we
     // vary the debt currency id
     const {
@@ -382,13 +397,16 @@ export default class AccountData {
     if (maxExchangeRateDecrease.isNegative()) return null;
 
     // Convert to the debt currency denomination
-    return collateralId === ETHER_CURRENCY_ID
+    if (collateralId === ETHER_CURRENCY_ID) {
       // If using the debt currency this will do 1 / maxExchangeRateDecrease.toETH(), returning a TypedNumber
       // in the debt currency denomination
-      ? maxExchangeRateDecrease.copy(INTERNAL_TOKEN_PRECISION)
-        .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n)
-      // Convert from collateral to debt via ETH
-      : maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
+      return maxExchangeRateDecrease
+        .copy(INTERNAL_TOKEN_PRECISION)
+        .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n);
+    }
+
+    // Convert from collateral to debt via ETH
+    return maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
   }
 
   /**
@@ -396,10 +414,7 @@ export default class AccountData {
    * applying any buffers or haircuts. This is used as a user friendly way of showing free collateral.
    */
   public collateralRatio() {
-    const {
-      netETHCollateral,
-      netETHDebt,
-    } = FreeCollateral.getFreeCollateral(this);
+    const {netETHCollateral, netETHDebt} = FreeCollateral.getFreeCollateral(this);
     return FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
   }
 
@@ -408,10 +423,7 @@ export default class AccountData {
    * after applying buffers and haircuts. An account is liquidatable when this is below 100.
    */
   public bufferedCollateralRatio() {
-    const {
-      netETHCollateralWithHaircut,
-      netETHDebtWithBuffer,
-    } = FreeCollateral.getFreeCollateral(this);
+    const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = FreeCollateral.getFreeCollateral(this);
     return FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer);
   }
 
