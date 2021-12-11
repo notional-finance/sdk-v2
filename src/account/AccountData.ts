@@ -350,9 +350,11 @@ export default class AccountData {
       maxLoanToValue = (loanToValue / haircutLoanToValue) * 100;
     }
 
+    const freeCollateralETH = totalETHValueHaircut.sub(totalETHDebtsBuffer);
     return {
       totalETHDebts,
       totalETHValue,
+      freeCollateralETH,
       loanToValue,
       haircutLoanToValue,
       maxLoanToValue,
