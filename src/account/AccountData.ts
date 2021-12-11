@@ -359,6 +359,13 @@ export default class AccountData {
     };
   }
 
+  /**
+   * Returns components of the free collateral figure for this account.
+   */
+  public getFreeCollateral() {
+    return FreeCollateral.getFreeCollateral(this);
+  }
+
   public getLiquidationPrice(collateralId: number, debtCurrencyId: number) {
     // We represent everything as FX to ETH so in the case that the collateral is in ETH we
     // vary the debt currency id

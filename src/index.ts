@@ -2,7 +2,7 @@ import Notional from './Notional';
 import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
 import {SystemEvents} from './system/System';
 import {AccountEvents} from './account/AccountRefresh';
-import {AccountData} from './account';
+import {Account, AccountData} from './account';
 
 export default Notional;
 export {
@@ -10,5 +10,6 @@ export {
   BigNumberType,
   SystemEvents,
   AccountEvents,
+  Account,
   AccountData,
 };
