@@ -1,6 +1,13 @@
 // prettier-ignore
 import {
-  ApolloClient, NormalizedCacheObject, InMemoryCache, HttpLink, from, DocumentNode,
+  ApolloClient,
+  NormalizedCacheObject,
+  InMemoryCache,
+  HttpLink,
+  from,
+  DocumentNode,
+  OperationVariables,
+  TypedDocumentNode,
 } from '@apollo/client/core';
 import {onError} from '@apollo/client/link/error';
 import {RetryLink} from '@apollo/client/link/retry';
@@ -28,8 +35,11 @@ export default class GraphClient {
     });
   }
 
-  public async queryOrThrow<T>(query: DocumentNode) {
-    const result = await this.apollo.query<T>({query, fetchPolicy: 'network-only'});
+  public async queryOrThrow<TData = any, TVariables = OperationVariables>(
+    query: DocumentNode | TypedDocumentNode<TData, TVariables>,
+    variables?: TVariables,
+  ) {
+    const result = await this.apollo.query<TData, TVariables>({query, fetchPolicy: 'network-only', variables});
     if (result.error) {
       throw new Error(result.error.message);
     }

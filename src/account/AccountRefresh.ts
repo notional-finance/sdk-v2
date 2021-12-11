@@ -20,6 +20,35 @@ export enum AccountEvents {
   ACCOUNT_TRANSACTION_MINED = 'ACCOUNT_TRANSACTION_MINED',
 }
 
+interface AssetResult {
+  currencyId: BigNumber;
+  maturity: BigNumber;
+  assetType: BigNumber;
+  notional: BigNumber;
+  storageSlot: BigNumber;
+  storageState: number;
+}
+
+interface BalanceResult {
+  currencyId: number;
+  cashBalance: BigNumber;
+  nTokenBalance: BigNumber;
+  lastClaimTime: BigNumber;
+  lastClaimIntegralSupply: BigNumber;
+}
+
+export interface GetAccountResult {
+  accountContext: {
+    nextSettleTime: number;
+    hasDebt: string;
+    assetArrayLength: number;
+    bitmapCurrencyId: number;
+    activeCurrencies: string;
+  };
+  accountBalances: BalanceResult[];
+  portfolio: AssetResult[];
+}
+
 export default abstract class AccountRefresh {
   public eventEmitter = new EventEmitter();
   private _lastUpdateBlockNumber: number = 0;
@@ -79,7 +108,7 @@ export default abstract class AccountRefresh {
 
   public async refresh() {
     const [accountResult, block] = await Promise.all([
-      this.notionalProxy.getAccount(this.address).then((r) => AccountData.load(r)),
+      this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r)),
       this.provider.getBlock('latest'),
       this.refreshWalletBalances(),
     ]);

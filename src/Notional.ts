@@ -4,7 +4,7 @@ import {
 import {System} from './system';
 import Governance from './Governance';
 import GraphClient from './GraphClient';
-import {Account} from './account';
+import {Account, AccountsBatch} from './account';
 
 /* typechain imports */
 import {NoteERC20} from './typechain/NoteERC20';
@@ -131,6 +131,10 @@ export default class Notional extends TransactionBuilder {
       this.system,
       this.graphClient,
     );
+  }
+
+  public async getAccounts(pageSize: number, pageNumber: number) {
+    return await AccountsBatch.load(this.graphClient, pageSize, pageNumber);
   }
 
   public parseInput(input: string, symbol: string, isInternal: boolean) {
