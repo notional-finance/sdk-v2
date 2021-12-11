@@ -10,6 +10,9 @@ export default class MockCache extends Blockchain {
     this.ethRates.forEach((_, k) => {
       if (k === 1) {
         this.ethRateData.set(k, BigNumber.from(ethers.constants.WeiPerEther));
+      } else if (k === 5) {
+        const r = BigNumber.from(ethers.constants.WeiPerEther).mul(10);
+        this.ethRateData.set(k, r);
       } else {
         const r = BigNumber.from(ethers.constants.WeiPerEther).div(100);
         this.ethRateData.set(k, r);
@@ -30,7 +33,7 @@ export default class MockCache extends Blockchain {
       this.assetRateData.set(k, r);
 
       const supplyRate = BigNumber.from(0.05e9);
-      this.cashGroups.get(k)!.setBlockSupplyRate(supplyRate);
+      this.cashGroups.get(k)?.setBlockSupplyRate(supplyRate);
     });
 
     /* eslint-disable @typescript-eslint/no-unused-vars */

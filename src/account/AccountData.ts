@@ -378,11 +378,16 @@ export default class AccountData {
 
     if (!netUnderlying) throw Error('Invalid target currency when calculating liquidation price');
     const fcSurplusProportion = targetCurrencyFC.scale(INTERNAL_TOKEN_PRECISION, netUnderlying.n).abs();
+    const singleUnitTargetCurrency = fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION);
     // This is the max exchange rate decrease as a portion of a single token in internal token precision, can
     // see this as the liquidation price of a single unit of ETH
     const maxExchangeRateDecrease = collateralId === targetId
-      ? fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).sub(fcSurplusProportion)
-      : fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION).add(fcSurplusProportion);
+      ? singleUnitTargetCurrency.sub(fcSurplusProportion)
+      : singleUnitTargetCurrency.add(fcSurplusProportion);
+
+    // If the max exchange rate decrease is negative then there is no possible liquidation price, this can
+    // happen if aggregateFC > netUnderlying
+    if (maxExchangeRateDecrease.isNegative()) return null;
 
     // Convert to the debt currency denomination
     if (collateralId === ETHER_CURRENCY_ID) {
