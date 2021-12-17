@@ -5,6 +5,7 @@ import {AccountEvents} from './account/AccountRefresh';
 import {Account, AccountData} from './account';
 
 export default Notional;
+export * from './libs/types';
 export {
   TypedBigNumber,
   BigNumberType,
