@@ -10,10 +10,46 @@ import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import AccountData from './AccountData';
 import {AssetType} from '../libs/types';
+import BalanceSummary from './BalanceSummary';
+import AssetSummary from './AssetSummary';
 
 const accountsQuery = gql`
   query getAccounts($pageSize: Int!, $pageNumber: Int!) {
     accounts(first: $pageSize, skip: $pageNumber) {
+      id
+      nextSettleTime
+      hasCashDebt
+      hasPortfolioAssetDebt
+      assetBitmapCurrency {
+        id
+      }
+      balances {
+        currency {
+          id
+          symbol
+        }
+        assetCashBalance
+        nTokenBalance
+        lastClaimTime
+        lastClaimIntegralSupply
+      }
+      portfolio {
+        currency {
+          id
+          symbol
+        }
+        settlementDate
+        maturity
+        assetType
+        notional
+      }
+    }
+  }
+`;
+
+const accountQuery = gql`
+  query getAccount($id: String!) {
+    account(id: $id) {
       id
       nextSettleTime
       hasCashDebt
@@ -67,21 +103,25 @@ interface BalanceResponse {
   lastClaimIntegralSupply: string;
 }
 
-interface AccountsQueryResponse {
-  accounts: {
+interface AccountResponse {
+  id: string;
+  nextSettleTime: number;
+  hasCashDebt: boolean;
+  hasPortfolioAssetDebt: boolean;
+  assetBitmapCurrency: {
     id: string;
-    nextSettleTime: number;
-    hasCashDebt: boolean;
-    hasPortfolioAssetDebt: boolean;
-    assetBitmapCurrency: {
-      id: string;
-    } | null;
-    balances: BalanceResponse[];
-    portfolio: AssetResponse[];
-  }[];
+  } | null;
+  balances: BalanceResponse[];
+  portfolio: AssetResponse[];
 }
 
-export default class AccountsBatch {
+interface AccountsQueryResponse {
+  accounts: AccountResponse[];
+}
+
+type AccountQueryResponse = {account: AccountResponse};
+
+export default class AccountGraphLoader {
   public static parseBalance(balance: BalanceResponse) {
     const currencyId = Number(balance.currency.id);
     const currency = System.getSystem().getCurrencyById(currencyId);
@@ -144,7 +184,7 @@ export default class AccountsBatch {
    * @param pageNumber
    * @returns
    */
-  public static async load(graphClient: GraphClient, pageSize: number, pageNumber: number) {
+  public static async loadBatch(graphClient: GraphClient, pageSize: number, pageNumber: number) {
     const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
     const accounts = new Map<string, AccountData>();
     response.accounts.forEach(async (account) => {
@@ -155,12 +195,53 @@ export default class AccountsBatch {
         account.nextSettleTime,
         account.hasCashDebt,
         account.hasPortfolioAssetDebt,
-        Number(account.assetBitmapCurrency?.id),
-        account.balances.map(AccountsBatch.parseBalance),
-        account.portfolio.map(AccountsBatch.parseAsset),
+        account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency.id) : undefined,
+        account.balances.map(AccountGraphLoader.parseBalance),
+        account.portfolio.map(AccountGraphLoader.parseAsset),
       );
       accounts.set(account.id, accountData);
     });
     return accounts;
+  }
+
+  /**
+   * Returns a summary of an account's balances with historical transactions and internal return rate
+   */
+  public static async getBalanceSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
+    const balanceHistory = await BalanceSummary.fetchBalanceHistory(address, graphClient);
+    const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
+    return {balanceHistory, balanceSummary};
+  }
+
+  /**
+   * Returns the tradeHistory and assetSummary for an account
+   */
+  public static async getAssetSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
+    const tradeHistory = await AssetSummary.fetchTradeHistory(address, graphClient);
+    const assetSummary = AssetSummary.build(accountData, tradeHistory);
+    return {tradeHistory, assetSummary};
+  }
+
+  /**
+   * Loads a single account
+   * @param graphClient
+   * @param address
+   * @returns AccountData instance for requested account
+   */
+  public static async load(graphClient: GraphClient, address: string) {
+    const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
+    const { account } = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, {id: lowerCaseAddress});
+
+    const balances = account.balances.map(AccountGraphLoader.parseBalance);
+    const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);
+
+    return AccountData.load(
+      account.nextSettleTime,
+      account.hasCashDebt,
+      account.hasPortfolioAssetDebt,
+      account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency?.id) : undefined,
+      balances,
+      portfolio,
+    );
   }
 }

@@ -6,11 +6,10 @@ import {System} from '../system';
 import {Notional as NotionalTypechain} from '../typechain/Notional';
 import AccountRefresh from './AccountRefresh';
 import GraphClient from '../GraphClient';
-import BalanceSummary from './BalanceSummary';
-import AssetSummary from './AssetSummary';
 import {ERC20} from '../typechain/ERC20';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
+import AccountGraphLoader from './AccountGraphLoader';
 
 export default class Account extends AccountRefresh {
   private constructor(
@@ -67,9 +66,7 @@ export default class Account extends AccountRefresh {
       };
     }
 
-    const balanceHistory = await BalanceSummary.fetchBalanceHistory(this.address, this.graphClient);
-    const balanceSummary = BalanceSummary.build(this.accountData, balanceHistory);
-    return {balanceHistory, balanceSummary};
+    return AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient);
   }
 
   /**
@@ -83,9 +80,7 @@ export default class Account extends AccountRefresh {
       };
     }
 
-    const tradeHistory = await AssetSummary.fetchTradeHistory(this.address, this.graphClient);
-    const assetSummary = AssetSummary.build(this.accountData, tradeHistory);
-    return {tradeHistory, assetSummary};
+    return AccountGraphLoader.getAssetSummary(this.address, this.accountData, this.graphClient);
   }
 
   /**
