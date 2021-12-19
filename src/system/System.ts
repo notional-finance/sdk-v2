@@ -194,6 +194,10 @@ interface SystemQueryResult {
   }[];
 }
 
+interface IAssetRateProvider {
+  getAssetRate(): BigNumber;
+}
+
 interface IMarketProvider {
   getMarket(): Market;
 }
@@ -241,6 +245,7 @@ export default class System {
   private dataRefreshInterval?: NodeJS.Timeout;
   private configurationRefreshInterval?: NodeJS.Timeout;
   private ethRateProviders = new Map<number, IETHRateProvider>();
+  private assetRateProviders = new Map<number, IAssetRateProvider>();
   private nTokenAssetCashPVProviders = new Map<number, INTokenAssetCashPVProvider>();
   private marketProviders = new Map<string, IMarketProvider>();
 
@@ -481,7 +486,8 @@ export default class System {
 
   public getAssetRate(currencyId: number) {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
-    const assetRate = this.dataSource.assetRateData.get(currencyId);
+    const provider = this.assetRateProviders.get(currencyId);
+    const assetRate = provider?.getAssetRate() ?? this.dataSource.assetRateData.get(currencyId);
     return {underlyingDecimalPlaces, assetRate};
   }
 
@@ -525,6 +531,14 @@ export default class System {
 
   public clearMarketProviders() {
     this.marketProviders.clear();
+  }
+
+  public setAssetRateProvider(currencyId: number, provider: IAssetRateProvider | null) {
+    if (!provider) {
+      this.assetRateProviders.delete(currencyId);
+      return;
+    }
+    this.assetRateProviders.set(currencyId, provider);
   }
 
   public setMarketProvider(marketKey: string, provider: IMarketProvider | null) {
@@ -609,8 +623,7 @@ export default class System {
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
-      const assetRate = this.dataSource.assetRateData.get(currencyId);
-      const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
+      const {underlyingDecimalPlaces, assetRate} = this.getAssetRate(currencyId);
       if (!assetRate || !underlyingDecimalPlaces) throw new Error(`Asset rate data for ${currencyId} is not found`);
 
       return assetRate;
