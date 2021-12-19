@@ -1,8 +1,10 @@
-import { BigNumber } from 'ethers';
-import { assetTypeNum, getNowSeconds } from '../libs/utils';
-import { AssetType } from '../libs/types';
-import { PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR } from '../config/constants';
-import { Market } from '.';
+import {BigNumber} from 'ethers';
+import {assetTypeNum, getNowSeconds} from '../libs/utils';
+import {AssetType} from '../libs/types';
+import {
+  PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
+} from '../config/constants';
+import {Market} from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
 
 export default class CashGroup {
@@ -170,13 +172,19 @@ export default class CashGroup {
     useHaircut: boolean,
     marketOverrides?: Market[],
   ): {
-    fCashClaim: TypedBigNumber;
-    assetCashClaim: TypedBigNumber;
-  } {
+      fCashClaim: TypedBigNumber;
+      assetCashClaim: TypedBigNumber;
+    } {
     const index = assetTypeNum(assetType) - 2;
     const markets = marketOverrides || this.markets;
-    const fCashClaim = markets[index].market.totalfCash.scale(tokens.n, markets[index].market.totalLiquidity.n);
-    const assetCashClaim = markets[index].market.totalAssetCash.scale(tokens.n, markets[index].market.totalLiquidity.n);
+    const fCashClaim = markets[index].market.totalfCash.scale(
+      tokens.n,
+      markets[index].market.totalLiquidity.n,
+    );
+    const assetCashClaim = markets[index].market.totalAssetCash.scale(
+      tokens.n,
+      markets[index].market.totalLiquidity.n,
+    );
 
     if (useHaircut) {
       return {
@@ -185,6 +193,6 @@ export default class CashGroup {
       };
     }
 
-    return { fCashClaim, assetCashClaim };
+    return {fCashClaim, assetCashClaim};
   }
 }
