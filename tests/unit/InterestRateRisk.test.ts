@@ -13,6 +13,8 @@ describe('calculates interest rate risk', () => {
   System.overrideSystem(system);
   afterAll(() => {
     system.destroy();
+  });
+  afterEach(() => {
     system.clearMarketProviders();
   });
   const accountData = new MockAccountData(0, false, true, 0, [], [], false);
@@ -167,6 +169,7 @@ describe('calculates interest rate risk', () => {
       },
     });
     expect(InterestRateRisk.getWeightedAvgInterestRate(1)).toBeCloseTo(80416666, -4);
+    system.setMarketProvider(cashGroup.markets[0].marketKey, null);
   });
 
   it('gets simulated value at current rate', () => {
