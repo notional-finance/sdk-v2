@@ -230,7 +230,7 @@ export default class AccountGraphLoader {
    */
   public static async load(graphClient: GraphClient, address: string) {
     const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
-    const { account } = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, {id: lowerCaseAddress});
+    const {account} = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, {id: lowerCaseAddress});
 
     const balances = account.balances.map(AccountGraphLoader.parseBalance);
     const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);

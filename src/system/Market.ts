@@ -142,6 +142,36 @@ export default class Market {
   ) {}
 
   /**
+   * Copies a market object for simulation
+   * @param market
+   * @returns a market object that is mutable
+   */
+  public static copy(market: Market) {
+    const copy = new Market(
+      market.currencyId,
+      market.marketIndex,
+      market.maturity,
+      market.rateScalar,
+      market.totalFee,
+      market.reserveFeeShare,
+      market.rateOracleTimeWindow,
+      market.assetSymbol,
+      market.underlyingSymbol,
+    );
+
+    const originalMarketData = market.market;
+    copy.setMarket({
+      totalfCash: BigNumber.from(originalMarketData.totalfCash.n),
+      totalAssetCash: BigNumber.from(originalMarketData.totalAssetCash.n),
+      totalLiquidity: BigNumber.from(originalMarketData.totalLiquidity.n),
+      lastImpliedRate: BigNumber.from(originalMarketData.lastImpliedRate),
+      oracleRate: BigNumber.from(originalMarketData.oracleRate),
+      previousTradeTime: BigNumber.from(originalMarketData.previousTradeTime),
+    });
+    return copy;
+  }
+
+  /**
    * Formats rates as a string with a given precision.
    *
    * @param rate rate to format

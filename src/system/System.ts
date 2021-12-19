@@ -26,7 +26,8 @@ import {NTokenERC20} from '../typechain/NTokenERC20';
 import {Notional as NotionalProxy} from '../typechain/Notional';
 import {ERC20} from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
-import {Market, CashGroup} from '.';
+import CashGroup from './CashGroup';
+import Market from './Market';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import NoteETHRateProvider from './NoteETHRateProvider';
 import {DataSource, DataSourceType} from './datasource';
@@ -193,6 +194,10 @@ interface SystemQueryResult {
   }[];
 }
 
+interface IMarketProvider {
+  getMarket(): Market;
+}
+
 interface IETHRateProvider {
   getETHRate(): {ethRateConfig: EthRate; ethRate: BigNumber};
 }
@@ -237,6 +242,7 @@ export default class System {
   private configurationRefreshInterval?: NodeJS.Timeout;
   private ethRateProviders = new Map<number, IETHRateProvider>();
   private nTokenAssetCashPVProviders = new Map<number, INTokenAssetCashPVProvider>();
+  private marketProviders = new Map<string, IMarketProvider>();
 
   constructor(
     data: SystemQueryResult,
@@ -264,13 +270,13 @@ export default class System {
         refreshIntervalMS,
       );
       // This will fetch the NOTE price via CoinGecko
-      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider(
-        undefined,
-        {
+      this.ethRateProviders.set(
+        NOTE_CURRENCY_ID,
+        new NoteETHRateProvider(undefined, {
           notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
           eventEmitter: this.eventEmitter,
-        },
-      ));
+        }),
+      );
     } else {
       this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
     }
@@ -456,12 +462,23 @@ export default class System {
   public getCashGroup(currencyId: number): CashGroup {
     const cashGroup = this.cashGroups.get(currencyId);
     if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
-    return cashGroup;
+
+    const cashGroupCopy = CashGroup.copy(cashGroup);
+    cashGroupCopy.markets = this.getMarkets(currencyId);
+    return cashGroupCopy;
   }
 
   public getMarkets(currencyId: number): Market[] {
-    const cashGroup = this.getCashGroup(currencyId);
-    return cashGroup.markets;
+    const cashGroup = this.cashGroups.get(currencyId);
+    if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
+
+    const marketsCopy: Market[] = [];
+    for (let i = 0; i < cashGroup.markets.length; i += 1) {
+      const market = cashGroup.markets[i];
+      const provider = this.marketProviders.get(market.marketKey);
+      marketsCopy.push(provider ? provider.getMarket() : Market.copy(market));
+    }
+    return marketsCopy;
   }
 
   public getNToken(currencyId: number): nToken | undefined {
@@ -510,6 +527,18 @@ export default class System {
 
   public getNTokenIncentiveFactors(currencyId: number) {
     return this.dataSource.nTokenIncentiveFactors.get(currencyId);
+  }
+
+  public clearMarketProviders() {
+    this.marketProviders.clear();
+  }
+
+  public setMarketProvider(marketKey: string, provider: IMarketProvider | null) {
+    if (!provider) {
+      this.marketProviders.delete(marketKey);
+      return;
+    }
+    this.marketProviders.set(marketKey, provider);
   }
 
   public setETHRateProvider(currencyId: number, provider: IETHRateProvider | null) {
