@@ -472,13 +472,7 @@ export default class System {
     const cashGroup = this.cashGroups.get(currencyId);
     if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
 
-    const marketsCopy: Market[] = [];
-    for (let i = 0; i < cashGroup.markets.length; i += 1) {
-      const market = cashGroup.markets[i];
-      const provider = this.marketProviders.get(market.marketKey);
-      marketsCopy.push(provider ? provider.getMarket() : Market.copy(market));
-    }
-    return marketsCopy;
+    return cashGroup.markets.map((m) => this.marketProviders.get(m.marketKey)?.getMarket() ?? Market.copy(m));
   }
 
   public getNToken(currencyId: number): nToken | undefined {
