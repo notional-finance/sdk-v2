@@ -34,6 +34,27 @@ export default class CashGroup {
     public markets: Market[],
   ) {}
 
+  /**
+   * Copies a cash group object for simulation
+   * @param cashGroup
+   * @returns a cash group object that is mutable
+   */
+  public static copy(cashGroup: CashGroup) {
+    const copy = new CashGroup(
+      cashGroup.maxMarketIndex,
+      cashGroup.rateOracleTimeWindowSeconds,
+      cashGroup.totalFeeBasisPoints,
+      cashGroup.reserveFeeSharePercent,
+      cashGroup.debtBufferBasisPoints,
+      cashGroup.fCashHaircutBasisPoints,
+      [...cashGroup.liquidityTokenHaircutsPercent],
+      [...cashGroup.rateScalars],
+      cashGroup.markets.map(Market.copy),
+    );
+    copy.setBlockSupplyRate(BigNumber.from(cashGroup.blockSupplyRate));
+    return copy;
+  }
+
   public static getTimeReference(timestamp = getNowSeconds()) {
     return timestamp - (timestamp % SECONDS_IN_QUARTER);
   }

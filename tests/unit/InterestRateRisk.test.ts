@@ -11,7 +11,12 @@ import InterestRateRisk from '../../src/system/InterestRateRisk';
 describe('calculates interest rate risk', () => {
   const system = new MockSystem();
   System.overrideSystem(system);
-  afterAll(() => { system.destroy(); });
+  afterAll(() => {
+    system.destroy();
+  });
+  afterEach(() => {
+    system.clearMarketProviders();
+  });
   const accountData = new MockAccountData(0, false, true, 0, [], [], false);
   const blockTime = CashGroup.getTimeReference(getNowSeconds());
   (system as MockSystem).setNTokenPortfolio(
@@ -149,15 +154,22 @@ describe('calculates interest rate risk', () => {
   it('gets weighted average interest rate', () => {
     const cashGroup = system.getCashGroup(1);
     const data = cashGroup.markets[0].market;
-    cashGroup.markets[0].setMarket({
-      totalfCash: data.totalfCash.n,
-      totalAssetCash: data.totalAssetCash.n,
-      totalLiquidity: BigNumber.from(1000e8),
-      oracleRate: BigNumber.from(0.02e9),
-      previousTradeTime: BigNumber.from(blockTime),
-      lastImpliedRate: BigNumber.from(0.02e9),
+    system.setMarketProvider(cashGroup.markets[0].marketKey, {
+      getMarket: () => {
+        const override = cashGroup.markets[0];
+        override.setMarket({
+          totalfCash: data.totalfCash.n,
+          totalAssetCash: data.totalAssetCash.n,
+          totalLiquidity: BigNumber.from(1000e8),
+          oracleRate: BigNumber.from(0.02e9),
+          previousTradeTime: BigNumber.from(blockTime),
+          lastImpliedRate: BigNumber.from(0.02e9),
+        });
+        return override;
+      },
     });
     expect(InterestRateRisk.getWeightedAvgInterestRate(1)).toBeCloseTo(80416666, -4);
+    system.setMarketProvider(cashGroup.markets[0].marketKey, null);
   });
 
   it('gets simulated value at current rate', () => {

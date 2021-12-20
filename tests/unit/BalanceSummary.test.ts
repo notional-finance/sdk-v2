@@ -1,5 +1,4 @@
 import {BigNumber} from 'ethers';
-import CashGroup from '../../src/system/CashGroup';
 import {BalanceHistory} from '../../src/libs/types';
 import {getNowSeconds} from '../../src/libs/utils';
 import {BalanceSummary} from '../../src/account';
@@ -7,7 +6,7 @@ import {SECONDS_IN_DAY} from '../../src/config/constants';
 import MockSystem from '../mocks/MockSystem';
 import MockAccountData from '../mocks/MockAccountData';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {System} from '../../src/system';
+import {System, CashGroup} from '../../src/system';
 
 describe('Balance Summary', () => {
   const blockTime = CashGroup.getTimeReference(getNowSeconds());

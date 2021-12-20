@@ -26,7 +26,8 @@ import {NTokenERC20} from '../typechain/NTokenERC20';
 import {Notional as NotionalProxy} from '../typechain/Notional';
 import {ERC20} from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
-import {Market, CashGroup} from '.';
+import CashGroup from './CashGroup';
+import Market from './Market';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import NoteETHRateProvider from './NoteETHRateProvider';
 import {DataSource, DataSourceType} from './datasource';
@@ -193,6 +194,14 @@ interface SystemQueryResult {
   }[];
 }
 
+interface IAssetRateProvider {
+  getAssetRate(): BigNumber;
+}
+
+interface IMarketProvider {
+  getMarket(): Market;
+}
+
 interface IETHRateProvider {
   getETHRate(): {ethRateConfig: EthRate; ethRate: BigNumber};
 }
@@ -236,7 +245,9 @@ export default class System {
   private dataRefreshInterval?: NodeJS.Timeout;
   private configurationRefreshInterval?: NodeJS.Timeout;
   private ethRateProviders = new Map<number, IETHRateProvider>();
+  private assetRateProviders = new Map<number, IAssetRateProvider>();
   private nTokenAssetCashPVProviders = new Map<number, INTokenAssetCashPVProvider>();
+  private marketProviders = new Map<string, IMarketProvider>();
 
   constructor(
     data: SystemQueryResult,
@@ -264,13 +275,13 @@ export default class System {
         refreshIntervalMS,
       );
       // This will fetch the NOTE price via CoinGecko
-      this.ethRateProviders.set(NOTE_CURRENCY_ID, new NoteETHRateProvider(
-        undefined,
-        {
+      this.ethRateProviders.set(
+        NOTE_CURRENCY_ID,
+        new NoteETHRateProvider(undefined, {
           notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
           eventEmitter: this.eventEmitter,
-        },
-      ));
+        }),
+      );
     } else {
       this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
     }
@@ -456,12 +467,17 @@ export default class System {
   public getCashGroup(currencyId: number): CashGroup {
     const cashGroup = this.cashGroups.get(currencyId);
     if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
-    return cashGroup;
+
+    const cashGroupCopy = CashGroup.copy(cashGroup);
+    cashGroupCopy.markets = this.getMarkets(currencyId);
+    return cashGroupCopy;
   }
 
   public getMarkets(currencyId: number): Market[] {
-    const cashGroup = this.getCashGroup(currencyId);
-    return cashGroup.markets;
+    const cashGroup = this.cashGroups.get(currencyId);
+    if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
+
+    return cashGroup.markets.map((m) => this.marketProviders.get(m.marketKey)?.getMarket() ?? Market.copy(m));
   }
 
   public getNToken(currencyId: number): nToken | undefined {
@@ -470,7 +486,8 @@ export default class System {
 
   public getAssetRate(currencyId: number) {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
-    const assetRate = this.dataSource.assetRateData.get(currencyId);
+    const provider = this.assetRateProviders.get(currencyId);
+    const assetRate = provider?.getAssetRate() ?? this.dataSource.assetRateData.get(currencyId);
     return {underlyingDecimalPlaces, assetRate};
   }
 
@@ -510,6 +527,34 @@ export default class System {
 
   public getNTokenIncentiveFactors(currencyId: number) {
     return this.dataSource.nTokenIncentiveFactors.get(currencyId);
+  }
+
+  public clearMarketProviders() {
+    this.marketProviders.clear();
+  }
+
+  public clearAssetRateProviders() {
+    this.assetRateProviders.clear();
+  }
+
+  public clearETHRateProviders() {
+    this.ethRateProviders.clear();
+  }
+
+  public setAssetRateProvider(currencyId: number, provider: IAssetRateProvider | null) {
+    if (!provider) {
+      this.assetRateProviders.delete(currencyId);
+      return;
+    }
+    this.assetRateProviders.set(currencyId, provider);
+  }
+
+  public setMarketProvider(marketKey: string, provider: IMarketProvider | null) {
+    if (!provider) {
+      this.marketProviders.delete(marketKey);
+      return;
+    }
+    this.marketProviders.set(marketKey, provider);
   }
 
   public setETHRateProvider(currencyId: number, provider: IETHRateProvider | null) {
@@ -586,8 +631,7 @@ export default class System {
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
-      const assetRate = this.dataSource.assetRateData.get(currencyId);
-      const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
+      const {underlyingDecimalPlaces, assetRate} = this.getAssetRate(currencyId);
       if (!assetRate || !underlyingDecimalPlaces) throw new Error(`Asset rate data for ${currencyId} is not found`);
 
       return assetRate;

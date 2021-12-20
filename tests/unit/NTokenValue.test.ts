@@ -19,23 +19,34 @@ describe('nToken value', () => {
     system.dataSource.refreshData();
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const cashGroup = system.getCashGroup(2);
-    cashGroup.markets[0].setMarket({
-      totalAssetCash: BigNumber.from(5_000_000e8),
-      totalLiquidity: BigNumber.from(100_000e8),
-      totalfCash: BigNumber.from(100_000e8),
-      previousTradeTime: BigNumber.from(0),
-      lastImpliedRate: BigNumber.from(0.04e9),
-      oracleRate: BigNumber.from(0.04e9),
+    system.setMarketProvider(cashGroup.markets[0].marketKey, {
+      getMarket: () => {
+        const override = cashGroup.markets[0];
+        override.setMarket({
+          totalAssetCash: BigNumber.from(5_000_000e8),
+          totalLiquidity: BigNumber.from(100_000e8),
+          totalfCash: BigNumber.from(100_000e8),
+          previousTradeTime: BigNumber.from(0),
+          lastImpliedRate: BigNumber.from(0.04e9),
+          oracleRate: BigNumber.from(0.04e9),
+        });
+        return override;
+      },
     });
-    cashGroup.markets[1].setMarket({
-      totalAssetCash: BigNumber.from(5_000_000e8),
-      totalLiquidity: BigNumber.from(150_000e8),
-      totalfCash: BigNumber.from(100_000e8),
-      previousTradeTime: BigNumber.from(0),
-      lastImpliedRate: BigNumber.from(0.04e9),
-      oracleRate: BigNumber.from(0.04e9),
+    system.setMarketProvider(cashGroup.markets[1].marketKey, {
+      getMarket: () => {
+        const override = cashGroup.markets[1];
+        override.setMarket({
+          totalAssetCash: BigNumber.from(5_000_000e8),
+          totalLiquidity: BigNumber.from(150_000e8),
+          totalfCash: BigNumber.from(100_000e8),
+          previousTradeTime: BigNumber.from(0),
+          lastImpliedRate: BigNumber.from(0.04e9),
+          oracleRate: BigNumber.from(0.04e9),
+        });
+        return override;
+      },
     });
-
     (system as MockSystem).setNTokenPortfolio(
       2,
       TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
