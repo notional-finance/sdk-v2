@@ -488,7 +488,7 @@ export default class System {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
     const provider = this.assetRateProviders.get(currencyId);
     const assetRate = provider?.getAssetRate() ?? this.dataSource.assetRateData.get(currencyId);
-    return { underlyingDecimalPlaces, assetRate };
+    return {underlyingDecimalPlaces, assetRate};
   }
 
   public getETHProvider(currencyId: number) {
@@ -502,7 +502,7 @@ export default class System {
     }
     const ethRateConfig = this.ethRates.get(currencyId);
     const ethRate = this.dataSource.ethRateData.get(currencyId);
-    return { ethRateConfig, ethRate };
+    return {ethRateConfig, ethRate};
   }
 
   public getNTokenAssetCashPV(currencyId: number) {
@@ -522,7 +522,7 @@ export default class System {
     const liquidityTokens = this.dataSource.nTokenLiquidityTokens.get(currencyId);
     const fCash = this.dataSource.nTokenfCash.get(currencyId);
 
-    return { cashBalance, liquidityTokens, fCash };
+    return {cashBalance, liquidityTokens, fCash};
   }
 
   public getNTokenIncentiveFactors(currencyId: number) {
@@ -621,17 +621,17 @@ export default class System {
     const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
       settlementRateQuery,
       {
-        variables: { currencyId, maturity },
+        variables: {currencyId, maturity},
       },
     );
 
-    const isSettlementRateSet =
-      settlementRateResponse.settlementRates.length > 0 && settlementRateResponse.settlementRates[0].assetExchangeRate;
+    const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
+      && settlementRateResponse.settlementRates[0].assetExchangeRate;
 
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
-      const { underlyingDecimalPlaces, assetRate } = this.getAssetRate(currencyId);
+      const {underlyingDecimalPlaces, assetRate} = this.getAssetRate(currencyId);
       if (!assetRate || !underlyingDecimalPlaces) throw new Error(`Asset rate data for ${currencyId} is not found`);
 
       return assetRate;
@@ -652,7 +652,7 @@ export default class System {
     const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
       settlementMarketsQuery,
       {
-        variables: { currencyId, settlementDate },
+        variables: {currencyId, settlementDate},
       },
     );
     settlementMarkets.markets.forEach((m) => {
