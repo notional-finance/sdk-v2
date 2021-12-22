@@ -620,9 +620,7 @@ export default class System {
 
     const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
       settlementRateQuery,
-      {
-        variables: {currencyId, maturity},
-      },
+      {currencyId: currencyId.toString(), maturity},
     );
 
     const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
@@ -651,9 +649,7 @@ export default class System {
 
     const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
       settlementMarketsQuery,
-      {
-        variables: {currencyId, settlementDate},
-      },
+      {currencyId: currencyId.toString(), settlementDate},
     );
     settlementMarkets.markets.forEach((m) => {
       const k = `${currencyId}:${settlementDate}:${m.maturity}`;
