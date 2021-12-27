@@ -33,7 +33,10 @@
     "out": "docs",
     "name": "Notional Finance V2 SDK",
     "entryPoints": [
-      "src"
+      "src",
+      "src/system",
+      "src/libs",
+      "src/account"
     ],
     "includeVersion": true,
     "exclude": "tests/**/*.ts",
