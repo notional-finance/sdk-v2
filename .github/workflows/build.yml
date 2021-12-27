@@ -27,6 +27,3 @@ jobs:
 
             - run: yarn --fixed-lockfile
             - run: yarn run test:unit
-            # - run: yarn run workspace:test:sdk-v2
-            # - run: yarn run workspace:dev:web2
-            # - run: yarn run workspace:test:web2

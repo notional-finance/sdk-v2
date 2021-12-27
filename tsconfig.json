@@ -28,5 +28,17 @@
   },
   "exclude": [
     "node_modules"
-  ]
+  ],
+   "typedocOptions": {
+    "out": "docs",
+    "name": "Notional Finance V2 SDK",
+    "entryPoints": [
+      "src"
+    ],
+    "includeVersion": true,
+    "exclude": "tests/**/*.ts",
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "hideBreadcrumbs": true
+  }
 }
