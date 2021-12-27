@@ -62,7 +62,7 @@ AccountRefresh.eventEmitter
 
 #### Defined in
 
-[account/AccountRefresh.ts:53](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L53)
+[account/AccountRefresh.ts:53](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L53)
 
 ## Accessors
 
@@ -80,7 +80,7 @@ AccountRefresh.accountData
 
 #### Defined in
 
-[account/AccountRefresh.ts:70](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L70)
+[account/AccountRefresh.ts:70](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L70)
 
 ___
 
@@ -98,7 +98,7 @@ AccountRefresh.lastUpdateBlockNumber
 
 #### Defined in
 
-[account/AccountRefresh.ts:62](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L62)
+[account/AccountRefresh.ts:62](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L62)
 
 ___
 
@@ -116,7 +116,7 @@ AccountRefresh.lastUpdateTime
 
 #### Defined in
 
-[account/AccountRefresh.ts:66](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L66)
+[account/AccountRefresh.ts:66](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L66)
 
 ___
 
@@ -134,7 +134,7 @@ AccountRefresh.walletBalances
 
 #### Defined in
 
-[account/AccountRefresh.ts:74](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L74)
+[account/AccountRefresh.ts:74](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L74)
 
 ## Methods
 
@@ -152,7 +152,7 @@ AccountRefresh.destroy
 
 #### Defined in
 
-[account/AccountRefresh.ts:104](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L104)
+[account/AccountRefresh.ts:104](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L104)
 
 ___
 
@@ -178,7 +178,7 @@ AccountRefresh.enableRefresh
 
 #### Defined in
 
-[account/AccountRefresh.ts:88](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L88)
+[account/AccountRefresh.ts:88](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L88)
 
 ___
 
@@ -199,7 +199,7 @@ ___
 
 #### Defined in
 
-[account/Account.ts:218](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L218)
+[account/Account.ts:218](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L218)
 
 ___
 
@@ -215,7 +215,7 @@ Returns the tradeHistory and assetSummary for an account
 
 #### Defined in
 
-[account/Account.ts:75](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L75)
+[account/Account.ts:75](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L75)
 
 ___
 
@@ -231,7 +231,7 @@ Returns a summary of an account's balances with historical transactions and inte
 
 #### Defined in
 
-[account/Account.ts:61](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L61)
+[account/Account.ts:61](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L61)
 
 ___
 
@@ -260,7 +260,7 @@ to a given trade.
 
 #### Defined in
 
-[account/Account.ts:94](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L94)
+[account/Account.ts:94](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L94)
 
 ___
 
@@ -283,7 +283,7 @@ Checks if the account has sufficient allowance for the deposit amount
 
 #### Defined in
 
-[account/Account.ts:154](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L154)
+[account/Account.ts:154](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L154)
 
 ___
 
@@ -306,7 +306,7 @@ Checks if the account has sufficient allowance for the deposit amount
 
 #### Defined in
 
-[account/Account.ts:167](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L167)
+[account/Account.ts:167](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L167)
 
 ___
 
@@ -330,7 +330,7 @@ Determines if the account has sufficient cash to complete a given trade
 
 #### Defined in
 
-[account/Account.ts:130](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L130)
+[account/Account.ts:130](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L130)
 
 ___
 
@@ -348,7 +348,7 @@ AccountRefresh.refresh
 
 #### Defined in
 
-[account/AccountRefresh.ts:109](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L109)
+[account/AccountRefresh.ts:109](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L109)
 
 ___
 
@@ -366,7 +366,7 @@ AccountRefresh.refreshWalletBalances
 
 #### Defined in
 
-[account/AccountRefresh.ts:128](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L128)
+[account/AccountRefresh.ts:128](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L128)
 
 ___
 
@@ -390,7 +390,7 @@ a pending transaction object
 
 #### Defined in
 
-[account/Account.ts:193](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L193)
+[account/Account.ts:193](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L193)
 
 ___
 
@@ -414,7 +414,7 @@ Sets the ERC20 token allowance on the given symbol
 
 #### Defined in
 
-[account/Account.ts:207](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L207)
+[account/Account.ts:207](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L207)
 
 ___
 
@@ -438,7 +438,7 @@ AccountRefresh.walletBalanceBySymbol
 
 #### Defined in
 
-[account/AccountRefresh.ts:78](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L78)
+[account/AccountRefresh.ts:78](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L78)
 
 ___
 
@@ -463,4 +463,4 @@ Loads an account object
 
 #### Defined in
 
-[account/Account.ts:32](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/Account.ts#L32)
+[account/Account.ts:32](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/Account.ts#L32)

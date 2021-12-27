@@ -50,7 +50,7 @@ Converts an ntoken balance to internal asset denomination
 
 #### Defined in
 
-[system/NTokenValue.ts:51](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L51)
+[system/NTokenValue.ts:51](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L51)
 
 ___
 
@@ -76,7 +76,7 @@ a TypedBigNumber in internal asset denomination
 
 #### Defined in
 
-[system/NTokenValue.ts:172](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L172)
+[system/NTokenValue.ts:172](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L172)
 
 ___
 
@@ -101,7 +101,7 @@ amount of asset cash required to mint the nToken balance
 
 #### Defined in
 
-[system/NTokenValue.ts:92](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L92)
+[system/NTokenValue.ts:92](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L92)
 
 ___
 
@@ -125,7 +125,7 @@ ___
 
 #### Defined in
 
-[system/NTokenValue.ts:294](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L294)
+[system/NTokenValue.ts:294](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L294)
 
 ___
 
@@ -150,7 +150,7 @@ a number that represents the blended annual interest rate
 
 #### Defined in
 
-[system/NTokenValue.ts:216](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L216)
+[system/NTokenValue.ts:216](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L216)
 
 ___
 
@@ -177,7 +177,7 @@ ___
 
 #### Defined in
 
-[system/NTokenValue.ts:11](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L11)
+[system/NTokenValue.ts:11](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L11)
 
 ___
 
@@ -197,7 +197,7 @@ ___
 
 #### Defined in
 
-[system/NTokenValue.ts:279](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L279)
+[system/NTokenValue.ts:279](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L279)
 
 ___
 
@@ -224,7 +224,7 @@ ___
 
 #### Defined in
 
-[system/NTokenValue.ts:30](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L30)
+[system/NTokenValue.ts:30](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L30)
 
 ___
 
@@ -251,7 +251,7 @@ an nToken amount
 
 #### Defined in
 
-[system/NTokenValue.ts:113](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L113)
+[system/NTokenValue.ts:113](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L113)
 
 ___
 
@@ -271,7 +271,7 @@ ___
 
 #### Defined in
 
-[system/NTokenValue.ts:150](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L150)
+[system/NTokenValue.ts:150](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L150)
 
 ___
 
@@ -294,4 +294,4 @@ Returns the amount of nTokens that will be minted as a result of deposited the a
 
 #### Defined in
 
-[system/NTokenValue.ts:72](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/NTokenValue.ts#L72)
+[system/NTokenValue.ts:72](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/NTokenValue.ts#L72)

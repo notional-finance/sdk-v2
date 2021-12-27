@@ -90,7 +90,7 @@ after applying buffers and haircuts. An account is liquidatable when this is bel
 
 #### Defined in
 
-[account/AccountData.ts:425](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L425)
+[account/AccountData.ts:425](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L425)
 
 ___
 
@@ -110,7 +110,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:56](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L56)
+[account/AccountData.ts:56](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L56)
 
 ___
 
@@ -127,7 +127,7 @@ applying any buffers or haircuts. This is used as a user friendly way of showing
 
 #### Defined in
 
-[account/AccountData.ts:416](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L416)
+[account/AccountData.ts:416](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L416)
 
 ___
 
@@ -151,7 +151,7 @@ Returns components of the free collateral figure for this account.
 
 #### Defined in
 
-[account/AccountData.ts:365](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L365)
+[account/AccountData.ts:365](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L365)
 
 ___
 
@@ -165,7 +165,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:64](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L64)
+[account/AccountData.ts:64](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L64)
 
 ___
 
@@ -186,7 +186,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:369](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L369)
+[account/AccountData.ts:369](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L369)
 
 ___
 
@@ -211,7 +211,7 @@ the total value of collateral in ETH. It does not use any net currency values.
 
 #### Defined in
 
-[account/AccountData.ts:233](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L233)
+[account/AccountData.ts:233](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L233)
 
 ___
 
@@ -231,7 +231,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:60](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L60)
+[account/AccountData.ts:60](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L60)
 
 ___
 
@@ -254,7 +254,7 @@ exceed the maximum number of slots
 
 #### Defined in
 
-[account/AccountData.ts:217](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L217)
+[account/AccountData.ts:217](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L217)
 
 ___
 
@@ -279,7 +279,7 @@ exceed the maximum number of slots.
 
 #### Defined in
 
-[account/AccountData.ts:200](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L200)
+[account/AccountData.ts:200](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L200)
 
 ___
 
@@ -303,7 +303,7 @@ an account data object that is mutable
 
 #### Defined in
 
-[account/AccountData.ts:88](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L88)
+[account/AccountData.ts:88](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L88)
 
 ___
 
@@ -317,7 +317,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:79](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L79)
+[account/AccountData.ts:79](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L79)
 
 ___
 
@@ -342,7 +342,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:165](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L165)
+[account/AccountData.ts:165](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L165)
 
 ___
 
@@ -362,7 +362,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:147](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L147)
+[account/AccountData.ts:147](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L147)
 
 ___
 
@@ -382,7 +382,7 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:128](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L128)
+[account/AccountData.ts:128](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L128)
 
 ___
 
@@ -402,4 +402,4 @@ ___
 
 #### Defined in
 
-[account/AccountData.ts:104](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountData.ts#L104)
+[account/AccountData.ts:104](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountData.ts#L104)

@@ -20,7 +20,7 @@
 
 #### Defined in
 
-[account/AccountRefresh.ts:16](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L16)
+[account/AccountRefresh.ts:16](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L16)
 
 ___
 
@@ -30,7 +30,7 @@ ___
 
 #### Defined in
 
-[account/AccountRefresh.ts:20](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L20)
+[account/AccountRefresh.ts:20](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L20)
 
 ___
 
@@ -40,7 +40,7 @@ ___
 
 #### Defined in
 
-[account/AccountRefresh.ts:19](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L19)
+[account/AccountRefresh.ts:19](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L19)
 
 ___
 
@@ -50,7 +50,7 @@ ___
 
 #### Defined in
 
-[account/AccountRefresh.ts:17](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L17)
+[account/AccountRefresh.ts:17](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L17)
 
 ___
 
@@ -60,4 +60,4 @@ ___
 
 #### Defined in
 
-[account/AccountRefresh.ts:18](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AccountRefresh.ts#L18)
+[account/AccountRefresh.ts:18](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AccountRefresh.ts#L18)

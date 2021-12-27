@@ -22,7 +22,7 @@
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:12](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L12)
+[libs/TypedBigNumber.ts:12](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L12)
 
 ___
 
@@ -32,7 +32,7 @@ ___
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:10](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L10)
+[libs/TypedBigNumber.ts:10](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L10)
 
 ___
 
@@ -42,7 +42,7 @@ ___
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:13](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L13)
+[libs/TypedBigNumber.ts:13](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L13)
 
 ___
 
@@ -52,7 +52,7 @@ ___
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:11](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L11)
+[libs/TypedBigNumber.ts:11](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L11)
 
 ___
 
@@ -62,7 +62,7 @@ ___
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:14](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L14)
+[libs/TypedBigNumber.ts:14](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L14)
 
 ___
 
@@ -72,7 +72,7 @@ ___
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:16](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L16)
+[libs/TypedBigNumber.ts:16](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L16)
 
 ___
 
@@ -82,4 +82,4 @@ ___
 
 #### Defined in
 
-[libs/TypedBigNumber.ts:15](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/TypedBigNumber.ts#L15)
+[libs/TypedBigNumber.ts:15](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/TypedBigNumber.ts#L15)

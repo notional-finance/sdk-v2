@@ -21,7 +21,7 @@
 
 #### Defined in
 
-[libs/types.ts:115](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/types.ts#L115)
+[libs/types.ts:115](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/types.ts#L115)
 
 ___
 
@@ -31,7 +31,7 @@ ___
 
 #### Defined in
 
-[libs/types.ts:116](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/types.ts#L116)
+[libs/types.ts:116](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/types.ts#L116)
 
 ___
 
@@ -41,7 +41,7 @@ ___
 
 #### Defined in
 
-[libs/types.ts:117](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/types.ts#L117)
+[libs/types.ts:117](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/types.ts#L117)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 #### Defined in
 
-[libs/types.ts:120](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/types.ts#L120)
+[libs/types.ts:120](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/types.ts#L120)
 
 ___
 
@@ -61,7 +61,7 @@ ___
 
 #### Defined in
 
-[libs/types.ts:118](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/types.ts#L118)
+[libs/types.ts:118](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/types.ts#L118)
 
 ___
 
@@ -71,4 +71,4 @@ ___
 
 #### Defined in
 
-[libs/types.ts:119](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/libs/types.ts#L119)
+[libs/types.ts:119](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/libs/types.ts#L119)

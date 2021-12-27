@@ -64,7 +64,7 @@ Calculates borrow requirements for a given amount of fCash and a target collater
 
 #### Defined in
 
-[system/FreeCollateral.ts:223](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L223)
+[system/FreeCollateral.ts:223](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L223)
 
 ___
 
@@ -91,7 +91,7 @@ collateral ratio scaled by 100 as a number
 
 #### Defined in
 
-[system/FreeCollateral.ts:446](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L446)
+[system/FreeCollateral.ts:446](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L446)
 
 ___
 
@@ -124,7 +124,7 @@ minCollateral and targetCollateral in collateral currency asset cash denominatio
 
 #### Defined in
 
-[system/FreeCollateral.ts:324](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L324)
+[system/FreeCollateral.ts:324](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L324)
 
 ___
 
@@ -153,7 +153,7 @@ Returns components of portfolio assets in a cash group
 
 #### Defined in
 
-[system/FreeCollateral.ts:180](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L180)
+[system/FreeCollateral.ts:180](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L180)
 
 ___
 
@@ -188,7 +188,7 @@ Returns components of the currency available in a single currency
 
 #### Defined in
 
-[system/FreeCollateral.ts:79](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L79)
+[system/FreeCollateral.ts:79](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L79)
 
 ___
 
@@ -225,7 +225,7 @@ Returns components of the free collateral figure
 
 #### Defined in
 
-[system/FreeCollateral.ts:26](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L26)
+[system/FreeCollateral.ts:26](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L26)
 
 ___
 
@@ -255,4 +255,4 @@ Returns the net fCash positions and cash claims from a portfolio
 
 #### Defined in
 
-[system/FreeCollateral.ts:120](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/FreeCollateral.ts#L120)
+[system/FreeCollateral.ts:120](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/FreeCollateral.ts#L120)

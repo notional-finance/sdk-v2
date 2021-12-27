@@ -38,6 +38,7 @@
       "src/libs",
       "src/account"
     ],
+    "readme": "none",
     "includeVersion": true,
     "exclude": "tests/**/*.ts",
     "excludePrivate": true,

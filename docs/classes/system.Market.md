@@ -76,7 +76,7 @@
 
 #### Defined in
 
-[system/Market.ts:132](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L132)
+[system/Market.ts:132](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L132)
 
 ## Properties
 
@@ -144,7 +144,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:51](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L51)
+[system/Market.ts:51](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L51)
 
 ___
 
@@ -158,7 +158,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:58](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L58)
+[system/Market.ts:58](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L58)
 
 ___
 
@@ -172,7 +172,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:27](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L27)
+[system/Market.ts:27](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L27)
 
 ___
 
@@ -186,7 +186,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:31](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L31)
+[system/Market.ts:31](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L31)
 
 ___
 
@@ -200,7 +200,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:62](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L62)
+[system/Market.ts:62](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L62)
 
 ___
 
@@ -214,7 +214,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:70](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L70)
+[system/Market.ts:70](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L70)
 
 ___
 
@@ -228,7 +228,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:43](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L43)
+[system/Market.ts:43](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L43)
 
 ___
 
@@ -242,7 +242,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:39](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L39)
+[system/Market.ts:39](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L39)
 
 ___
 
@@ -256,7 +256,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:47](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L47)
+[system/Market.ts:47](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L47)
 
 ___
 
@@ -270,7 +270,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:35](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L35)
+[system/Market.ts:35](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L35)
 
 ## Calculation Methods
 
@@ -296,7 +296,7 @@ the amount of fCash that must be sold
 
 #### Defined in
 
-[system/Market.ts:363](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L363)
+[system/Market.ts:363](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L363)
 
 ___
 
@@ -320,7 +320,7 @@ exchange rate at `blockTime`
 
 #### Defined in
 
-[system/Market.ts:288](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L288)
+[system/Market.ts:288](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L288)
 
 ___
 
@@ -344,7 +344,7 @@ exchange rate at `blockTime`
 
 #### Defined in
 
-[system/Market.ts:299](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L299)
+[system/Market.ts:299](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L299)
 
 ___
 
@@ -377,7 +377,7 @@ the amount of current cash this will purchase
 
 #### Defined in
 
-[system/Market.ts:342](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L342)
+[system/Market.ts:342](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L342)
 
 ___
 
@@ -398,7 +398,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:368](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L368)
+[system/Market.ts:368](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L368)
 
 ___
 
@@ -418,7 +418,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:310](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L310)
+[system/Market.ts:310](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L310)
 
 ___
 
@@ -444,7 +444,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:91](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L91)
+[system/Market.ts:91](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L91)
 
 ___
 
@@ -465,7 +465,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:232](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L232)
+[system/Market.ts:232](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L232)
 
 ___
 
@@ -489,7 +489,7 @@ a market object that is mutable
 
 #### Defined in
 
-[system/Market.ts:149](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L149)
+[system/Market.ts:149](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L149)
 
 ___
 
@@ -510,7 +510,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:237](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L237)
+[system/Market.ts:237](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L237)
 
 ___
 
@@ -536,7 +536,7 @@ annualized interest rate in 1e9 precision
 
 #### Defined in
 
-[system/Market.ts:199](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L199)
+[system/Market.ts:199](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L199)
 
 ___
 
@@ -557,7 +557,7 @@ ___
 
 #### Defined in
 
-[system/Market.ts:227](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L227)
+[system/Market.ts:227](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L227)
 
 ___
 
@@ -582,7 +582,7 @@ formatted rate string
 
 #### Defined in
 
-[system/Market.ts:181](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L181)
+[system/Market.ts:181](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L181)
 
 ___
 
@@ -615,7 +615,7 @@ new fCash amount with slippage applied and the new implied rate
 
 #### Defined in
 
-[system/Market.ts:254](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L254)
+[system/Market.ts:254](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L254)
 
 ___
 
@@ -641,4 +641,4 @@ exchange rate
 
 #### Defined in
 
-[system/Market.ts:217](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/system/Market.ts#L217)
+[system/Market.ts:217](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/system/Market.ts#L217)

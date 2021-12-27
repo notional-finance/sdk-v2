@@ -55,7 +55,7 @@
 
 #### Defined in
 
-[account/AssetSummary.ts:67](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L67)
+[account/AssetSummary.ts:67](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L67)
 
 ## Properties
 
@@ -71,7 +71,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:40](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L40)
+[account/AssetSummary.ts:40](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L40)
 
 ___
 
@@ -111,7 +111,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:39](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L39)
+[account/AssetSummary.ts:39](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L39)
 
 ___
 
@@ -137,7 +137,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:43](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L43)
+[account/AssetSummary.ts:43](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L43)
 
 ___
 
@@ -151,7 +151,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:51](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L51)
+[account/AssetSummary.ts:51](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L51)
 
 ___
 
@@ -165,7 +165,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:47](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L47)
+[account/AssetSummary.ts:47](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L47)
 
 ## Methods
 
@@ -186,7 +186,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:55](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L55)
+[account/AssetSummary.ts:55](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L55)
 
 ___
 
@@ -200,7 +200,7 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:62](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L62)
+[account/AssetSummary.ts:62](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L62)
 
 ___
 
@@ -224,7 +224,7 @@ Builds a summary of a portfolio given the current account portfolio and the trad
 
 #### Defined in
 
-[account/AssetSummary.ts:166](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L166)
+[account/AssetSummary.ts:166](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L166)
 
 ___
 
@@ -245,4 +245,4 @@ ___
 
 #### Defined in
 
-[account/AssetSummary.ts:113](https://github.com/notional-finance/sdk-v2/blob/a03fc9c/src/account/AssetSummary.ts#L113)
+[account/AssetSummary.ts:113](https://github.com/notional-finance/sdk-v2/blob/fc3a95f/src/account/AssetSummary.ts#L113)
