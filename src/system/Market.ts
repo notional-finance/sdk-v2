@@ -273,6 +273,7 @@ export default class Market {
 
     const annualizedRate = Market.exchangeToInterestRate(exchangeRatePostSlippage, blockTime, maturity);
 
+    // TODO: expose some specific lending and borrowing methods here to adjust cash or fCash
     return {
       annualizedRate: annualizedRate < 0 ? 0 : annualizedRate,
       exchangeRatePostSlippage,
@@ -287,6 +288,21 @@ export default class Market {
    */
   public marketAnnualizedRate(blockTime = getNowSeconds()) {
     return Market.exchangeToInterestRate(this.marketExchangeRate(blockTime), blockTime, this.maturity);
+  }
+
+  /**
+   * Returns the maximum interest rate the market can support at max utilization
+   */
+  public maxInterestRate(blockTime = getNowSeconds()): number {
+    const {rateScalar, rateAnchor} = this.getExchangeRateFactors(blockTime);
+
+    // get exchange rate at 96% utilization
+    const exchangeRate = Market.logProportion(BigNumber.from(MAX_MARKET_PROPORTION).sub(1))
+      .mul(RATE_PRECISION)
+      .div(rateScalar)
+      .add(rateAnchor);
+
+    return Market.exchangeToInterestRate(exchangeRate.toNumber(), blockTime, this.maturity);
   }
 
   /**
@@ -451,6 +467,17 @@ export default class Market {
     };
   }
 
+  /**
+   * Calculates the exchange rate:
+   * proportion = (totalfCash - fCashAmount) / (totalfCash + totalCashUnderlying)
+   * exchangeRate = ln(proportion / (1 - proportion)) * rateScalar + rateAnchor
+   *
+   * @param totalCashUnderlying
+   * @param rateScalar
+   * @param rateAnchor
+   * @param fCashAmount
+   * @returns
+   */
   private getExchangeRate(
     totalCashUnderlying: TypedBigNumber,
     rateScalar: BigNumber,

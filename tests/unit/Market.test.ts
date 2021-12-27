@@ -20,6 +20,22 @@ describe('Market', () => {
     expect(Market.formatInterestRate(0)).toBe('');
   });
 
+  it('calculates the max interest rate, 18%', () => {
+    const market = getMarket();
+    market.rateScalar = 20 * RATE_PRECISION;
+    const lastImpliedRate = BigNumber.from(0.04e9);
+    const oracleRate = BigNumber.from(0.04e9);
+    market.setMarket({
+      totalAssetCash: BigNumber.from(50000e8),
+      totalLiquidity: BigNumber.from(50000e8),
+      totalfCash: BigNumber.from(1000e8),
+      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      lastImpliedRate,
+      oracleRate,
+    });
+    expect(market.maxInterestRate(blockTime) / RATE_PRECISION).toBeCloseTo(0.182, 3);
+  });
+
   it('converts between interest rates and exchange rates', () => {
     const annualRate = Market.exchangeToInterestRate(1.1e9, blockTime, maturity);
     expect(Market.formatInterestRate(annualRate)).toBe('9.531%');
