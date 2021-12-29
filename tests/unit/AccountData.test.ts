@@ -145,6 +145,7 @@ describe('Account Data', () => {
   });
 
   it('settles matured cash balances', (done) => {
+    const maturity = BigNumber.from(getNowSeconds() - 1000);
     const accountResult = {
       accountContext: {
         nextSettleTime: 0,
@@ -156,7 +157,7 @@ describe('Account Data', () => {
       accountBalances: [],
       portfolio: [{
         currencyId: BigNumber.from(2),
-        maturity: BigNumber.from(getNowSeconds() - 1000),
+        maturity,
         assetType: BigNumber.from(1),
         notional: BigNumber.from(1000e8),
         storageSlot: BigNumber.from(0),
@@ -164,11 +165,16 @@ describe('Account Data', () => {
       }],
     };
 
+    system.setSettlementRate(2, maturity.toNumber(), BigNumber.from('250000000000000000000000000'));
+
     AccountData.loadFromBlockchain(accountResult).then((a) => {
-      expect(a.cashBalance(2)?.toString()).toEqual('50000.0');
+      expect(a.cashBalance(2)?.toExactString()).toEqual('40000.0');
       expect(a.portfolio.length).toEqual(0);
+      expect(a.portfolioWithMaturedAssets.length).toEqual(1);
       done();
-    }).catch(() => {
+    }).catch((e) => {
+      console.log(e);
+      expect(false).toBeTruthy();
       done();
     });
   });
