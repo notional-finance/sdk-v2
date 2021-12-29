@@ -17,7 +17,6 @@ describe('calculates interest rate risk', () => {
   afterEach(() => {
     system.clearMarketProviders();
   });
-  const accountData = new MockAccountData(0, false, true, 0, [], [], false);
   const blockTime = CashGroup.getTimeReference(getNowSeconds());
   (system as MockSystem).setNTokenPortfolio(
     2,
@@ -69,6 +68,7 @@ describe('calculates interest rate risk', () => {
   );
 
   it('gets all the risky currencies', () => {
+    const accountData = new MockAccountData(0, false, true, 0, [], [], true);
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
     accountData.accountBalances = [
       // No leverage on ETH
@@ -105,8 +105,8 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.portfolio = [
-      // DAI leverage on nToken
+    // DAI leverage on nToken
+    accountData.updateAsset(
       {
         currencyId: 2,
         maturity,
@@ -116,7 +116,9 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-      // USDC cross currency
+    );
+    // USDC cross currency
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity,
@@ -126,6 +128,8 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
+    );
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity: maturity + SECONDS_IN_QUARTER,
@@ -135,7 +139,9 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-      // Tether Debt against cash
+    );
+    // Tether Debt against cash
+    accountData.updateAsset(
       {
         currencyId: 4,
         maturity: maturity + SECONDS_IN_QUARTER,
@@ -145,7 +151,7 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-    ];
+    );
 
     const risky = InterestRateRisk.getRiskyCurrencies(accountData);
     expect(risky).toStrictEqual([1, 2, 3, 4]);
@@ -173,6 +179,7 @@ describe('calculates interest rate risk', () => {
   });
 
   it('gets simulated value at current rate', () => {
+    const accountData = new MockAccountData(0, false, true, 0, [], [], true);
     const interestRate = InterestRateRisk.getWeightedAvgInterestRate(2);
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
     accountData.accountBalances = [
@@ -186,7 +193,7 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.portfolio = [
+    accountData.updateAsset(
       // DAI leverage on nToken
       {
         currencyId: 2,
@@ -197,7 +204,7 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-    ];
+    );
 
     const value = InterestRateRisk.simulateLocalCurrencyValue(
       2,
@@ -216,6 +223,7 @@ describe('calculates interest rate risk', () => {
 
   it('finds liquidation rates, ntoken leverage', () => {
     // InterestRateRisk.getNTokenSimulatedValue(TypedBigNumber.fromBalance(100e8, 'nDAI', true), undefined, blockTime)
+    const accountData = new MockAccountData(0, false, true, 0, [], [], true);
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
     accountData.accountBalances = [
       // Leveraged nToken
@@ -228,7 +236,7 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.portfolio = [
+    accountData.updateAsset(
       // DAI leverage on nToken
       {
         currencyId: 2,
@@ -239,15 +247,16 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-    ];
+    );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(2)?.upperLiquidationInterestRate).toBe(null);
-    expect(risk.get(2)?.lowerLiquidationInterestRate).toBe(0.099e9);
+    expect(risk.get(2)?.lowerLiquidationInterestRate).toBe(0.059e9);
   });
 
   it('finds liquidation rates, cross currency, undercollateralized', () => {
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
+    const accountData = new MockAccountData(0, false, true, 0, [], [], true);
     accountData.accountBalances = [
       {
         currencyId: 3,
@@ -258,7 +267,7 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.portfolio = [
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity,
@@ -268,6 +277,8 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
+    );
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity: maturity + SECONDS_IN_QUARTER,
@@ -277,7 +288,7 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-    ];
+    );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBe(0.053e9);
@@ -286,6 +297,7 @@ describe('calculates interest rate risk', () => {
 
   it('finds liquidation rates, cross currency, collateralized', () => {
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
+    const accountData = new MockAccountData(0, false, true, 0, [], [], true);
     accountData.accountBalances = [
       {
         currencyId: 3,
@@ -296,7 +308,7 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.portfolio = [
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity,
@@ -306,6 +318,9 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
+    );
+
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity: maturity + SECONDS_IN_QUARTER,
@@ -315,7 +330,7 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-    ];
+    );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBe(0.111e9);
@@ -324,6 +339,7 @@ describe('calculates interest rate risk', () => {
 
   it('finds liquidation rates lower interest rate', () => {
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
+    const accountData = new MockAccountData(0, false, true, 0, [], [], true);
     accountData.accountBalances = [
       {
         currencyId: 3,
@@ -334,7 +350,7 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.portfolio = [
+    accountData.updateAsset(
       {
         currencyId: 3,
         maturity: maturity + SECONDS_IN_QUARTER,
@@ -344,7 +360,7 @@ describe('calculates interest rate risk', () => {
         settlementDate: maturity,
         isIdiosyncratic: false,
       },
-    ];
+    );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBe(null);

@@ -49,7 +49,7 @@ export default class AccountData {
     public hasAssetDebt: boolean,
     public bitmapCurrencyId: number | undefined,
     public accountBalances: Balance[],
-    public portfolio: Asset[],
+    private _portfolio: Asset[],
     public isCopy: boolean,
   ) {}
 
@@ -59,6 +59,14 @@ export default class AccountData {
 
   public nTokenBalance(currencyId: number) {
     return this.accountBalances.find((b) => b.currencyId === currencyId)?.nTokenBalance;
+  }
+
+  public get portfolio() {
+    return this._portfolio.filter((a) => !a.hasMatured);
+  }
+
+  public get portfolioWithMaturedAssets() {
+    return this._portfolio;
   }
 
   public getHash() {
@@ -219,7 +227,7 @@ export default class AccountData {
     if (asset.hasMatured) throw Error('Cannot add matured asset to account copy');
 
     // eslint-disable-next-line no-underscore-dangle
-    this.portfolio = AccountData._updateAsset(this.portfolio, asset, this.bitmapCurrencyId);
+    this._portfolio = AccountData._updateAsset(this._portfolio, asset, this.bitmapCurrencyId);
     const {symbol} = System.getSystem().getCurrencyById(asset.currencyId);
 
     // Do this to ensure that there is a balance slot set for the asset

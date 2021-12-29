@@ -19,9 +19,9 @@ describe('calculates free collateral', () => {
   describe('calculates free collateral', () => {
     const blockTime = CashGroup.getTimeReference(getNowSeconds());
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
-    const accountData = new MockAccountData(0, false, true, 0, [], [], false);
 
     it('handles nontradable assets', () => {
+      const accountData = new MockAccountData(0, false, true, 0, [], [], true);
       accountData.accountBalances = [
         {
           currencyId: 5,
@@ -31,7 +31,6 @@ describe('calculates free collateral', () => {
           lastClaimIntegralSupply: BigNumber.from(0),
         },
       ];
-      accountData.portfolio = [];
 
       // prettier-ignore
       const {
@@ -48,6 +47,7 @@ describe('calculates free collateral', () => {
     });
 
     it('for positive fcash', () => {
+      const accountData = new MockAccountData(0, false, true, 0, [], [], true);
       accountData.accountBalances = [
         {
           currencyId: 2,
@@ -57,7 +57,7 @@ describe('calculates free collateral', () => {
           lastClaimIntegralSupply: BigNumber.from(0),
         },
       ];
-      accountData.portfolio = [
+      accountData.updateAsset(
         {
           currencyId: 2,
           maturity,
@@ -67,7 +67,7 @@ describe('calculates free collateral', () => {
           settlementDate: maturity,
           isIdiosyncratic: false,
         },
-      ];
+      );
       // prettier-ignore
       const {
         netETHDebt, netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable,
@@ -87,6 +87,7 @@ describe('calculates free collateral', () => {
     });
 
     it('for negative fcash', () => {
+      const accountData = new MockAccountData(0, false, true, 0, [], [], true);
       accountData.accountBalances = [
         {
           currencyId: 2,
@@ -96,7 +97,8 @@ describe('calculates free collateral', () => {
           lastClaimIntegralSupply: BigNumber.from(0),
         },
       ];
-      accountData.portfolio = [
+
+      accountData.updateAsset(
         {
           currencyId: 2,
           maturity,
@@ -106,7 +108,8 @@ describe('calculates free collateral', () => {
           settlementDate: maturity,
           isIdiosyncratic: false,
         },
-      ];
+      );
+
       const {
         netETHDebt,
         netETHDebtWithBuffer,
@@ -122,6 +125,7 @@ describe('calculates free collateral', () => {
     });
 
     it('for liquidity token', () => {
+      const accountData = new MockAccountData(0, false, true, 0, [], [], true);
       const ltMaturity = blockTime + 6 * SECONDS_IN_MONTH;
       accountData.accountBalances = [
         {
@@ -132,7 +136,7 @@ describe('calculates free collateral', () => {
           lastClaimIntegralSupply: BigNumber.from(0),
         },
       ];
-      accountData.portfolio = [
+      accountData.updateAsset(
         {
           currencyId: 2,
           maturity: ltMaturity,
@@ -142,6 +146,9 @@ describe('calculates free collateral', () => {
           settlementDate: CashGroup.getSettlementDate(AssetType.LiquidityToken_6Month, ltMaturity),
           isIdiosyncratic: false,
         },
+      );
+
+      accountData.updateAsset(
         {
           currencyId: 2,
           maturity: ltMaturity,
@@ -151,7 +158,7 @@ describe('calculates free collateral', () => {
           settlementDate: maturity,
           isIdiosyncratic: false,
         },
-      ];
+      );
 
       const {
         netETHDebt,
@@ -167,6 +174,7 @@ describe('calculates free collateral', () => {
     });
 
     it('for cash balances and ntokens with fcash', () => {
+      const accountData = new MockAccountData(0, false, true, 0, [], [], true);
       accountData.accountBalances = [
         {
           currencyId: 2,
@@ -176,7 +184,7 @@ describe('calculates free collateral', () => {
           lastClaimIntegralSupply: BigNumber.from(0),
         },
       ];
-      accountData.portfolio = [
+      accountData.updateAsset(
         {
           currencyId: 2,
           maturity,
@@ -186,7 +194,7 @@ describe('calculates free collateral', () => {
           settlementDate: maturity,
           isIdiosyncratic: false,
         },
-      ];
+      );
 
       const {
         netETHDebt,
@@ -204,6 +212,7 @@ describe('calculates free collateral', () => {
     });
 
     it('for negative cash balances with fcash', () => {
+      const accountData = new MockAccountData(0, false, true, 0, [], [], true);
       accountData.accountBalances = [
         {
           currencyId: 2,
@@ -213,7 +222,7 @@ describe('calculates free collateral', () => {
           lastClaimIntegralSupply: BigNumber.from(0),
         },
       ];
-      accountData.portfolio = [
+      accountData.updateAsset(
         {
           currencyId: 2,
           maturity,
@@ -223,7 +232,7 @@ describe('calculates free collateral', () => {
           settlementDate: maturity,
           isIdiosyncratic: false,
         },
-      ];
+      );
 
       const {
         netETHDebt,
