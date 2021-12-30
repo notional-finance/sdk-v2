@@ -53,8 +53,8 @@ export enum SystemEvents {
 }
 
 const settlementMarketsQuery = gql`
-  query getMarketsAt($currency: String!, $settlementDate: Int!) {
-    markets(where: { currency: $currency, settlementDate: $settlementDate }) {
+  query getMarketsAt($currencyId: String!, $settlementDate: Int!) {
+    markets(where: { currency: $currencyId, settlementDate: $settlementDate }) {
       id
       maturity
       totalfCash
@@ -75,8 +75,8 @@ interface SettlementMarketsQueryResponse {
 }
 
 const settlementRateQuery = gql`
-  query getSettlementRate($currency: String!, $maturity: Int!) {
-    settlementRates(where: { maturity: $maturity, currency: $currency }) {
+  query getSettlementRate($currencyId: String!, $maturity: Int!) {
+    settlementRates(where: { maturity: $maturity, currency: $currencyId }) {
       id
       assetExchangeRate {
         id
@@ -628,7 +628,7 @@ export default class System {
 
     const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
       settlementRateQuery,
-      {currency: currencyId.toString(), maturity},
+      {currencyId: currencyId.toString(), maturity},
     );
 
     const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
@@ -657,7 +657,7 @@ export default class System {
 
     const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
       settlementMarketsQuery,
-      {currency: currencyId.toString(), settlementDate},
+      {currencyId: currencyId.toString(), settlementDate},
     );
     settlementMarkets.markets.forEach((m) => {
       const k = `${currencyId}:${settlementDate}:${m.maturity}`;
