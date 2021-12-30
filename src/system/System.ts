@@ -53,8 +53,8 @@ export enum SystemEvents {
 }
 
 const settlementMarketsQuery = gql`
-  query getMarketsAt($currencyId: String!, $settlementDate: Int!) {
-    markets(where: { currency: $currencyId, settlementDate: $settlementDate }) {
+  query getMarketsAt($currency: String!, $settlementDate: Int!) {
+    markets(where: { currency: $currency, settlementDate: $settlementDate }) {
       id
       maturity
       totalfCash
@@ -75,8 +75,8 @@ interface SettlementMarketsQueryResponse {
 }
 
 const settlementRateQuery = gql`
-  query getSettlementRate($currencyId: String!, $maturity: Int!) {
-    settlementRates(where: { maturity: $maturity, currency: $currencyId }) {
+  query getSettlementRate($currency: String!, $maturity: Int!) {
+    settlementRates(where: { maturity: $maturity, currency: $currency }) {
       id
       assetExchangeRate {
         id
@@ -93,7 +93,7 @@ interface SettlementRateQueryResponse {
     assetExchangeRate: {
       id: string;
     } | null;
-    maturity: number;
+    maturity: string;
     rate: string;
   }[];
 }
@@ -541,6 +541,14 @@ export default class System {
     this.ethRateProviders.clear();
   }
 
+  public setNTokenAssetCashPV(currencyId: number, provider: IAssetRateProvider | null) {
+    if (!provider) {
+      this.assetRateProviders.delete(currencyId);
+      return;
+    }
+    this.assetRateProviders.set(currencyId, provider);
+  }
+
   public setAssetRateProvider(currencyId: number, provider: IAssetRateProvider | null) {
     if (!provider) {
       this.assetRateProviders.delete(currencyId);
@@ -620,11 +628,11 @@ export default class System {
 
     const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
       settlementRateQuery,
-      {currencyId: currencyId.toString(), maturity},
+      {currency: currencyId.toString(), maturity},
     );
 
     const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
-      && settlementRateResponse.settlementRates[0].assetExchangeRate;
+        && settlementRateResponse.settlementRates[0].assetExchangeRate;
 
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
@@ -649,7 +657,7 @@ export default class System {
 
     const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
       settlementMarketsQuery,
-      {currencyId: currencyId.toString(), settlementDate},
+      {currency: currencyId.toString(), settlementDate},
     );
     settlementMarkets.markets.forEach((m) => {
       const k = `${currencyId}:${settlementDate}:${m.maturity}`;
