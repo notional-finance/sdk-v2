@@ -541,14 +541,6 @@ export default class System {
     this.ethRateProviders.clear();
   }
 
-  public setNTokenAssetCashPV(currencyId: number, provider: IAssetRateProvider | null) {
-    if (!provider) {
-      this.assetRateProviders.delete(currencyId);
-      return;
-    }
-    this.assetRateProviders.set(currencyId, provider);
-  }
-
   public setAssetRateProvider(currencyId: number, provider: IAssetRateProvider | null) {
     if (!provider) {
       this.assetRateProviders.delete(currencyId);
@@ -632,7 +624,7 @@ export default class System {
     );
 
     const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
-        && settlementRateResponse.settlementRates[0].assetExchangeRate;
+      && settlementRateResponse.settlementRates[0].assetExchangeRate;
 
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
