@@ -87,7 +87,7 @@ interface AssetResponse {
     symbol: string;
   };
   settlementDate: string;
-  maturity: number;
+  maturity: string;
   assetType: string;
   notional: number;
 }
@@ -150,7 +150,7 @@ export default class AccountGraphLoader {
 
   private static parseAsset(asset: AssetResponse) {
     const currencyId = Number(asset.currency.id);
-    const {maturity} = asset;
+    const maturity = Number(asset.maturity);
     const assetType = asset.assetType as AssetType;
     const currency = System.getSystem().getCurrencyById(currencyId);
 

@@ -93,7 +93,7 @@ interface SettlementRateQueryResponse {
     assetExchangeRate: {
       id: string;
     } | null;
-    maturity: number;
+    maturity: string;
     rate: string;
   }[];
 }
