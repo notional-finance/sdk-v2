@@ -124,7 +124,7 @@ describe('Cash Group', () => {
     const oracleRate = cashGroup.getOracleRate(maturity, blockTime);
     const diff = Math.abs(annualizedRate - oracleRate);
 
-    expect(diff).toBeLessThanOrEqual(100);
+    expect(diff).toBeLessThanOrEqual(500);
   });
 
   it('gets haircut discounted positive fcash values', () => {
@@ -136,7 +136,7 @@ describe('Cash Group', () => {
     const oracleRate = cashGroup.getOracleRate(maturity, blockTime) + fCashHaircutBasisPoints;
     const diff = Math.abs(annualizedRate - oracleRate);
 
-    expect(diff).toBeLessThanOrEqual(100);
+    expect(diff).toBeLessThanOrEqual(500);
   });
 
   it('gets discounted negative fcash values', () => {
@@ -148,7 +148,7 @@ describe('Cash Group', () => {
     const oracleRate = cashGroup.getOracleRate(maturity, blockTime);
     const diff = Math.abs(annualizedRate - oracleRate);
 
-    expect(diff).toBeLessThanOrEqual(100);
+    expect(diff).toBeLessThanOrEqual(500);
   });
 
   it('gets haircut discounted negative fcash values', () => {
@@ -160,7 +160,7 @@ describe('Cash Group', () => {
     const oracleRate = cashGroup.getOracleRate(maturity, blockTime) - debtBufferBasisPoints;
     const diff = Math.abs(annualizedRate - oracleRate);
 
-    expect(diff).toBeLessThanOrEqual(100);
+    expect(diff).toBeLessThanOrEqual(500);
   });
 
   it('gets liquidity token claims', () => {
