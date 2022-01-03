@@ -242,7 +242,7 @@ describe('calculates interest rate risk', () => {
         currencyId: 2,
         maturity,
         assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100.1e8, 'DAI', true),
+        notional: TypedBigNumber.fromBalance(-105e8, 'DAI', true),
         hasMatured: false,
         settlementDate: maturity,
         isIdiosyncratic: false,
@@ -251,7 +251,7 @@ describe('calculates interest rate risk', () => {
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(2)?.upperLiquidationInterestRate).toBe(null);
-    expect(risk.get(2)?.lowerLiquidationInterestRate).toBe(0.059e9);
+    expect(risk.get(2)?.lowerLiquidationInterestRate).toBe(0.089e9);
   });
 
   it('finds liquidation rates, cross currency, undercollateralized', () => {

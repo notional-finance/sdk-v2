@@ -268,6 +268,7 @@ export default class InterestRateRisk {
     nTokenBalance: TypedBigNumber,
     marketOverrides: Market[] | undefined,
     blockTime = getNowSeconds(),
+    haircut = true,
   ) {
     if (nTokenBalance.isZero()) return nTokenBalance.toUnderlying();
     const {
@@ -279,17 +280,18 @@ export default class InterestRateRisk {
 
     const cashGroupPV = FreeCollateral.getCashGroupValue(
       nTokenBalance.currencyId,
-      [...liquidityTokens].concat([...fCash]),
+      [...liquidityTokens, ...fCash],
       blockTime,
       marketOverrides,
       false, // turn off haircuts when calculating nToken value
     );
 
-    const nTokenPV = cashBalance.toUnderlying().add(cashGroupPV);
+    const nTokenPV = cashBalance.toUnderlying().add(cashGroupPV).scale(nTokenBalance.n, totalSupply.n);
 
-    // Calculate haircut account value
-    return nTokenPV
-      .scale(nToken.pvHaircutPercentage, PERCENTAGE_BASIS)
-      .scale(nTokenBalance.n, totalSupply.n);
+    if (haircut) {
+      // Calculate haircut account value
+      return nTokenPV.scale(nToken.pvHaircutPercentage, PERCENTAGE_BASIS);
+    }
+    return nTokenPV;
   }
 }
