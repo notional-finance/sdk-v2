@@ -4,7 +4,7 @@ import {
 } from '.';
 import {AccountData} from '../account';
 import {
-  BASIS_POINT, MAX_INTEREST_RATE, MIN_INTEREST_RATE, PERCENTAGE_BASIS,
+  BASIS_POINT, MIN_INTEREST_RATE, PERCENTAGE_BASIS,
 } from '../config/constants';
 import TypedBigNumber from '../libs/TypedBigNumber';
 import {Asset} from '../libs/types';
@@ -86,6 +86,15 @@ export default class InterestRateRisk {
     /* eslint-enable @typescript-eslint/no-shadow */
 
     return numerator.div(totalLiquidity).toNumber();
+  }
+
+  public static getMaxInterestRate(
+    currencyId: number,
+    blockTime = getNowSeconds(),
+  ) {
+    return Math.max(
+      ...System.getSystem().getMarkets(currencyId).map((m) => m.maxInterestRate(blockTime)),
+    );
   }
 
   /**
@@ -172,9 +181,10 @@ export default class InterestRateRisk {
     const portfolio = accountData.portfolio.filter((a) => a.currencyId === currencyId);
     const cashBalance = accountData.cashBalance(currencyId) || TypedBigNumber.getZeroUnderlying(currencyId);
     const nTokenBalance = accountData.nTokenBalance(currencyId);
+    const maxInterestRate = InterestRateRisk.getMaxInterestRate(currencyId, blockTime);
 
     let simulatedLocalCollateral: TypedBigNumber;
-    const startingInterestRate = fromMaxRate ? MAX_INTEREST_RATE : MIN_INTEREST_RATE;
+    const startingInterestRate = fromMaxRate ? maxInterestRate : MIN_INTEREST_RATE;
     let interestRate = startingInterestRate;
     // If starting from the max rate, we decrease the rate else we increase. Starting epsilon is
     // a single percentage point
@@ -207,7 +217,7 @@ export default class InterestRateRisk {
       interestRate += epsilon;
 
       // If we have escaped the boundaries than there is no liquidation rate
-      if (interestRate < MIN_INTEREST_RATE || MAX_INTEREST_RATE < interestRate) {
+      if (interestRate < MIN_INTEREST_RATE || maxInterestRate < interestRate) {
         return null;
       }
     }
