@@ -401,8 +401,8 @@ export default class AccountData {
       : singleUnitTargetCurrency.add(fcSurplusProportion);
 
     // If the max exchange rate decrease is negative then there is no possible liquidation price, this can
-    // happen if aggregateFC > netUnderlying
-    if (maxExchangeRateDecrease.isNegative()) return null;
+    // happen if aggregateFC > netUnderlying.
+    if (maxExchangeRateDecrease.isNegative() && aggregateFC.isPositive()) return null;
 
     // Convert to the debt currency denomination
     if (collateralId === ETHER_CURRENCY_ID) {
@@ -413,7 +413,7 @@ export default class AccountData {
         .scale(INTERNAL_TOKEN_PRECISION, maxExchangeRateDecrease.toETH(false).n);
     }
 
-    // Convert from collateral to debt via ETH
+    // Convert from collateral to debt via ETH. This will be negative if the account is undercollateralized
     return maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
   }
 
