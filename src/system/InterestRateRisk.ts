@@ -88,6 +88,15 @@ export default class InterestRateRisk {
     return numerator.div(totalLiquidity).toNumber();
   }
 
+  public static getMaxInterestRate(
+    currencyId: number,
+    blockTime = getNowSeconds(),
+  ) {
+    return Math.max(
+      ...System.getSystem().getMarkets(currencyId).map((m) => m.maxInterestRate(blockTime)),
+    );
+  }
+
   /**
    * Returns the currency ids the account has interest rate risk in
    * @param accountData
@@ -172,9 +181,7 @@ export default class InterestRateRisk {
     const portfolio = accountData.portfolio.filter((a) => a.currencyId === currencyId);
     const cashBalance = accountData.cashBalance(currencyId) || TypedBigNumber.getZeroUnderlying(currencyId);
     const nTokenBalance = accountData.nTokenBalance(currencyId);
-    const maxInterestRate = Math.max(
-      ...System.getSystem().getMarkets(currencyId).map((m) => m.maxInterestRate(blockTime)),
-    );
+    const maxInterestRate = InterestRateRisk.getMaxInterestRate(currencyId, blockTime);
 
     let simulatedLocalCollateral: TypedBigNumber;
     const startingInterestRate = fromMaxRate ? maxInterestRate : MIN_INTEREST_RATE;
