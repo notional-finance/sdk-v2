@@ -220,7 +220,7 @@ export default class AccountGraphLoader {
    * @returns
    */
   public static async loadBatch(graphClient: GraphClient, pageSize: number, pageNumber: number) {
-    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, { pageSize, pageNumber });
+    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
     const accounts = new Map<string, AccountData>();
     response.accounts.forEach(async (account) => {
       // Ideally, all settlement rates and markets that may be concerned by these accounts would be pre-loaded
@@ -245,8 +245,6 @@ export default class AccountGraphLoader {
     });
     const accounts = new Map<string, AccountData>();
     response.accounts.forEach(async (account) => {
-      // Ideally, all settlement rates and markets that may be concerned by these accounts would be pre-loaded
-      // and these Promises could be avoided. Optimization will be needed once there are many settled markets.
       // eslint-disable-next-line no-await-in-loop
       const accountData = await AccountData.load(
         account.nextSettleTime,
