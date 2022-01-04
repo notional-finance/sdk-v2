@@ -47,6 +47,40 @@ const accountsQuery = gql`
   }
 `;
 
+const accountsByIdQuery = gql`
+  query getAccountsById($ids: [String!]) {
+    accounts(first: 1000, where: {id_in: $ids}) {
+      id
+      nextSettleTime
+      hasCashDebt
+      hasPortfolioAssetDebt
+      assetBitmapCurrency {
+        id
+      }
+      balances {
+        currency {
+          id
+          symbol
+        }
+        assetCashBalance
+        nTokenBalance
+        lastClaimTime
+        lastClaimIntegralSupply
+      }
+      portfolio {
+        currency {
+          id
+          symbol
+        }
+        settlementDate
+        maturity
+        assetType
+        notional
+      }
+    }
+  }
+`;
+
 const accountQuery = gql`
   query getAccount($id: String!) {
     account(id: $id) {
@@ -158,9 +192,10 @@ export default class AccountGraphLoader {
       throw Error(`Invalid currency ${currencyId}.`);
     }
 
-    const notional = assetType === AssetType.fCash
-      ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
-      : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
+    const notional =
+      assetType === AssetType.fCash
+        ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
+        : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
 
     const hasMatured = maturity < getNowSeconds();
     const settlementDate = Number(asset.settlementDate);
@@ -185,7 +220,29 @@ export default class AccountGraphLoader {
    * @returns
    */
   public static async loadBatch(graphClient: GraphClient, pageSize: number, pageNumber: number) {
-    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
+    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, { pageSize, pageNumber });
+    const accounts = new Map<string, AccountData>();
+    response.accounts.forEach(async (account) => {
+      // Ideally, all settlement rates and markets that may be concerned by these accounts would be pre-loaded
+      // and these Promises could be avoided. Optimization will be needed once there are many settled markets.
+      // eslint-disable-next-line no-await-in-loop
+      const accountData = await AccountData.load(
+        account.nextSettleTime,
+        account.hasCashDebt,
+        account.hasPortfolioAssetDebt,
+        account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency.id) : undefined,
+        account.balances.map(AccountGraphLoader.parseBalance),
+        account.portfolio.map(AccountGraphLoader.parseAsset),
+      );
+      accounts.set(account.id, accountData);
+    });
+    return accounts;
+  }
+
+  public static async loadBatchById(graphClient: GraphClient, accountIds: string[]) {
+    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsByIdQuery, {
+      ids: accountIds,
+    });
     const accounts = new Map<string, AccountData>();
     response.accounts.forEach(async (account) => {
       // Ideally, all settlement rates and markets that may be concerned by these accounts would be pre-loaded
@@ -210,7 +267,7 @@ export default class AccountGraphLoader {
   public static async getBalanceSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
     const balanceHistory = await BalanceSummary.fetchBalanceHistory(address, graphClient);
     const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
-    return {balanceHistory, balanceSummary};
+    return { balanceHistory, balanceSummary };
   }
 
   /**
@@ -219,7 +276,7 @@ export default class AccountGraphLoader {
   public static async getAssetSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
     const tradeHistory = await AssetSummary.fetchTradeHistory(address, graphClient);
     const assetSummary = AssetSummary.build(accountData, tradeHistory);
-    return {tradeHistory, assetSummary};
+    return { tradeHistory, assetSummary };
   }
 
   /**
@@ -230,7 +287,7 @@ export default class AccountGraphLoader {
    */
   public static async load(graphClient: GraphClient, address: string) {
     const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
-    const {account} = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, {id: lowerCaseAddress});
+    const { account } = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, { id: lowerCaseAddress });
 
     const balances = account.balances.map(AccountGraphLoader.parseBalance);
     const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);
