@@ -1,4 +1,4 @@
-import {BigNumber} from 'ethers';
+import {BigNumber, ethers} from 'ethers';
 import {AccountData} from '../../src/account';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
@@ -288,9 +288,21 @@ describe('Account Data', () => {
         false,
       );
 
+      let ethRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
+      const ethRateConfig = system.getETHRate(2)!.ethRateConfig!;
+      const rateProvider = {
+        getETHRate: () => ({ethRateConfig, ethRate}),
+      };
+
+      system.setETHRateProvider(2, rateProvider);
+
       const liquidationPrice = account.getLiquidationPrice(1, 2);
       expect(liquidationPrice?.symbol).toBe('DAI');
-      expect(liquidationPrice?.toNumber()).toBeCloseTo(73.076e8, -6);
+
+      ethRate = ethers.utils.parseUnits('1').mul(1e8).div(liquidationPrice!.n);
+      const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = account.getFreeCollateral();
+      const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
+      expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
     });
 
     it('returns null on negative liquidation price', () => {
@@ -367,10 +379,21 @@ describe('Account Data', () => {
         ],
         false,
       );
+      let ethRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
+      const ethRateConfig = system.getETHRate(2)!.ethRateConfig!;
+      const rateProvider = {
+        getETHRate: () => ({ethRateConfig, ethRate}),
+      };
+      system.setETHRateProvider(2, rateProvider);
 
       const liquidationPrice = account.getLiquidationPrice(3, 2);
       expect(liquidationPrice?.symbol).toBe('DAI');
       expect(liquidationPrice?.toNumber()).toBeCloseTo(0.921e8, -6);
+
+      ethRate = ethers.utils.parseUnits('1').mul(1e8).div(liquidationPrice!.n.mul(100));
+      const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = account.getFreeCollateral();
+      const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
+      expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
     });
   });
 });
