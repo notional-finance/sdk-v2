@@ -374,9 +374,15 @@ export default class AccountData {
     return FreeCollateral.getFreeCollateral(this);
   }
 
+  /**
+   * Calculates the liquidation price between collateral and debt currency holding everything
+   * else in the portfolio constant.
+   *
+   * @param collateralId
+   * @param debtCurrencyId
+   * @returns ETH denominated liquidation price
+   */
   public getLiquidationPrice(collateralId: number, debtCurrencyId: number) {
-    // We represent everything as FX to ETH so in the case that the collateral is in ETH we
-    // vary the debt currency id
     const {
       netETHCollateralWithHaircut,
       netETHDebtWithBuffer,
@@ -386,19 +392,28 @@ export default class AccountData {
     // There is no collateral in the specified currency so we do not have a liquidation price
     if (!collateralAmount || collateralAmount.n.lte(0)) return null;
 
-    const targetId = collateralId === ETHER_CURRENCY_ID ? debtCurrencyId : collateralId;
     const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
-    const targetCurrencyFC = aggregateFC.fromETH(targetId, true);
-    const netUnderlying = netUnderlyingAvailable.get(targetId);
+    let targetCurrencyFC: TypedBigNumber;
+    let netUnderlying: TypedBigNumber | undefined;
+    if (collateralId === ETHER_CURRENCY_ID) {
+      // We represent everything as FX to ETH so in the case that the collateral is in ETH we
+      // vary the debt currency id. Use the negative of the targetCurrencyFC to ensure that we
+      // use buffer when we convert from aggregateFC
+      targetCurrencyFC = aggregateFC.neg().fromETH(debtCurrencyId, true);
+      netUnderlying = netUnderlyingAvailable.get(debtCurrencyId);
+    } else {
+      targetCurrencyFC = aggregateFC.fromETH(collateralId, true);
+      netUnderlying = netUnderlyingAvailable.get(collateralId);
+    }
 
     if (!netUnderlying) throw Error('Invalid target currency when calculating liquidation price');
     const fcSurplusProportion = targetCurrencyFC.scale(INTERNAL_TOKEN_PRECISION, netUnderlying.n).abs();
     const singleUnitTargetCurrency = fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION);
     // This is the max exchange rate decrease as a portion of a single token in internal token precision, can
     // see this as the liquidation price of a single unit of ETH
-    const maxExchangeRateDecrease = collateralId === targetId
-      ? singleUnitTargetCurrency.sub(fcSurplusProportion)
-      : singleUnitTargetCurrency.add(fcSurplusProportion);
+    const maxExchangeRateDecrease = collateralId === ETHER_CURRENCY_ID
+      ? singleUnitTargetCurrency.add(fcSurplusProportion)
+      : singleUnitTargetCurrency.sub(fcSurplusProportion);
 
     // If the max exchange rate decrease is negative then there is no possible liquidation price, this can
     // happen if aggregateFC > netUnderlying.
