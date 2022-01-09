@@ -187,12 +187,7 @@ export default class AccountGraphLoader {
   public static async loadBatch(graphClient: GraphClient, pageSize: number, pageNumber: number) {
     const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
     const accounts = new Map<string, AccountData>();
-    // eslint-disable-next-line no-restricted-syntax
-    for (const account of response.accounts) {
-      // It is actually more optimal to execute these promises in series.
-      // Reason is that async network calls inside these load calls are cached.
-      // Subsequent load calls can then leverage previous results.
-      // eslint-disable-next-line no-await-in-loop
+    await Promise.all(response.accounts.map(async (account) => {
       const accountData = await AccountData.load(
         account.nextSettleTime,
         account.hasCashDebt,
@@ -201,8 +196,8 @@ export default class AccountGraphLoader {
         account.balances.map(AccountGraphLoader.parseBalance),
         account.portfolio.map(AccountGraphLoader.parseAsset),
       );
-      accounts.set(account.id, accountData);
-    }
+      return accounts.set(account.id, accountData);
+    }));
     return accounts;
   }
 
