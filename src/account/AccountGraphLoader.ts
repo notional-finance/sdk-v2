@@ -158,10 +158,9 @@ export default class AccountGraphLoader {
       throw Error(`Invalid currency ${currencyId}.`);
     }
 
-    const notional =
-      assetType === AssetType.fCash
-        ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
-        : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
+    const notional = assetType === AssetType.fCash
+      ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
+      : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
 
     const hasMatured = maturity < getNowSeconds();
     const settlementDate = Number(asset.settlementDate);
@@ -186,7 +185,7 @@ export default class AccountGraphLoader {
    * @returns
    */
   public static async loadBatch(graphClient: GraphClient, pageSize: number, pageNumber: number) {
-    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, { pageSize, pageNumber });
+    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
     const accounts = new Map<string, AccountData>();
     // eslint-disable-next-line no-restricted-syntax
     for (const account of response.accounts) {
@@ -213,7 +212,7 @@ export default class AccountGraphLoader {
   public static async getBalanceSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
     const balanceHistory = await BalanceSummary.fetchBalanceHistory(address, graphClient);
     const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
-    return { balanceHistory, balanceSummary };
+    return {balanceHistory, balanceSummary};
   }
 
   /**
@@ -222,7 +221,7 @@ export default class AccountGraphLoader {
   public static async getAssetSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
     const tradeHistory = await AssetSummary.fetchTradeHistory(address, graphClient);
     const assetSummary = AssetSummary.build(accountData, tradeHistory);
-    return { tradeHistory, assetSummary };
+    return {tradeHistory, assetSummary};
   }
 
   /**
@@ -233,7 +232,7 @@ export default class AccountGraphLoader {
    */
   public static async load(graphClient: GraphClient, address: string) {
     const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
-    const { account } = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, { id: lowerCaseAddress });
+    const {account} = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, {id: lowerCaseAddress});
 
     const balances = account.balances.map(AccountGraphLoader.parseBalance);
     const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);
