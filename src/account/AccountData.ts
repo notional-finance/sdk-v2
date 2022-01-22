@@ -249,13 +249,11 @@ export default class AccountData {
       cashAssets,
       cashDebtsWithBuffer,
       cashAssetsWithHaircut,
-      cashGroups,
     } = this.accountBalances.reduce(({
       cashDebts,
       cashAssets,
       cashDebtsWithBuffer,
       cashAssetsWithHaircut,
-      cashGroups,
     }, b) => {
       if (b.cashBalance.isNegative()) {
         cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
@@ -273,29 +271,41 @@ export default class AccountData {
 
       const {
         totalCashClaims,
-        fCashAssets,
       } = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, false);
       const {
         totalCashClaims: totalCashClaimsHaircut,
-        fCashAssets: fCashAssetsHaircut,
       } = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, true);
 
       cashAssets = cashAssets.add(totalCashClaims.toETH(false));
       cashAssetsWithHaircut = cashAssetsWithHaircut.add(totalCashClaimsHaircut.toETH(true));
-      if (fCashAssets.length > 0 || fCashAssetsHaircut.length > 0) {
-        cashGroups.push({currencyId: b.currencyId, noHaircut: fCashAssets, haircut: fCashAssetsHaircut});
-      }
 
       return {
-        cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups,
+        cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut,
       };
     }, {
       cashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
       cashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
       cashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
       cashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
-      cashGroups: Array<{currencyId: number, noHaircut: Asset[], haircut: Asset[]}>(),
     });
+
+    const accountCurrencies = new Set(
+      // eslint-disable-next-line @typescript-eslint/comma-dangle
+      this.portfolio.map((asset) => asset.currencyId).concat(this.accountBalances.map((balance) => balance.currencyId))
+    );
+
+    const cashGroups = [...accountCurrencies]
+      .map((currencyId) => {
+        const {fCashAssets} = FreeCollateral.getNetfCashPositions(currencyId, this.portfolio, undefined, false);
+        const {fCashAssets: fCashAssetsHaircut} = FreeCollateral.getNetfCashPositions(
+          currencyId,
+          this.portfolio,
+          undefined,
+          true,
+        );
+        return {currencyId, noHaircut: fCashAssets, haircut: fCashAssetsHaircut};
+      })
+      .filter(({noHaircut, haircut}) => noHaircut.length > 0 || haircut.length > 0);
 
     const {
       fCashDebts,
