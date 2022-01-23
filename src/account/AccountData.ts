@@ -43,15 +43,36 @@ export interface GetAccountResult {
 }
 
 export default class AccountData {
+  public accountBalances: Balance[];
+
   protected constructor(
     public nextSettleTime: number,
     public hasCashDebt: boolean,
     public hasAssetDebt: boolean,
     public bitmapCurrencyId: number | undefined,
-    public accountBalances: Balance[],
+    _accountBalances: Balance[],
     private _portfolio: Asset[],
     public isCopy: boolean,
-  ) {}
+  ) {
+    // Assets of a currency that are not found in accountBalances must be marked as having a zero
+    // balance in the accountBalances list
+    const missingCurrencies = new Set(_portfolio
+      .filter((a) => !_accountBalances.find((b) => b.currencyId === a.currencyId))
+      .map((a) => a.currencyId));
+
+    let tmpBalances = _accountBalances;
+    missingCurrencies.forEach((c) => {
+      // Set the balance as having a zero asset cash balance
+      // eslint-disable-next-line no-underscore-dangle
+      tmpBalances = AccountData._updateBalance(
+        tmpBalances,
+        c,
+        TypedBigNumber.getZeroUnderlying(c).toAssetCash(true),
+      );
+    });
+
+    this.accountBalances = tmpBalances;
+  }
 
   public cashBalance(currencyId: number) {
     return this.accountBalances.find((b) => b.currencyId === currencyId)?.cashBalance;

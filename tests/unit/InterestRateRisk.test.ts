@@ -251,7 +251,7 @@ describe('calculates interest rate risk', () => {
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(2)?.upperLiquidationInterestRate).toBe(null);
-    expect(risk.get(2)?.lowerLiquidationInterestRate).toBe(0.089e9);
+    expect(risk.get(2)?.lowerLiquidationInterestRate).toBe(0.099e9);
   });
 
   it('finds liquidation rates, cross currency, undercollateralized', () => {

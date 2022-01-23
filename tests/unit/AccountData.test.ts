@@ -32,6 +32,31 @@ describe('Account Data', () => {
     false,
   );
 
+  it('creates a zero cash balance entry if required on construction', () => {
+    const mockAccount = new MockAccountData(
+      0,
+      false,
+      false,
+      undefined,
+      [],
+      [
+        {
+          currencyId: 2,
+          maturity: 100,
+          assetType: AssetType.fCash,
+          notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
+          hasMatured: false,
+          settlementDate: 100,
+          isIdiosyncratic: false,
+        },
+
+      ],
+      false,
+    );
+
+    expect(mockAccount.cashBalance(2)?.isZero()).toBeTruthy();
+  });
+
   it('does not update non copy', () => {
     expect(() => accountData.updateBalance(
       1,
