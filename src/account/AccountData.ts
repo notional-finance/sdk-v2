@@ -206,14 +206,21 @@ export default class AccountData {
 
     // eslint-disable-next-line no-restricted-syntax
     for (const asset of maturedAssets) {
-      // eslint-disable-next-line no-await-in-loop
-      const {assetCash, fCashAsset} = await system.settlePortfolioAsset(asset);
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const {assetCash, fCashAsset} = await system.settlePortfolioAsset(asset);
 
-      // Use private static methods to bypass copy check
-      // eslint-disable-next-line no-underscore-dangle
-      if (fCashAsset) AccountData._updateAsset(portfolio, asset, bitmapCurrencyId);
-      // eslint-disable-next-line no-underscore-dangle
-      AccountData._updateBalance(balances, asset.currencyId, assetCash, undefined, bitmapCurrencyId);
+        // Use private static methods to bypass copy check
+        // eslint-disable-next-line no-underscore-dangle
+        if (fCashAsset) AccountData._updateAsset(portfolio, asset, bitmapCurrencyId);
+        // eslint-disable-next-line no-underscore-dangle
+        AccountData._updateBalance(balances, asset.currencyId, assetCash, undefined, bitmapCurrencyId);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to load matured asset.');
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
     }
 
     return new AccountData(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, balances, portfolio, false);

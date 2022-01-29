@@ -188,20 +188,15 @@ export default class AccountGraphLoader {
     const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
     const accounts = new Map<string, AccountData>();
     await Promise.all(response.accounts.map(async (account) => {
-      try {
-        const accountData = await AccountData.load(
-          account.nextSettleTime,
-          account.hasCashDebt,
-          account.hasPortfolioAssetDebt,
-          account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency.id) : undefined,
-          account.balances.map(AccountGraphLoader.parseBalance),
-          account.portfolio.map(AccountGraphLoader.parseAsset),
-        );
-        accounts.set(account.id, accountData);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error(e);
-      }
+      const accountData = await AccountData.load(
+        account.nextSettleTime,
+        account.hasCashDebt,
+        account.hasPortfolioAssetDebt,
+        account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency.id) : undefined,
+        account.balances.map(AccountGraphLoader.parseBalance),
+        account.portfolio.map(AccountGraphLoader.parseAsset),
+      );
+      accounts.set(account.id, accountData);
     }));
     return accounts;
   }
