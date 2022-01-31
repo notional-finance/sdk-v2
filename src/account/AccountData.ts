@@ -482,7 +482,6 @@ export default class AccountData {
     if (!balance) {
       // Cannot have negative balances if the balance is not in the account already
       if (netNTokenChange && netNTokenChange.isNegative()) throw Error('nToken balance not found');
-      if (netCashChange.isNegative()) throw Error('Cash balance not found');
       if (bitmapCurrencyId && accountBalances.length === MAX_BALANCES) throw Error('Exceeds max balances');
       if (!bitmapCurrencyId && accountBalances.length === MAX_BALANCES - 1) throw Error('Exceeds max balances');
 
