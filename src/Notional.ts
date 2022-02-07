@@ -145,8 +145,8 @@ export default class Notional extends TransactionBuilder {
     return await AccountGraphLoader.load(this.graphClient, address);
   }
 
-  public async getAccountsFromGraph(pageSize: number, pageNumber: number) {
-    return await AccountGraphLoader.loadBatch(this.graphClient, pageSize, pageNumber);
+  public async getAccountsFromGraph() {
+    return await AccountGraphLoader.loadBatch(this.graphClient);
   }
 
   public parseInput(input: string, symbol: string, isInternal: boolean) {

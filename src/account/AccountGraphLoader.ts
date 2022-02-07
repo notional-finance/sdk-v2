@@ -14,8 +14,12 @@ import BalanceSummary from './BalanceSummary';
 import AssetSummary from './AssetSummary';
 
 const accountsQuery = gql`
-  query getAccounts($pageSize: Int!, $pageNumber: Int!) {
-    accounts(first: $pageSize, skip: $pageNumber) {
+  query batchQuery($pageSize: Int!, $lastID: String) {
+    batch: accounts(
+      first: $pageSize,
+      where: { id_gt: $lastID },
+      orderBy: id, orderDirection: asc
+    ) {
       id
       nextSettleTime
       hasCashDebt
@@ -115,10 +119,6 @@ interface AccountResponse {
   portfolio: AssetResponse[];
 }
 
-interface AccountsQueryResponse {
-  accounts: AccountResponse[];
-}
-
 type AccountQueryResponse = {account: AccountResponse};
 
 export default class AccountGraphLoader {
@@ -184,10 +184,10 @@ export default class AccountGraphLoader {
    * @param pageNumber
    * @returns
    */
-  public static async loadBatch(graphClient: GraphClient, pageSize: number, pageNumber: number) {
-    const response = await graphClient.queryOrThrow<AccountsQueryResponse>(accountsQuery, {pageSize, pageNumber});
+  public static async loadBatch(graphClient: GraphClient) {
+    const response = await graphClient.batchQuery(accountsQuery) as AccountResponse[];
     const accounts = new Map<string, AccountData>();
-    await Promise.all(response.accounts.map(async (account) => {
+    await Promise.all(response.map(async (account) => {
       const accountData = await AccountData.load(
         account.nextSettleTime,
         account.hasCashDebt,
