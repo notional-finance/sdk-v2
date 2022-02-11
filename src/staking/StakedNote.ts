@@ -1,20 +1,19 @@
-import {BigNumber, ethers, Overrides} from 'ethers';
-import {BigNumberType, TypedBigNumber} from '..';
-import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
-import {SNOTE} from '../typechain/SNOTE';
+import { ethers, Overrides } from 'ethers';
+import { BigNumberType, TypedBigNumber } from '..';
+import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
+import { SNOTE } from '../typechain/SNOTE';
+import BalancerPool from './BalancerPool';
 
 export default class StakedNote {
-  constructor(public coolDownTimeInSeconds: number, public redeemWindowSeconds: number, public sNOTE: SNOTE) {}
+  constructor(
+    public coolDownTimeInSeconds: number,
+    public redeemWindowSeconds: number,
+    public sNOTE: SNOTE,
+    private pool: BalancerPool,
+  ) {}
 
   private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
     return populateTxnAndGas(this.sNOTE, msgSender, methodName, methodArgs);
-  }
-
-  public getExpectedBPT(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
-    noteAmount.checkType(BigNumberType.NOTE);
-    ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
-    // TODO: fill this out
-    return BigNumber.from(0);
   }
 
   /** Contract interaction methods * */
@@ -24,8 +23,8 @@ export default class StakedNote {
     address: string,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.getExpectedBPT(noteAmount, ethAmount);
-    const ethOverrides = Object.assign(overrides, {value: ethAmount.n}) as ethers.PayableOverrides;
+    const minBPT = this.pool.getExpectedBPT(noteAmount, ethAmount);
+    const ethOverrides = Object.assign(overrides, { value: ethAmount.n }) as ethers.PayableOverrides;
 
     return this.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
@@ -36,7 +35,7 @@ export default class StakedNote {
     address: string,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.getExpectedBPT(noteAmount, ethAmount);
+    const minBPT = this.pool.getExpectedBPT(noteAmount, ethAmount);
     return this.populateTxnAndGas(address, 'mintFromWETH', [noteAmount.n, ethAmount.n, minBPT, overrides]);
   }
 
@@ -83,7 +82,7 @@ export default class StakedNote {
     const redeemWindowEnd = redeemWindowBegin.add(this.redeemWindowSeconds);
     const isInCoolDown = !redeemWindowBegin.isZero() && redeemWindowEnd.gte(blockTime);
 
-    return {isInCoolDown, redeemWindowBegin, redeemWindowEnd};
+    return { isInCoolDown, redeemWindowBegin, redeemWindowEnd };
   }
 
   /**
@@ -93,7 +92,7 @@ export default class StakedNote {
    * @returns true if the account can redeem
    */
   public async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
-    const {redeemWindowBegin, redeemWindowEnd} = await this.accountCoolDown(address, blockTime);
+    const { redeemWindowBegin, redeemWindowEnd } = await this.accountCoolDown(address, blockTime);
     return !redeemWindowBegin.isZero() && redeemWindowBegin.lte(blockTime) && redeemWindowEnd.gte(blockTime);
   }
 }
