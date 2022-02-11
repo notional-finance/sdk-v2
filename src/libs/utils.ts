@@ -1,5 +1,23 @@
-import {BigNumber} from 'ethers';
+import {BigNumber, Contract, PopulatedTransaction} from 'ethers';
 import {AssetType} from './types';
+
+export async function populateTxnAndGas(
+  contract: Contract,
+  msgSender: string,
+  methodName: string,
+  methodArgs: any[],
+  gasBufferPercent = 5,
+) {
+  const c = contract.connect(msgSender);
+  const [txn, gasLimit]: [PopulatedTransaction, BigNumber] = await Promise.all([
+    c.populateTransaction[methodName].apply(c, methodArgs),
+    c.estimateGas[methodName].apply(c, methodArgs),
+  ]);
+
+  // Add 5% to the estimated gas limit to reduce the risk of out of gas errors
+  txn.gasLimit = gasLimit.add(gasLimit.mul(gasBufferPercent).div(100));
+  return txn;
+}
 
 export function getNowSeconds() {
   if (process.env.NODE_ENV === 'development' && process.env.FAKE_TIME) {

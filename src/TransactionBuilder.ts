@@ -1,5 +1,5 @@
 import {
-  Overrides, ethers, BigNumber, BytesLike, PopulatedTransaction,
+  Overrides, ethers, BigNumber, BytesLike,
 } from 'ethers';
 import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
 import {
@@ -10,7 +10,7 @@ import {
   Asset,
   Currency,
 } from './libs/types';
-import {getNowSeconds} from './libs/utils';
+import {getNowSeconds, populateTxnAndGas} from './libs/utils';
 import {System, Market, CashGroup} from './system';
 import {Notional as NotionalTypechain} from './typechain/Notional';
 
@@ -18,15 +18,7 @@ export default abstract class TransactionBuilder {
   constructor(protected notionalProxy: NotionalTypechain, protected system: System) {}
 
   private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
-    const proxy = this.notionalProxy.connect(msgSender);
-    const [txn, gasLimit]: [PopulatedTransaction, BigNumber] = await Promise.all([
-      proxy.populateTransaction[methodName].apply(proxy, methodArgs),
-      proxy.estimateGas[methodName].apply(proxy, methodArgs),
-    ]);
-
-    // Add 5% to the estimated gas limit to reduce the risk of out of gas errors
-    txn.gasLimit = gasLimit.add(gasLimit.div(20));
-    return txn;
+    return populateTxnAndGas(this.notionalProxy, msgSender, methodName, methodArgs);
   }
 
   /**
