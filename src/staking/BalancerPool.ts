@@ -1,25 +1,24 @@
-import { gql } from '@apollo/client/core';
-import { BigNumber, ethers } from 'ethers';
-import { BigNumberType, TypedBigNumber } from '..';
-import { INTERNAL_TOKEN_PRECISION } from '../config/constants';
+import {gql} from '@apollo/client/core';
+import {BigNumber, ethers} from 'ethers';
+import {BigNumberType, TypedBigNumber} from '..';
+import {INTERNAL_TOKEN_PRECISION} from '../config/constants';
 import GraphClient from '../GraphClient';
 
-const joinExitQuery = (treasuryManager: string, poolId: string) => gql`{
-  joinExits(where: {user: "${treasuryManager}", pool: "${poolId}"}){
-    id
-    type
-    timestamp
-    amounts
-  }
-}`;
+interface JoinExitResponse {
+  joinExits: {
+    id: string;
+    type: string;
+    timestamp: number;
+    amounts: string[];
+  };
+}
 
-// Returns total swap fees in USD since creation
-const swapFeeQuery = (poolId: string) => gql`{
-  pool(id: "${poolId}"}){
-    createTime
-    totalSwapFee
-  }
-}`;
+interface SwapFeeResponse {
+  pool: {
+    createTime: number;
+    totalSwapFee: string;
+  };
+}
 
 /**
  * Balancer pool math adapted from this code:
@@ -31,7 +30,25 @@ export default class BalancerPool {
   public readonly NOTE_WEIGHT = BigNumber.from(0.8e18);
   public balancerGraphClient: GraphClient;
 
+  joinExitQuery = (treasuryManager: string, poolId: string) => gql`{
+    joinExits(where: {user: "${treasuryManager}", pool: "${poolId}"}){
+      id
+      type
+      timestamp
+      amounts
+    }
+  }`;
+
+  // Returns total swap fees in USD since creation
+  swapFeeQuery = (poolId: string) => gql`{
+    pool(id: "${poolId}"}){
+      createTime
+      totalSwapFee
+    }
+  }`;
+
   constructor(
+    public poolId: string,
     public ethBalance: TypedBigNumber,
     public noteBalance: TypedBigNumber,
     public totalSupply: BigNumber,
@@ -107,9 +124,8 @@ export default class BalancerPool {
 
     if (invariantRatio.gte(this.BPT_PRECISION)) {
       return this.totalSupply.mul(invariantRatio.sub(this.BPT_PRECISION)).div(this.BPT_PRECISION);
-    } else {
-      throw Error('Insufficient liquidity');
     }
+    throw Error('Insufficient liquidity');
   }
 
   public async getExpectedPriceImpact(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
@@ -125,20 +141,31 @@ export default class BalancerPool {
   public async getStakedNOTEPoolValue() {
     const ethValue = this.ethBalance.scale(this.sNOTEBptBalance, this.totalSupply);
     const noteValue = this.noteBalance.scale(this.sNOTEBptBalance, this.totalSupply);
-    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
+    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 
   public async getBptValue() {
     const ethValue = this.ethBalance.scale(1, this.totalSupply);
     const noteValue = this.noteBalance.scale(1, this.totalSupply);
-    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
+    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 
   // These three can be queried from the balancer subgraph, but we will need
   // to get historical prices for ETH and NOTE.
   // Use JoinExit, filter for the TreasuryManager contract
-  public async calculateBuybackRate();
-  public async calculateIncentiveRate();
-  // Pool, totalSwapFee in USD
-  public async calculateTradingFees();
+  public async calculatePoolReturns(treasuryManager: string) {
+    const [joinExit, swapFee] = await Promise.all([
+      this.balancerGraphClient.queryOrThrow<JoinExitResponse>(this.joinExitQuery(treasuryManager, this.poolId)),
+      this.balancerGraphClient.queryOrThrow<SwapFeeResponse>(this.swapFeeQuery(this.poolId)),
+    ]);
+    console.log(joinExit);
+    console.log(swapFee);
+    // So we have three cash flows here (use xirr)
+    // 1. incentiveReturns: joins in NOTE token (NOTE in USD / poolValueInUSD -- poolTotalLiquidity)
+    // 2. buybackReturns: joins in WETH token (WETH in USD / poolValueInUSD)
+    // 3. swapFee: use poolSnapshot object, we can calculate swapVolume and swapFees (both denominated in USD)
+    // const incentiveReturns;
+    // const buybackReturns;
+    // const swapFees = BigNumber.from(swapFee.pool.totalSwapFee);
+  }
 }

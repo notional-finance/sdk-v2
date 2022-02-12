@@ -1,7 +1,7 @@
-import { TypedBigNumber } from '..';
-import { System } from '../system';
-import { populateTxnAndGas } from '../libs/utils';
-import { TreasuryManager } from '../typechain/TreasuryManager';
+import {TypedBigNumber} from '..';
+import {System} from '../system';
+import {populateTxnAndGas} from '../libs/utils';
+import {TreasuryManager} from '../typechain/TreasuryManager';
 
 export default class Treasury {
   constructor(public treasuryManager: TreasuryManager, public manager: string) {}

@@ -1,7 +1,7 @@
-import { ethers, Overrides } from 'ethers';
-import { BigNumberType, TypedBigNumber } from '..';
-import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
-import { SNOTE } from '../typechain/SNOTE';
+import {ethers, Overrides} from 'ethers';
+import {BigNumberType, TypedBigNumber} from '..';
+import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
+import {SNOTE} from '../typechain/SNOTE';
 import BalancerPool from './BalancerPool';
 
 export default class StakedNote {
@@ -24,7 +24,7 @@ export default class StakedNote {
     overrides = {} as Overrides,
   ) {
     const minBPT = this.pool.getExpectedBPT(noteAmount, ethAmount);
-    const ethOverrides = Object.assign(overrides, { value: ethAmount.n }) as ethers.PayableOverrides;
+    const ethOverrides = Object.assign(overrides, {value: ethAmount.n}) as ethers.PayableOverrides;
 
     return this.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
@@ -82,7 +82,7 @@ export default class StakedNote {
     const redeemWindowEnd = redeemWindowBegin.add(this.redeemWindowSeconds);
     const isInCoolDown = !redeemWindowBegin.isZero() && redeemWindowEnd.gte(blockTime);
 
-    return { isInCoolDown, redeemWindowBegin, redeemWindowEnd };
+    return {isInCoolDown, redeemWindowBegin, redeemWindowEnd};
   }
 
   /**
@@ -92,7 +92,7 @@ export default class StakedNote {
    * @returns true if the account can redeem
    */
   public async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
-    const { redeemWindowBegin, redeemWindowEnd } = await this.accountCoolDown(address, blockTime);
+    const {redeemWindowBegin, redeemWindowEnd} = await this.accountCoolDown(address, blockTime);
     return !redeemWindowBegin.isZero() && redeemWindowBegin.lte(blockTime) && redeemWindowEnd.gte(blockTime);
   }
 }
