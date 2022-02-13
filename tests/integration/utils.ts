@@ -1,6 +1,11 @@
-import { ethers } from 'ethers';
+import hre, { ethers } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 require('dotenv').config();
+
+export const getAccount = async (account: string) => {
+  await hre.network.provider.request({ method: 'hardhat_impersonateAccount', params: [account] });
+  return await ethers.getSigner(account);
+};
 
 export const getMostRecentForkableBlock = async (
   jsonRpcUrl: string = `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,

@@ -1,8 +1,13 @@
-import {gql} from '@apollo/client/core';
-import {BigNumber, ethers} from 'ethers';
-import {BigNumberType, TypedBigNumber} from '..';
-import {INTERNAL_TOKEN_PRECISION} from '../config/constants';
+import { gql } from '@apollo/client/core';
+import { BigNumber, Contract, ethers } from 'ethers';
+import { BigNumberType, TypedBigNumber } from '..';
+import { INTERNAL_TOKEN_PRECISION } from '../config/constants';
 import GraphClient from '../GraphClient';
+import { BalancerVault } from '../typechain/BalancerVault';
+import { BalancerPool as BPool } from '../typechain/BalancerPool';
+
+const BalancerVaultABI = require('../abi/BalancerVault.json');
+const BalancerPoolABI = require('../abi/BalancerPool.json');
 
 interface JoinExitResponse {
   joinExits: {
@@ -25,9 +30,10 @@ interface SwapFeeResponse {
  * https://github.com/officialnico/balancerv2cad/blob/main/src/balancerv2cad/WeightedMath.py#L74
  */
 export default class BalancerPool {
+  public static readonly BalancerVaultAddress = '0xBA12222222228d8Ba445958a75a0704d566BF2C8';
   public readonly BPT_PRECISION = ethers.constants.WeiPerEther;
-  public readonly ETH_WEIGHT = BigNumber.from(0.2e18);
-  public readonly NOTE_WEIGHT = BigNumber.from(0.8e18);
+  public readonly ETH_WEIGHT = ethers.utils.parseEther('0.2');
+  public readonly NOTE_WEIGHT = ethers.utils.parseEther('0.8');
   public balancerGraphClient: GraphClient;
 
   joinExitQuery = (treasuryManager: string, poolId: string) => gql`{
@@ -54,8 +60,28 @@ export default class BalancerPool {
     public totalSupply: BigNumber,
     public sNOTEBptBalance: BigNumber,
     public swapFee: BigNumber,
+    public vault: BalancerVault,
   ) {
     this.balancerGraphClient = new GraphClient('https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2', 0);
+  }
+
+  public static async load(poolId: string, provider: ethers.providers.JsonRpcProvider) {
+    const vault = new Contract(BalancerPool.BalancerVaultAddress, BalancerVaultABI, provider) as BalancerVault;
+    const poolAddress = await vault.getPool(poolId);
+    const pool = new Contract(poolAddress[0], BalancerPoolABI, provider) as BPool;
+    const totalSupply = await pool.totalSupply();
+    const swapFee = await pool.getSwapFeePercentage();
+    const { balances } = await vault.getPoolTokens(poolId);
+
+    return new BalancerPool(
+      poolId,
+      TypedBigNumber.fromBalance(balances[0], 'ETH', false),
+      TypedBigNumber.fromBalance(balances[1], 'NOTE', false),
+      totalSupply,
+      BigNumber.from(0), // TODO get snote pool value
+      swapFee,
+      vault,
+    );
   }
 
   /**
@@ -74,11 +100,14 @@ export default class BalancerPool {
     const ethBalanceRatioWithFee = this.ethBalance.add(ethAmount).scale(this.BPT_PRECISION, this.ethBalance.n).n;
     const noteBalanceRatioWithFee = this.noteBalance
       .add(noteAmount)
-      .scale(INTERNAL_TOKEN_PRECISION, this.noteBalance.n).n;
+      .scale(INTERNAL_TOKEN_PRECISION, this.noteBalance.n)
+      // This needs to be scaled up to 1e18 to match the ethBalanceRatio precision
+      .scale(1e10, 1).n;
 
     // The invariant ratio with fees calculates the normalized change to the invariant given the
-    // two deposit amounts.
-    // (ethRatio * 0.20) + (noteRatio * 0.80)
+    // two deposit amounts. The invariant ratio is: (ethRatio ** 0.2) * (noteRatio ** 0.8), this
+    // formula calculates the log of those two figures:
+    // log(invariant) = 0.2 * log(ethRatio) + 0.8 * log(noteRatio)
     const invariantRatioWithFees = ethBalanceRatioWithFee
       .mul(this.ETH_WEIGHT)
       .div(this.BPT_PRECISION)
@@ -91,20 +120,29 @@ export default class BalancerPool {
       // If depositing ETH (ethBalanceRatioWithFee > 1) will result in the invariant moving
       // away from it's target position (invariantRatioWithFees == 1) then we need to apply
       // a swap fee to the ethAmount.
-      ethInWithoutFee = ethAmount.scale(this.BPT_PRECISION.sub(this.swapFee), this.BPT_PRECISION);
+      const nonTaxableAmount = this.ethBalance.scale(
+        invariantRatioWithFees.sub(this.BPT_PRECISION),
+        this.BPT_PRECISION,
+      );
+      const taxableAmount = ethAmount.sub(nonTaxableAmount);
+      ethInWithoutFee = nonTaxableAmount.add(
+        taxableAmount.scale(this.BPT_PRECISION.sub(this.swapFee), this.BPT_PRECISION),
+      );
     } else {
       ethInWithoutFee = ethAmount;
     }
 
-    const balanceRatioEth = this.ethBalance.add(ethInWithoutFee).scale(this.ethBalance.n, this.BPT_PRECISION);
-    let invariantRatio = BigNumber.from(
-      (balanceRatioEth.toNumber() / this.BPT_PRECISION.toNumber()) ** 0.2 * this.BPT_PRECISION.toNumber(),
-    );
+    const balanceRatioEth = this.ethBalance.add(ethInWithoutFee).scale(this.BPT_PRECISION, this.ethBalance.n);
+    let invariantRatio = ethers.utils.parseUnits((parseFloat(balanceRatioEth.toExactString()) ** 0.2).toFixed(18), 18);
 
     if (noteBalanceRatioWithFee.gt(invariantRatioWithFees)) {
       // This will calculate whatever remains after the eth swap fee has been applied. If the invariant
       // ratio is still above one then part of the noteAmount will be subject to a swap fee as well.
-      const nonTaxableAmount = this.noteBalance.scale(invariantRatio.sub(this.BPT_PRECISION), this.BPT_PRECISION);
+      // noteBalance * (log(invariantRatio) - 1)
+      const nonTaxableAmount = this.noteBalance.scale(
+        invariantRatioWithFees.sub(this.BPT_PRECISION),
+        this.BPT_PRECISION,
+      );
       const taxableAmount = noteAmount.sub(nonTaxableAmount);
       noteInWithoutFee = nonTaxableAmount.add(
         taxableAmount.scale(this.BPT_PRECISION.sub(this.swapFee), this.BPT_PRECISION),
@@ -113,14 +151,12 @@ export default class BalancerPool {
       noteInWithoutFee = noteAmount;
     }
 
-    const balanceRatioNote = this.noteBalance.add(noteInWithoutFee).scale(this.noteBalance.n, this.BPT_PRECISION);
-    invariantRatio = invariantRatio
-      .mul(
-        BigNumber.from(
-          (balanceRatioNote.toNumber() / this.BPT_PRECISION.toNumber()) ** 0.8 * this.BPT_PRECISION.toNumber(),
-        ),
-      )
-      .div(this.BPT_PRECISION);
+    const balanceRatioNote = this.noteBalance.add(noteInWithoutFee).scale(INTERNAL_TOKEN_PRECISION, this.noteBalance.n);
+    const invariantRatioNote = ethers.utils.parseUnits(
+      (parseFloat(balanceRatioNote.toExactString()) ** 0.8).toFixed(8),
+      8,
+    );
+    invariantRatio = invariantRatio.mul(invariantRatioNote).div(INTERNAL_TOKEN_PRECISION);
 
     if (invariantRatio.gte(this.BPT_PRECISION)) {
       return this.totalSupply.mul(invariantRatio.sub(this.BPT_PRECISION)).div(this.BPT_PRECISION);
@@ -141,13 +177,13 @@ export default class BalancerPool {
   public async getStakedNOTEPoolValue() {
     const ethValue = this.ethBalance.scale(this.sNOTEBptBalance, this.totalSupply);
     const noteValue = this.noteBalance.scale(this.sNOTEBptBalance, this.totalSupply);
-    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
+    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
   }
 
   public async getBptValue() {
     const ethValue = this.ethBalance.scale(1, this.totalSupply);
     const noteValue = this.noteBalance.scale(1, this.totalSupply);
-    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
+    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
   }
 
   // These three can be queried from the balancer subgraph, but we will need

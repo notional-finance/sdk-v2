@@ -1,3 +1,5 @@
+import '@nomiclabs/hardhat-ethers';
+
 export default {
   defaultNetwork: 'hardhat',
   networks: {
