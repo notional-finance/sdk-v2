@@ -1,7 +1,7 @@
-import {ethers, Overrides} from 'ethers';
-import {BigNumberType, TypedBigNumber} from '..';
-import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
-import {SNOTE} from '../typechain/SNOTE';
+import { ethers, Overrides } from 'ethers';
+import { BigNumberType, TypedBigNumber } from '..';
+import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
+import { SNOTE } from '../typechain/SNOTE';
 import BalancerPool from './BalancerPool';
 
 export default class StakedNote {
@@ -21,10 +21,14 @@ export default class StakedNote {
     noteAmount: TypedBigNumber,
     ethAmount: TypedBigNumber,
     address: string,
+    bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.pool.getExpectedBPT(noteAmount, ethAmount);
-    const ethOverrides = Object.assign(overrides, {value: ethAmount.n}) as ethers.PayableOverrides;
+    const minBPT = this.pool
+      .getExpectedBPT(noteAmount, ethAmount)
+      .mul((1 - bptSlippagePercent) * 1e9)
+      .div(1e9);
+    const ethOverrides = Object.assign(overrides, { value: ethAmount.n }) as ethers.PayableOverrides;
 
     return this.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
@@ -33,9 +37,13 @@ export default class StakedNote {
     noteAmount: TypedBigNumber,
     ethAmount: TypedBigNumber,
     address: string,
+    bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.pool.getExpectedBPT(noteAmount, ethAmount);
+    const minBPT = this.pool
+      .getExpectedBPT(noteAmount, ethAmount)
+      .mul((1 - bptSlippagePercent) * 1e9)
+      .div(1e9);
     return this.populateTxnAndGas(address, 'mintFromWETH', [noteAmount.n, ethAmount.n, minBPT, overrides]);
   }
 
@@ -82,7 +90,7 @@ export default class StakedNote {
     const redeemWindowEnd = redeemWindowBegin.add(this.redeemWindowSeconds);
     const isInCoolDown = !redeemWindowBegin.isZero() && redeemWindowEnd.gte(blockTime);
 
-    return {isInCoolDown, redeemWindowBegin, redeemWindowEnd};
+    return { isInCoolDown, redeemWindowBegin, redeemWindowEnd };
   }
 
   /**
@@ -92,7 +100,7 @@ export default class StakedNote {
    * @returns true if the account can redeem
    */
   public async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
-    const {redeemWindowBegin, redeemWindowEnd} = await this.accountCoolDown(address, blockTime);
+    const { redeemWindowBegin, redeemWindowEnd } = await this.accountCoolDown(address, blockTime);
     return !redeemWindowBegin.isZero() && redeemWindowBegin.lte(blockTime) && redeemWindowEnd.gte(blockTime);
   }
 }
