@@ -26,7 +26,7 @@ interface SwapFeeResponse {
 }
 
 /**
- * Balancer pool math adapted from this code:
+ * Balancer pool math adapted from this code. Although the code is incorrect in a few places:
  * https://github.com/officialnico/balancerv2cad/blob/main/src/balancerv2cad/WeightedMath.py#L74
  */
 export default class BalancerPool {

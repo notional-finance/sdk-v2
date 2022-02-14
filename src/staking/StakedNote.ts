@@ -16,7 +16,16 @@ export default class StakedNote {
     return populateTxnAndGas(this.sNOTE, msgSender, methodName, methodArgs);
   }
 
-  /** Contract interaction methods * */
+  /**
+   * Mints sNOTE from ETH and NOTE
+   *
+   * @param noteAmount amount of NOTE to contribute to the pool (can be zero)
+   * @param ethAmount amount of ETH to contribut to the pool (can be zero)
+   * @param address address that will send the tokens
+   * @param bptSlippagePercent slippage applied to the expected BPT to be minted (default: 0.5%)
+   * @param overrides transaction overrides
+   * @returns a populated transaction
+   */
   public async mintFromETH(
     noteAmount: TypedBigNumber,
     ethAmount: TypedBigNumber,
@@ -33,6 +42,16 @@ export default class StakedNote {
     return this.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
 
+  /**
+   * Mints sNOTE from WETH and NOTE
+   *
+   * @param noteAmount amount of NOTE to contribute to the pool (can be zero)
+   * @param ethAmount amount of ETH to contribut to the pool (can be zero)
+   * @param address address that will send the tokens
+   * @param bptSlippagePercent slippage applied to the expected BPT to be minted (default: 0.5%)
+   * @param overrides transaction overrides
+   * @returns a populated transaction
+   */
   public async mintFromWETH(
     noteAmount: TypedBigNumber,
     ethAmount: TypedBigNumber,
@@ -47,6 +66,15 @@ export default class StakedNote {
     return this.populateTxnAndGas(address, 'mintFromWETH', [noteAmount.n, ethAmount.n, minBPT, overrides]);
   }
 
+  /**
+   * An amount of sNOTE to redeem
+   *
+   * @param sNOTEAmount amount of sNOTE to redeem
+   * @param address address to redeem the sNOTE
+   * @param blockTime current time to assess the redemption window
+   * @param overrides
+   * @returns a populated transaction
+   */
   public async redeem(
     sNOTEAmount: TypedBigNumber,
     address: string,
