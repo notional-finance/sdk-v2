@@ -36,6 +36,7 @@ try {
 
 /* Endpoints */
 const kovanAddresses = require('./config/kovan.json');
+const goerliAddresses = require('./config/goerli.json');
 const mainnetAddresses = require('./config/mainnet.json');
 const graphEndpoints = require('./config/graph.json');
 
@@ -75,6 +76,11 @@ export default class Notional extends TransactionBuilder {
         addresses = mainnetAddresses;
         graphEndpoint = graphEndpoints['mainnet:http'];
         pollInterval = Number(graphEndpoints['mainnet:poll']);
+        break;
+      case 5:
+        addresses = goerliAddresses;
+        graphEndpoint = graphEndpoints['goerli:http'];
+        pollInterval = Number(graphEndpoints['goerli:poll']);
         break;
       case 42:
         addresses = kovanAddresses;

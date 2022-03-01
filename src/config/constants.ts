@@ -35,6 +35,8 @@ export function secondsPerBlock(chainId: number) {
   switch (chainId) {
     case 1:
       return 13;
+    case 5:
+      return 15;
     case 42:
       return 4;
     default:

@@ -22,6 +22,9 @@ export default class Cache extends DataSource {
       case 1:
         this.cacheURL = 'https://api.notional.finance/v1/system';
         break;
+      case 5:
+        this.cacheURL = 'https://goerli.api.notional.finance/v1/system';
+        break;
       case 42:
         this.cacheURL = 'https://kovan.api.notional.finance/v1/system';
         break;
