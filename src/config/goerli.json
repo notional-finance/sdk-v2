@@ -1,0 +1,10 @@
+{
+    "chainId": 5,
+    "deployer": "0x2a956Fe94ff89D8992107c8eD4805c30ff1106ef",
+    "governor": "0x10d1Ca9BcD1Fb2b7d5ecB9A53a348292ee38E524",
+    "guardian": "0x2a956Fe94ff89D8992107c8eD4805c30ff1106ef",
+    "networkName": "goerli",
+    "note": "0xC5e91B01F9B23952821410Be7Aa3c45B6429C670",
+    "notional": "0xD8229B55bD73c61D840d339491219ec6Fa667B0a",
+    "startBlock": 6362131
+}
