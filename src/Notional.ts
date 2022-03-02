@@ -42,11 +42,11 @@ interface Addresses {
 /* ABI imports */
 const NoteERC20ABI = require('./abi/NoteERC20.json');
 const NotionalABI = require('./abi/Notional.json');
-const BalancerVaultABI = require('../abi/BalancerVault.json');
-const BalancerPoolABI = require('../abi/BalancerPool.json');
-const sNOTEABI = require('../abi/sNOTE.json');
-const GovernorABI = require('../abi/Governor.json');
-const TreasuryManagerABI = require('../abi/TreasuryManager.json');
+const BalancerVaultABI = require('./abi/BalancerVault.json');
+const BalancerPoolABI = require('./abi/BalancerPool.json');
+const sNOTEABI = require('./abi/sNOTE.json');
+const GovernorABI = require('./abi/Governor.json');
+const TreasuryManagerABI = require('./abi/TreasuryManager.json');
 
 /* eslint-disable */
 let localAddresses: any;
