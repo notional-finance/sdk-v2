@@ -6,9 +6,6 @@ import Governance from './Governance';
 import GraphClient from './GraphClient';
 import {Account, AccountData, AccountGraphLoader} from './account';
 
-/* typechain imports */
-import {NoteERC20} from './typechain/NoteERC20';
-import {Notional as NotionalProxyTypechain} from './typechain/Notional';
 import {SystemEvents} from './system/System';
 // eslint-disable import/no-named-as-default import/no-named-as-default-member
 import TransactionBuilder from './TransactionBuilder';
@@ -21,9 +18,35 @@ import {
 } from './config/constants';
 import {DataSourceType} from './system/datasource';
 
+/* typechain imports */
+import {NoteERC20} from './typechain/NoteERC20';
+import {Notional as NotionalProxyTypechain} from './typechain/Notional';
+import {SNOTE} from './typechain/SNOTE';
+import {Governor} from './typechain/Governor';
+import {TreasuryManager} from './typechain/TreasuryManager';
+import {BalancerPool} from './typechain/BalancerPool';
+import {BalancerVault} from './typechain/BalancerVault';
+import {Contracts} from '.';
+
+interface Addresses {
+  airdrop: string;
+  governor: string;
+  note: string;
+  notional: string;
+  sNOTE: string;
+  balancerVault: string;
+  balancerPool: string;
+  treasury: string;
+}
+
 /* ABI imports */
 const NoteERC20ABI = require('./abi/NoteERC20.json');
 const NotionalABI = require('./abi/Notional.json');
+const BalancerVaultABI = require('../abi/BalancerVault.json');
+const BalancerPoolABI = require('../abi/BalancerPool.json');
+const sNOTEABI = require('../abi/sNOTE.json');
+const GovernorABI = require('../abi/Governor.json');
+const TreasuryManagerABI = require('../abi/TreasuryManager.json');
 
 /* eslint-disable */
 let localAddresses: any;
@@ -51,8 +74,21 @@ export default class Notional extends TransactionBuilder {
     public governance: Governance,
     public system: System,
     public provider: ethers.providers.Provider,
+    public contracts: Contracts
   ) {
     super(system.getNotionalProxy(), system);
+  }
+
+  public static getContracts(addresses: Addresses, signer: Signer): Contracts {
+    return {
+      notionalProxy: new Contract(addresses.notional, NotionalABI, signer) as NotionalProxyTypechain,
+      sNOTE: new Contract(addresses.sNOTE, sNOTEABI, signer) as SNOTE,
+      note: new Contract(addresses.note, NoteERC20ABI, signer) as NoteERC20,
+      governor: new Contract(addresses.governor, GovernorABI, signer) as Governor,
+      treasury: new Contract(addresses.treasury, TreasuryManagerABI, signer) as TreasuryManager,
+      balancerVault: new Contract(addresses.balancerVault, BalancerVaultABI, signer) as BalancerVault,
+      balancerPool: new Contract(addresses.balancerPool, BalancerPoolABI, signer) as BalancerPool,
+    }
   }
 
   /**
@@ -67,7 +103,7 @@ export default class Notional extends TransactionBuilder {
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
     dataSourceType = DataSourceType.Cache
   ) {
-    let addresses: any;
+    let addresses: Addresses;
     let graphEndpoint: string;
     let pollInterval: number;
 
@@ -105,18 +141,17 @@ export default class Notional extends TransactionBuilder {
     } else {
       signer = new VoidSigner(ethers.constants.AddressZero, provider);
     }
-    const note = new Contract(addresses.note, NoteERC20ABI, signer) as NoteERC20;
+    const contracts = Notional.getContracts(addresses, signer);
     const graphClient = new GraphClient(graphEndpoint, pollInterval);
-    const governance = new Governance(addresses.governor, note, signer, provider, graphClient) as Governance;
-    const notionalProxy = new Contract(addresses.notional, NotionalABI, signer) as NotionalProxyTypechain;
+    const governance = new Governance(addresses.governor, contracts.note, signer, provider, graphClient) as Governance;
     const system = await System.load(
       graphClient,
-      notionalProxy,
+      contracts,
       signer.provider as ethers.providers.JsonRpcBatchProvider,
       chainId,
       dataSourceType,
       refreshDataInterval,
-      DEFAULT_CONFIGURATION_REFRESH_INTERVAL
+      DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
     );
 
     // await for the first data refresh before returning
@@ -127,7 +162,7 @@ export default class Notional extends TransactionBuilder {
       });
     });
 
-    return new Notional(note, graphClient, governance, system, provider);
+    return new Notional(contracts.note, graphClient, governance, system, provider, contracts);
   }
 
   public async getAccount(address: string | Signer) {

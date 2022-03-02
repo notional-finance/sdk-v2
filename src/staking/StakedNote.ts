@@ -1,16 +1,15 @@
-import { ethers, Overrides } from 'ethers';
-import { BigNumberType, TypedBigNumber } from '..';
-import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
-import { SNOTE } from '../typechain/SNOTE';
+import {ethers, Overrides} from 'ethers';
+import {BigNumberType, TypedBigNumber} from '..';
+import {RATE_PRECISION} from '../config/constants';
+import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
+import {System} from '../system';
+import {SNOTE} from '../typechain/SNOTE';
 import BalancerPool from './BalancerPool';
 
-export default class StakedNote {
-  constructor(
-    public coolDownTimeInSeconds: number,
-    public redeemWindowSeconds: number,
-    public sNOTE: SNOTE,
-    private pool: BalancerPool,
-  ) {}
+export default class StakedNote extends BalancerPool {
+  constructor(public sNOTE: SNOTE) {
+    super();
+  }
 
   private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
     return populateTxnAndGas(this.sNOTE, msgSender, methodName, methodArgs);
@@ -33,11 +32,10 @@ export default class StakedNote {
     bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.pool
-      .getExpectedBPT(noteAmount, ethAmount)
-      .mul((1 - bptSlippagePercent) * 1e9)
-      .div(1e9);
-    const ethOverrides = Object.assign(overrides, { value: ethAmount.n }) as ethers.PayableOverrides;
+    const minBPT = this.getExpectedBPT(noteAmount, ethAmount)
+      .mul((1 - bptSlippagePercent) * RATE_PRECISION)
+      .div(RATE_PRECISION);
+    const ethOverrides = Object.assign(overrides, {value: ethAmount.n}) as ethers.PayableOverrides;
 
     return this.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
@@ -59,10 +57,9 @@ export default class StakedNote {
     bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.pool
-      .getExpectedBPT(noteAmount, ethAmount)
-      .mul((1 - bptSlippagePercent) * 1e9)
-      .div(1e9);
+    const minBPT = this.getExpectedBPT(noteAmount, ethAmount)
+      .mul((1 - bptSlippagePercent) * RATE_PRECISION)
+      .div(RATE_PRECISION);
     return this.populateTxnAndGas(address, 'mintFromWETH', [noteAmount.n, ethAmount.n, minBPT, overrides]);
   }
 
@@ -114,11 +111,12 @@ export default class StakedNote {
    * @returns redeemWindowEnd when the redeem window will end
    */
   public async accountCoolDown(address: string, blockTime = getNowSeconds()) {
+    const {redeemWindowSeconds} = System.getSystem().getStakedNoteParameters();
     const redeemWindowBegin = await this.sNOTE.accountRedeemWindowBegin(address);
-    const redeemWindowEnd = redeemWindowBegin.add(this.redeemWindowSeconds);
+    const redeemWindowEnd = redeemWindowBegin.add(redeemWindowSeconds);
     const isInCoolDown = !redeemWindowBegin.isZero() && redeemWindowEnd.gte(blockTime);
 
-    return { isInCoolDown, redeemWindowBegin, redeemWindowEnd };
+    return {isInCoolDown, redeemWindowBegin, redeemWindowEnd};
   }
 
   /**
@@ -128,7 +126,7 @@ export default class StakedNote {
    * @returns true if the account can redeem
    */
   public async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
-    const { redeemWindowBegin, redeemWindowEnd } = await this.accountCoolDown(address, blockTime);
+    const {redeemWindowBegin, redeemWindowEnd} = await this.accountCoolDown(address, blockTime);
     return !redeemWindowBegin.isZero() && redeemWindowBegin.lte(blockTime) && redeemWindowEnd.gte(blockTime);
   }
 }

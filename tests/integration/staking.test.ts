@@ -1,16 +1,16 @@
-// import hre, { ethers, network } from 'hardhat';
-import { JsonRpcProvider } from '@ethersproject/providers';
-import { BigNumber } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import {BigNumber, providers} from 'ethers';
+import {ethers} from 'hardhat';
 import BalancerPool from '../../src/staking/BalancerPool';
-import { getAccount, setChainState } from './utils';
-import { System } from '../../src/system';
+import {getAccount, setChainState} from './utils';
+import {System} from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
-import { ERC20 } from '../../src/typechain/ERC20';
-import { TypedBigNumber } from '../../src';
+import {ERC20} from '../../src/typechain/ERC20';
+import {TypedBigNumber} from '../../src';
+
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
 const ERC20ABI = require('../../src/abi/ERC20.json');
+
 const forkedBlockNumber = 14191580;
 
 describe('staking test', () => {
@@ -18,27 +18,28 @@ describe('staking test', () => {
   System.overrideSystem(system);
 
   it('allows entering the pool with minimal slippage', async () => {
-    await setChainState(hre, forkedBlockNumber);
+    await setChainState(forkedBlockNumber);
     const [signer] = await ethers.getSigners();
     const pool2TokensFactory = await ethers.getContractAt(factoryABI, '0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0');
     const assets = ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5'];
     const txn = await (
-      await pool2TokensFactory.connect(signer).create(
-        'Staked NOTE Weighted Pool',
-        'sNOTE-BPT',
-        assets,
-        [ethers.utils.parseEther('0.2'), ethers.utils.parseEther('0.8')],
-        ethers.utils.parseEther('0.005'),
-        // BigNumber.from(1e12),
-        true,
-        signer.address,
-      )
+      await pool2TokensFactory
+        .connect(signer)
+        .create(
+          'Staked NOTE Weighted Pool',
+          'sNOTE-BPT',
+          assets,
+          [ethers.utils.parseEther('0.2'), ethers.utils.parseEther('0.8')],
+          ethers.utils.parseEther('0.005'),
+          true,
+          signer.address,
+        )
     ).wait();
     const poolAddress = txn.events.find((e) => e.event === 'PoolCreated').args[0];
     const pool = await ethers.getContractAt(poolABI, poolAddress);
     const poolId = await pool.getPoolId();
 
-    let balancerPool = await BalancerPool.load(poolId, signer.provider as JsonRpcProvider);
+    let balancerPool = await BalancerPool.load(poolId, signer.provider as providers.JsonRpcProvider);
     const initialBalances = [ethers.utils.parseEther('10'), BigNumber.from(100e8)];
     let userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
     const noteWhale = await getAccount('0x22341fB5D92D3d801144aA5A925F401A91418A05');
@@ -53,7 +54,7 @@ describe('staking test', () => {
     await balancerPool.vault.connect(noteWhale).joinPool(poolId, noteWhale.address, noteWhale.address, {
       assets,
       maxAmountsIn: initialBalances,
-      userData: userData,
+      userData,
       fromInternalBalance: false,
     });
 
@@ -70,7 +71,7 @@ describe('staking test', () => {
     await balancerPool.vault.connect(noteWhale).joinPool(poolId, noteWhale.address, noteWhale.address, {
       assets,
       maxAmountsIn: [ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000')],
-      userData: userData,
+      userData,
       fromInternalBalance: false,
     });
     const balanceAfter = await pool.balanceOf(noteWhale.address);
@@ -84,6 +85,6 @@ describe('staking test', () => {
   });
 
   it('calculates the proper price impact of a trade', async () => {
-    await setChainState(hre, forkedBlockNumber);
+    await setChainState(forkedBlockNumber);
   });
 });
