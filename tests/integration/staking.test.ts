@@ -113,7 +113,7 @@ describe('staking test', () => {
     const expectedBPT = StakedNote.getExpectedBPT(noteIn, ethIn);
     const balanceBefore = await balancerPool.balanceOf(noteWhale.address);
 
-    await joinPool(noteIn, ethIn)
+    await joinPool(noteIn, ethIn);
     const balanceAfter = await balancerPool.balanceOf(noteWhale.address);
     const diff = balanceAfter.sub(balanceBefore);
     const errorFactor = (1 - parseFloat(ethers.utils.formatUnits(expectedBPT, 18))
@@ -124,22 +124,24 @@ describe('staking test', () => {
   it('doubling eth in pool doubles NOTE price', async () => {
     const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
     const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
-    const spotPriceBefore = StakedNote.getSpotPrice()
-    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn)
-    await joinPool(noteIn, ethIn)
-    const spotPriceAfter = StakedNote.getSpotPrice()
-    expect(spotPriceAfter._hex).to.equal(expectedPrice._hex)
-    expect(spotPriceAfter.div(spotPriceBefore).toNumber()).to.equal(2)
+    const spotPriceBefore = StakedNote.getSpotPrice();
+    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn);
+    await joinPool(noteIn, ethIn);
+    const spotPriceAfter = StakedNote.getSpotPrice();
+    // eslint-disable-next-line no-underscore-dangle
+    expect(spotPriceAfter._hex).to.equal(expectedPrice._hex);
+    expect(spotPriceAfter.div(spotPriceBefore).toNumber()).to.equal(2);
   });
 
   it('doubling NOTE in pool halves NOTE price', async () => {
     const noteIn = TypedBigNumber.fromBalance(100e8, 'NOTE', false);
     const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('0'), 'ETH', false);
-    const spotPriceBefore = StakedNote.getSpotPrice()
-    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn)
-    await joinPool(noteIn, ethIn)
-    const spotPriceAfter = StakedNote.getSpotPrice()
-    expect(spotPriceAfter._hex).to.equal(expectedPrice._hex)
-    expect(spotPriceBefore.div(spotPriceAfter).toNumber()).to.equal(2)
+    const spotPriceBefore = StakedNote.getSpotPrice();
+    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn);
+    await joinPool(noteIn, ethIn);
+    const spotPriceAfter = StakedNote.getSpotPrice();
+    // eslint-disable-next-line no-underscore-dangle
+    expect(spotPriceAfter._hex).to.equal(expectedPrice._hex);
+    expect(spotPriceBefore.div(spotPriceAfter).toNumber()).to.equal(2);
   });
 });

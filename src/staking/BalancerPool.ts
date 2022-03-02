@@ -143,8 +143,8 @@ export default class BalancerPool {
   public static getSpotPrice() {
     return BalancerPool.getExpectedPriceImpact(
       TypedBigNumber.fromBalance(0, 'NOTE', false),
-      TypedBigNumber.fromBalance(0, 'ETH', false)
-    )
+      TypedBigNumber.fromBalance(0, 'ETH', false),
+    );
   }
 
   /**
@@ -152,14 +152,16 @@ export default class BalancerPool {
    * @param spotPrice NOTE per ETH in 18 decimals
    */
   public static spotPriceToUSD(spotPrice: BigNumber) {
-    return TypedBigNumber.fromBalance(spotPrice, 'ETH', false).toInternalPrecision().toUSD()
+    return TypedBigNumber.fromBalance(spotPrice, 'ETH', false).toInternalPrecision().toUSD();
   }
 
   public static getExpectedPriceImpact(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
     const {ethBalance, noteBalance} = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
-    const noteRatio = noteBalance.add(noteAmount).scale(1e10, 1).scale(BalancerPool.BPT_PRECISION, BalancerPool.NOTE_WEIGHT).n;
+    // Scale NOTE token up to 1e18 for the ratio
+    const noteRatio = noteBalance.add(noteAmount).scale(1e10, 1)
+      .scale(BalancerPool.BPT_PRECISION, BalancerPool.NOTE_WEIGHT).n;
     const ethRatio = ethBalance.add(ethAmount).scale(BalancerPool.BPT_PRECISION, BalancerPool.ETH_WEIGHT).n;
 
     // Returns the expected NOTE/ETH price after some investment (does not take fees into account)
