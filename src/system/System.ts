@@ -440,6 +440,14 @@ export default class System {
     return this.contracts.notionalProxy;
   }
 
+  public getStakedNote() {
+    return this.contracts.sNOTE;
+  }
+
+  public getTreasuryManager() {
+    return this.contracts.treasury;
+  }
+
   public getAllCurrencies(): Currency[] {
     return Array.from(this.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
   }

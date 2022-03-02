@@ -3,16 +3,12 @@ import {BigNumberType, TypedBigNumber} from '..';
 import {RATE_PRECISION} from '../config/constants';
 import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
 import {System} from '../system';
-import {SNOTE} from '../typechain/SNOTE';
 import BalancerPool from './BalancerPool';
 
 export default class StakedNote extends BalancerPool {
-  constructor(public sNOTE: SNOTE) {
-    super();
-  }
-
-  private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
-    return populateTxnAndGas(this.sNOTE, msgSender, methodName, methodArgs);
+  private static async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
+    const sNOTE = System.getSystem().getStakedNote();
+    return populateTxnAndGas(sNOTE, msgSender, methodName, methodArgs);
   }
 
   /**
@@ -25,19 +21,19 @@ export default class StakedNote extends BalancerPool {
    * @param overrides transaction overrides
    * @returns a populated transaction
    */
-  public async mintFromETH(
+  public static async mintFromETH(
     noteAmount: TypedBigNumber,
     ethAmount: TypedBigNumber,
     address: string,
     bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.getExpectedBPT(noteAmount, ethAmount)
+    const minBPT = StakedNote.getExpectedBPT(noteAmount, ethAmount)
       .mul((1 - bptSlippagePercent) * RATE_PRECISION)
       .div(RATE_PRECISION);
     const ethOverrides = Object.assign(overrides, {value: ethAmount.n}) as ethers.PayableOverrides;
 
-    return this.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
+    return StakedNote.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
 
   /**
@@ -50,17 +46,17 @@ export default class StakedNote extends BalancerPool {
    * @param overrides transaction overrides
    * @returns a populated transaction
    */
-  public async mintFromWETH(
+  public static async mintFromWETH(
     noteAmount: TypedBigNumber,
     ethAmount: TypedBigNumber,
     address: string,
     bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const minBPT = this.getExpectedBPT(noteAmount, ethAmount)
+    const minBPT = StakedNote.getExpectedBPT(noteAmount, ethAmount)
       .mul((1 - bptSlippagePercent) * RATE_PRECISION)
       .div(RATE_PRECISION);
-    return this.populateTxnAndGas(address, 'mintFromWETH', [noteAmount.n, ethAmount.n, minBPT, overrides]);
+    return StakedNote.populateTxnAndGas(address, 'mintFromWETH', [noteAmount.n, ethAmount.n, minBPT, overrides]);
   }
 
   /**
@@ -72,34 +68,34 @@ export default class StakedNote extends BalancerPool {
    * @param overrides
    * @returns a populated transaction
    */
-  public async redeem(
+  public static async redeem(
     sNOTEAmount: TypedBigNumber,
     address: string,
     blockTime = getNowSeconds(),
     overrides = {} as Overrides,
   ) {
     sNOTEAmount.checkType(BigNumberType.sNOTE);
-    if (!this.canAccountRedeem(address, blockTime)) {
+    if (!StakedNote.canAccountRedeem(address, blockTime)) {
       throw Error(`Account ${address} not in redemption window`);
     }
 
-    return this.populateTxnAndGas(address, 'redeem', [sNOTEAmount.n, overrides]);
+    return StakedNote.populateTxnAndGas(address, 'redeem', [sNOTEAmount.n, overrides]);
   }
 
   /**
    * Starts a cool down for the given address
    * @param address address of the cool down to initiate
    */
-  public async startCoolDown(address: string, overrides = {} as Overrides) {
-    return this.populateTxnAndGas(address, 'startCoolDown', [overrides]);
+  public static async startCoolDown(address: string, overrides = {} as Overrides) {
+    return StakedNote.populateTxnAndGas(address, 'startCoolDown', [overrides]);
   }
 
   /**
    * Stops a cool down for the given address
    * @param address address of the cool down to stop
    */
-  public async stopCoolDown(address: string, overrides = {} as Overrides) {
-    return this.populateTxnAndGas(address, 'stopCoolDown', [overrides]);
+  public static async stopCoolDown(address: string, overrides = {} as Overrides) {
+    return StakedNote.populateTxnAndGas(address, 'stopCoolDown', [overrides]);
   }
 
   /**
@@ -110,9 +106,10 @@ export default class StakedNote extends BalancerPool {
    * @returns redeemWindowBegin when the account can begin to redeem sNOTE
    * @returns redeemWindowEnd when the redeem window will end
    */
-  public async accountCoolDown(address: string, blockTime = getNowSeconds()) {
+  public static async accountCoolDown(address: string, blockTime = getNowSeconds()) {
     const {redeemWindowSeconds} = System.getSystem().getStakedNoteParameters();
-    const redeemWindowBegin = await this.sNOTE.accountRedeemWindowBegin(address);
+    const sNOTE = System.getSystem().getStakedNote();
+    const redeemWindowBegin = await sNOTE.accountRedeemWindowBegin(address);
     const redeemWindowEnd = redeemWindowBegin.add(redeemWindowSeconds);
     const isInCoolDown = !redeemWindowBegin.isZero() && redeemWindowEnd.gte(blockTime);
 
@@ -125,8 +122,8 @@ export default class StakedNote extends BalancerPool {
    * @param blockTime
    * @returns true if the account can redeem
    */
-  public async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
-    const {redeemWindowBegin, redeemWindowEnd} = await this.accountCoolDown(address, blockTime);
+  public static async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
+    const {redeemWindowBegin, redeemWindowEnd} = await StakedNote.accountCoolDown(address, blockTime);
     return !redeemWindowBegin.isZero() && redeemWindowBegin.lte(blockTime) && redeemWindowEnd.gte(blockTime);
   }
 }

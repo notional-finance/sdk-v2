@@ -1,7 +1,7 @@
 import {BigNumber, ethers} from 'ethers';
 import {System} from '../../src/system';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
-import {Asset, Contracts} from '../../src/libs/types';
+import {Asset, Contracts, StakedNoteParameters} from '../../src/libs/types';
 import GraphClient from '../../src/GraphClient';
 import {DataSourceType} from '../../src/system/datasource';
 import MockCache from './MockCache';
@@ -298,5 +298,9 @@ export default class MockSystem extends System {
   ) {
     const key = `${currencyId}:${market.settlementDate}:${maturity}`;
     this.settlementMarkets.set(key, market);
+  }
+
+  public setStakedNoteParameters(params: StakedNoteParameters) {
+    this.dataSource.stakedNoteParameters = params;
   }
 }
