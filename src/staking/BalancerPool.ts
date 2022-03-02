@@ -1,5 +1,5 @@
 import {gql} from '@apollo/client/core';
-import {ethers} from 'ethers';
+import {BigNumber, ethers} from 'ethers';
 import {BigNumberType, TypedBigNumber} from '..';
 import {INTERNAL_TOKEN_PRECISION} from '../config/constants';
 import GraphClient from '../GraphClient';
@@ -140,18 +140,33 @@ export default class BalancerPool {
     throw Error('Insufficient liquidity');
   }
 
-  public static async getExpectedPriceImpact(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
+  public static getSpotPrice() {
+    return BalancerPool.getExpectedPriceImpact(
+      TypedBigNumber.fromBalance(0, 'NOTE', false),
+      TypedBigNumber.fromBalance(0, 'ETH', false)
+    )
+  }
+
+  /**
+   * Returns the spot price of 1 NOTE in USD
+   * @param spotPrice NOTE per ETH in 18 decimals
+   */
+  public static spotPriceToUSD(spotPrice: BigNumber) {
+    return TypedBigNumber.fromBalance(spotPrice, 'ETH', false).toInternalPrecision().toUSD()
+  }
+
+  public static getExpectedPriceImpact(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
     const {ethBalance, noteBalance} = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
-    const noteRatio = noteBalance.add(noteAmount).scale(BalancerPool.BPT_PRECISION, BalancerPool.NOTE_WEIGHT).n;
+    const noteRatio = noteBalance.add(noteAmount).scale(1e10, 1).scale(BalancerPool.BPT_PRECISION, BalancerPool.NOTE_WEIGHT).n;
     const ethRatio = ethBalance.add(ethAmount).scale(BalancerPool.BPT_PRECISION, BalancerPool.ETH_WEIGHT).n;
 
     // Returns the expected NOTE/ETH price after some investment (does not take fees into account)
-    return noteRatio.mul(BalancerPool.BPT_PRECISION).div(ethRatio);
+    return ethRatio.mul(BalancerPool.BPT_PRECISION).div(noteRatio);
   }
 
-  public static async getStakedNOTEPoolValue() {
+  public static getStakedNOTEPoolValue() {
     const {
       ethBalance, sNOTEBptBalance, noteBalance, totalSupply,
     } = System.getSystem().getStakedNoteParameters();
@@ -160,7 +175,7 @@ export default class BalancerPool {
     return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 
-  public static async getBptValue() {
+  public static getBptValue() {
     const {ethBalance, noteBalance, totalSupply} = System.getSystem().getStakedNoteParameters();
     const ethValue = ethBalance.scale(1, totalSupply);
     const noteValue = noteBalance.scale(1, totalSupply);

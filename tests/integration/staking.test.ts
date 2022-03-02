@@ -83,20 +83,37 @@ describe('staking test', () => {
     });
   });
 
-  it('allows entering the pool with minimal slippage', async () => {
-    // Attempt to join the pool, calculate the BPT minted
-    const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
-    const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
-    const expectedBPT = StakedNote.getExpectedBPT(noteIn, ethIn);
-
+  async function joinPool(noteIn: TypedBigNumber, ethIn: TypedBigNumber) {
     const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [1, [ethIn.n, noteIn.n]]);
-    const balanceBefore = await balancerPool.balanceOf(noteWhale.address);
     await balancerVault.connect(noteWhale).joinPool(poolId, noteWhale.address, noteWhale.address, {
       assets,
       maxAmountsIn: [ethers.utils.parseEther('10000'), ethers.utils.parseEther('10000')],
       userData,
       fromInternalBalance: false,
     });
+
+    const {balances} = await balancerVault.getPoolTokens(poolId);
+    const totalSupply = await balancerPool.totalSupply();
+    system.setStakedNoteParameters({
+      poolId,
+      coolDownTimeInSeconds: 100,
+      redeemWindowSeconds: 500,
+      ethBalance: TypedBigNumber.fromBalance(balances[0], 'ETH', false),
+      noteBalance: TypedBigNumber.fromBalance(balances[1], 'NOTE', false),
+      totalSupply,
+      sNOTEBptBalance: BigNumber.from('0'),
+      swapFee: ethers.utils.parseEther('0.005'),
+    });
+  }
+
+  it('allows entering the pool with minimal slippage', async () => {
+    // Attempt to join the pool, calculate the BPT minted
+    const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
+    const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
+    const expectedBPT = StakedNote.getExpectedBPT(noteIn, ethIn);
+    const balanceBefore = await balancerPool.balanceOf(noteWhale.address);
+
+    await joinPool(noteIn, ethIn)
     const balanceAfter = await balancerPool.balanceOf(noteWhale.address);
     const diff = balanceAfter.sub(balanceBefore);
     const errorFactor = (1 - parseFloat(ethers.utils.formatUnits(expectedBPT, 18))
@@ -104,7 +121,25 @@ describe('staking test', () => {
     expect(errorFactor).to.be.lessThan(1e-12);
   });
 
-  it('calculates the proper price impact of a trade', async () => {
-    await setChainState(forkedBlockNumber);
+  it('doubling eth in pool doubles NOTE price', async () => {
+    const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
+    const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
+    const spotPriceBefore = StakedNote.getSpotPrice()
+    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn)
+    await joinPool(noteIn, ethIn)
+    const spotPriceAfter = StakedNote.getSpotPrice()
+    expect(spotPriceAfter._hex).to.equal(expectedPrice._hex)
+    expect(spotPriceAfter.div(spotPriceBefore).toNumber()).to.equal(2)
+  });
+
+  it('doubling NOTE in pool halves NOTE price', async () => {
+    const noteIn = TypedBigNumber.fromBalance(100e8, 'NOTE', false);
+    const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('0'), 'ETH', false);
+    const spotPriceBefore = StakedNote.getSpotPrice()
+    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn)
+    await joinPool(noteIn, ethIn)
+    const spotPriceAfter = StakedNote.getSpotPrice()
+    expect(spotPriceAfter._hex).to.equal(expectedPrice._hex)
+    expect(spotPriceBefore.div(spotPriceAfter).toNumber()).to.equal(2)
   });
 });
