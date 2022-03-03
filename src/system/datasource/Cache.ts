@@ -57,6 +57,7 @@ export default class Cache extends DataSource {
   async refreshData() {
     if (this.cacheURL === null) return;
     const parsedObject = JSON.parse(await this.getCacheData(), this.parseMap);
+    this.stakedNoteParameters = parsedObject.stakedNoteParameters;
 
     parsedObject.cashGroups.forEach((value: any, key: number) => {
       const currentCashGroup = this.cashGroups.get(key);

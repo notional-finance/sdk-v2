@@ -1,9 +1,16 @@
 import {BigNumber, BigNumberish, BytesLike} from 'ethers';
-import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
-import {ERC20} from '../typechain/ERC20';
-import {IAggregator} from '../typechain/IAggregator';
-import {NTokenERC20} from '../typechain/NTokenERC20';
 import TypedBigNumber from './TypedBigNumber';
+import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
+import {BalancerPool} from '../typechain/BalancerPool';
+import {BalancerVault} from '../typechain/BalancerVault';
+import {ERC20} from '../typechain/ERC20';
+import {Governor} from '../typechain/Governor';
+import {IAggregator} from '../typechain/IAggregator';
+import {NoteERC20} from '../typechain/NoteERC20';
+import {NTokenERC20} from '../typechain/NTokenERC20';
+import {SNOTE} from '../typechain/SNOTE';
+import {TreasuryManager} from '../typechain/TreasuryManager';
+import {Notional as NotionalProxyTypechain} from '../typechain/Notional';
 
 export enum NTokenStatus {
   Ok = 'Ok',
@@ -202,4 +209,25 @@ export interface SettlementMarket {
   totalfCash: TypedBigNumber;
   totalAssetCash: TypedBigNumber;
   totalLiquidity: TypedBigNumber;
+}
+
+export interface StakedNoteParameters {
+  poolId: string;
+  coolDownTimeInSeconds: number;
+  redeemWindowSeconds: number;
+  ethBalance: TypedBigNumber;
+  noteBalance: TypedBigNumber;
+  totalSupply: BigNumber;
+  sNOTEBptBalance: BigNumber;
+  swapFee: BigNumber;
+}
+
+export interface Contracts {
+  notionalProxy: NotionalProxyTypechain;
+  sNOTE: SNOTE;
+  note: NoteERC20;
+  governor: Governor;
+  treasury: TreasuryManager;
+  balancerVault: BalancerVault;
+  balancerPool: BalancerPool;
 }

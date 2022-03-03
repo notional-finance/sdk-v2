@@ -1,9 +1,8 @@
 import {BigNumber, ethers} from 'ethers';
 import {System} from '../../src/system';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
-import {Asset} from '../../src/libs/types';
+import {Asset, Contracts, StakedNoteParameters} from '../../src/libs/types';
 import GraphClient from '../../src/GraphClient';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
 import {DataSourceType} from '../../src/system/datasource';
 import MockCache from './MockCache';
 
@@ -244,13 +243,13 @@ export default class MockSystem extends System {
       systemQueryResult,
       9999,
       ({} as unknown) as GraphClient,
-      ({} as unknown) as NotionalTypechain,
+      ({} as unknown) as Contracts,
       provider,
       DataSourceType.Cache,
       30000,
     );
     this.dataSource = new MockCache(
-      ({} as unknown) as NotionalTypechain,
+      ({} as unknown) as Contracts,
       provider,
       this.currencies,
       this.ethRates,
@@ -299,5 +298,9 @@ export default class MockSystem extends System {
   ) {
     const key = `${currencyId}:${market.settlementDate}:${maturity}`;
     this.settlementMarkets.set(key, market);
+  }
+
+  public setStakedNoteParameters(params: StakedNoteParameters) {
+    this.dataSource.stakedNoteParameters = params;
   }
 }

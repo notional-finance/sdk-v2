@@ -174,7 +174,7 @@ describe('calculates interest rate risk', () => {
         return override;
       },
     });
-    expect(InterestRateRisk.getWeightedAvgInterestRate(1)).toBeCloseTo(80416666, -4);
+    expect(InterestRateRisk.getWeightedAvgInterestRate(1)).toBeCloseTo(80416666, -5);
     system.setMarketProvider(cashGroup.markets[0].marketKey, null);
   });
 

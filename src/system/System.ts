@@ -6,6 +6,7 @@ import {
   Asset,
   AssetRate,
   AssetType,
+  Contracts,
   Currency,
   EthRate,
   nToken,
@@ -23,7 +24,6 @@ import {
 import {IAggregator} from '../typechain/IAggregator';
 import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
 import {NTokenERC20} from '../typechain/NTokenERC20';
-import {Notional as NotionalProxy} from '../typechain/Notional';
 import {ERC20} from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
 import CashGroup from './CashGroup';
@@ -253,7 +253,7 @@ export default class System {
     data: SystemQueryResult,
     chainId: number,
     private graphClient: GraphClient,
-    private notionalProxy: NotionalProxy,
+    private contracts: Contracts,
     private batchProvider: ethers.providers.JsonRpcBatchProvider,
     public dataSourceType: DataSourceType,
     public refreshIntervalMS: number,
@@ -263,8 +263,9 @@ export default class System {
     System._systemInstance = this;
     this.parseQueryResult(data);
     if (dataSourceType === DataSourceType.Blockchain) {
+      // Add address lookup thingy
       this.dataSource = new Blockchain(
-        notionalProxy,
+        contracts,
         batchProvider,
         this.currencies,
         this.ethRates,
@@ -303,7 +304,7 @@ export default class System {
 
   public static async load(
     graphClient: GraphClient,
-    notionalProxy: NotionalProxy,
+    contracts: Contracts,
     batchProvider: ethers.providers.JsonRpcBatchProvider,
     chainId: number,
     refreshDataSource,
@@ -315,7 +316,7 @@ export default class System {
       data,
       chainId,
       graphClient,
-      notionalProxy,
+      contracts,
       batchProvider,
       refreshDataSource,
       refreshIntervalMS,
@@ -431,8 +432,20 @@ export default class System {
     if (this.dataSource) this.dataSource.refreshData();
   }
 
+  public getStakedNoteParameters() {
+    return this.dataSource.stakedNoteParameters;
+  }
+
   public getNotionalProxy() {
-    return this.notionalProxy;
+    return this.contracts.notionalProxy;
+  }
+
+  public getStakedNote() {
+    return this.contracts.sNOTE;
+  }
+
+  public getTreasuryManager() {
+    return this.contracts.treasury;
   }
 
   public getAllCurrencies(): Currency[] {
