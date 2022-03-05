@@ -1,9 +1,9 @@
-import {gql} from '@apollo/client/core';
-import {BigNumber, ethers} from 'ethers';
-import {BigNumberType, TypedBigNumber} from '..';
-import {INTERNAL_TOKEN_PRECISION} from '../config/constants';
+import { gql } from '@apollo/client/core';
+import { BigNumber, ethers } from 'ethers';
+import { BigNumberType, TypedBigNumber } from '..';
+import { INTERNAL_TOKEN_PRECISION } from '../config/constants';
 import GraphClient from '../GraphClient';
-import {System} from '../system';
+import { System } from '../system';
 
 const BALANCER_GRAPH_URL = 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2';
 
@@ -35,7 +35,7 @@ export default class BalancerPool {
 
   private static joinExitQuery() {
     const treasury = System.getSystem().getTreasuryManager();
-    const {poolId} = System.getSystem().getStakedNoteParameters();
+    const { poolId } = System.getSystem().getStakedNoteParameters();
     return gql`{
       joinExits(where: {user: "${treasury.address}", pool: "${poolId}"}){
         id
@@ -48,7 +48,7 @@ export default class BalancerPool {
 
   // Returns total swap fees in USD since creation
   private static swapFeeQuery() {
-    const {poolId} = System.getSystem().getStakedNoteParameters();
+    const { poolId } = System.getSystem().getStakedNoteParameters();
     return gql`{
       pool(id: "${poolId}"}){
         createTime
@@ -66,9 +66,7 @@ export default class BalancerPool {
    * @returns
    */
   public static getExpectedBPT(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
-    const {
-      ethBalance, swapFee, noteBalance, totalSupply,
-    } = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, swapFee, noteBalance, totalSupply } = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
     // These two ratios calculate how much the pool balance will change on a normalized basis.
@@ -140,6 +138,12 @@ export default class BalancerPool {
     throw Error('Insufficient liquidity');
   }
 
+  public static getOptimumETHForNOTE(noteAmount: TypedBigNumber) {
+    const { ethBalance, noteBalance } = System.getSystem().getStakedNoteParameters();
+    const ethAmount = noteAmount.scale(ethBalance.n, noteBalance.n).n;
+    return TypedBigNumber.fromBalance(ethAmount, 'ETH', false);
+  }
+
   public static getSpotPrice() {
     return BalancerPool.getExpectedPriceImpact(
       TypedBigNumber.fromBalance(0, 'NOTE', false),
@@ -156,11 +160,13 @@ export default class BalancerPool {
   }
 
   public static getExpectedPriceImpact(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
-    const {ethBalance, noteBalance} = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, noteBalance } = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
     // Scale NOTE token up to 1e18 for the ratio
-    const noteRatio = noteBalance.add(noteAmount).scale(1e10, 1)
+    const noteRatio = noteBalance
+      .add(noteAmount)
+      .scale(1e10, 1)
       .scale(BalancerPool.BPT_PRECISION, BalancerPool.NOTE_WEIGHT).n;
     const ethRatio = ethBalance.add(ethAmount).scale(BalancerPool.BPT_PRECISION, BalancerPool.ETH_WEIGHT).n;
 
@@ -169,19 +175,17 @@ export default class BalancerPool {
   }
 
   public static getStakedNOTEPoolValue() {
-    const {
-      ethBalance, sNOTEBptBalance, noteBalance, totalSupply,
-    } = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, sNOTEBptBalance, noteBalance, totalSupply } = System.getSystem().getStakedNoteParameters();
     const ethValue = ethBalance.scale(sNOTEBptBalance, totalSupply);
     const noteValue = noteBalance.scale(sNOTEBptBalance, totalSupply);
-    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
+    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
   }
 
   public static getBptValue() {
-    const {ethBalance, noteBalance, totalSupply} = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, noteBalance, totalSupply } = System.getSystem().getStakedNoteParameters();
     const ethValue = ethBalance.scale(1, totalSupply);
     const noteValue = noteBalance.scale(1, totalSupply);
-    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
+    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
   }
 
   // These three can be queried from the balancer subgraph, but we will need

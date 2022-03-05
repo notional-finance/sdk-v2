@@ -1,15 +1,15 @@
-import {expect} from 'chai';
-import {BigNumber, Contract} from 'ethers';
-import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
-import {ethers} from 'hardhat';
-import {getAccount, setChainState} from './utils';
-import {System} from '../../src/system';
+import { expect } from 'chai';
+import { BigNumber, Contract } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { ethers } from 'hardhat';
+import { getAccount, setChainState } from './utils';
+import { System } from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
-import {ERC20} from '../../src/typechain/ERC20';
-import {TypedBigNumber} from '../../src';
-import {BalancerVault} from '../../src/typechain/BalancerVault';
-import {BalancerPool} from '../../src/typechain/BalancerPool';
-import {StakedNote} from '../../src/staking';
+import { ERC20 } from '../../src/typechain/ERC20';
+import { TypedBigNumber } from '../../src';
+import { BalancerVault } from '../../src/typechain/BalancerVault';
+import { BalancerPool } from '../../src/typechain/BalancerPool';
+import { StakedNote } from '../../src/staking';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
@@ -32,7 +32,9 @@ describe('staking test', () => {
     await setChainState(forkedBlockNumber);
     const [signer] = await ethers.getSigners();
     balancerVault = new Contract(
-      '0xBA12222222228d8Ba445958a75a0704d566BF2C8', BalancerVaultABI, signer,
+      '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+      BalancerVaultABI,
+      signer,
     ) as BalancerVault;
     assets = ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5'];
     const pool2TokensFactory = await ethers.getContractAt(factoryABI, '0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0');
@@ -50,7 +52,7 @@ describe('staking test', () => {
         )
     ).wait();
     const poolAddress = txn.events.find((e) => e.event === 'PoolCreated').args[0];
-    balancerPool = await ethers.getContractAt(poolABI, poolAddress) as BalancerPool;
+    balancerPool = (await ethers.getContractAt(poolABI, poolAddress)) as BalancerPool;
     poolId = await balancerPool.getPoolId();
     const initialBalances = [ethers.utils.parseEther('10'), BigNumber.from(100e8)];
     const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
@@ -92,7 +94,7 @@ describe('staking test', () => {
       fromInternalBalance: false,
     });
 
-    const {balances} = await balancerVault.getPoolTokens(poolId);
+    const { balances } = await balancerVault.getPoolTokens(poolId);
     const totalSupply = await balancerPool.totalSupply();
     system.setStakedNoteParameters({
       poolId,
@@ -116,8 +118,8 @@ describe('staking test', () => {
     await joinPool(noteIn, ethIn);
     const balanceAfter = await balancerPool.balanceOf(noteWhale.address);
     const diff = balanceAfter.sub(balanceBefore);
-    const errorFactor = (1 - parseFloat(ethers.utils.formatUnits(expectedBPT, 18))
-      / parseFloat(ethers.utils.formatUnits(diff, 18)));
+    const errorFactor =
+      1 - parseFloat(ethers.utils.formatUnits(expectedBPT, 18)) / parseFloat(ethers.utils.formatUnits(diff, 18));
     expect(errorFactor).to.be.lessThan(1e-12);
   });
 
@@ -143,5 +145,17 @@ describe('staking test', () => {
     // eslint-disable-next-line no-underscore-dangle
     expect(spotPriceAfter._hex).to.equal(expectedPrice._hex);
     expect(spotPriceBefore.div(spotPriceAfter).toNumber()).to.equal(2);
+  });
+
+  it('adding optimal eth amount does not move price', async () => {
+    const noteIn = TypedBigNumber.fromBalance(100e8, 'NOTE', false);
+    const ethIn = StakedNote.getOptimumETHForNOTE(noteIn);
+    const spotPriceBefore = StakedNote.getSpotPrice();
+    const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn);
+    expect(spotPriceBefore._hex).to.equal(expectedPrice._hex);
+    await joinPool(noteIn, ethIn);
+    const spotPriceAfter = StakedNote.getSpotPrice();
+    // eslint-disable-next-line no-underscore-dangle
+    expect(spotPriceAfter._hex).to.equal(spotPriceBefore._hex);
   });
 });
