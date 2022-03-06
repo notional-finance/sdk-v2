@@ -36,14 +36,16 @@ export default class Blockchain extends DataSource {
         await this.contracts.sNOTE.coolDownTimeInSeconds(),
         await this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
       ]);
-    const {balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
+    const {tokens, balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
+    const noteIndex = tokens[0] === this.contracts.note.address ? 0 : 1;
+    const ethIndex = noteIndex === 1 ? 0 : 1;
 
     return {
       poolId,
       coolDownTimeInSeconds,
       redeemWindowSeconds: redeemWindowSeconds.toNumber(),
-      ethBalance: TypedBigNumber.fromBalance(balances[0], 'ETH', false),
-      noteBalance: TypedBigNumber.fromBalance(balances[1], 'NOTE', false),
+      ethBalance: TypedBigNumber.fromBalance(balances[ethIndex], 'ETH', false),
+      noteBalance: TypedBigNumber.fromBalance(balances[noteIndex], 'NOTE', false),
       totalSupply,
       sNOTEBptBalance,
       swapFee,
