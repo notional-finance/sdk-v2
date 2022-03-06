@@ -232,6 +232,10 @@ class TypedBigNumber {
     return utils.formatUnits(this.n, decimalPlaces);
   }
 
+  toFloat(): number {
+    return parseFloat(this.toExactString());
+  }
+
   toDisplayString(decimalPlaces = 3, locale = 'en-US'): string {
     const exactString = this.toExactString();
     const displayString = parseFloat(exactString).toLocaleString(locale, {
