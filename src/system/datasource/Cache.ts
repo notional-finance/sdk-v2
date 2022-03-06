@@ -57,7 +57,17 @@ export default class Cache extends DataSource {
   async refreshData() {
     if (this.cacheURL === null) return;
     const parsedObject = JSON.parse(await this.getCacheData(), this.parseMap);
-    this.stakedNoteParameters = parsedObject.stakedNoteParameters;
+    const sNOTEParams = parsedObject.dataSource.stakedNoteParameters
+    this.stakedNoteParameters = {
+      poolId: sNOTEParams.poolId,
+      coolDownTimeInSeconds: sNOTEParams.coolDownTimeInSeconds,
+      redeemWindowSeconds: sNOTEParams.redeemWindowSeconds,
+      ethBalance: TypedBigNumber.fromObject(sNOTEParams.ethBalance),
+      noteBalance: TypedBigNumber.fromObject(sNOTEParams.noteBalance),
+      totalSupply: BigNumber.from(sNOTEParams.totalSupply),
+      sNOTEBptBalance: BigNumber.from(sNOTEParams.sNOTEBptBalance),
+      swapFee: BigNumber.from(sNOTEParams.swapFee)
+    }
 
     parsedObject.cashGroups.forEach((value: any, key: number) => {
       const currentCashGroup = this.cashGroups.get(key);
