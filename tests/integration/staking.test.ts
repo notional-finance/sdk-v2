@@ -1,15 +1,15 @@
-import { expect } from 'chai';
-import { BigNumber, Contract } from 'ethers';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ethers } from 'hardhat';
-import { getAccount, setChainState } from './utils';
-import { System } from '../../src/system';
+import {expect} from 'chai';
+import {BigNumber, Contract} from 'ethers';
+import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
+import {ethers} from 'hardhat';
+import {getAccount, setChainState} from './utils';
+import {System} from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
-import { ERC20 } from '../../src/typechain/ERC20';
-import { TypedBigNumber } from '../../src';
-import { BalancerVault } from '../../src/typechain/BalancerVault';
-import { BalancerPool } from '../../src/typechain/BalancerPool';
-import { StakedNote } from '../../src/staking';
+import {ERC20} from '../../src/typechain/ERC20';
+import {TypedBigNumber} from '../../src';
+import {BalancerVault} from '../../src/typechain/BalancerVault';
+import {BalancerPool} from '../../src/typechain/BalancerPool';
+import {StakedNote} from '../../src/staking';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
@@ -94,7 +94,7 @@ describe('staking test', () => {
       fromInternalBalance: false,
     });
 
-    const { balances } = await balancerVault.getPoolTokens(poolId);
+    const {balances} = await balancerVault.getPoolTokens(poolId);
     const totalSupply = await balancerPool.totalSupply();
     system.setStakedNoteParameters({
       poolId,
@@ -118,8 +118,10 @@ describe('staking test', () => {
     await joinPool(noteIn, ethIn);
     const balanceAfter = await balancerPool.balanceOf(noteWhale.address);
     const diff = balanceAfter.sub(balanceBefore);
-    const errorFactor =
-      1 - parseFloat(ethers.utils.formatUnits(expectedBPT, 18)) / parseFloat(ethers.utils.formatUnits(diff, 18));
+    const errorFactor = 1 - (
+      parseFloat(ethers.utils.formatUnits(expectedBPT, 18))
+        / parseFloat(ethers.utils.formatUnits(diff, 18))
+    );
     expect(errorFactor).to.be.lessThan(1e-12);
   });
 
@@ -152,6 +154,7 @@ describe('staking test', () => {
     const ethIn = StakedNote.getOptimumETHForNOTE(noteIn);
     const spotPriceBefore = StakedNote.getSpotPrice();
     const expectedPrice = StakedNote.getExpectedPriceImpact(noteIn, ethIn);
+    // eslint-disable-next-line no-underscore-dangle
     expect(spotPriceBefore._hex).to.equal(expectedPrice._hex);
     await joinPool(noteIn, ethIn);
     const spotPriceAfter = StakedNote.getSpotPrice();

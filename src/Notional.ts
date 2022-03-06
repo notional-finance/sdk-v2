@@ -74,7 +74,7 @@ export default class Notional extends TransactionBuilder {
     public governance: Governance,
     public system: System,
     public provider: ethers.providers.Provider,
-    public contracts: Contracts
+    public contracts: Contracts,
   ) {
     super(system.getNotionalProxy(), system);
   }
@@ -88,7 +88,7 @@ export default class Notional extends TransactionBuilder {
       treasury: new Contract(addresses.treasury, TreasuryManagerABI, signer) as TreasuryManager,
       balancerVault: new Contract(addresses.balancerVault, BalancerVaultABI, signer) as BalancerVault,
       balancerPool: new Contract(addresses.balancerPool, BalancerPoolABI, signer) as BalancerPool,
-    }
+    };
   }
 
   /**
@@ -101,7 +101,7 @@ export default class Notional extends TransactionBuilder {
     chainId: number,
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
-    dataSourceType = DataSourceType.Cache
+    dataSourceType = DataSourceType.Cache,
   ) {
     let addresses: Addresses;
     let graphEndpoint: string;
@@ -192,11 +192,11 @@ export default class Notional extends TransactionBuilder {
 
   public parseInput(input: string, symbol: string, isInternal: boolean) {
     const bnType = TypedBigNumber.getType(symbol, isInternal);
-    const currency = this.system.getCurrencyBySymbol(symbol);
     let decimalPlaces: number;
     if (isInternal) {
       decimalPlaces = INTERNAL_TOKEN_DECIMAL_PLACES;
     } else {
+      const currency = this.system.getCurrencyBySymbol(symbol);
       decimalPlaces =
         bnType === BigNumberType.ExternalAsset
           ? currency.decimalPlaces
@@ -204,7 +204,7 @@ export default class Notional extends TransactionBuilder {
     }
 
     try {
-      const value = utils.parseUnits(input.replace(',',''), decimalPlaces);
+      const value = utils.parseUnits(input.replace(',', ''), decimalPlaces);
       return TypedBigNumber.from(BigNumber.from(value), bnType, symbol);
     } catch {
       return undefined;
@@ -213,9 +213,9 @@ export default class Notional extends TransactionBuilder {
 
   public isNotionalContract(counterparty: string) {
     return (
-      (counterparty == this.system.getNotionalProxy().address) ||
-      (counterparty == this.governance.getContract().address) ||
-      (counterparty == this.note.address)
+      counterparty == this.system.getNotionalProxy().address ||
+      counterparty == this.governance.getContract().address ||
+      counterparty == this.note.address
     );
   }
 }
