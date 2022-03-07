@@ -25,5 +25,7 @@ export default class Treasury {
     return this.populateTxnAndGas(this.manager, 'investIntoSNOTE', [noteAmount, ethAmount]);
   }
 
-  // public async submit0xLimitOrder();
+  public async submit0xLimitOrder() {
+    return null;
+  }
 }
