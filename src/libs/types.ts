@@ -11,6 +11,7 @@ import {NTokenERC20} from '../typechain/NTokenERC20';
 import {SNOTE} from '../typechain/SNOTE';
 import {TreasuryManager} from '../typechain/TreasuryManager';
 import {Notional as NotionalProxyTypechain} from '../typechain/Notional';
+import {ExchangeV3} from '../typechain/ExchangeV3';
 
 export enum NTokenStatus {
   Ok = 'Ok',
@@ -230,4 +231,5 @@ export interface Contracts {
   treasury: TreasuryManager;
   balancerVault: BalancerVault;
   balancerPool: BalancerPool;
+  exchangeV3: ExchangeV3;
 }

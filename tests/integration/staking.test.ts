@@ -1,5 +1,5 @@
-import {expect} from 'chai';
-import {BigNumber, Contract} from 'ethers';
+// import {expect} from 'chai';
+import {BigNumber, Contract, utils, Wallet} from 'ethers';
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 import {ethers} from 'hardhat';
 import {getAccount, setChainState} from './utils';
@@ -9,12 +9,15 @@ import {ERC20} from '../../src/typechain/ERC20';
 import {TypedBigNumber} from '../../src';
 import {BalancerVault} from '../../src/typechain/BalancerVault';
 import {BalancerPool} from '../../src/typechain/BalancerPool';
-import {StakedNote} from '../../src/staking';
+// import {StakedNote} from '../../src/staking';
+import Order from '../../src/staking/Order';
+import {ExchangeV3} from '../../src/typechain/ExchangeV3';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
 const ERC20ABI = require('../../src/abi/ERC20.json');
+const ExchangeV3ABI = require('../../src/abi/ExchangeV3.json');
 
 const forkedBlockNumber = 14191580;
 
@@ -22,13 +25,16 @@ describe('staking test', () => {
   const system = new MockSystem();
   let balancerVault: BalancerVault;
   let balancerPool: BalancerPool;
+  let exchangeV3: ExchangeV3;
   let assets: string[];
   let poolId: string;
   let noteWhale: SignerWithAddress;
   let wethWhale: SignerWithAddress;
+  let testWallet: Wallet;
   System.overrideSystem(system);
 
   beforeEach(async () => {
+    testWallet = new Wallet(process.env.TREASURY_MANAGER_PK as string);
     await setChainState(forkedBlockNumber);
     const [signer] = await ethers.getSigners();
     balancerVault = new Contract(
@@ -36,6 +42,11 @@ describe('staking test', () => {
       BalancerVaultABI,
       signer,
     ) as BalancerVault;
+    exchangeV3 = new Contract(
+      '0x61935cbdd02287b511119ddb11aeb42f1593b7ef',
+      ExchangeV3ABI,
+      signer,
+    ) as ExchangeV3;
     assets = ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5'];
     const pool2TokensFactory = await ethers.getContractAt(factoryABI, '0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0');
     const txn = await (
@@ -85,7 +96,7 @@ describe('staking test', () => {
     });
   });
 
-  async function joinPool(noteIn: TypedBigNumber, ethIn: TypedBigNumber) {
+  /* async function joinPool(noteIn: TypedBigNumber, ethIn: TypedBigNumber) {
     const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [1, [ethIn.n, noteIn.n]]);
     await balancerVault.connect(noteWhale).joinPool(poolId, noteWhale.address, noteWhale.address, {
       assets,
@@ -106,9 +117,9 @@ describe('staking test', () => {
       sNOTEBptBalance: BigNumber.from('0'),
       swapFee: ethers.utils.parseEther('0.005'),
     });
-  }
+  } */
 
-  it('allows entering the pool with minimal slippage', async () => {
+  /* it('allows entering the pool with minimal slippage', async () => {
     // Attempt to join the pool, calculate the BPT minted
     const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
     const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
@@ -160,5 +171,17 @@ describe('staking test', () => {
     const spotPriceAfter = StakedNote.getSpotPrice();
     // eslint-disable-next-line no-underscore-dangle
     expect(spotPriceAfter._hex).to.equal(spotPriceBefore._hex);
+  }); */
+
+  it('submits 0x order correctly', async () => {
+    const order = new Order(
+      1,
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+      utils.parseEther('4000'),
+      utils.parseEther('1'),
+    );
+    console.log(BigNumber.from(Date.now()).toString());
+    console.log(await order.hash(exchangeV3));
+    console.log(await order.sign(exchangeV3, testWallet));
   });
 });

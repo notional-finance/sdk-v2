@@ -7,5 +7,6 @@
     "networkName": "mainnet",
     "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+    "exchangeV3": "0x61935cbdd02287b511119ddb11aeb42f1593b7ef",
     "startBlock": 13094883
 }
