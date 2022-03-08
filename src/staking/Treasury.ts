@@ -38,9 +38,18 @@ export default class Treasury {
     takerAmount: BigNumberish,
   ) {
     // takerTokenAddress is hardcoded to WETH
-    const order = new Order(1, makerTokenAddress, makerAmount, takerAmount);
-    console.log(JSON.stringify(await order.hash(System.getSystem().getExchangeV3())));
-    console.log(JSON.stringify(await order.sign(System.getSystem().getExchangeV3(), signer)));
+    const system = System.getSystem();
+    const exchange = system.getExchangeV3();
+    const order = new Order(
+      1,
+      Date.now() / 1000,
+      system.getTreasuryManager().address,
+      makerTokenAddress,
+      makerAmount,
+      takerAmount,
+    );
+    console.log(JSON.stringify(await order.hash(exchange)));
+    console.log(JSON.stringify(await order.sign(exchange, signer)));
     return null;
   }
 }

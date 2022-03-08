@@ -1,5 +1,7 @@
-// import {expect} from 'chai';
-import {BigNumber, Contract, utils, Wallet} from 'ethers';
+import {expect} from 'chai';
+import {
+  BigNumber, Contract, utils, Wallet,
+} from 'ethers';
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 import {ethers} from 'hardhat';
 import {getAccount, setChainState} from './utils';
@@ -9,7 +11,7 @@ import {ERC20} from '../../src/typechain/ERC20';
 import {TypedBigNumber} from '../../src';
 import {BalancerVault} from '../../src/typechain/BalancerVault';
 import {BalancerPool} from '../../src/typechain/BalancerPool';
-// import {StakedNote} from '../../src/staking';
+import {StakedNote} from '../../src/staking';
 import Order from '../../src/staking/Order';
 import {ExchangeV3} from '../../src/typechain/ExchangeV3';
 
@@ -96,7 +98,7 @@ describe('staking test', () => {
     });
   });
 
-  /* async function joinPool(noteIn: TypedBigNumber, ethIn: TypedBigNumber) {
+  async function joinPool(noteIn: TypedBigNumber, ethIn: TypedBigNumber) {
     const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [1, [ethIn.n, noteIn.n]]);
     await balancerVault.connect(noteWhale).joinPool(poolId, noteWhale.address, noteWhale.address, {
       assets,
@@ -117,9 +119,9 @@ describe('staking test', () => {
       sNOTEBptBalance: BigNumber.from('0'),
       swapFee: ethers.utils.parseEther('0.005'),
     });
-  } */
+  }
 
-  /* it('allows entering the pool with minimal slippage', async () => {
+  it('allows entering the pool with minimal slippage', async () => {
     // Attempt to join the pool, calculate the BPT minted
     const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
     const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
@@ -171,17 +173,24 @@ describe('staking test', () => {
     const spotPriceAfter = StakedNote.getSpotPrice();
     // eslint-disable-next-line no-underscore-dangle
     expect(spotPriceAfter._hex).to.equal(spotPriceBefore._hex);
-  }); */
+  });
 
   it('submits 0x order correctly', async () => {
+    const testTS = 1646766841;
     const order = new Order(
       1,
+      testTS,
+      '0x53144559c0d4a3304e2dd9dafbd685247429216d',
       '0x6B175474E89094C44Da98b954EedeAC495271d0F',
       utils.parseEther('4000'),
       utils.parseEther('1'),
     );
-    console.log(BigNumber.from(Date.now()).toString());
-    console.log(await order.hash(exchangeV3));
-    console.log(await order.sign(exchangeV3, testWallet));
+    expect(await order.hash(exchangeV3)).to.equal(
+      '0xbaec5cafd1b3e73498132b56bb1eedbb234735fe3a0f24b03da2cd9d6e2db514',
+    );
+    expect(await order.sign(exchangeV3, testWallet)).to.equal(
+      // eslint-disable-next-line max-len
+      '0x77ddfe06461e600676f1a7987e1f0ebc13f3af0c8339a74797923247afc50c816aad8c01039215ef1cab30a1a5d6c095bdaa5d5e898843af8c87eab1b7d959d31c07',
+    );
   });
 });
