@@ -31,6 +31,8 @@ export const SECONDS_PER_BLOCK = 13;
 export const NOTE_CURRENCY_ID = 2 ** 32 - 1;
 export const STAKED_NOTE_CURRENCY_ID = 2 ** 32;
 export const MIN_INTEREST_RATE = 0;
+// 30 minutes
+export const DEFAULT_ORDER_EXPIRATION = 30 * 60 * 1000;
 
 export function secondsPerBlock(chainId: number) {
   switch (chainId) {

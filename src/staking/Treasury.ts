@@ -1,10 +1,12 @@
+import {BigNumberish, Signer} from 'ethers';
 import {TypedBigNumber} from '..';
 import {System} from '../system';
 import {populateTxnAndGas} from '../libs/utils';
 import {TreasuryManager} from '../typechain/TreasuryManager';
+import Order from './Order';
 
 export default class Treasury {
-  constructor(public treasuryManager: TreasuryManager, public manager: string) {}
+  constructor(public treasuryManager: TreasuryManager, public manager: string) { }
 
   private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
     return populateTxnAndGas(this.treasuryManager, msgSender, methodName, methodArgs);
@@ -25,7 +27,20 @@ export default class Treasury {
     return this.populateTxnAndGas(this.manager, 'investIntoSNOTE', [noteAmount, ethAmount]);
   }
 
-  public async submit0xLimitOrder() {
+  public async claimCOMP() {
+    return null;
+  }
+
+  public async submit0xLimitOrder(
+    signer: Signer,
+    makerTokenAddress: string,
+    makerAmount: BigNumberish,
+    takerAmount: BigNumberish,
+  ) {
+    // takerTokenAddress is hardcoded to WETH
+    const order = new Order(1, makerTokenAddress, makerAmount, takerAmount);
+    console.log(JSON.stringify(await order.hash(System.getSystem().getExchangeV3())));
+    console.log(JSON.stringify(await order.sign(System.getSystem().getExchangeV3(), signer)));
     return null;
   }
 }
