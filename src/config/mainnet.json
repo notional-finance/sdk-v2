@@ -7,7 +7,10 @@
     "networkName": "mainnet",
     "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
     "notional": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
+    "sNOTE": "0x38DE42F4BA8a35056b33A746A6b45bE9B1c3B9d2",
     "treasury": "0x53144559c0d4a3304e2dd9dafbd685247429216d",
+    "balancerVault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    "balancerPool": "0x6AE82385f76e3742f89cB46343B169f6ee49dE1b",
     "exchangeV3": "0x61935cbdd02287b511119ddb11aeb42f1593b7ef",
     "startBlock": 13094883
 }

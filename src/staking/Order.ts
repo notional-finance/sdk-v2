@@ -1,9 +1,9 @@
 import {
   BigNumber, BigNumberish, constants, Signer, utils,
 } from 'ethers';
-import { BytesLike } from '@ethersproject/bytes';
-import { DEFAULT_ORDER_EXPIRATION } from '../config/constants';
-import { ExchangeV3 } from '../typechain/ExchangeV3';
+import {BytesLike} from '@ethersproject/bytes';
+import {DEFAULT_ORDER_EXPIRATION} from '../config/constants';
+import {ExchangeV3} from '../typechain/ExchangeV3';
 
 const assetProxyInterface = new utils.Interface([
   'function ERC20Token(address tokenAddress)',
@@ -46,8 +46,12 @@ export default class Order {
     this.takerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
       tokens[chainId.toString()].weth,
     ]);
-    this.makerFeeAssetData = [0];
-    this.takerFeeAssetData = [0];
+    this.makerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
+      makerTokenAddress,
+    ]);
+    this.takerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
+      tokens[chainId.toString()].weth,
+    ]);
   }
 
   public async hash(exchange: ExchangeV3) {
