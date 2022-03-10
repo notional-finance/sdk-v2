@@ -62,6 +62,8 @@ export default class Order {
   public async sign(exchange: ExchangeV3, signer: Signer) {
     const hash = await this.hash(exchange);
     const signature = await signer.signMessage(utils.arrayify(hash));
+    // Signature type 7 = wallet signature verification
+    // https://github.com/0xProject/0x-protocol-specification/blob/master/v3/v3-specification.md#wallet
     return `${signature}07`;
   }
 }
