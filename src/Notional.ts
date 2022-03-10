@@ -204,7 +204,7 @@ export default class Notional extends TransactionBuilder {
     }
 
     try {
-      const value = utils.parseUnits(input.replace(',', ''), decimalPlaces);
+      const value = utils.parseUnits(input.replace(/,/g, ''), decimalPlaces);
       return TypedBigNumber.from(BigNumber.from(value), bnType, symbol);
     } catch {
       return undefined;
