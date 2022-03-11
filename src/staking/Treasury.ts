@@ -54,6 +54,9 @@ export default class Treasury {
       throw new Error(`Invalid maker token ${symbol}`);
     }
     const exchange = system.getExchangeV3();
+    if (!exchange) {
+      throw new Error('Invalid exchange contract');
+    }
     const order = new Order(
       chainId,
       Math.floor(Date.now() / 1000),

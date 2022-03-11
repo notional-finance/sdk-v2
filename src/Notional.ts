@@ -91,7 +91,7 @@ export default class Notional extends TransactionBuilder {
       treasury: new Contract(addresses.treasury, TreasuryManagerABI, signer) as TreasuryManager,
       balancerVault: new Contract(addresses.balancerVault, BalancerVaultABI, signer) as BalancerVault,
       balancerPool: new Contract(addresses.balancerPool, BalancerPoolABI, signer) as BalancerPool,
-      exchangeV3: new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3,
+      exchangeV3: addresses.exchangeV3 ? new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3 : null,
     };
   }
 
