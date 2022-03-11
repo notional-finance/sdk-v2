@@ -186,11 +186,11 @@ describe('staking test', () => {
       utils.parseEther('1'),
     );
     expect(await order.hash(exchangeV3)).to.equal(
-      '0xbaec5cafd1b3e73498132b56bb1eedbb234735fe3a0f24b03da2cd9d6e2db514',
+      '0x996fe732855bd6b9a9b3a3549775ec3f44f1755aa727e5ebfb326aabbc9540ae',
     );
     expect(await order.sign(exchangeV3, testWallet)).to.equal(
       // eslint-disable-next-line max-len
-      '0x77ddfe06461e600676f1a7987e1f0ebc13f3af0c8339a74797923247afc50c816aad8c01039215ef1cab30a1a5d6c095bdaa5d5e898843af8c87eab1b7d959d31c07',
+      '0xe4896c05c16f849c72086787af0c430b0be4b644aa4a8aa0bf3a7ddcf43d370e0ee3bcc79b8610ac47ab22a54bd1d07b7a7f5018cfb400fc596dc99f3a258a731b07',
     );
   });
 });

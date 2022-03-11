@@ -231,5 +231,5 @@ export interface Contracts {
   treasury: TreasuryManager;
   balancerVault: BalancerVault;
   balancerPool: BalancerPool;
-  exchangeV3: ExchangeV3;
+  exchangeV3: ExchangeV3 | null;
 }
