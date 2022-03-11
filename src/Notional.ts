@@ -26,6 +26,7 @@ import {Governor} from './typechain/Governor';
 import {TreasuryManager} from './typechain/TreasuryManager';
 import {BalancerPool} from './typechain/BalancerPool';
 import {BalancerVault} from './typechain/BalancerVault';
+import {ExchangeV3} from './typechain/ExchangeV3';
 import {Contracts} from '.';
 
 interface Addresses {
@@ -37,6 +38,7 @@ interface Addresses {
   balancerVault: string;
   balancerPool: string;
   treasury: string;
+  exchangeV3: string;
 }
 
 /* ABI imports */
@@ -47,6 +49,7 @@ const BalancerPoolABI = require('./abi/BalancerPool.json');
 const sNOTEABI = require('./abi/sNOTE.json');
 const GovernorABI = require('./abi/Governor.json');
 const TreasuryManagerABI = require('./abi/TreasuryManager.json');
+const ExchangeV3ABI = require('./abi/ExchangeV3.json');
 
 /* eslint-disable */
 let localAddresses: any;
@@ -88,6 +91,7 @@ export default class Notional extends TransactionBuilder {
       treasury: new Contract(addresses.treasury, TreasuryManagerABI, signer) as TreasuryManager,
       balancerVault: new Contract(addresses.balancerVault, BalancerVaultABI, signer) as BalancerVault,
       balancerPool: new Contract(addresses.balancerPool, BalancerPoolABI, signer) as BalancerPool,
+      exchangeV3: addresses.exchangeV3 ? new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3 : null,
     };
   }
 

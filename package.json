@@ -56,7 +56,9 @@
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
+    "@ethersproject/bytes": "^5.5.0",
     "abi-decoder": "^2.4.0",
+    "axios": "^0.26.0",
     "bnc-sdk": "^3.3.4",
     "cross-fetch": "^3.0.6",
     "ethers": "5.4.4",

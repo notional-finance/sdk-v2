@@ -1,5 +1,7 @@
 import {expect} from 'chai';
-import {BigNumber, Contract} from 'ethers';
+import {
+  BigNumber, Contract, utils, Wallet,
+} from 'ethers';
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 import {ethers} from 'hardhat';
 import {getAccount, setChainState} from './utils';
@@ -10,11 +12,14 @@ import {TypedBigNumber} from '../../src';
 import {BalancerVault} from '../../src/typechain/BalancerVault';
 import {BalancerPool} from '../../src/typechain/BalancerPool';
 import {StakedNote} from '../../src/staking';
+import Order from '../../src/staking/Order';
+import {ExchangeV3} from '../../src/typechain/ExchangeV3';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
 const ERC20ABI = require('../../src/abi/ERC20.json');
+const ExchangeV3ABI = require('../../src/abi/ExchangeV3.json');
 
 const forkedBlockNumber = 14191580;
 
@@ -22,13 +27,16 @@ describe('staking test', () => {
   const system = new MockSystem();
   let balancerVault: BalancerVault;
   let balancerPool: BalancerPool;
+  let exchangeV3: ExchangeV3;
   let assets: string[];
   let poolId: string;
   let noteWhale: SignerWithAddress;
   let wethWhale: SignerWithAddress;
+  let testWallet: Wallet;
   System.overrideSystem(system);
 
   beforeEach(async () => {
+    testWallet = new Wallet(process.env.TREASURY_MANAGER_PK as string);
     await setChainState(forkedBlockNumber);
     const [signer] = await ethers.getSigners();
     balancerVault = new Contract(
@@ -36,6 +44,11 @@ describe('staking test', () => {
       BalancerVaultABI,
       signer,
     ) as BalancerVault;
+    exchangeV3 = new Contract(
+      '0x61935cbdd02287b511119ddb11aeb42f1593b7ef',
+      ExchangeV3ABI,
+      signer,
+    ) as ExchangeV3;
     assets = ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5'];
     const pool2TokensFactory = await ethers.getContractAt(factoryABI, '0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0');
     const txn = await (
@@ -160,5 +173,24 @@ describe('staking test', () => {
     const spotPriceAfter = StakedNote.getSpotPrice();
     // eslint-disable-next-line no-underscore-dangle
     expect(spotPriceAfter._hex).to.equal(spotPriceBefore._hex);
+  });
+
+  it('submits 0x order correctly', async () => {
+    const testTS = 1646766841;
+    const order = new Order(
+      1,
+      testTS,
+      '0x53144559c0d4a3304e2dd9dafbd685247429216d',
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+      utils.parseEther('4000'),
+      utils.parseEther('1'),
+    );
+    expect(await order.hash(exchangeV3)).to.equal(
+      '0x996fe732855bd6b9a9b3a3549775ec3f44f1755aa727e5ebfb326aabbc9540ae',
+    );
+    expect(await order.sign(exchangeV3, testWallet)).to.equal(
+      // eslint-disable-next-line max-len
+      '0xe4896c05c16f849c72086787af0c430b0be4b644aa4a8aa0bf3a7ddcf43d370e0ee3bcc79b8610ac47ab22a54bd1d07b7a7f5018cfb400fc596dc99f3a258a731b07',
+    );
   });
 });
