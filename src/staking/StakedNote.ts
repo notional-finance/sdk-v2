@@ -71,6 +71,9 @@ export default class StakedNote extends BalancerPool {
   public static async redeem(
     sNOTEAmount: TypedBigNumber,
     address: string,
+    minWETH: TypedBigNumber,
+    minNOTE: TypedBigNumber,
+    redeemWETH: boolean,
     blockTime = getNowSeconds(),
     overrides = {} as Overrides,
   ) {
@@ -79,7 +82,13 @@ export default class StakedNote extends BalancerPool {
       throw Error(`Account ${address} not in redemption window`);
     }
 
-    return StakedNote.populateTxnAndGas(address, 'redeem', [sNOTEAmount.n, overrides]);
+    return StakedNote.populateTxnAndGas(address, 'redeem', [
+      sNOTEAmount.n,
+      minWETH.n,
+      minNOTE.n,
+      redeemWETH,
+      overrides,
+    ]);
   }
 
   /**
