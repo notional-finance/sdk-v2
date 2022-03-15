@@ -17,7 +17,7 @@ import {BalancerPool} from '../../src/typechain/BalancerPool';
 import {StakedNote} from '../../src/staking';
 // import Order from '../../src/staking/Order';
 // import {ExchangeV3} from '../../src/typechain/ExchangeV3';
-import { RATE_PRECISION } from '../../src/config/constants';
+import {RATE_PRECISION} from '../../src/config/constants';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
@@ -197,7 +197,7 @@ describe('staking test', () => {
   //     '0x996fe732855bd6b9a9b3a3549775ec3f44f1755aa727e5ebfb326aabbc9540ae',
   //   );
   //   expect(await order.sign(exchangeV3, testWallet)).to.equal(
-  //     // eslint-disable-next-line max-len
+  // eslint-disable-next-line max-len
   //     '0xe4896c05c16f849c72086787af0c430b0be4b644aa4a8aa0bf3a7ddcf43d370e0ee3bcc79b8610ac47ab22a54bd1d07b7a7f5018cfb400fc596dc99f3a258a731b07',
   //   );
   // });
@@ -207,14 +207,15 @@ describe('staking test', () => {
     const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
     await joinPool(noteIn, ethIn);
     const bptExitAmount = await balancerPool.balanceOf(noteWhale.address);
-    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(TypedBigNumber.fromBalance(bptExitAmount, 'sNOTE', false));
-    const minETH = ethClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION)
-    const minNOTE = noteClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION)
-    
+    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(
+      TypedBigNumber.fromBalance(bptExitAmount, 'sNOTE', false),
+    );
+    const minETH = ethClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION);
+    const minNOTE = noteClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION);
 
     // Exit pool results in the expected amounts
-    const noteBalanceBefore = await note.balanceOf(noteWhale.address)
-    const wethBalanceBefore = await weth.balanceOf(noteWhale.address)
+    const noteBalanceBefore = await note.balanceOf(noteWhale.address);
+    const wethBalanceBefore = await weth.balanceOf(noteWhale.address);
     const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [1, bptExitAmount]);
     await balancerVault.connect(noteWhale).exitPool(poolId, noteWhale.address, noteWhale.address, {
       assets,
@@ -222,12 +223,12 @@ describe('staking test', () => {
       userData,
       toInternalBalance: false,
     });
-    const noteBalanceAfter = await note.balanceOf(noteWhale.address)
-    const wethBalanceAfter = await weth.balanceOf(noteWhale.address)
+    const noteBalanceAfter = await note.balanceOf(noteWhale.address);
+    const wethBalanceAfter = await weth.balanceOf(noteWhale.address);
 
-    const noteDiff = noteBalanceAfter.sub(noteBalanceBefore).sub(noteClaim.n).toNumber()
-    const ethDiff = wethBalanceAfter.sub(wethBalanceBefore).sub(ethClaim.n).toNumber()
-    expect(noteDiff).to.be.lessThan(100)
-    expect(ethDiff).to.be.lessThan(100)
-  })
+    const noteDiff = noteBalanceAfter.sub(noteBalanceBefore).sub(noteClaim.n).toNumber();
+    const ethDiff = wethBalanceAfter.sub(wethBalanceBefore).sub(ethClaim.n).toNumber();
+    expect(noteDiff).to.be.lessThan(100);
+    expect(ethDiff).to.be.lessThan(100);
+  });
 });

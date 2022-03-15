@@ -76,9 +76,9 @@ export default class StakedNote extends BalancerPool {
     slippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const { ethClaim, noteClaim } = this.getRedemptionValue(sNOTEAmount)
-    const minETH = ethClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION)
-    const minNOTE = noteClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION)
+    const {ethClaim, noteClaim} = this.getRedemptionValue(sNOTEAmount);
+    const minETH = ethClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION);
+    const minNOTE = noteClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION);
 
     if (!StakedNote.canAccountRedeem(address, blockTime)) {
       throw Error(`Account ${address} not in redemption window`);
@@ -94,7 +94,7 @@ export default class StakedNote extends BalancerPool {
     sNOTEAmount.checkType(BigNumberType.sNOTE);
     const {sNOTETotalSupply, sNOTEBptBalance} = System.getSystem().getStakedNoteParameters();
     // All three of these factors are in 1e18 decimals
-    return sNOTEBptBalance.mul(sNOTEAmount.n).div(sNOTETotalSupply.n)
+    return sNOTEBptBalance.mul(sNOTEAmount.n).div(sNOTETotalSupply.n);
   }
 
   /**
@@ -103,13 +103,13 @@ export default class StakedNote extends BalancerPool {
   public static getRedemptionValue(sNOTEAmount: TypedBigNumber) {
     sNOTEAmount.checkType(BigNumberType.sNOTE);
     const {ethBalance, noteBalance, balancerPoolTotalSupply} = System.getSystem().getStakedNoteParameters();
-    const bptTokenClaim = this.getPoolTokenShare(sNOTEAmount)
+    const bptTokenClaim = this.getPoolTokenShare(sNOTEAmount);
     // BPTs are a ratio of the balances held in the pool:
     // https://github.com/officialnico/balancerv2cad/blob/main/src/balancerv2cad/WeightedMath.py#L194-L198
     return {
       ethClaim: ethBalance.scale(bptTokenClaim, balancerPoolTotalSupply),
       noteClaim: noteBalance.scale(bptTokenClaim, balancerPoolTotalSupply),
-    }
+    };
   }
 
   /**

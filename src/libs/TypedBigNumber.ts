@@ -25,11 +25,11 @@ class TypedBigNumber {
   public currencyId: number;
   private _isWETH: boolean = false;
 
-  /** 
+  /**
    * WETH is handled as ETH for all internal calculations but we flag it here for other
    * methods to differentiate.
    */
-  get isWETH() { return this._isWETH }
+  get isWETH() { return this._isWETH; }
 
   private constructor(public n: BigNumber, public type: BigNumberType, public symbol: string) {
     if (symbol === 'NOTE') {
@@ -55,11 +55,12 @@ class TypedBigNumber {
   static getType(symbol: string, isInternal: boolean) {
     if (symbol === 'NOTE') {
       return BigNumberType.NOTE;
-    } else if (symbol === 'sNOTE') {
+    } if (symbol === 'sNOTE') {
       return BigNumberType.sNOTE;
-    } else if (symbol === 'WETH') {
+    } if (symbol === 'WETH') {
       // Rewrite WETH to ETH for purposes of getting the type
-      symbol = 'ETH'
+      // eslint-disable-next-line no-param-reassign
+      symbol = 'ETH';
     }
 
     const currency = System.getSystem().getCurrencyBySymbol(symbol);

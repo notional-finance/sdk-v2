@@ -34,7 +34,7 @@ export default class Blockchain extends DataSource {
       swapFee,
       coolDownTimeInSeconds,
       redeemWindowSeconds,
-      sNOTETotalSupply
+      sNOTETotalSupply,
     ] = await Promise.all([
       await this.contracts.balancerPool.getPoolId(),
       await this.contracts.balancerPool.totalSupply(),
@@ -57,7 +57,7 @@ export default class Blockchain extends DataSource {
       balancerPoolTotalSupply,
       sNOTEBptBalance,
       swapFee,
-      sNOTETotalSupply: TypedBigNumber.fromBalance(sNOTETotalSupply, 'sNOTE', false)
+      sNOTETotalSupply: TypedBigNumber.fromBalance(sNOTETotalSupply, 'sNOTE', false),
     };
   }
 

@@ -186,9 +186,9 @@ export default class BalancerPool {
   }
 
   public static getBptValue() {
-    const {ethBalance, noteBalance, balancerPoolTotalSupply: totalSupply} = System.getSystem().getStakedNoteParameters();
-    const ethValue = ethBalance.scale(1, totalSupply);
-    const noteValue = noteBalance.scale(1, totalSupply);
+    const {ethBalance, noteBalance, balancerPoolTotalSupply} = System.getSystem().getStakedNoteParameters();
+    const ethValue = ethBalance.scale(1, balancerPoolTotalSupply);
+    const noteValue = noteBalance.scale(1, balancerPoolTotalSupply);
     return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 
