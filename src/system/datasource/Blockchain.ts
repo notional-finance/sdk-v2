@@ -27,15 +27,23 @@ export default class Blockchain extends DataSource {
 
   private async fetchSNOTEParameters(): Promise<StakedNoteParameters> {
     // eslint-disable-next-line
-    const [poolId, totalSupply, sNOTEBptBalance, swapFee, coolDownTimeInSeconds, redeemWindowSeconds] =
-      await Promise.all([
-        await this.contracts.balancerPool.getPoolId(),
-        await this.contracts.balancerPool.totalSupply(),
-        await this.contracts.balancerPool.balanceOf(this.contracts.sNOTE.address),
-        await this.contracts.balancerPool.getSwapFeePercentage(),
-        await this.contracts.sNOTE.coolDownTimeInSeconds(),
-        await this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
-      ]);
+    const [
+      poolId,
+      balancerPoolTotalSupply,
+      sNOTEBptBalance,
+      swapFee,
+      coolDownTimeInSeconds,
+      redeemWindowSeconds,
+      sNOTETotalSupply
+    ] = await Promise.all([
+      await this.contracts.balancerPool.getPoolId(),
+      await this.contracts.balancerPool.totalSupply(),
+      await this.contracts.balancerPool.balanceOf(this.contracts.sNOTE.address),
+      await this.contracts.balancerPool.getSwapFeePercentage(),
+      await this.contracts.sNOTE.coolDownTimeInSeconds(),
+      await this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
+      await this.contracts.sNOTE.totalSupply(),
+    ]);
     const {tokens, balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
     const noteIndex = tokens[0] === this.contracts.note.address ? 0 : 1;
     const ethIndex = noteIndex === 1 ? 0 : 1;
@@ -46,9 +54,10 @@ export default class Blockchain extends DataSource {
       redeemWindowSeconds: redeemWindowSeconds.toNumber(),
       ethBalance: TypedBigNumber.fromBalance(balances[ethIndex], 'ETH', false),
       noteBalance: TypedBigNumber.fromBalance(balances[noteIndex], 'NOTE', false),
-      totalSupply,
+      balancerPoolTotalSupply,
       sNOTEBptBalance,
       swapFee,
+      sNOTETotalSupply: TypedBigNumber.fromBalance(sNOTETotalSupply, 'sNOTE', false)
     };
   }
 
