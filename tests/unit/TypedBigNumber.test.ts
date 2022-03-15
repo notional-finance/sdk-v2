@@ -191,4 +191,17 @@ describe('Typed Big Number', () => {
 
     setTimeout(() => { done(); }, 500);
   });
+
+  it('can build sNOTE balances', () => {
+    const sNOTE = TypedBigNumber.fromBalance(100e8, 'sNOTE', false);
+    expect(sNOTE.type).toBe(BigNumberType.sNOTE);
+  });
+
+  it('WETH balances are treated as ETH balances', () => {
+    const weth = TypedBigNumber.fromBalance(100e8, 'WETH', false);
+    const eth = TypedBigNumber.fromBalance(100e8, 'ETH', false);
+    expect(weth.isWETH).toBe(true);
+    expect(weth.symbol).toBe('ETH');
+    expect(eth.add(weth).symbol).toBe('ETH');
+  });
 });

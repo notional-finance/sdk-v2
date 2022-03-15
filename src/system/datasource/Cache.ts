@@ -64,9 +64,10 @@ export default class Cache extends DataSource {
       redeemWindowSeconds: sNOTEParams.redeemWindowSeconds,
       ethBalance: TypedBigNumber.fromObject(sNOTEParams.ethBalance),
       noteBalance: TypedBigNumber.fromObject(sNOTEParams.noteBalance),
-      totalSupply: BigNumber.from(sNOTEParams.totalSupply),
+      balancerPoolTotalSupply: BigNumber.from(sNOTEParams.balancerPoolTotalSupply),
       sNOTEBptBalance: BigNumber.from(sNOTEParams.sNOTEBptBalance),
       swapFee: BigNumber.from(sNOTEParams.swapFee),
+      sNOTETotalSupply: TypedBigNumber.fromObject(sNOTEParams.sNOTETotalSupply),
     };
 
     parsedObject.cashGroups.forEach((value: any, key: number) => {

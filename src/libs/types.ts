@@ -218,9 +218,10 @@ export interface StakedNoteParameters {
   redeemWindowSeconds: number;
   ethBalance: TypedBigNumber;
   noteBalance: TypedBigNumber;
-  totalSupply: BigNumber;
+  balancerPoolTotalSupply: BigNumber;
   sNOTEBptBalance: BigNumber;
   swapFee: BigNumber;
+  sNOTETotalSupply: TypedBigNumber;
 }
 
 export interface Contracts {
