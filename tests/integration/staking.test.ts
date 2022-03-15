@@ -1,6 +1,9 @@
 import {expect} from 'chai';
 import {
-  BigNumber, Contract, utils, Wallet,
+  BigNumber,
+  Contract,
+  // utils,
+  // Wallet,
 } from 'ethers';
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 import {ethers} from 'hardhat';
@@ -12,14 +15,15 @@ import {TypedBigNumber} from '../../src';
 import {BalancerVault} from '../../src/typechain/BalancerVault';
 import {BalancerPool} from '../../src/typechain/BalancerPool';
 import {StakedNote} from '../../src/staking';
-import Order from '../../src/staking/Order';
-import {ExchangeV3} from '../../src/typechain/ExchangeV3';
+// import Order from '../../src/staking/Order';
+// import {ExchangeV3} from '../../src/typechain/ExchangeV3';
+import {RATE_PRECISION} from '../../src/config/constants';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
 const ERC20ABI = require('../../src/abi/ERC20.json');
-const ExchangeV3ABI = require('../../src/abi/ExchangeV3.json');
+// const ExchangeV3ABI = require('../../src/abi/ExchangeV3.json');
 
 const forkedBlockNumber = 14191580;
 
@@ -27,16 +31,18 @@ describe('staking test', () => {
   const system = new MockSystem();
   let balancerVault: BalancerVault;
   let balancerPool: BalancerPool;
-  let exchangeV3: ExchangeV3;
+  // let exchangeV3: ExchangeV3;
   let assets: string[];
   let poolId: string;
   let noteWhale: SignerWithAddress;
   let wethWhale: SignerWithAddress;
-  let testWallet: Wallet;
+  // let testWallet: Wallet;
+  let weth: ERC20;
+  let note: ERC20;
   System.overrideSystem(system);
 
   beforeEach(async () => {
-    testWallet = new Wallet(process.env.TREASURY_MANAGER_PK as string);
+    // testWallet = new Wallet(process.env.TREASURY_MANAGER_PK as string);
     await setChainState(forkedBlockNumber);
     const [signer] = await ethers.getSigners();
     balancerVault = new Contract(
@@ -44,11 +50,11 @@ describe('staking test', () => {
       BalancerVaultABI,
       signer,
     ) as BalancerVault;
-    exchangeV3 = new Contract(
-      '0x61935cbdd02287b511119ddb11aeb42f1593b7ef',
-      ExchangeV3ABI,
-      signer,
-    ) as ExchangeV3;
+    // exchangeV3 = new Contract(
+    //   '0x61935cbdd02287b511119ddb11aeb42f1593b7ef',
+    //   ExchangeV3ABI,
+    //   signer,
+    // ) as ExchangeV3;
     assets = ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5'];
     const pool2TokensFactory = await ethers.getContractAt(factoryABI, '0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0');
     const txn = await (
@@ -71,8 +77,8 @@ describe('staking test', () => {
     const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256[]'], [0, initialBalances]);
     noteWhale = await getAccount('0x22341fB5D92D3d801144aA5A925F401A91418A05');
     wethWhale = await getAccount('0x6555e1cc97d3cba6eaddebbcd7ca51d75771e0b8');
-    const weth = (await ethers.getContractAt(ERC20ABI, assets[0])) as ERC20;
-    const note = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
+    weth = (await ethers.getContractAt(ERC20ABI, assets[0])) as ERC20;
+    note = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
     await weth.connect(wethWhale).transfer(noteWhale.address, ethers.utils.parseEther('1000'));
     await weth.connect(noteWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
     await note.connect(noteWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
@@ -92,9 +98,10 @@ describe('staking test', () => {
       redeemWindowSeconds: 500,
       ethBalance: TypedBigNumber.fromBalance(initialBalances[0], 'ETH', false),
       noteBalance: TypedBigNumber.fromBalance(initialBalances[1], 'NOTE', false),
-      totalSupply,
-      sNOTEBptBalance: BigNumber.from('0'),
+      balancerPoolTotalSupply: totalSupply,
+      sNOTEBptBalance: BigNumber.from(totalSupply),
       swapFee: ethers.utils.parseEther('0.005'),
+      sNOTETotalSupply: TypedBigNumber.fromBalance(totalSupply, 'sNOTE', false),
     });
   });
 
@@ -115,9 +122,10 @@ describe('staking test', () => {
       redeemWindowSeconds: 500,
       ethBalance: TypedBigNumber.fromBalance(balances[0], 'ETH', false),
       noteBalance: TypedBigNumber.fromBalance(balances[1], 'NOTE', false),
-      totalSupply,
-      sNOTEBptBalance: BigNumber.from('0'),
+      balancerPoolTotalSupply: totalSupply,
+      sNOTEBptBalance: BigNumber.from(totalSupply),
       swapFee: ethers.utils.parseEther('0.005'),
+      sNOTETotalSupply: TypedBigNumber.fromBalance(totalSupply, 'sNOTE', false),
     });
   }
 
@@ -175,22 +183,52 @@ describe('staking test', () => {
     expect(spotPriceAfter._hex).to.equal(spotPriceBefore._hex);
   });
 
-  it('submits 0x order correctly', async () => {
-    const testTS = 1646766841;
-    const order = new Order(
-      1,
-      testTS,
-      '0x53144559c0d4a3304e2dd9dafbd685247429216d',
-      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-      utils.parseEther('4000'),
-      utils.parseEther('1'),
+  // it('submits 0x order correctly', async () => {
+  //   const testTS = 1646766841;
+  //   const order = new Order(
+  //     1,
+  //     testTS,
+  //     '0x53144559c0d4a3304e2dd9dafbd685247429216d',
+  //     '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+  //     utils.parseEther('4000'),
+  //     utils.parseEther('1'),
+  //   );
+  //   expect(await order.hash(exchangeV3)).to.equal(
+  //     '0x996fe732855bd6b9a9b3a3549775ec3f44f1755aa727e5ebfb326aabbc9540ae',
+  //   );
+  //   expect(await order.sign(exchangeV3, testWallet)).to.equal(
+  // eslint-disable-next-line max-len
+  //     '0xe4896c05c16f849c72086787af0c430b0be4b644aa4a8aa0bf3a7ddcf43d370e0ee3bcc79b8610ac47ab22a54bd1d07b7a7f5018cfb400fc596dc99f3a258a731b07',
+  //   );
+  // });
+
+  it('exits a pool in proportion to redemption amounts', async () => {
+    const noteIn = TypedBigNumber.fromBalance(0, 'NOTE', false);
+    const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
+    await joinPool(noteIn, ethIn);
+    const bptExitAmount = await balancerPool.balanceOf(noteWhale.address);
+    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(
+      TypedBigNumber.fromBalance(bptExitAmount, 'sNOTE', false),
     );
-    expect(await order.hash(exchangeV3)).to.equal(
-      '0x996fe732855bd6b9a9b3a3549775ec3f44f1755aa727e5ebfb326aabbc9540ae',
-    );
-    expect(await order.sign(exchangeV3, testWallet)).to.equal(
-      // eslint-disable-next-line max-len
-      '0xe4896c05c16f849c72086787af0c430b0be4b644aa4a8aa0bf3a7ddcf43d370e0ee3bcc79b8610ac47ab22a54bd1d07b7a7f5018cfb400fc596dc99f3a258a731b07',
-    );
+    const minETH = ethClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION);
+    const minNOTE = noteClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION);
+
+    // Exit pool results in the expected amounts
+    const noteBalanceBefore = await note.balanceOf(noteWhale.address);
+    const wethBalanceBefore = await weth.balanceOf(noteWhale.address);
+    const userData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [1, bptExitAmount]);
+    await balancerVault.connect(noteWhale).exitPool(poolId, noteWhale.address, noteWhale.address, {
+      assets,
+      minAmountsOut: [minETH.n, minNOTE.n],
+      userData,
+      toInternalBalance: false,
+    });
+    const noteBalanceAfter = await note.balanceOf(noteWhale.address);
+    const wethBalanceAfter = await weth.balanceOf(noteWhale.address);
+
+    const noteDiff = noteBalanceAfter.sub(noteBalanceBefore).sub(noteClaim.n).toNumber();
+    const ethDiff = wethBalanceAfter.sub(wethBalanceBefore).sub(ethClaim.n).toNumber();
+    expect(noteDiff).to.be.lessThan(100);
+    expect(ethDiff).to.be.lessThan(100);
   });
 });

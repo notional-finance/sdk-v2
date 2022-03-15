@@ -67,7 +67,7 @@ export default class BalancerPool {
    */
   public static getExpectedBPT(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
     const {
-      ethBalance, swapFee, noteBalance, totalSupply,
+      ethBalance, swapFee, noteBalance, balancerPoolTotalSupply: totalSupply,
     } = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
@@ -178,7 +178,7 @@ export default class BalancerPool {
 
   public static getStakedNOTEPoolValue() {
     const {
-      ethBalance, sNOTEBptBalance, noteBalance, totalSupply,
+      ethBalance, sNOTEBptBalance, noteBalance, balancerPoolTotalSupply: totalSupply,
     } = System.getSystem().getStakedNoteParameters();
     const ethValue = ethBalance.scale(sNOTEBptBalance, totalSupply);
     const noteValue = noteBalance.scale(sNOTEBptBalance, totalSupply);
@@ -186,9 +186,9 @@ export default class BalancerPool {
   }
 
   public static getBptValue() {
-    const {ethBalance, noteBalance, totalSupply} = System.getSystem().getStakedNoteParameters();
-    const ethValue = ethBalance.scale(1, totalSupply);
-    const noteValue = noteBalance.scale(1, totalSupply);
+    const {ethBalance, noteBalance, balancerPoolTotalSupply} = System.getSystem().getStakedNoteParameters();
+    const ethValue = ethBalance.scale(1, balancerPoolTotalSupply);
+    const noteValue = noteBalance.scale(1, balancerPoolTotalSupply);
     return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 

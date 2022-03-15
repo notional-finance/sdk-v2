@@ -775,9 +775,10 @@
       "redeemWindowSeconds": 259200,
       "ethBalance": { "type": "BigNumber", "hex": "0x05f5e100", "bigNumberType": "External Underlying", "symbol": "ETH" },
       "noteBalance": { "type": "BigNumber", "hex": "0x02c68af0bb140000", "bigNumberType": "NOTE", "symbol": "NOTE" },
-      "totalSupply": { "type": "BigNumber", "hex": "0x07a8b6ba0efc510a" },
+      "balancerPoolTotalSupply": { "type": "BigNumber", "hex": "0x07a8b6ba0efc510a" },
       "sNOTEBptBalance": { "type": "BigNumber", "hex": "0x07a8b6ba0eed0eca" },
-      "swapFee": { "type": "BigNumber", "hex": "0x11c37937e08000" }
+      "swapFee": { "type": "BigNumber", "hex": "0x11c37937e08000" },
+      "sNOTETotalSupply": { "type": "BigNumber", "hex": "0x02c68af0bb140000", "bigNumberType": "sNOTE", "symbol": "sNOTE" }
     },
     "ethRateData": {
       "dataType": "Map",
