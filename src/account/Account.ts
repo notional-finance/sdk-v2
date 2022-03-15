@@ -173,14 +173,14 @@ export default class Account extends AccountRefresh {
    * Returns the transfer allowance for a given currency symbol
    * @returns BigNumber
    */
-  private async getAllowance(symbol: string) {
+  private async getAllowance(symbol: string, contractAddress: string = this.notionalProxy.address) {
     if (symbol === 'ETH') {
       return TypedBigNumber.from(ethers.constants.MaxUint256, BigNumberType.ExternalUnderlying, 'ETH');
     }
 
     const currency = System.getSystem().getCurrencyBySymbol(symbol);
     const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
-    const allowance = await contract.allowance(this.address, this.notionalProxy.address);
+    const allowance = await contract.allowance(this.address, contractAddress);
     return TypedBigNumber.fromBalance(allowance, symbol, false);
   }
 
@@ -204,7 +204,8 @@ export default class Account extends AccountRefresh {
    * @param overrides
    * @returns
    */
-  public async setAllowance(symbol: string, amount: BigNumber, overrides = {} as Overrides) {
+  // eslint-disable-next-line max-len
+  public async setAllowance(symbol: string, amount: BigNumber, contractAddress: string = this.notionalProxy.address, overrides = {} as Overrides) {
     const currency = System.getSystem().getCurrencyBySymbol(symbol);
     const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
     const allowance = await this.getAllowance(symbol);
@@ -212,7 +213,7 @@ export default class Account extends AccountRefresh {
       throw new Error(`Resetting allowance from ${allowance.toString()}, first set allowance to zero`);
     }
 
-    return contract.populateTransaction.approve(this.notionalProxy.address, amount, overrides);
+    return contract.populateTransaction.approve(contractAddress, amount, overrides);
   }
 
   public async fetchClaimableIncentives(account: string, blockTime = getNowSeconds()) {
