@@ -7,5 +7,10 @@
     "networkName": "kovan",
     "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
     "notional": "0x0EAE7BAdEF8f95De91fDDb74a89A786cF891Eb0e",
+    "sNOTE": "0x99aFEF3C58a5375824b7bE7fFf4080244Aa445aD",
+    "treasury": "0x049bbb3868850AEb8d606c4080A92D02CfC0b042",
+    "balancerVault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    "balancerPool": "0xAaEd510C03df5A4c9d8D660fe477E01AcDC9c561",
+    "exchangeV3": "0x4eacd0af335451709e1e7b570b8ea68edec8bc97",
     "startBlock": 27189640
 }
