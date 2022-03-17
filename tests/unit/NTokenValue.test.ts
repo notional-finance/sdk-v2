@@ -125,7 +125,6 @@ describe('nToken value', () => {
       TypedBigNumber.from(2000e8, BigNumberType.nToken, 'nUSDC'),
       currentTime - SECONDS_IN_YEAR,
       BigNumber.from(ethers.constants.WeiPerEther),
-      currentTime,
     );
     expect(incentives.toString()).toBe(BigNumber.from(0.01e8).toString());
   });

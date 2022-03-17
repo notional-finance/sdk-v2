@@ -77,7 +77,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cETH', true),
         nTokenBalance: TypedBigNumber.fromBalance(100e8, 'nETH', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
       // Leveraged nToken
       {
@@ -85,7 +85,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cDAI', true),
         nTokenBalance: TypedBigNumber.fromBalance(100e8, 'nDAI', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
       // Cross Currency fCash on USDC
       {
@@ -93,7 +93,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cUSDC', true),
         nTokenBalance: TypedBigNumber.fromBalance(0, 'nUSDC', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
       // Tether debt against cash
       {
@@ -101,7 +101,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(50e8, 'cUSDT', true),
         nTokenBalance: TypedBigNumber.fromBalance(0, 'nUSDT', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
     ];
 
@@ -189,7 +189,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cDAI', true),
         nTokenBalance: TypedBigNumber.fromBalance(100e8, 'nDAI', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
     ];
 
@@ -232,7 +232,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cDAI', true),
         nTokenBalance: TypedBigNumber.fromBalance(945e8, 'nDAI', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
     ];
 
@@ -263,7 +263,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cUSDC', true),
         nTokenBalance: TypedBigNumber.fromBalance(0, 'nUSDC', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
     ];
 
@@ -304,7 +304,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(0, 'cUSDC', true),
         nTokenBalance: TypedBigNumber.fromBalance(0, 'nUSDC', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
     ];
 
@@ -346,7 +346,7 @@ describe('calculates interest rate risk', () => {
         cashBalance: TypedBigNumber.fromBalance(5000e8, 'cUSDC', true),
         nTokenBalance: TypedBigNumber.fromBalance(0, 'nUSDC', true),
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       },
     ];
 

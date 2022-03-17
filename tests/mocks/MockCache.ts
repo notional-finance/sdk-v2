@@ -50,8 +50,8 @@ export default class MockCache extends Blockchain {
         this.nTokenAssetCashPV.set(k, pv);
         this.nTokenTotalSupply.set(k, supply);
         this.nTokenIncentiveFactors.set(k, {
-          integralTotalSupply: BigNumber.from(0),
-          lastSupplyChangeTime: BigNumber.from(getNowSeconds() - SECONDS_IN_YEAR),
+          accumulatedNOTEPerNToken: BigNumber.from(0),
+          lastAccumulatedTime: BigNumber.from(getNowSeconds() - SECONDS_IN_YEAR),
         });
         this.nTokenCashBalance.set(k, pv);
         this.nTokenLiquidityTokens.set(k, []);
