@@ -3,7 +3,7 @@ import {System, Market, CashGroup} from '.';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import {
-  INTERNAL_TOKEN_PRECISION, PERCENTAGE_BASIS, SECONDS_IN_YEAR, RATE_PRECISION,
+  INTERNAL_TOKEN_PRECISION, PERCENTAGE_BASIS, SECONDS_IN_YEAR, RATE_PRECISION, INCENTIVE_ACCUMULATION_PRECISION,
 } from '../config/constants';
 import {Asset, NTokenStatus} from '../libs/types';
 
@@ -291,37 +291,64 @@ export default class NTokenValue {
       .toNumber();
   }
 
+  /**
+   * Returns the claimable incentives for a single nToken balance
+   *
+   * @param currencyId currency id of the nToken
+   * @param nTokenBalance balance of nToken prior to any minting or redeeming
+   * @param lastClaimTime
+   * @param _accountIncentiveDebt this parameter is overwritten last claim integral supply
+   * @returns
+   */
   public static getClaimableIncentives(
     currencyId: number,
     nTokenBalance: TypedBigNumber,
     lastClaimTime: number,
-    lastClaimIntegralSupply: BigNumber,
-    currentTime = getNowSeconds(),
+    _accountIncentiveDebt: BigNumber,
   ): TypedBigNumber {
-    const {nToken, totalSupply} = NTokenValue.getNTokenFactors(currencyId);
+    // This will get rewritten in the case of migration so don't reassign to the parameter
+    let accountIncentiveDebt = BigNumber.from(_accountIncentiveDebt);
+    const {nToken} = NTokenValue.getNTokenFactors(currencyId);
     const incentiveFactors = System.getSystem().getNTokenIncentiveFactors(currencyId);
     if (!incentiveFactors) throw new Error('Incentive emission factors not found');
-
     nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
+    let incentives = BigNumber.from(0);
+    const {migrationFactors} = incentiveFactors;
 
-    const timeSinceLastClaim = currentTime - lastClaimTime;
-    if (timeSinceLastClaim < 0) return TypedBigNumber.from(0, BigNumberType.NOTE, 'NOTE');
+    if (lastClaimTime > 0 && migrationFactors && lastClaimTime >= migrationFactors.migrationTime) {
+      // nToken requires migration calculations
+      const timeSinceMigration = migrationFactors.migrationTime - lastClaimTime;
 
-    const integralTotalSupply = incentiveFactors.integralTotalSupply.add(
-      totalSupply.n.mul(currentTime - incentiveFactors.lastSupplyChangeTime.toNumber()),
+      const incentiveRate = migrationFactors.emissionRate
+        .mul(INTERNAL_TOKEN_PRECISION)
+        .mul(timeSinceMigration)
+        .div(SECONDS_IN_YEAR);
+
+      /// incentivesToClaim = (tokenBalance / totalSupply) * emissionRatePerYear * proRataYears
+      ///   where proRataYears is (timeSinceLastClaim / YEAR) * INTERNAL_TOKEN_PRECISION
+      const avgTotalSupply = migrationFactors.integralTotalSupply
+        .sub(accountIncentiveDebt) // accountIncentiveDebt here is actually the lastClaimIntegralSupply
+        .div(timeSinceMigration);
+      if (avgTotalSupply.isZero()) return TypedBigNumber.from(0, BigNumberType.NOTE, 'NOTE');
+
+      incentives = incentives.add(
+        nTokenBalance.n
+          .mul(incentiveRate)
+          .div(avgTotalSupply)
+          .div(INTERNAL_TOKEN_PRECISION),
+      );
+
+      // Set this to zero to mark the migration
+      accountIncentiveDebt = BigNumber.from(0);
+    }
+
+    // This is the post migration incentive calculation
+    incentives = incentives.add(
+      nTokenBalance.n
+        .mul(incentiveFactors.accumulatedNOTEPerNToken)
+        .div(INCENTIVE_ACCUMULATION_PRECISION)
+        .sub(accountIncentiveDebt),
     );
-    /// incentivesToClaim = (tokenBalance / totalSupply) * emissionRatePerYear * proRataYears
-    ///   where proRataYears is (timeSinceLastClaim / YEAR) * INTERNAL_TOKEN_PRECISION
-    const avgTotalSupply = integralTotalSupply.sub(lastClaimIntegralSupply).div(timeSinceLastClaim);
-    if (avgTotalSupply.isZero()) return TypedBigNumber.from(0, BigNumberType.NOTE, 'NOTE');
-
-    const proRataYears = BigNumber.from(Math.trunc((timeSinceLastClaim / SECONDS_IN_YEAR) * INTERNAL_TOKEN_PRECISION));
-
-    const incentives = nTokenBalance.n
-      .mul(nToken.incentiveEmissionRate)
-      .mul(proRataYears)
-      .div(avgTotalSupply)
-      .div(INTERNAL_TOKEN_PRECISION);
 
     return TypedBigNumber.from(incentives, BigNumberType.NOTE, 'NOTE');
   }

@@ -27,7 +27,7 @@ interface BalanceResult {
   cashBalance: BigNumber;
   nTokenBalance: BigNumber;
   lastClaimTime: BigNumber;
-  lastClaimIntegralSupply: BigNumber;
+  accountIncentiveDebt: BigNumber;
 }
 
 export interface GetAccountResult {
@@ -168,7 +168,7 @@ export default class AccountData {
             ? TypedBigNumber.from(v.nTokenBalance, BigNumberType.nToken, nTokenSymbol)
             : undefined,
           lastClaimTime: v.lastClaimTime,
-          lastClaimIntegralSupply: v.lastClaimIntegralSupply,
+          accountIncentiveDebt: v.accountIncentiveDebt,
         };
       });
   }
@@ -490,7 +490,7 @@ export default class AccountData {
         cashBalance: netCashChange,
         nTokenBalance: netNTokenChange,
         lastClaimTime: BigNumber.from(0),
-        lastClaimIntegralSupply: BigNumber.from(0),
+        accountIncentiveDebt: BigNumber.from(0),
       });
 
       return accountBalances.sort((a, b) => a.currencyId - b.currencyId);
