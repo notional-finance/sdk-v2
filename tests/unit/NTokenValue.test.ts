@@ -118,15 +118,35 @@ describe('nToken value', () => {
     expect(nTokensToMint.toString()).toEqual(BigNumber.from(200e8).toString());
   });
 
-  it('gets claimable incentives', () => {
+  it('gets claimable incentives when account requires migration', () => {
     const currentTime = getNowSeconds();
+    system.setIncentiveMigration(3, {
+      migrationTime: currentTime,
+      integralTotalSupply: ethers.constants.WeiPerEther.mul(SECONDS_IN_YEAR),
+      emissionRate: BigNumber.from('10000000000000') // 100k NOTE per year
+    })
+
     const incentives = NTokenValue.getClaimableIncentives(
       3,
-      TypedBigNumber.from(2000e8, BigNumberType.nToken, 'nUSDC'),
+      TypedBigNumber.from(100_000e8, BigNumberType.nToken, 'nUSDC'),
       currentTime - SECONDS_IN_YEAR,
       BigNumber.from(ethers.constants.WeiPerEther),
     );
-    expect(incentives.toString()).toBe(BigNumber.from(0.01e8).toString());
+
+    // Accumulate 1 NOTE under old calculation, accumulate 100k note under new calculation
+    expect(incentives.toNumber()).toBeCloseTo(1e8 + 100_000e8, -1);
+  });
+
+  it('gets claimable incentives when account has migrated', () => {
+    const incentives = NTokenValue.getClaimableIncentives(
+      3,
+      TypedBigNumber.from(1e8, BigNumberType.nToken, 'nUSDC'),
+      0, // this means we've migrated
+      BigNumber.from(0.5e8),
+    );
+
+    // Accumulate 1 NOTE per nToken, with 0.5 NOTE incentive debt
+    expect(incentives.toString()).toBe(BigNumber.from(0.5e8).toString());
   });
 
   it('gets smaller redeem ntoken values', () => {

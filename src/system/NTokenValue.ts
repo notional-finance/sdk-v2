@@ -315,29 +315,30 @@ export default class NTokenValue {
     let incentives = BigNumber.from(0);
     const migrationFactors = System.getSystem().getIncentiveMigration(currencyId);
 
-    if (lastClaimTime > 0 && migrationFactors && lastClaimTime >= migrationFactors.migrationTime) {
+    if (lastClaimTime > 0 && migrationFactors && lastClaimTime <= migrationFactors.migrationTime) {
       // nToken requires migration calculations
       const timeSinceMigration = migrationFactors.migrationTime - lastClaimTime;
 
-      const incentiveRate = migrationFactors.emissionRate
-        .mul(INTERNAL_TOKEN_PRECISION)
-        .mul(timeSinceMigration)
-        .div(SECONDS_IN_YEAR);
+      if (timeSinceMigration > 0) {
+        const incentiveRate = migrationFactors.emissionRate
+          .mul(INTERNAL_TOKEN_PRECISION)
+          .mul(timeSinceMigration)
+          .div(SECONDS_IN_YEAR);
 
-      /// incentivesToClaim = (tokenBalance / totalSupply) * emissionRatePerYear * proRataYears
-      ///   where proRataYears is (timeSinceLastClaim / YEAR) * INTERNAL_TOKEN_PRECISION
-      const avgTotalSupply = migrationFactors.integralTotalSupply
-        .sub(accountIncentiveDebt) // accountIncentiveDebt here is actually the lastClaimIntegralSupply
-        .div(timeSinceMigration);
-      if (avgTotalSupply.isZero()) return TypedBigNumber.from(0, BigNumberType.NOTE, 'NOTE');
+        /// incentivesToClaim = (tokenBalance / totalSupply) * emissionRatePerYear * proRataYears
+        ///   where proRataYears is (timeSinceLastClaim / YEAR) * INTERNAL_TOKEN_PRECISION
+        const avgTotalSupply = migrationFactors.integralTotalSupply
+          .sub(accountIncentiveDebt) // accountIncentiveDebt here is actually the lastClaimIntegralSupply
+          .div(timeSinceMigration);
+        if (avgTotalSupply.isZero()) return TypedBigNumber.from(0, BigNumberType.NOTE, 'NOTE');
 
-      incentives = incentives.add(
-        nTokenBalance.n
-          .mul(incentiveRate)
-          .div(avgTotalSupply)
-          .div(INTERNAL_TOKEN_PRECISION),
-      );
-
+        incentives = incentives.add(
+          nTokenBalance.n
+            .mul(incentiveRate)
+            .div(avgTotalSupply)
+            .div(INTERNAL_TOKEN_PRECISION),
+        );
+      }
       // Set this to zero to mark the migration
       accountIncentiveDebt = BigNumber.from(0);
     }

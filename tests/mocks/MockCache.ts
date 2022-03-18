@@ -1,6 +1,5 @@
 import {BigNumber, ethers} from 'ethers';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {SECONDS_IN_YEAR} from '../../src/config/constants';
 import {getNowSeconds} from '../../src/libs/utils';
 import {Market, CashGroup} from '../../src/system';
 import Blockchain from '../../src/system/datasource/Blockchain';
@@ -50,8 +49,10 @@ export default class MockCache extends Blockchain {
         this.nTokenAssetCashPV.set(k, pv);
         this.nTokenTotalSupply.set(k, supply);
         this.nTokenIncentiveFactors.set(k, {
-          accumulatedNOTEPerNToken: BigNumber.from(0),
-          lastAccumulatedTime: BigNumber.from(getNowSeconds() - SECONDS_IN_YEAR),
+          // In 1e18 denomination, this means we have accumulated 1 NOTE per nToken
+          // (both in 1e8 denomination)
+          accumulatedNOTEPerNToken: ethers.constants.WeiPerEther,
+          lastAccumulatedTime: BigNumber.from(getNowSeconds()),
         });
         this.nTokenCashBalance.set(k, pv);
         this.nTokenLiquidityTokens.set(k, []);
