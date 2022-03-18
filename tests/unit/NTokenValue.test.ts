@@ -221,23 +221,23 @@ describe('nToken value', () => {
 
   it('converts ntokens to ntoken value', () => {
     const nTokenValue = NTokenValue.convertNTokenToInternalAsset(
-      3,
-      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nUSDC'),
+      1,
+      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nETH'),
       false,
     );
     const nTokenValueHaircut = NTokenValue.convertNTokenToInternalAsset(
-      3,
-      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nUSDC'),
+      1,
+      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nETH'),
       true,
     );
     expect(nTokenValue.toString()).toEqual(BigNumber.from(50e8).toString());
-    expect(nTokenValueHaircut.toString()).toEqual(BigNumber.from(45e8).toString());
+    expect(nTokenValueHaircut.toString()).toEqual(BigNumber.from(42.5e8).toString());
   });
 
   it('gets ntokens to mint', () => {
     const nTokensToMint = NTokenValue.getNTokensToMint(
-      3,
-      TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cUSDC'),
+      1,
+      TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH'),
     );
     expect(nTokensToMint.toString()).toEqual(BigNumber.from(200e8).toString());
   });
