@@ -230,7 +230,7 @@ describe('calculates interest rate risk', () => {
       {
         currencyId: 2,
         cashBalance: TypedBigNumber.fromBalance(0, 'cDAI', true),
-        nTokenBalance: TypedBigNumber.fromBalance(945e8, 'nDAI', true),
+        nTokenBalance: TypedBigNumber.fromBalance(944e8, 'nDAI', true),
         lastClaimTime: BigNumber.from(0),
         accountIncentiveDebt: BigNumber.from(0),
       },
