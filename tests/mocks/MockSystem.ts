@@ -1,5 +1,5 @@
 import {BigNumber, ethers} from 'ethers';
-import {System} from '../../src/system';
+import {CashGroup, System} from '../../src/system';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
 import {
   Asset, Contracts, IncentiveFactors, IncentiveMigration, StakedNoteParameters,
@@ -318,5 +318,9 @@ export default class MockSystem extends System {
 
   public setIncentiveFactors(currencyId: number, params: IncentiveFactors) {
     this.dataSource.nTokenIncentiveFactors.set(currencyId, params);
+  }
+
+  public setCashGroup(currencyId: number, params: CashGroup) {
+    this.cashGroups.set(currencyId, params);
   }
 }

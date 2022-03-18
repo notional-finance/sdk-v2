@@ -77,7 +77,7 @@ export default class MockCache extends Blockchain {
 
       for (let i = 1; i <= 2; i += 1) {
         const market = new Market(
-          1,
+          currency.id,
           i,
           CashGroup.getMaturityForMarketIndex(i, tRef),
           c.rateScalars[i - 1],
