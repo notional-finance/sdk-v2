@@ -123,8 +123,8 @@ describe('nToken value', () => {
     system.setIncentiveMigration(3, {
       migrationTime: currentTime,
       integralTotalSupply: ethers.constants.WeiPerEther.mul(SECONDS_IN_YEAR),
-      emissionRate: BigNumber.from('10000000000000') // 100k NOTE per year
-    })
+      emissionRate: BigNumber.from('10000000000000'), // 100k NOTE per year
+    });
 
     const incentives = NTokenValue.getClaimableIncentives(
       3,

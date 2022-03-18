@@ -1,7 +1,9 @@
 import {BigNumber, ethers} from 'ethers';
 import {System} from '../../src/system';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
-import {Asset, Contracts, IncentiveFactors, IncentiveMigration, StakedNoteParameters} from '../../src/libs/types';
+import {
+  Asset, Contracts, IncentiveFactors, IncentiveMigration, StakedNoteParameters,
+} from '../../src/libs/types';
 import GraphClient from '../../src/GraphClient';
 import {DataSourceType} from '../../src/system/datasource';
 import MockCache from './MockCache';
@@ -311,10 +313,10 @@ export default class MockSystem extends System {
   }
 
   public setIncentiveMigration(currencyId: number, params: IncentiveMigration) {
-    this.incentiveMigration.set(currencyId, params)
+    this.incentiveMigration.set(currencyId, params);
   }
 
   public setIncentiveFactors(currencyId: number, params: IncentiveFactors) {
-    this.dataSource.nTokenIncentiveFactors.set(currencyId, params)
+    this.dataSource.nTokenIncentiveFactors.set(currencyId, params);
   }
 }
