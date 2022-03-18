@@ -51,6 +51,7 @@ const systemQueryResult = {
       underlyingSymbol: 'ETH',
       underlyingTokenAddress: null,
       hasTransferFee: false,
+      incentiveMigration: null,
     },
     {
       assetExchangeRate: {
@@ -95,6 +96,7 @@ const systemQueryResult = {
       underlyingSymbol: 'DAI',
       underlyingTokenAddress: '0x598c8e5a19eea26e00ce383f8150accfe90bb6c1',
       hasTransferFee: false,
+      incentiveMigration: null,
     },
     {
       assetExchangeRate: {
@@ -139,6 +141,7 @@ const systemQueryResult = {
       underlyingSymbol: 'USDC',
       underlyingTokenAddress: '0xe676fd207878cfa059a1a71fe95d7a5f0f3b19ae',
       hasTransferFee: false,
+      incentiveMigration: null,
     },
     {
       assetExchangeRate: {
@@ -183,6 +186,7 @@ const systemQueryResult = {
       underlyingSymbol: 'USDT',
       underlyingTokenAddress: '0x32fc770eae4736b2d806c8c7113c27c9fc218d7a',
       hasTransferFee: true,
+      incentiveMigration: null,
     },
     {
       assetExchangeRate: {
@@ -209,6 +213,7 @@ const systemQueryResult = {
       underlyingSymbol: 'WBTC',
       underlyingTokenAddress: '0x27f752da00343a42a7c93071d9284e529eaee040',
       hasTransferFee: false,
+      incentiveMigration: null,
     },
     {
       assetExchangeRate: null,
@@ -232,6 +237,7 @@ const systemQueryResult = {
       underlyingSymbol: null,
       underlyingTokenAddress: null,
       hasTransferFee: false,
+      incentiveMigration: null,
     },
   ],
 };

@@ -201,13 +201,14 @@ export interface nToken {
 }
 
 export interface IncentiveFactors {
-  migrationFactors?: {
-    emissionRate: BigNumber;
-    integralTotalSupply: BigNumber;
-    migrationTime: number;
-  };
   accumulatedNOTEPerNToken: BigNumber;
   lastAccumulatedTime: BigNumber;
+}
+
+export interface IncentiveMigration {
+  emissionRate: BigNumber;
+  integralTotalSupply: BigNumber;
+  migrationTime: number;
 }
 
 export interface SettlementMarket {

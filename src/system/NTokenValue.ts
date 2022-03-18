@@ -313,7 +313,7 @@ export default class NTokenValue {
     if (!incentiveFactors) throw new Error('Incentive emission factors not found');
     nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
     let incentives = BigNumber.from(0);
-    const {migrationFactors} = incentiveFactors;
+    const migrationFactors = System.getSystem().getIncentiveMigration(currencyId);
 
     if (lastClaimTime > 0 && migrationFactors && lastClaimTime >= migrationFactors.migrationTime) {
       // nToken requires migration calculations
