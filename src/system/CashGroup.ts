@@ -51,7 +51,11 @@ export default class CashGroup {
       [...cashGroup.rateScalars],
       cashGroup.markets.map(Market.copy),
     );
-    copy.setBlockSupplyRate(BigNumber.from(cashGroup.blockSupplyRate));
+    // This causes some race conditions if blockSupplyRate is undefined
+    if (cashGroup.blockSupplyRate) {
+      copy.setBlockSupplyRate(BigNumber.from(cashGroup.blockSupplyRate));
+    }
+
     return copy;
   }
 
