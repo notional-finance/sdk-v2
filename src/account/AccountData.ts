@@ -371,7 +371,7 @@ export default class AccountData {
     let loanToValue: number | null = null;
     let haircutLoanToValue: number | null = null;
     let maxLoanToValue: number | null = null;
-    if (!totalETHValue.isZero()) {
+    if (!totalETHValue.isZero() && !totalETHValueHaircut.isZero()) {
       loanToValue = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
       / INTERNAL_TOKEN_PRECISION) * 100;
       haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
