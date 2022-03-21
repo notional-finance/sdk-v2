@@ -500,10 +500,7 @@
               }
             }
           ],
-          "_blockSupplyRate": {
-            "type": "BigNumber",
-            "hex": "0x00"
-          }
+          "_blockSupplyRate": 0
         }
       ]
     ]
@@ -2004,10 +2001,7 @@
                 }
               }
             ],
-            "_blockSupplyRate": {
-              "type": "BigNumber",
-              "hex": "0x00"
-            }
+            "_blockSupplyRate": 0
           }
         ],
         [
@@ -2125,10 +2119,7 @@
                 }
               }
             ],
-            "_blockSupplyRate": {
-              "type": "BigNumber",
-              "hex": "0x00"
-            }
+            "_blockSupplyRate": 0
           }
         ],
         [
@@ -2246,10 +2237,7 @@
                 }
               }
             ],
-            "_blockSupplyRate": {
-              "type": "BigNumber",
-              "hex": "0x00"
-            }
+            "_blockSupplyRate": 0
           }
         ],
         [
@@ -2333,10 +2321,7 @@
                 }
               }
             ],
-            "_blockSupplyRate": {
-              "type": "BigNumber",
-              "hex": "0x00"
-            }
+            "_blockSupplyRate": 0
           }
         ],
         [
@@ -2454,10 +2439,7 @@
                 }
               }
             ],
-            "_blockSupplyRate": {
-              "type": "BigNumber",
-              "hex": "0x00"
-            }
+            "_blockSupplyRate": 0
           }
         ]
       ]

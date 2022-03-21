@@ -32,8 +32,7 @@ export default class MockCache extends Blockchain {
       }
       this.assetRateData.set(k, r);
 
-      const supplyRate = BigNumber.from(0.05e9);
-      this.cashGroups.get(k)?.setBlockSupplyRate(supplyRate);
+      this.cashGroups.get(k)?.setBlockSupplyRate(0.05e9);
     });
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
