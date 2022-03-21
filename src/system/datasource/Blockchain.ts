@@ -116,7 +116,7 @@ export default class Blockchain extends DataSource {
           a.rateAdapter.getAnnualizedSupplyRate().then((r) => {
             if (this.cashGroups.get(k)!.blockSupplyRate !== r.toNumber()) {
               this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, k);
-              this.cashGroups.get(k)!.setBlockSupplyRate(r);
+              this.cashGroups.get(k)!.setBlockSupplyRate(r.toNumber());
             }
           }),
         );
