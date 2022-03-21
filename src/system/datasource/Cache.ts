@@ -74,9 +74,9 @@ export default class Cache extends DataSource {
       const currentCashGroup = this.cashGroups.get(key);
       if (!currentCashGroup) throw Error(`Configuration mismatch during refresh for cash group ${key}`);
       /* eslint-disable no-underscore-dangle */
-      const newBlockSupplyRate = BigNumber.from(value._blockSupplyRate);
+      const newBlockSupplyRate = Number(value._blockSupplyRate);
 
-      if (currentCashGroup.blockSupplyRate !== newBlockSupplyRate.toNumber()) {
+      if (currentCashGroup.blockSupplyRate !== newBlockSupplyRate) {
         this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, key);
         currentCashGroup.setBlockSupplyRate(newBlockSupplyRate);
       }
