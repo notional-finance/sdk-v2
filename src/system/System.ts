@@ -440,6 +440,10 @@ export default class System {
     return this.contracts.notionalProxy;
   }
 
+  public getNOTE() {
+    return this.contracts.note;
+  }
+
   public getStakedNote() {
     return this.contracts.sNOTE;
   }

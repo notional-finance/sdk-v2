@@ -62,6 +62,7 @@ export interface WalletBalance {
   isUnderlying: boolean;
   balance: TypedBigNumber;
   allowance: TypedBigNumber;
+  spender: string;
 }
 
 export interface Currency {
