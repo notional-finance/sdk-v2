@@ -233,4 +233,5 @@ export interface Contracts {
   balancerVault: BalancerVault;
   balancerPool: BalancerPool;
   exchangeV3: ExchangeV3 | null;
+  weth: ERC20;
 }

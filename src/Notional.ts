@@ -20,6 +20,7 @@ import {DataSourceType} from './system/datasource';
 
 /* typechain imports */
 import {NoteERC20} from './typechain/NoteERC20';
+import {ERC20} from './typechain/ERC20';
 import {Notional as NotionalProxyTypechain} from './typechain/Notional';
 import {SNOTE} from './typechain/SNOTE';
 import {Governor} from './typechain/Governor';
@@ -39,6 +40,7 @@ interface Addresses {
   balancerPool: string;
   treasury: string;
   exchangeV3: string;
+  weth: string;
 }
 
 /* ABI imports */
@@ -47,6 +49,7 @@ const NotionalABI = require('./abi/Notional.json');
 const BalancerVaultABI = require('./abi/BalancerVault.json');
 const BalancerPoolABI = require('./abi/BalancerPool.json');
 const sNOTEABI = require('./abi/sNOTE.json');
+const ERC20ABI = require('./abi/ERC20.json');
 const GovernorABI = require('./abi/Governor.json');
 const TreasuryManagerABI = require('./abi/TreasuryManager.json');
 const ExchangeV3ABI = require('./abi/ExchangeV3.json');
@@ -91,7 +94,10 @@ export default class Notional extends TransactionBuilder {
       treasury: new Contract(addresses.treasury, TreasuryManagerABI, signer) as TreasuryManager,
       balancerVault: new Contract(addresses.balancerVault, BalancerVaultABI, signer) as BalancerVault,
       balancerPool: new Contract(addresses.balancerPool, BalancerPoolABI, signer) as BalancerPool,
-      exchangeV3: addresses.exchangeV3 ? new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3 : null,
+      exchangeV3: addresses.exchangeV3
+        ? (new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3)
+        : null,
+      weth: new Contract(addresses.weth, ERC20ABI, signer) as ERC20,
     };
   }
 
