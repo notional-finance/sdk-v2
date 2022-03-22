@@ -9,7 +9,7 @@ import Order from './Order';
 const ORDER_URL = 'https://api.0x.org/sra/v3/orders';
 
 export default class Treasury {
-  constructor(public treasuryManager: TreasuryManager, public manager: string) { }
+  constructor(public treasuryManager: TreasuryManager, public manager: string) {}
 
   private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
     return populateTxnAndGas(this.treasuryManager, msgSender, methodName, methodArgs);
@@ -32,12 +32,14 @@ export default class Treasury {
 
   public async claimCOMP() {
     const system = System.getSystem();
-    system.getTreasuryManager().harvestCOMPFromNotional([
-      system.getCurrencyBySymbol('ETH').contract.address,
-      system.getCurrencyBySymbol('DAI').contract.address,
-      system.getCurrencyBySymbol('USDC').contract.address,
-      system.getCurrencyBySymbol('WBTC').contract.address,
-    ]);
+    system
+      .getTreasuryManager()
+      .harvestCOMPFromNotional([
+        system.getCurrencyBySymbol('ETH').contract.address,
+        system.getCurrencyBySymbol('DAI').contract.address,
+        system.getCurrencyBySymbol('USDC').contract.address,
+        system.getCurrencyBySymbol('WBTC').contract.address,
+      ]);
   }
 
   public async submit0xLimitOrder(
@@ -62,28 +64,31 @@ export default class Treasury {
       Math.floor(Date.now() / 1000),
       system.getTreasuryManager().address,
       makerTokenAddress,
+      system.getWETH().address,
       makerAmount,
       takerAmount,
     );
     const signature = await order.sign(exchange, signer);
-    return axios.post(ORDER_URL, [{
-      signature,
-      senderAddress: order.senderAddress,
-      makerAddress: order.makerAddress,
-      takerAddress: order.takerAddress,
-      makerFee: order.makerFee.toString(),
-      takerFee: order.takerFee.toString(),
-      makerAssetAmount: order.makerAssetAmount.toString(),
-      takerAssetAmount: order.takerAssetAmount.toString(),
-      makerAssetData: order.makerAssetData,
-      takerAssetData: order.takerAssetData,
-      salt: order.salt.toString(),
-      exchangeAddress: exchange.address,
-      feeRecipientAddress: order.feeRecipientAddress,
-      expirationTimeSeconds: order.expirationTimeSeconds.toString(),
-      makerFeeAssetData: order.makerFeeAssetData,
-      chainId,
-      takerFeeAssetData: order.takerFeeAssetData,
-    }]);
+    return axios.post(ORDER_URL, [
+      {
+        signature,
+        senderAddress: order.senderAddress,
+        makerAddress: order.makerAddress,
+        takerAddress: order.takerAddress,
+        makerFee: order.makerFee.toString(),
+        takerFee: order.takerFee.toString(),
+        makerAssetAmount: order.makerAssetAmount.toString(),
+        takerAssetAmount: order.takerAssetAmount.toString(),
+        makerAssetData: order.makerAssetData,
+        takerAssetData: order.takerAssetData,
+        salt: order.salt.toString(),
+        exchangeAddress: exchange.address,
+        feeRecipientAddress: order.feeRecipientAddress,
+        expirationTimeSeconds: order.expirationTimeSeconds.toString(),
+        makerFeeAssetData: order.makerFeeAssetData,
+        chainId,
+        takerFeeAssetData: order.takerFeeAssetData,
+      },
+    ]);
   }
 }
