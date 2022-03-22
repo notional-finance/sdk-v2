@@ -1,4 +1,5 @@
 import Notional from './Notional';
+import AccountRiskMonitor from './AccountRiskMonitor';
 import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
 import {SystemEvents} from './system/System';
 import {AccountEvents} from './account/AccountRefresh';
@@ -15,4 +16,5 @@ export {
   AccountEvents,
   Account,
   AccountData,
+  AccountRiskMonitor,
 };
