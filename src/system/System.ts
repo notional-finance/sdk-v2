@@ -444,6 +444,10 @@ export default class System {
     return this.contracts.sNOTE;
   }
 
+  public getWETH() {
+    return this.contracts.weth;
+  }
+
   public getTreasuryManager() {
     return this.contracts.treasury;
   }
@@ -640,8 +644,9 @@ export default class System {
       {currencyId: currencyId.toString(), maturity},
     );
 
-    const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
-      && settlementRateResponse.settlementRates[0].assetExchangeRate;
+    // eslint-disable-next-line
+    const isSettlementRateSet =
+      settlementRateResponse.settlementRates.length > 0 && settlementRateResponse.settlementRates[0].assetExchangeRate;
 
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here

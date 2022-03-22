@@ -5,11 +5,7 @@ import {BytesLike} from '@ethersproject/bytes';
 import {DEFAULT_ORDER_EXPIRATION} from '../config/constants';
 import {ExchangeV3} from '../typechain/ExchangeV3';
 
-const assetProxyInterface = new utils.Interface([
-  'function ERC20Token(address tokenAddress)',
-]);
-
-const tokens = require('../config/tokens.json');
+const assetProxyInterface = new utils.Interface(['function ERC20Token(address tokenAddress)']);
 
 export default class Order {
   public takerAddress: string;
@@ -29,6 +25,7 @@ export default class Order {
     public ts: number,
     public makerAddress: string,
     makerTokenAddress: string,
+    public wethAddress: string,
     public makerAssetAmount: BigNumberish,
     public takerAssetAmount: BigNumberish,
   ) {
@@ -40,18 +37,10 @@ export default class Order {
     const expiration = ts + DEFAULT_ORDER_EXPIRATION;
     this.expirationTimeSeconds = BigNumber.from(expiration.toString());
     this.salt = BigNumber.from(ts.toString());
-    this.makerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
-      makerTokenAddress,
-    ]);
-    this.takerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
-      tokens[chainId.toString()].weth,
-    ]);
-    this.makerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
-      makerTokenAddress,
-    ]);
-    this.takerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [
-      tokens[chainId.toString()].weth,
-    ]);
+    this.makerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [makerTokenAddress]);
+    this.takerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [wethAddress]);
+    this.makerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [makerTokenAddress]);
+    this.takerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [wethAddress]);
   }
 
   public async hash(exchange: ExchangeV3) {
