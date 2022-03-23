@@ -53,6 +53,7 @@ export default class StakedNote extends BalancerPool {
     bptSlippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
+    if (!ethAmount.isWETH) throw Error('Input is not WETH');
     const minBPT = StakedNote.getExpectedBPT(noteAmount, ethAmount)
       .mul((1 - bptSlippagePercent) * RATE_PRECISION)
       .div(RATE_PRECISION);

@@ -25,7 +25,8 @@
       "dom",
       "es6",
       "es2015.collection",
-      "es2015.iterable"
+      "es2015.iterable",
+      "ES2019.Array"
     ]
   },
   "include": [
