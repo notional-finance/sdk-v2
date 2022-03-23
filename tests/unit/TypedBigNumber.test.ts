@@ -204,4 +204,13 @@ describe('Typed Big Number', () => {
     expect(weth.symbol).toBe('ETH');
     expect(eth.add(weth).symbol).toBe('ETH');
   });
+
+  it('properly restores WETH balances from JSON', () => {
+    const weth = TypedBigNumber.fromBalance(100e8, 'WETH', false);
+    const ser = weth.toJSON();
+    expect(ser.symbol).toBe('WETH');
+    const deser = TypedBigNumber.fromObject(ser);
+    expect(deser.symbol).toBe('ETH');
+    expect(deser.isWETH).toBe(true);
+  });
 });
