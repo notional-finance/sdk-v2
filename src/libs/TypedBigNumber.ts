@@ -453,7 +453,7 @@ class TypedBigNumber {
       type: 'BigNumber',
       hex: this.toHexString(),
       bigNumberType: this.type,
-      symbol: this.symbol,
+      symbol: this.isWETH ? 'WETH' : this.symbol,
     };
   }
 }
