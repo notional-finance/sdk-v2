@@ -88,7 +88,7 @@ export interface Balance {
   cashBalance: TypedBigNumber;
   nTokenBalance: TypedBigNumber | undefined;
   lastClaimTime: BigNumber;
-  lastClaimIntegralSupply: BigNumber;
+  accountIncentiveDebt: BigNumber;
 }
 
 export interface Asset {
@@ -202,8 +202,14 @@ export interface nToken {
 }
 
 export interface IncentiveFactors {
+  accumulatedNOTEPerNToken: BigNumber;
+  lastAccumulatedTime: BigNumber;
+}
+
+export interface IncentiveMigration {
+  emissionRate: BigNumber;
   integralTotalSupply: BigNumber;
-  lastSupplyChangeTime: BigNumber;
+  migrationTime: number;
 }
 
 export interface SettlementMarket {

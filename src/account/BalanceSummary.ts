@@ -383,8 +383,7 @@ export default class BalanceSummary {
               v.currencyId,
               v.nTokenBalance,
               v.lastClaimTime.toNumber(),
-              v.lastClaimIntegralSupply,
-              currentTime,
+              v.accountIncentiveDebt,
             )
             : TypedBigNumber.fromBalance(0, 'NOTE', true);
 

@@ -9,6 +9,7 @@ import {
   Contracts,
   Currency,
   EthRate,
+  IncentiveMigration,
   nToken,
   SettlementMarket,
   TokenType,
@@ -143,6 +144,11 @@ const systemConfigurationQuery = gql`
         incentiveEmissionRate
         pvHaircutPercentage
       }
+      incentiveMigration {
+        migrationEmissionRate
+        finalIntegralTotalSupply
+        migrationTime
+      }
     }
   }
 `;
@@ -191,6 +197,11 @@ interface SystemQueryResult {
       incentiveEmissionRate: string | null;
       pvHaircutPercentage: number | null;
     } | null;
+    incentiveMigration: {
+      migrationEmissionRate: string;
+      finalIntegralTotalSupply: string;
+      migrationTime: string;
+    } | null;
   }[];
 }
 
@@ -219,6 +230,7 @@ export default class System {
   protected assetRate = new Map<number, AssetRate>();
   protected cashGroups = new Map<number, CashGroup>();
   protected nTokens = new Map<number, nToken>();
+  protected incentiveMigration = new Map<number, IncentiveMigration>();
   public dataSource: DataSource;
 
   public get lastUpdateBlockNumber() {
@@ -354,8 +366,8 @@ export default class System {
         }
 
         this.currencies.set(currencyId, currency);
-        this.symbolToCurrencyId.set(c.symbol, Number(c.id));
-        if (c.underlyingSymbol) this.symbolToCurrencyId.set(c.underlyingSymbol, Number(c.id));
+        this.symbolToCurrencyId.set(c.symbol, currencyId);
+        if (c.underlyingSymbol) this.symbolToCurrencyId.set(c.underlyingSymbol, currencyId);
 
         this.ethRates.set(currencyId, {
           rateOracle: new Contract(c.ethExchangeRate.rateOracle, IAggregatorABI, this.batchProvider) as IAggregator,
@@ -414,7 +426,7 @@ export default class System {
         if (c.nToken) {
           const depositShares = (c.nToken.depositShares || []).map((v) => BigNumber.from(v));
           const leverageThresholds = (c.nToken.leverageThresholds || []).map((v) => BigNumber.from(v));
-          this.symbolToCurrencyId.set(c.nToken.symbol, Number(c.id));
+          this.symbolToCurrencyId.set(c.nToken.symbol, currencyId);
 
           this.nTokens.set(currencyId, {
             name: c.nToken.name,
@@ -426,10 +438,22 @@ export default class System {
             contract: new Contract(c.nToken.tokenAddress, NTokenERC20ABI, this.batchProvider) as NTokenERC20,
           });
         }
+
+        if (c.incentiveMigration) {
+          this.incentiveMigration.set(currencyId, {
+            emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
+            integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
+            migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
+          });
+        }
       });
 
     this.eventEmitter.emit(SystemEvents.CONFIGURATION_UPDATE);
     if (this.dataSource) this.dataSource.refreshData();
+  }
+
+  public getIncentiveMigration(currencyId: number) {
+    return this.incentiveMigration.get(currencyId);
   }
 
   public getStakedNoteParameters() {
