@@ -174,6 +174,7 @@ export default abstract class AccountRefresh {
           .concat(
             this.fetchBalanceAndAllowance('NOTE', system.getNOTE() as ERC20, system.getStakedNote().address, block),
             this.fetchBalanceAndAllowance('WETH', system.getWETH() as ERC20, system.getStakedNote().address, block),
+            this.fetchBalanceAndAllowance('sNOTE', system.getStakedNote() as ERC20, AddressZero, block),
           ),
       )
     ).filter((v) => v !== null) as string[];
