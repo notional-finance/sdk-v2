@@ -213,4 +213,10 @@ describe('Typed Big Number', () => {
     expect(deser.symbol).toBe('ETH');
     expect(deser.isWETH).toBe(true);
   });
+
+  it('properly parses WETH balances', () => {
+    const weth = notional.parseInput('1', 'WETH', false);
+    expect(weth?.toExactString()).toBe('1.0');
+    expect(weth?.isWETH).toBe(true);
+  });
 });
