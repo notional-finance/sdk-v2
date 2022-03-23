@@ -36,6 +36,8 @@ const accountsQuery = gql`
         nTokenBalance
         lastClaimTime
         lastClaimIntegralSupply
+        accountIncentiveDebt
+        didMigrateIncentives
       }
       portfolio {
         currency {
@@ -70,6 +72,8 @@ const accountQuery = gql`
         nTokenBalance
         lastClaimTime
         lastClaimIntegralSupply
+        accountIncentiveDebt
+        didMigrateIncentives
       }
       portfolio {
         currency {
@@ -105,6 +109,8 @@ interface BalanceResponse {
   nTokenBalance: string;
   lastClaimTime: number;
   lastClaimIntegralSupply: string;
+  accountIncentiveDebt: string;
+  didMigrateIncentives: boolean;
 }
 
 interface AccountResponse {
@@ -137,14 +143,16 @@ export default class AccountGraphLoader {
     const cashBalance = TypedBigNumber.fromBalance(balance.assetCashBalance, currency.symbol, true);
     const nTokenBalance = TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, true);
     const lastClaimTime = BigNumber.from(balance.lastClaimTime);
-    const lastClaimIntegralSupply = BigNumber.from(balance.lastClaimIntegralSupply);
+    const accountIncentiveDebt = balance.didMigrateIncentives
+      ? BigNumber.from(balance.accountIncentiveDebt)
+      : BigNumber.from(balance.lastClaimIntegralSupply);
 
     return {
       currencyId,
       cashBalance,
       nTokenBalance,
       lastClaimTime,
-      lastClaimIntegralSupply,
+      accountIncentiveDebt,
     };
   }
 

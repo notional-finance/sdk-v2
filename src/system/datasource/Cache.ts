@@ -120,8 +120,8 @@ export default class Cache extends DataSource {
 
     parsedObject.dataSource.nTokenIncentiveFactors.forEach((value: any, key: number) => {
       this.nTokenIncentiveFactors.set(key, {
-        integralTotalSupply: BigNumber.from(value.integralTotalSupply),
-        lastSupplyChangeTime: BigNumber.from(value.lastSupplyChangeTime),
+        accumulatedNOTEPerNToken: BigNumber.from(value.accumulatedNOTEPerNToken),
+        lastAccumulatedTime: BigNumber.from(value.lastAccumulatedTime),
       });
     });
 

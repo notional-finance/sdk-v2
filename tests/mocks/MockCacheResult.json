@@ -963,11 +963,11 @@
         [
           1,
           {
-            "integralTotalSupply": {
+            "accumulatedNOTEPerNToken": {
               "type": "BigNumber",
               "hex": "0x2df482fadacee040"
             },
-            "lastSupplyChangeTime": {
+            "lastAccumulatedTime": {
               "type": "BigNumber",
               "hex": "0x6192606c"
             }
@@ -976,11 +976,11 @@
         [
           2,
           {
-            "integralTotalSupply": {
+            "accumulatedNOTEPerNToken": {
               "type": "BigNumber",
               "hex": "0x0326497edd9fb67719a7a4"
             },
-            "lastSupplyChangeTime": {
+            "lastAccumulatedTime": {
               "type": "BigNumber",
               "hex": "0x618e8e78"
             }
@@ -989,11 +989,11 @@
         [
           3,
           {
-            "integralTotalSupply": {
+            "accumulatedNOTEPerNToken": {
               "type": "BigNumber",
               "hex": "0x01e71ef69e266fa5c18a70"
             },
-            "lastSupplyChangeTime": {
+            "lastAccumulatedTime": {
               "type": "BigNumber",
               "hex": "0x61952efc"
             }
@@ -1002,11 +1002,11 @@
         [
           4,
           {
-            "integralTotalSupply": {
+            "accumulatedNOTEPerNToken": {
               "type": "BigNumber",
               "hex": "0x01ad1e146681f1d2e540"
             },
-            "lastSupplyChangeTime": {
+            "lastAccumulatedTime": {
               "type": "BigNumber",
               "hex": "0x618d5084"
             }
@@ -1015,11 +1015,11 @@
         [
           5,
           {
-            "integralTotalSupply": {
+            "accumulatedNOTEPerNToken": {
               "type": "BigNumber",
               "hex": "0x00"
             },
-            "lastSupplyChangeTime": {
+            "lastAccumulatedTime": {
               "type": "BigNumber",
               "hex": "0x617c6e80"
             }

@@ -151,8 +151,8 @@ export default class Blockchain extends DataSource {
               this.eventEmitter.emit(SystemEvents.NTOKEN_SUPPLY_UPDATE, k);
               this.nTokenTotalSupply.set(k, supply);
               this.nTokenIncentiveFactors.set(k, {
-                integralTotalSupply: r.integralTotalSupply,
-                lastSupplyChangeTime: r.lastSupplyChangeTime,
+                accumulatedNOTEPerNToken: r.accumulatedNOTEPerNToken,
+                lastAccumulatedTime: r.lastAccumulatedTime,
               });
             }
 
