@@ -165,7 +165,8 @@ export default class Account extends AccountRefresh {
    * @returns
    */
   public async hasAllowanceAsync(symbol: string, depositAmount: TypedBigNumber) {
-    const allowance = await this.getAllowance(symbol);
+    const token = System.getSystem().getTokenBySymbol(symbol);
+    const allowance = await this.getAllowance(symbol, token);
     return allowance.gte(depositAmount);
   }
 
@@ -173,14 +174,12 @@ export default class Account extends AccountRefresh {
    * Returns the transfer allowance for a given currency symbol
    * @returns BigNumber
    */
-  private async getAllowance(symbol: string, contractAddress: string = this.notionalProxy.address) {
+  private async getAllowance(symbol: string, token: ERC20, spender: string = this.notionalProxy.address) {
     if (symbol === 'ETH') {
       return TypedBigNumber.from(ethers.constants.MaxUint256, BigNumberType.ExternalUnderlying, 'ETH');
     }
 
-    const currency = System.getSystem().getCurrencyBySymbol(symbol);
-    const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
-    const allowance = await contract.allowance(this.address, contractAddress);
+    const allowance = await token.allowance(this.address, spender);
     return TypedBigNumber.fromBalance(allowance, symbol, false);
   }
 
@@ -204,16 +203,21 @@ export default class Account extends AccountRefresh {
    * @param overrides
    * @returns
    */
-  // eslint-disable-next-line max-len
-  public async setAllowance(symbol: string, amount: BigNumber, contractAddress: string = this.notionalProxy.address, overrides = {} as Overrides) {
-    const currency = System.getSystem().getCurrencyBySymbol(symbol);
-    const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
-    const allowance = await this.getAllowance(symbol);
+  public async setAllowance(
+    symbol: string,
+    amount: BigNumber,
+    spender: string = this.notionalProxy.address,
+    overrides = {} as Overrides,
+  ) {
+    if (symbol === 'ETH') throw Error('Cannot set allowance on ETH');
+
+    const token = System.getSystem().getTokenBySymbol(symbol);
+    const allowance = await this.getAllowance(symbol, token);
     if (!allowance.isZero() && !amount.isZero()) {
       throw new Error(`Resetting allowance from ${allowance.toString()}, first set allowance to zero`);
     }
 
-    return contract.populateTransaction.approve(contractAddress, amount, overrides);
+    return token.populateTransaction.approve(spender, amount, overrides);
   }
 
   public async fetchClaimableIncentives(account: string, blockTime = getNowSeconds()) {

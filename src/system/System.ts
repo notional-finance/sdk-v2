@@ -474,6 +474,20 @@ export default class System {
     return this.getCurrencyById(currencyId);
   }
 
+  public getTokenBySymbol(symbol: string): ERC20 {
+    if (symbol === 'sNOTE') {
+      return this.getStakedNote() as ERC20;
+    } if (symbol === 'NOTE') {
+      return this.getNOTE() as ERC20;
+    } if (symbol === 'WETH') {
+      return this.getWETH() as ERC20;
+    }
+    const currencyId = this.symbolToCurrencyId.get(symbol);
+    if (!currencyId) throw new Error(`Currency ${symbol} not found`);
+    const currency = this.getCurrencyById(currencyId);
+    return currency.symbol === symbol ? currency.contract : currency.underlyingContract!;
+  }
+
   public getCurrencyById(id: number): Currency {
     const currency = this.currencies.get(id);
     if (!currency) throw new Error(`Currency ${id} not found`);
