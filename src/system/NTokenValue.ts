@@ -360,17 +360,19 @@ export default class NTokenValue {
   public static getClaimableIncentives(
     currencyId: number,
     nTokenBalance: TypedBigNumber,
-    lastClaimTime: number,
+    _lastClaimTime: BigNumber,
     _accountIncentiveDebt: BigNumber,
+    blockTime = getNowSeconds(),
   ): TypedBigNumber {
     // This will get rewritten in the case of migration so don't reassign to the parameter
     let accountIncentiveDebt = BigNumber.from(_accountIncentiveDebt);
-    const {nToken} = NTokenValue.getNTokenFactors(currencyId);
+    const {nToken, totalSupply} = NTokenValue.getNTokenFactors(currencyId);
     const incentiveFactors = System.getSystem().getNTokenIncentiveFactors(currencyId);
     if (!incentiveFactors) throw new Error('Incentive emission factors not found');
     nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
     let incentives = BigNumber.from(0);
     const migrationFactors = System.getSystem().getIncentiveMigration(currencyId);
+    const lastClaimTime = _lastClaimTime.toNumber();
 
     if (lastClaimTime > 0 && migrationFactors && lastClaimTime <= migrationFactors.migrationTime) {
       // nToken requires migration calculations
@@ -390,20 +392,29 @@ export default class NTokenValue {
         if (avgTotalSupply.isZero()) return TypedBigNumber.from(0, BigNumberType.NOTE, 'NOTE');
 
         incentives = incentives.add(
-          nTokenBalance.n
-            .mul(incentiveRate)
-            .div(avgTotalSupply)
-            .div(INTERNAL_TOKEN_PRECISION),
+          nTokenBalance.n.mul(incentiveRate).div(avgTotalSupply),
         );
       }
       // Set this to zero to mark the migration
       accountIncentiveDebt = BigNumber.from(0);
     }
 
+    // Update the stored accumulatedNOTEPerNToken to present time
+    const timeSinceLastAccumulation = BigNumber.from(blockTime).sub(incentiveFactors.lastAccumulatedTime);
+    if (timeSinceLastAccumulation.lt(0)) throw Error('Invalid accumulation time');
+
+    const accumulatedNOTEPerNToken = incentiveFactors.accumulatedNOTEPerNToken.add(
+      timeSinceLastAccumulation
+        .mul(INCENTIVE_ACCUMULATION_PRECISION)
+        .mul(nToken.incentiveEmissionRate)
+        .div(SECONDS_IN_YEAR)
+        .div(totalSupply.n),
+    );
+
     // This is the post migration incentive calculation
     incentives = incentives.add(
       nTokenBalance.n
-        .mul(incentiveFactors.accumulatedNOTEPerNToken)
+        .mul(accumulatedNOTEPerNToken)
         .div(INCENTIVE_ACCUMULATION_PRECISION)
         .sub(accountIncentiveDebt),
     );
