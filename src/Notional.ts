@@ -205,8 +205,8 @@ export default class Notional extends TransactionBuilder {
     let decimalPlaces: number;
     if (isInternal) {
       decimalPlaces = INTERNAL_TOKEN_DECIMAL_PLACES;
-    } else if (symbol === 'WETH') {
-      // This is External WETH
+    } else if (symbol === 'WETH' || symbol == 'sNOTE') {
+      // This is External WETH or sNOTE (neither are in System as currencies)
       decimalPlaces = 18;
     } else {
       const currency = this.system.getCurrencyBySymbol(symbol);

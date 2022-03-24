@@ -219,4 +219,10 @@ describe('Typed Big Number', () => {
     expect(weth?.toExactString()).toBe('1.0');
     expect(weth?.isWETH).toBe(true);
   });
+
+  it('properly parses sNOTE balances', () => {
+    const snote = notional.parseInput('1', 'sNOTE', false);
+    expect(snote?.toExactString()).toBe('1.0');
+    expect(snote?.symbol).toBe('sNOTE');
+  });
 });

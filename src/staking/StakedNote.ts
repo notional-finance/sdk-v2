@@ -1,4 +1,4 @@
-import {ethers, Overrides} from 'ethers';
+import {BigNumber, ethers, Overrides} from 'ethers';
 import {BigNumberType, TypedBigNumber} from '..';
 import {RATE_PRECISION} from '../config/constants';
 import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
@@ -132,19 +132,25 @@ export default class StakedNote extends BalancerPool {
   /**
    * Returns account cool down parameters
    * @param address account address
-   * @param blockTime
+   * @param _blockTime
    * @returns isInCoolDown true if the account is in cool down
+   * @returns isInRedeemWindow true if the account is in the redeem window
    * @returns redeemWindowBegin when the account can begin to redeem sNOTE
    * @returns redeemWindowEnd when the redeem window will end
    */
-  public static async accountCoolDown(address: string, blockTime = getNowSeconds()) {
+  public static async accountCoolDown(address: string, _blockTime = getNowSeconds()) {
     const {redeemWindowSeconds} = System.getSystem().getStakedNoteParameters();
     const sNOTE = System.getSystem().getStakedNote();
     const redeemWindowBegin = await sNOTE.accountRedeemWindowBegin(address);
     const redeemWindowEnd = redeemWindowBegin.add(redeemWindowSeconds);
-    const isInCoolDown = !redeemWindowBegin.isZero() && redeemWindowEnd.gte(blockTime);
 
-    return {isInCoolDown, redeemWindowBegin, redeemWindowEnd};
+    const blockTime = BigNumber.from(_blockTime);
+    const isInCoolDown = blockTime.lt(redeemWindowBegin);
+    const isInRedeemWindow = redeemWindowBegin.lte(blockTime) && blockTime.lte(redeemWindowEnd);
+
+    return {
+      isInCoolDown, isInRedeemWindow, redeemWindowBegin, redeemWindowEnd,
+    };
   }
 
   /**
