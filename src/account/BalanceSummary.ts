@@ -382,7 +382,7 @@ export default class BalanceSummary {
             ? NTokenValue.getClaimableIncentives(
               v.currencyId,
               v.nTokenBalance,
-              v.lastClaimTime.toNumber(),
+              v.lastClaimTime,
               v.accountIncentiveDebt,
             )
             : TypedBigNumber.fromBalance(0, 'NOTE', true);
