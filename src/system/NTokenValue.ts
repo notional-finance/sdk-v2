@@ -237,7 +237,8 @@ export default class NTokenValue {
     }
     const totalAssetValueInMarkets = liquidityTokens.reduce((total, lt) => {
       const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
-      const netfCash = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0).add(fCashClaim);
+      const fCashPosition = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0);
+      const netfCash = fCashPosition.add(fCashClaim);
       return total
         .add(assetCashClaim)
         .add(cashGroup.getfCashPresentValueUnderlyingInternal(lt.maturity, netfCash, false)
