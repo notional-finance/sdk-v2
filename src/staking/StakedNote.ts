@@ -77,7 +77,7 @@ export default class StakedNote extends BalancerPool {
     slippagePercent = 0.005,
     overrides = {} as Overrides,
   ) {
-    const {ethClaim, noteClaim} = this.getRedemptionValue(sNOTEAmount);
+    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(sNOTEAmount);
     const minETH = ethClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION);
     const minNOTE = noteClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION);
 
