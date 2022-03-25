@@ -200,8 +200,17 @@ export default class NTokenValue {
       // amount of liquidity tokens
       const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
       // This is the redeemer's share of the fCash position
-      const fCashShare = (fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0))
-        .scale(nTokenBalance.n, totalSupply.n);
+      const fCashPosition = (fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0))
+
+      let fCashShare: TypedBigNumber;
+      if (status === NTokenStatus.Ok) {
+        // In normal conditions, the fCash share is proportional to the total supply
+        fCashShare = fCashPosition.scale(nTokenBalance.n, totalSupply.n);
+      } else {
+        // In ifCash conditions, the fCash share is proportional to the liquidity tokens removed
+        const totalLiquidityTokens = (liquidityTokens.find((l) => l.maturity === lt.maturity))!.notional
+        fCashShare = fCashPosition.scale(lt.notional.n, totalLiquidityTokens.n);
+      }
 
       // Redeemer's netfCash position
       const netfCashShare = fCashShare.add(fCashClaim);
@@ -237,7 +246,8 @@ export default class NTokenValue {
     }
     const totalAssetValueInMarkets = liquidityTokens.reduce((total, lt) => {
       const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
-      const netfCash = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0).add(fCashClaim);
+      const fCashPosition = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0);
+      const netfCash = fCashPosition.add(fCashClaim);
       return total
         .add(assetCashClaim)
         .add(cashGroup.getfCashPresentValueUnderlyingInternal(lt.maturity, netfCash, false)

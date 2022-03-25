@@ -126,7 +126,7 @@ export default class BalanceSummary {
   public getWithdrawAmounts(withdrawAmountInternalAsset: TypedBigNumber, preferCash: boolean) {
     withdrawAmountInternalAsset.check(BigNumberType.InternalAsset, this.currency.symbol);
     const canWithdrawNToken = (
-      NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId) === NTokenStatus.Ok
+      NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId) !== NTokenStatus.MarketsNotInitialized
     );
 
     if (withdrawAmountInternalAsset.gt(this.maxWithdrawValueAssetCash)) {
@@ -517,7 +517,7 @@ export default class BalanceSummary {
     hasDebt: boolean,
   ) {
     let nTokenAssetPV: TypedBigNumber | undefined;
-    if (NTokenValue.getNTokenStatus(balance.currencyId) === NTokenStatus.Ok) {
+    if (NTokenValue.getNTokenStatus(balance.currencyId) !== NTokenStatus.MarketsNotInitialized) {
       // We don't need to take the haircut on the nTokenBalance because this is already taken into
       // account in the free collateral calculation.
       nTokenAssetPV = balance.nTokenBalance?.toAssetCash(true);
