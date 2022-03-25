@@ -200,7 +200,7 @@ export default class NTokenValue {
       // amount of liquidity tokens
       const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
       // This is the redeemer's share of the fCash position
-      const fCashPosition = (fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0))
+      const fCashPosition = (fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0));
 
       let fCashShare: TypedBigNumber;
       if (status === NTokenStatus.Ok) {
@@ -208,7 +208,7 @@ export default class NTokenValue {
         fCashShare = fCashPosition.scale(nTokenBalance.n, totalSupply.n);
       } else {
         // In ifCash conditions, the fCash share is proportional to the liquidity tokens removed
-        const totalLiquidityTokens = (liquidityTokens.find((l) => l.maturity === lt.maturity))!.notional
+        const totalLiquidityTokens = (liquidityTokens.find((l) => l.maturity === lt.maturity))!.notional;
         fCashShare = fCashPosition.scale(lt.notional.n, totalLiquidityTokens.n);
       }
 
