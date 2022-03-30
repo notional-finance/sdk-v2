@@ -242,3 +242,20 @@ export interface Contracts {
   exchangeV3: ExchangeV3 | null;
   weth: ERC20;
 }
+
+export interface ReturnsBreakdown {
+  source: string;
+  balance: TypedBigNumber;
+  value: TypedBigNumber;
+  interestEarned?: TypedBigNumber;
+  realizedYield?: number;
+  rateOfChangePerSecond?: number;
+}
+
+export interface TransactionHistory {
+  txnType: string;
+  time: Date;
+  transactionHash: string;
+  amount: TypedBigNumber;
+  rate?: number;
+}

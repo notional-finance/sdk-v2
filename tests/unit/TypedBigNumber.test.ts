@@ -1,26 +1,24 @@
-import {
-  BigNumber, constants, ethers, utils,
-} from 'ethers';
+import { BigNumber, constants, ethers, utils } from 'ethers';
 import GraphClient from '../../src/GraphClient';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
 import Notional from '../../src/Notional';
-import {NoteERC20} from '../../src/typechain/NoteERC20';
+import { NoteERC20 } from '../../src/typechain/NoteERC20';
 import Governance from '../../src/Governance';
-import {NOTE_CURRENCY_ID} from '../../src/config/constants';
+import { NOTE_CURRENCY_ID } from '../../src/config/constants';
 import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
-import {Contracts} from '../../src/libs/types';
+import { Contracts } from '../../src/libs/types';
 
 describe('Typed Big Number', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
   const system = new MockSystem();
   const notional = new Notional(
-    ({} as unknown) as NoteERC20,
-    ({} as unknown) as GraphClient,
-    ({} as unknown) as Governance,
+    {} as unknown as NoteERC20,
+    {} as unknown as GraphClient,
+    {} as unknown as Governance,
     system,
     provider,
-    ({} as unknown) as Contracts,
+    {} as unknown as Contracts,
   );
   afterAll(() => system.destroy());
 
@@ -189,7 +187,21 @@ describe('Typed Big Number', () => {
     system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
     expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0275e8).toString());
 
-    setTimeout(() => { done(); }, 500);
+    setTimeout(() => {
+      done();
+    }, 500);
+  });
+
+  it('converts to ETH to NOTE balances', (done) => {
+    const ethTokens = TypedBigNumber.fromBalance(0.01e8, 'ETH', true).toExternalPrecision();
+    let noteUSDPrice = ethers.constants.WeiPerEther;
+    system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
+    // ETH is set to $100, so we should get 100 NOTE here at a 1-1 price
+    expect(ethTokens.fromETH(NOTE_CURRENCY_ID, false).toString()).toEqual(BigNumber.from(1e8).toString());
+
+    setTimeout(() => {
+      done();
+    }, 500);
   });
 
   it('can build sNOTE balances', () => {

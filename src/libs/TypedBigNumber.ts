@@ -1,6 +1,4 @@
-import {
-  BigNumber, BigNumberish, constants, utils,
-} from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import {
   INTERNAL_TOKEN_PRECISION,
   PERCENTAGE_BASIS,
@@ -8,7 +6,7 @@ import {
   NOTE_CURRENCY_ID,
   STAKED_NOTE_CURRENCY_ID,
 } from '../config/constants';
-import {System, NTokenValue} from '../system';
+import { System, NTokenValue } from '../system';
 
 export enum BigNumberType {
   ExternalUnderlying = 'External Underlying',
@@ -29,7 +27,9 @@ class TypedBigNumber {
    * WETH is handled as ETH for all internal calculations but we flag it here for other
    * methods to differentiate.
    */
-  get isWETH() { return this._isWETH; }
+  get isWETH() {
+    return this._isWETH;
+  }
 
   private constructor(public n: BigNumber, public type: BigNumberType, public symbol: string) {
     if (symbol === 'NOTE') {
@@ -55,9 +55,11 @@ class TypedBigNumber {
   static getType(symbol: string, isInternal: boolean) {
     if (symbol === 'NOTE') {
       return BigNumberType.NOTE;
-    } if (symbol === 'sNOTE') {
+    }
+    if (symbol === 'sNOTE') {
       return BigNumberType.sNOTE;
-    } if (symbol === 'WETH') {
+    }
+    if (symbol === 'WETH') {
       // Rewrite WETH to ETH for purposes of getting the type
       // eslint-disable-next-line no-param-reassign
       symbol = 'ETH';
@@ -87,7 +89,7 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
   }
 
-  static fromObject(value: {type: string; hex: string; bigNumberType: BigNumberType; symbol: string}) {
+  static fromObject(value: { type: string; hex: string; bigNumberType: BigNumberType; symbol: string }) {
     return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
   }
 
@@ -218,11 +220,11 @@ class TypedBigNumber {
 
   isInternalPrecision(): boolean {
     return (
-      this.type === BigNumberType.InternalUnderlying
-      || this.type === BigNumberType.InternalAsset
-      || this.type === BigNumberType.LiquidityToken
-      || this.type === BigNumberType.NOTE
-      || this.type === BigNumberType.nToken
+      this.type === BigNumberType.InternalUnderlying ||
+      this.type === BigNumberType.InternalAsset ||
+      this.type === BigNumberType.LiquidityToken ||
+      this.type === BigNumberType.NOTE ||
+      this.type === BigNumberType.nToken
     );
   }
 
@@ -271,7 +273,7 @@ class TypedBigNumber {
     }
 
     if (this.isUnderlying()) {
-      const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
+      const { underlyingDecimalPlaces, assetRate: fetchedRate } = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
 
@@ -317,7 +319,7 @@ class TypedBigNumber {
     }
 
     if (this.isAssetCash()) {
-      const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
+      const { underlyingDecimalPlaces, assetRate: fetchedRate } = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
 
@@ -374,10 +376,11 @@ class TypedBigNumber {
   toExternalPrecision(): TypedBigNumber {
     if (this.isExternalPrecision()) return this;
     if (
-      this.type === BigNumberType.LiquidityToken
-      || this.type === BigNumberType.NOTE
-      || this.type === BigNumberType.nToken
-    ) return this;
+      this.type === BigNumberType.LiquidityToken ||
+      this.type === BigNumberType.NOTE ||
+      this.type === BigNumberType.nToken
+    )
+      return this;
 
     let newType: BigNumberType;
     if (this.type === BigNumberType.InternalAsset) {
@@ -396,7 +399,7 @@ class TypedBigNumber {
   }
 
   toETH(useHaircut: boolean) {
-    const {ethRateConfig, ethRate} = System.getSystem().getETHRate(this.currencyId);
+    const { ethRateConfig, ethRate } = System.getSystem().getETHRate(this.currencyId);
     if (!ethRateConfig || !ethRate) throw new Error(`Eth rate data for ${this.symbol} not found`);
     if (!(this.isAssetCash() || this.isUnderlying() || this.isNOTE())) {
       throw new Error(`Cannot convert ${this.type} directly to ETH`);
@@ -421,19 +424,21 @@ class TypedBigNumber {
 
   fromETH(currencyId: number, useHaircut: boolean = false) {
     // Must be internal underlying, ETH
-    this.check(BigNumberType.InternalUnderlying, 'ETH');
-    const {ethRateConfig, ethRate} = System.getSystem().getETHRate(currencyId);
-    const underlyingSymbol = System.getSystem().getUnderlyingSymbol(currencyId);
+    const _this = this.toInternalPrecision();
+    _this.check(BigNumberType.InternalUnderlying, 'ETH');
+    const { ethRateConfig, ethRate } = System.getSystem().getETHRate(currencyId);
+    const underlyingSymbol =
+      currencyId === NOTE_CURRENCY_ID ? 'NOTE' : System.getSystem().getUnderlyingSymbol(currencyId);
 
     if (!ethRateConfig) throw new Error(`Eth rate data for ${currencyId} not found`);
     if (!ethRate) throw new Error(`Eth exchange rate for ${currencyId} not found`);
 
     let multiplier = PERCENTAGE_BASIS;
     if (useHaircut) {
-      multiplier = this.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
+      multiplier = _this.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
     }
 
-    const internalUnderlying = this.n
+    const internalUnderlying = _this.n
       .mul(BigNumber.from(10).pow(ethRateConfig.rateDecimalPlaces))
       .mul(PERCENTAGE_BASIS)
       .div(ethRate)
