@@ -333,7 +333,7 @@ describe('calculates interest rate risk', () => {
     );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
-    expect(risk.get(3)?.upperLiquidationInterestRate).toBeCloseTo(0.111e9, -6);
+    expect(risk.get(3)?.upperLiquidationInterestRate).toBeCloseTo(0.1115e9, -6);
     expect(risk.get(3)?.lowerLiquidationInterestRate).toBe(null);
   });
 

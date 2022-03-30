@@ -10,7 +10,9 @@ describe('Market', () => {
   const maturity = blockTime + SECONDS_IN_YEAR;
   const system = new MockSystem();
   System.overrideSystem(system);
-  afterAll(() => { system.destroy(); });
+  afterAll(() => {
+    system.destroy();
+  });
 
   const getMarket = () => new Market(2, 1, maturity, 30000000000, 30 * BASIS_POINT, 50, 60 * 10, 'cDAI', 'DAI');
 
@@ -33,7 +35,7 @@ describe('Market', () => {
       lastImpliedRate,
       oracleRate,
     });
-    expect(market.maxInterestRate(blockTime) / RATE_PRECISION).toBeCloseTo(0.182, 3);
+    expect(market.maxInterestRate(blockTime) / RATE_PRECISION).toBeCloseTo(0.239, 3);
   });
 
   it('converts between interest rates and exchange rates', () => {
@@ -60,7 +62,13 @@ describe('Market', () => {
     const exchangeRate = Market.exchangeRate(fCash, cash);
     const annualRate = Market.exchangeToInterestRate(exchangeRate, blockTime, maturity);
 
-    const {annualizedRate: slippageRate} = Market.getSlippageRate(fCash, cash, maturity, annualizedSlippage, blockTime);
+    const {annualizedRate: slippageRate} = Market.getSlippageRate(
+      fCash,
+      cash,
+      maturity,
+      annualizedSlippage,
+      blockTime,
+    );
     expect(annualRate).toBeCloseTo(slippageRate - annualizedSlippage, -1);
   });
 
@@ -71,7 +79,13 @@ describe('Market', () => {
     const exchangeRate = Market.exchangeRate(fCash, cash);
     const annualRate = Market.exchangeToInterestRate(exchangeRate, blockTime, maturity);
 
-    const {annualizedRate: slippageRate} = Market.getSlippageRate(fCash, cash, maturity, annualizedSlippage, blockTime);
+    const {annualizedRate: slippageRate} = Market.getSlippageRate(
+      fCash,
+      cash,
+      maturity,
+      annualizedSlippage,
+      blockTime,
+    );
     expect(annualRate).toBeCloseTo(slippageRate - annualizedSlippage, -1);
   });
 
@@ -80,7 +94,13 @@ describe('Market', () => {
     const cash = TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI');
     const annualizedSlippage = -50 * BASIS_POINT;
 
-    const {annualizedRate: slippageRate} = Market.getSlippageRate(fCash, cash, maturity, annualizedSlippage, blockTime);
+    const {annualizedRate: slippageRate} = Market.getSlippageRate(
+      fCash,
+      cash,
+      maturity,
+      annualizedSlippage,
+      blockTime,
+    );
     expect(slippageRate).toEqual(0);
   });
 
@@ -214,16 +234,10 @@ describe('Market', () => {
     const exchangeRate = 1.1e9;
 
     expect(() => {
-      market.getCashAmountGivenfCashAmount(
-        TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI'),
-        blockTime,
-      );
+      market.getCashAmountGivenfCashAmount(TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI'), blockTime);
     }).toThrowError();
     expect(() => {
-      market.getfCashAmountGivenCashAmount(
-        TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI'),
-        blockTime,
-      );
+      market.getfCashAmountGivenCashAmount(TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI'), blockTime);
     }).toThrowError();
 
     expect(() => {

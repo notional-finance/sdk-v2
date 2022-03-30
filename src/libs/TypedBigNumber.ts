@@ -1,4 +1,6 @@
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import {
+  BigNumber, BigNumberish, constants, utils,
+} from 'ethers';
 import {
   INTERNAL_TOKEN_PRECISION,
   PERCENTAGE_BASIS,
@@ -6,7 +8,7 @@ import {
   NOTE_CURRENCY_ID,
   STAKED_NOTE_CURRENCY_ID,
 } from '../config/constants';
-import { System, NTokenValue } from '../system';
+import {System, NTokenValue} from '../system';
 
 export enum BigNumberType {
   ExternalUnderlying = 'External Underlying',
@@ -89,7 +91,7 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
   }
 
-  static fromObject(value: { type: string; hex: string; bigNumberType: BigNumberType; symbol: string }) {
+  static fromObject(value: {type: string; hex: string; bigNumberType: BigNumberType; symbol: string}) {
     return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
   }
 
@@ -220,11 +222,11 @@ class TypedBigNumber {
 
   isInternalPrecision(): boolean {
     return (
-      this.type === BigNumberType.InternalUnderlying ||
-      this.type === BigNumberType.InternalAsset ||
-      this.type === BigNumberType.LiquidityToken ||
-      this.type === BigNumberType.NOTE ||
-      this.type === BigNumberType.nToken
+      this.type === BigNumberType.InternalUnderlying
+      || this.type === BigNumberType.InternalAsset
+      || this.type === BigNumberType.LiquidityToken
+      || this.type === BigNumberType.NOTE
+      || this.type === BigNumberType.nToken
     );
   }
 
@@ -273,7 +275,7 @@ class TypedBigNumber {
     }
 
     if (this.isUnderlying()) {
-      const { underlyingDecimalPlaces, assetRate: fetchedRate } = System.getSystem().getAssetRate(this.currencyId);
+      const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
 
@@ -319,7 +321,7 @@ class TypedBigNumber {
     }
 
     if (this.isAssetCash()) {
-      const { underlyingDecimalPlaces, assetRate: fetchedRate } = System.getSystem().getAssetRate(this.currencyId);
+      const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
 
@@ -376,11 +378,10 @@ class TypedBigNumber {
   toExternalPrecision(): TypedBigNumber {
     if (this.isExternalPrecision()) return this;
     if (
-      this.type === BigNumberType.LiquidityToken ||
-      this.type === BigNumberType.NOTE ||
-      this.type === BigNumberType.nToken
-    )
-      return this;
+      this.type === BigNumberType.LiquidityToken
+      || this.type === BigNumberType.NOTE
+      || this.type === BigNumberType.nToken
+    ) return this;
 
     let newType: BigNumberType;
     if (this.type === BigNumberType.InternalAsset) {
@@ -399,7 +400,7 @@ class TypedBigNumber {
   }
 
   toETH(useHaircut: boolean) {
-    const { ethRateConfig, ethRate } = System.getSystem().getETHRate(this.currencyId);
+    const {ethRateConfig, ethRate} = System.getSystem().getETHRate(this.currencyId);
     if (!ethRateConfig || !ethRate) throw new Error(`Eth rate data for ${this.symbol} not found`);
     if (!(this.isAssetCash() || this.isUnderlying() || this.isNOTE())) {
       throw new Error(`Cannot convert ${this.type} directly to ETH`);
@@ -424,9 +425,11 @@ class TypedBigNumber {
 
   fromETH(currencyId: number, useHaircut: boolean = false) {
     // Must be internal underlying, ETH
+    // eslint-disable-next-line
     const _this = this.toInternalPrecision();
     _this.check(BigNumberType.InternalUnderlying, 'ETH');
-    const { ethRateConfig, ethRate } = System.getSystem().getETHRate(currencyId);
+    const {ethRateConfig, ethRate} = System.getSystem().getETHRate(currencyId);
+    // eslint-disable-next-line
     const underlyingSymbol =
       currencyId === NOTE_CURRENCY_ID ? 'NOTE' : System.getSystem().getUnderlyingSymbol(currencyId);
 

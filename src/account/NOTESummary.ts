@@ -1,5 +1,4 @@
 import {gql} from '@apollo/client/core';
-import {BigNumber} from 'ethers';
 import {ReturnsBreakdown, TransactionHistory, TypedBigNumber} from '..';
 import {INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID} from '../config/constants';
 import GraphClient from '../GraphClient';
@@ -17,8 +16,6 @@ interface StakedNoteHistoryQueryResult {
     timestamp: number;
     sNOTEAmountBefore: string;
     sNOTEAmountAfter: string;
-    bptClaimBefore: string;
-    bptClaimAfter: string;
     wethAmountBefore: string;
     wethAmountAfter: string;
     noteAmountBefore: string;
@@ -33,8 +30,6 @@ interface StakedNoteHistory {
   blockTime: Date;
   sNOTEAmountBefore: TypedBigNumber;
   sNOTEAmountAfter: TypedBigNumber;
-  bptClaimBefore: BigNumber;
-  bptClaimAfter: BigNumber;
   wethAmountBefore: TypedBigNumber;
   wethAmountAfter: TypedBigNumber;
   noteAmountBefore: TypedBigNumber;
@@ -55,8 +50,6 @@ export default class NOTESummary {
         timestamp
         sNOTEAmountBefore
         sNOTEAmountAfter
-        bptClaimBefore
-        bptClaimAfter
         wethAmountBefore
         wethAmountAfter
         noteAmountBefore
@@ -79,8 +72,6 @@ export default class NOTESummary {
       wethAmountAfter: TypedBigNumber.fromBalance(r.wethAmountAfter, 'WETH', false),
       noteAmountBefore: TypedBigNumber.fromBalance(r.noteAmountBefore, 'NOTE', false),
       noteAmountAfter: TypedBigNumber.fromBalance(r.noteAmountAfter, 'NOTE', false),
-      bptClaimBefore: BigNumber.from(r.bptClaimBefore),
-      bptClaimAfter: BigNumber.from(r.bptClaimAfter),
     }));
   }
 
