@@ -160,6 +160,7 @@ export interface BalanceHistory {
   id: string;
   blockNumber: number;
   blockTime: Date;
+  transactionHash: string;
 
   currencyId: number;
   tradeType: string;
@@ -254,7 +255,7 @@ export interface ReturnsBreakdown {
 
 export interface TransactionHistory {
   txnType: string;
-  time: Date;
+  timestampMS: number;
   transactionHash: string;
   amount: TypedBigNumber;
   rate?: number;

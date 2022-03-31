@@ -107,7 +107,7 @@ export default class NOTESummary {
     return this.getStakedNoteValue().add(this.NOTEBalance).add(unclaimedNOTE);
   }
 
-  public getReturnsSummary(): ReturnsBreakdown[] {
+  public getReturnsBreakdown(): ReturnsBreakdown[] {
     const returnsBreakdown: ReturnsBreakdown[] = [];
 
     if (this.sNOTEBalance.isPositive()) {
@@ -142,7 +142,7 @@ export default class NOTESummary {
     return returnsBreakdown;
   }
 
-  public getTradeHistory(): TransactionHistory[] {
+  public getTransactionHistory(): TransactionHistory[] {
     return this.stakedNoteHistory.map((h) => {
       let txnType: string = 'unknown';
       if (h.sNOTEAmountBefore.lt(h.sNOTEAmountAfter)) {
@@ -153,7 +153,7 @@ export default class NOTESummary {
 
       return {
         txnType,
-        time: h.blockTime,
+        timestampMS: h.blockTime.getTime(),
         transactionHash: h.transactionHash,
         amount: h.sNOTEAmountAfter.sub(h.sNOTEAmountBefore).abs(),
       };

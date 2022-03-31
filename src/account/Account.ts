@@ -10,6 +10,7 @@ import {ERC20} from '../typechain/ERC20';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import AccountGraphLoader from './AccountGraphLoader';
+import NOTESummary from './NOTESummary';
 
 export default class Account extends AccountRefresh {
   private constructor(
@@ -59,14 +60,12 @@ export default class Account extends AccountRefresh {
    * Returns a summary of an account's balances with historical transactions and internal return rate
    */
   public async getBalanceSummary() {
-    if (!this.accountData) {
-      return {
-        balanceSummary: [],
-        balanceHistory: [],
-      };
-    }
+    const [{balanceSummary}, noteSummary] = await Promise.all([
+      AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient),
+      NOTESummary.build(this, this.graphClient),
+    ]);
 
-    return AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient);
+    return {balanceSummary, noteSummary};
   }
 
   /**
