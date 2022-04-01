@@ -50,11 +50,15 @@ export default class BalanceSummary {
   }
 
   public get totalUnderlyingValueDisplayString() {
+    return this.totalUnderlyingValue.toDisplayString();
+  }
+
+  public get totalUnderlyingValue() {
     if (this.nTokenValueUnderlying) {
-      return this.assetCashValueUnderlying.add(this.nTokenValueUnderlying).toDisplayString();
+      return this.assetCashValueUnderlying.add(this.nTokenValueUnderlying);
     }
 
-    return this.assetCashValueUnderlying.toDisplayString();
+    return this.assetCashValueUnderlying;
   }
 
   public get totalCTokenInterest() {
