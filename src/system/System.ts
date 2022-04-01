@@ -144,11 +144,6 @@ const systemConfigurationQuery = gql`
         incentiveEmissionRate
         pvHaircutPercentage
       }
-      incentiveMigration {
-        migrationEmissionRate
-        finalIntegralTotalSupply
-        migrationTime
-      }
     }
   }
 `;

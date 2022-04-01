@@ -447,7 +447,8 @@ class TypedBigNumber {
       .div(ethRate)
       .div(multiplier);
 
-    return TypedBigNumber.from(internalUnderlying, BigNumberType.InternalUnderlying, underlyingSymbol);
+    const bnType = underlyingSymbol === 'NOTE' ? BigNumberType.NOTE : BigNumberType.InternalUnderlying;
+    return TypedBigNumber.from(internalUnderlying, bnType, underlyingSymbol);
   }
 
   toUSD() {

@@ -8,71 +8,89 @@ import {NTokenValue} from '../system';
 import Account from './Account';
 import AccountData from './AccountData';
 
-interface StakedNoteHistoryQueryResult {
-  stakedNoteChanges: {
+interface StakedNoteQueryResult {
+  stakedNoteBalance: {
     id: string;
-    blockNumber: number;
-    transactionHash: string;
-    timestamp: number;
-    sNOTEAmountBefore: string;
-    sNOTEAmountAfter: string;
-    wethAmountBefore: string;
-    wethAmountAfter: string;
-    noteAmountBefore: string;
-    noteAmountAfter: string;
-  }[];
+    sNOTEBalance: string;
+    ethAmountJoined: string;
+    noteAmountJoined: string;
+    ethAmountRedeemed: string;
+    noteAmountRedeemed: string;
+
+    stakedNoteChanges: {
+      blockNumber: number;
+      transactionHash: string;
+      timestamp: number;
+      sNOTEAmountBefore: string;
+      sNOTEAmountAfter: string;
+      ethAmountChange: string;
+      noteAmountChange: string;
+    }[];
+  }
 }
 
 interface StakedNoteHistory {
-  id: string;
-  blockNumber: number;
-  transactionHash: string;
-  blockTime: Date;
-  sNOTEAmountBefore: TypedBigNumber;
-  sNOTEAmountAfter: TypedBigNumber;
-  wethAmountBefore: TypedBigNumber;
-  wethAmountAfter: TypedBigNumber;
-  noteAmountBefore: TypedBigNumber;
-  noteAmountAfter: TypedBigNumber;
+  ethAmountJoined: TypedBigNumber;
+  noteAmountJoined: TypedBigNumber;
+  ethAmountRedeemed: TypedBigNumber;
+  noteAmountRedeemed: TypedBigNumber;
+
+  transactions: {
+    blockNumber: number;
+    transactionHash: string;
+    blockTime: Date;
+    sNOTEAmountBefore: TypedBigNumber;
+    sNOTEAmountAfter: TypedBigNumber;
+    ethAmountChange: TypedBigNumber;
+    noteAmountChange: TypedBigNumber;
+  }[]
 }
 
 export default class NOTESummary {
   private static historyQuery(address: string) {
     return gql`{
-        stakedNoteChanges (
-          where: {account: "${address.toLowerCase()}"},
-          orderBy: blockNumber,
-          orderDirection: asc
+        stakedNoteBalance (
+          id: "${address.toLowerCase()}",
         ) {
-        id
-        blockNumber
-        transactionHash
-        timestamp
-        sNOTEAmountBefore
-        sNOTEAmountAfter
-        wethAmountBefore
-        wethAmountAfter
-        noteAmountBefore
-        noteAmountAfter
+        sNOTEBalance
+        ethAmountJoined
+        noteAmountJoined
+        ethAmountRedeemed
+        noteAmountRedeemed
+        
+        stakedNoteChanges {
+          id
+          blockNumber
+          transactionHash
+          timestamp
+          sNOTEAmountBefore
+          sNOTEAmountAfter
+          ethAmountChange
+          noteAmountChange
+        }
       }
     }`;
   }
 
-  public static async fetchHistory(address: string, graphClient: GraphClient): Promise<StakedNoteHistory[]> {
-    const queryResult = await graphClient.queryOrThrow<StakedNoteHistoryQueryResult>(NOTESummary.historyQuery(address));
-
-    return queryResult.stakedNoteChanges.map((r) => ({
-      id: r.id,
+  public static async fetchHistory(address: string, graphClient: GraphClient): Promise<StakedNoteHistory> {
+    const result = await graphClient.queryOrThrow<StakedNoteQueryResult>(NOTESummary.historyQuery(address));
+    const history = result.stakedNoteBalance.stakedNoteChanges.map((r) => ({
       blockNumber: r.blockNumber,
       transactionHash: r.transactionHash,
       blockTime: new Date(r.timestamp * 1000),
       sNOTEAmountBefore: TypedBigNumber.fromBalance(r.sNOTEAmountBefore, 'sNOTE', false),
       sNOTEAmountAfter: TypedBigNumber.fromBalance(r.sNOTEAmountAfter, 'sNOTE', false),
-      wethAmountBefore: TypedBigNumber.fromBalance(r.wethAmountBefore, 'WETH', false),
-      wethAmountAfter: TypedBigNumber.fromBalance(r.wethAmountAfter, 'WETH', false),
-      noteAmountBefore: TypedBigNumber.fromBalance(r.noteAmountBefore, 'NOTE', false),
-      noteAmountAfter: TypedBigNumber.fromBalance(r.noteAmountAfter, 'NOTE', false),
-    }));
+      ethAmountChange: TypedBigNumber.fromBalance(r.ethAmountChange, 'ETH', false),
+      noteAmountChange: TypedBigNumber.fromBalance(r.noteAmountChange, 'NOTE', false),
+    })).sort((a, b) => b.blockNumber - a.blockNumber); // sorts descending
+
+    return {
+      transactions: history,
+      ethAmountJoined: TypedBigNumber.fromBalance(result.stakedNoteBalance.ethAmountJoined, 'ETH', false),
+      ethAmountRedeemed: TypedBigNumber.fromBalance(result.stakedNoteBalance.ethAmountRedeemed, 'ETH', false),
+      noteAmountJoined: TypedBigNumber.fromBalance(result.stakedNoteBalance.noteAmountJoined, 'NOTE', false),
+      noteAmountRedeemed: TypedBigNumber.fromBalance(result.stakedNoteBalance.noteAmountRedeemed, 'NOTE', false),
+    };
   }
 
   public static async build(account: Account, graphClient: GraphClient) {
@@ -88,7 +106,7 @@ export default class NOTESummary {
     private NOTEBalance: TypedBigNumber,
     private sNOTEBalance: TypedBigNumber,
     private accountData: AccountData,
-    public stakedNoteHistory: StakedNoteHistory[],
+    public stakedNoteHistory: StakedNoteHistory,
   ) {}
 
   /**
@@ -143,7 +161,7 @@ export default class NOTESummary {
   }
 
   public getTransactionHistory(): TransactionHistory[] {
-    return this.stakedNoteHistory.map((h) => {
+    return this.stakedNoteHistory.transactions.map((h) => {
       let txnType: string = 'unknown';
       if (h.sNOTEAmountBefore.lt(h.sNOTEAmountAfter)) {
         txnType = 'Stake NOTE';
@@ -162,24 +180,35 @@ export default class NOTESummary {
 
   private getStakedNoteReturns() {
     const currentStakedNoteValue = this.getStakedNoteValue();
-    // prettier-ignore
-    const totalETHJoined = this.stakedNoteHistory
-    // prettier-ignore
-      .reduce((v, {wethAmountBefore, wethAmountAfter}) => v.add(wethAmountAfter.sub(wethAmountBefore)),
-        TypedBigNumber.fromBalance(0, 'WETH', false));
-    // prettier-ignore
-    const totalNOTEJoined = this.stakedNoteHistory
-    // prettier-ignore
-      .reduce((v, {noteAmountBefore, noteAmountAfter}) => v.add(noteAmountAfter.sub(noteAmountBefore)),
-        TypedBigNumber.fromBalance(0, 'NOTE', false));
+    const {
+      ethAmountJoined, ethAmountRedeemed, noteAmountJoined, noteAmountRedeemed,
+    } = this.stakedNoteHistory;
 
-    const noteAmountJoined = totalETHJoined.fromETH(NOTE_CURRENCY_ID, false).add(totalNOTEJoined);
-    const interestEarned = currentStakedNoteValue.sub(noteAmountJoined);
+    const amountJoinedInNote = ethAmountJoined.fromETH(NOTE_CURRENCY_ID, false).add(noteAmountJoined);
+    const amountRedeemedInNote = ethAmountRedeemed.fromETH(NOTE_CURRENCY_ID, false).add(noteAmountRedeemed);
 
-    // The yield here is calculated as an absolute rate of return (not annualized)
-    const realizedYield = ((currentStakedNoteValue.n.div(noteAmountJoined.n).toNumber() - INTERNAL_TOKEN_PRECISION)
-        / INTERNAL_TOKEN_PRECISION)
-      * 100;
+    // If amountJoinedInNote > amountRedeemedInNote then the user has both principal and interest in the token
+    // If amountJoinedInNote < amountRedeemedInNote then the user has no principal and only interest in the token
+
+    // If currentStakedNoteValue - netCostBasis > 0 then the user has interest earned
+    // If currentStakedNoteValue - netCostBasis < 0 then the user has redeemed all their value
+
+    const netCostBasis = amountJoinedInNote.sub(amountRedeemedInNote);
+    const interestEarned = currentStakedNoteValue.sub(netCostBasis);
+    let realizedYield: number | undefined;
+
+    if (interestEarned.isNegative()) {
+      // It doesn't make sense for interest earned to be negative (since all the FX is done at current rates),
+      // so we return undefined here
+      return {interestEarned: undefined, realizedYield: undefined};
+    }
+
+    if (netCostBasis.isPositive()) {
+      // The yield here is calculated as an absolute rate of return (not annualized)
+      realizedYield = ((currentStakedNoteValue.n.div(netCostBasis.n).toNumber() - INTERNAL_TOKEN_PRECISION)
+          / INTERNAL_TOKEN_PRECISION)
+        * 100;
+    }
 
     return {interestEarned, realizedYield};
   }
