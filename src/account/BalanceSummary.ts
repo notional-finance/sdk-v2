@@ -182,7 +182,7 @@ export default class BalanceSummary {
   public getReturnsBreakdown(): ReturnsBreakdown[] {
     const returnsBreakdown: ReturnsBreakdown[] = [];
 
-    if (this.assetCashBalance.isPositive()) {
+    if (!this.assetCashBalance.isZero()) {
       returnsBreakdown.push({
         source: this.symbol,
         balance: this.assetCashBalance,
