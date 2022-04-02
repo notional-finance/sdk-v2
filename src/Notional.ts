@@ -175,6 +175,10 @@ export default class Notional extends TransactionBuilder {
     return new Notional(contracts.note, graphClient, governance, system, provider, contracts);
   }
 
+  public destroy() {
+    this.system.destroy()
+  }
+
   public async getAccount(address: string | Signer) {
     return await Account.load(
       address,
