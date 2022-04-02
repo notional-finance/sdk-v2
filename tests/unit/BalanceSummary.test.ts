@@ -18,6 +18,7 @@ describe('Balance Summary', () => {
     id: 'xxx',
     blockNumber: 0,
     blockTime: new Date((blockTime - 45 * SECONDS_IN_DAY) * 1000),
+    transactionHash: 'xxx',
     currencyId: 2,
     tradeType: '',
     assetCashBalanceBefore: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),

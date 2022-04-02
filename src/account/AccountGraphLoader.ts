@@ -9,7 +9,7 @@ import GraphClient from '../GraphClient';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import AccountData from './AccountData';
-import {AssetType} from '../libs/types';
+import {AssetType, BalanceHistory} from '../libs/types';
 import BalanceSummary from './BalanceSummary';
 import AssetSummary from './AssetSummary';
 
@@ -212,7 +212,18 @@ export default class AccountGraphLoader {
   /**
    * Returns a summary of an account's balances with historical transactions and internal return rate
    */
-  public static async getBalanceSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
+  public static async getBalanceSummary(
+    address: string,
+    accountData: AccountData | undefined,
+    graphClient: GraphClient,
+  ) {
+    if (!accountData) {
+      return {
+        balanceHistory: new Array<BalanceHistory>(),
+        balanceSummary: new Array<BalanceSummary>(),
+      };
+    }
+
     const balanceHistory = await BalanceSummary.fetchBalanceHistory(address, graphClient);
     const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
     return {balanceHistory, balanceSummary};

@@ -1,6 +1,6 @@
 import {gql} from '@apollo/client/core';
 import {
-  Balance, BalanceHistory, Currency, nToken, NTokenStatus,
+  Balance, BalanceHistory, Currency, nToken, NTokenStatus, ReturnsBreakdown, TransactionHistory,
 } from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 import {xirr, CashFlow, convertBigNumber} from '../libs/xirr';
@@ -38,7 +38,7 @@ export default class BalanceSummary {
   private nToken?: nToken;
 
   public get underlyingSymbol() {
-    return this.currency.underlyingSymbol;
+    return this.currency.underlyingSymbol || this.currency.symbol;
   }
 
   public get symbol() {
@@ -50,11 +50,15 @@ export default class BalanceSummary {
   }
 
   public get totalUnderlyingValueDisplayString() {
+    return this.totalUnderlyingValue.toDisplayString();
+  }
+
+  public get totalUnderlyingValue() {
     if (this.nTokenValueUnderlying) {
-      return this.assetCashValueUnderlying.add(this.nTokenValueUnderlying).toDisplayString();
+      return this.assetCashValueUnderlying.add(this.nTokenValueUnderlying);
     }
 
-    return this.assetCashValueUnderlying.toDisplayString();
+    return this.assetCashValueUnderlying;
   }
 
   public get totalCTokenInterest() {
@@ -168,6 +172,39 @@ export default class BalanceSummary {
       const cashWithdraw = withdrawAmountInternalAsset.sub(nTokenRedeemValue);
       return {cashWithdraw, nTokenRedeem: this.nTokenBalance};
     }
+  }
+
+  public getTransactionHistory(): TransactionHistory[] {
+    return this.history.map((h) => ({
+      txnType: h.tradeType,
+      timestampMS: h.blockTime.getTime(),
+      transactionHash: h.transactionHash,
+      amount: h.totalUnderlyingValueChange,
+    }));
+  }
+
+  public getReturnsBreakdown(): ReturnsBreakdown[] {
+    const returnsBreakdown: ReturnsBreakdown[] = [];
+
+    if (!this.assetCashBalance.isZero()) {
+      returnsBreakdown.push({
+        source: this.symbol,
+        balance: this.assetCashBalance,
+        value: this.assetCashValueUnderlying,
+        interestEarned: this.totalCTokenInterest,
+      });
+    }
+
+    if (this.nTokenBalance && this.nTokenBalance.isPositive()) {
+      returnsBreakdown.push({
+        source: this.nTokenSymbol!,
+        balance: this.nTokenBalance,
+        value: this.nTokenValueUnderlying!,
+        interestEarned: this.totalNTokenInterest,
+      });
+    }
+
+    return returnsBreakdown;
   }
 
   constructor(

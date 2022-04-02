@@ -160,6 +160,7 @@ export interface BalanceHistory {
   id: string;
   blockNumber: number;
   blockTime: Date;
+  transactionHash: string;
 
   currencyId: number;
   tradeType: string;
@@ -241,4 +242,21 @@ export interface Contracts {
   balancerPool: BalancerPool;
   exchangeV3: ExchangeV3 | null;
   weth: ERC20;
+}
+
+export interface ReturnsBreakdown {
+  source: string;
+  balance: TypedBigNumber;
+  value: TypedBigNumber;
+  interestEarned?: TypedBigNumber;
+  realizedYield?: number;
+  rateOfChangePerSecond?: number;
+}
+
+export interface TransactionHistory {
+  txnType: string;
+  timestampMS: number;
+  transactionHash: string;
+  amount: TypedBigNumber;
+  rate?: number;
 }

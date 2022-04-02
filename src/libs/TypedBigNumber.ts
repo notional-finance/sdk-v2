@@ -29,7 +29,9 @@ class TypedBigNumber {
    * WETH is handled as ETH for all internal calculations but we flag it here for other
    * methods to differentiate.
    */
-  get isWETH() { return this._isWETH; }
+  get isWETH() {
+    return this._isWETH;
+  }
 
   private constructor(public n: BigNumber, public type: BigNumberType, public symbol: string) {
     if (symbol === 'NOTE') {
@@ -55,9 +57,11 @@ class TypedBigNumber {
   static getType(symbol: string, isInternal: boolean) {
     if (symbol === 'NOTE') {
       return BigNumberType.NOTE;
-    } if (symbol === 'sNOTE') {
+    }
+    if (symbol === 'sNOTE') {
       return BigNumberType.sNOTE;
-    } if (symbol === 'WETH') {
+    }
+    if (symbol === 'WETH') {
       // Rewrite WETH to ETH for purposes of getting the type
       // eslint-disable-next-line no-param-reassign
       symbol = 'ETH';
@@ -421,25 +425,30 @@ class TypedBigNumber {
 
   fromETH(currencyId: number, useHaircut: boolean = false) {
     // Must be internal underlying, ETH
-    this.check(BigNumberType.InternalUnderlying, 'ETH');
+    // eslint-disable-next-line
+    const _this = this.toInternalPrecision();
+    _this.check(BigNumberType.InternalUnderlying, 'ETH');
     const {ethRateConfig, ethRate} = System.getSystem().getETHRate(currencyId);
-    const underlyingSymbol = System.getSystem().getUnderlyingSymbol(currencyId);
+    // eslint-disable-next-line
+    const underlyingSymbol =
+      currencyId === NOTE_CURRENCY_ID ? 'NOTE' : System.getSystem().getUnderlyingSymbol(currencyId);
 
     if (!ethRateConfig) throw new Error(`Eth rate data for ${currencyId} not found`);
     if (!ethRate) throw new Error(`Eth exchange rate for ${currencyId} not found`);
 
     let multiplier = PERCENTAGE_BASIS;
     if (useHaircut) {
-      multiplier = this.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
+      multiplier = _this.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
     }
 
-    const internalUnderlying = this.n
+    const internalUnderlying = _this.n
       .mul(BigNumber.from(10).pow(ethRateConfig.rateDecimalPlaces))
       .mul(PERCENTAGE_BASIS)
       .div(ethRate)
       .div(multiplier);
 
-    return TypedBigNumber.from(internalUnderlying, BigNumberType.InternalUnderlying, underlyingSymbol);
+    const bnType = underlyingSymbol === 'NOTE' ? BigNumberType.NOTE : BigNumberType.InternalUnderlying;
+    return TypedBigNumber.from(internalUnderlying, bnType, underlyingSymbol);
   }
 
   toUSD() {

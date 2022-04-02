@@ -363,7 +363,7 @@ export default class NTokenValue {
    *
    * @param currencyId currency id of the nToken
    * @param nTokenBalance balance of nToken prior to any minting or redeeming
-   * @param lastClaimTime
+   * @param _lastClaimTime
    * @param _accountIncentiveDebt this parameter is overwritten last claim integral supply
    * @returns
    */
