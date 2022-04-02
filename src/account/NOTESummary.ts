@@ -74,6 +74,17 @@ export default class NOTESummary {
 
   public static async fetchHistory(address: string, graphClient: GraphClient): Promise<StakedNoteHistory> {
     const result = await graphClient.queryOrThrow<StakedNoteQueryResult>(NOTESummary.historyQuery(address));
+    if (result.stakedNoteBalance === null) {
+      // Handle the case where the user has not staked
+      return {
+        transactions: [],
+        ethAmountJoined: TypedBigNumber.fromBalance(0, 'ETH', false),
+        ethAmountRedeemed: TypedBigNumber.fromBalance(0, 'ETH', false),
+        noteAmountJoined: TypedBigNumber.fromBalance(0, 'NOTE', false),
+        noteAmountRedeemed: TypedBigNumber.fromBalance(0, 'NOTE', false),
+      };
+    }
+
     const history = result.stakedNoteBalance.stakedNoteChanges.map((r) => ({
       blockNumber: r.blockNumber,
       transactionHash: r.transactionHash,
@@ -113,6 +124,7 @@ export default class NOTESummary {
    * @returns Total value of Staked NOTE in NOTE terms.
    */
   public getStakedNoteValue(): TypedBigNumber {
+    if (this.sNOTEBalance.isZero()) return TypedBigNumber.fromBalance(0, 'NOTE', false);
     const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(this.sNOTEBalance);
     return ethClaim.toInternalPrecision().fromETH(NOTE_CURRENCY_ID, false).add(noteClaim);
   }
@@ -180,6 +192,10 @@ export default class NOTESummary {
 
   private getStakedNoteReturns() {
     const currentStakedNoteValue = this.getStakedNoteValue();
+    if (currentStakedNoteValue.isZero()) {
+      return {interestEarned: undefined, realizedYield: undefined};
+    }
+
     const {
       ethAmountJoined, ethAmountRedeemed, noteAmountJoined, noteAmountRedeemed,
     } = this.stakedNoteHistory;
