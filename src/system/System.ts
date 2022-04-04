@@ -312,6 +312,7 @@ export default class System {
   public destroy() {
     if (this.dataRefreshInterval) clearInterval(this.dataRefreshInterval);
     if (this.configurationRefreshInterval) clearInterval(this.configurationRefreshInterval);
+    System._systemInstance = undefined;
   }
 
   public static async load(
