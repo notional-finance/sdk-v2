@@ -12,8 +12,8 @@ describe('System tests', () => {
   System.overrideSystem(system);
   MockSystem.overrideSystem(system);
   afterAll(() => {
-    system.destroy()
-    expect(() => System.getSystem()).toThrowError('System not initialized')
+    system.destroy();
+    expect(() => System.getSystem()).toThrowError('System not initialized');
   });
 
   it('gets currencies', () => {
@@ -126,5 +126,4 @@ describe('System tests', () => {
       done();
     });
   });
-
 });
