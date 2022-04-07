@@ -1,15 +1,12 @@
 import {BigNumber} from 'ethers';
 import EventEmitter from 'eventemitter3';
 import fetch from 'cross-fetch';
-import fetchRetry from 'fetch-retry';
 import {DataSource} from '.';
 import TypedBigNumber from '../../libs/TypedBigNumber';
 import System, {SystemEvents} from '../System';
 import CashGroup from '../CashGroup';
 import {NOTE_CURRENCY_ID} from '../../config/constants';
 import NoteETHRateProvider from '../NoteETHRateProvider';
-
-const retry = fetchRetry(fetch);
 
 export default class Cache extends DataSource {
   private cacheURL: string | null;
@@ -52,10 +49,7 @@ export default class Cache extends DataSource {
 
   async getCacheData(): Promise<any> {
     if (this.cacheURL === null) return '{}';
-    const result = await retry(this.cacheURL, {
-      retries: 3,
-      retryDelay: (attempt: number) => (2 ** attempt) * 1000,
-    });
+    const result = await fetch(this.cacheURL);
     if (result.status >= 400) throw Error(`Error from cache server ${this.cacheURL}`);
     return result.text();
   }
@@ -88,7 +82,7 @@ export default class Cache extends DataSource {
         if (hasChanged) {
           this.eventEmitter.emit(SystemEvents.MARKET_UPDATE, currentCashGroup.markets[i].marketKey);
         }
-        /* eslint-enable no-underscore-dangle */
+      /* eslint-enable no-underscore-dangle */
       });
     });
 
