@@ -264,7 +264,7 @@ export default class System {
   constructor(
     data: SystemQueryResult,
     chainId: number,
-    private graphClient: GraphClient,
+    public graphClient: GraphClient,
     private contracts: Contracts,
     private batchProvider: ethers.providers.JsonRpcBatchProvider,
     public dataSourceType: DataSourceType,
