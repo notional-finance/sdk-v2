@@ -88,16 +88,15 @@ export default class Treasury {
 
   /** Manager Methods */
   public static async harvestAssetsFromNotional(currencyIds: number[]) {
-    const manager = await this.getManager();
-
-    return this.populateTxnAndGas(manager, 'harvestAssetsFromNotional', currencyIds);
+    const manager = await Treasury.getManager();
+    return Treasury.populateTxnAndGas(manager, 'harvestAssetsFromNotional', [currencyIds]);
   }
 
   public static async harvestCOMPFromNotional(currencyIds: number[]) {
     const system = System.getSystem();
-    const manager = await this.getManager();
+    const manager = await Treasury.getManager();
     const cTokens = currencyIds.map((c) => system.getCurrencyById(c).contract.address);
-    return this.populateTxnAndGas(manager, 'harvestCOMPFromNotional', cTokens);
+    return Treasury.populateTxnAndGas(manager, 'harvestCOMPFromNotional', [cTokens]);
   }
 
   public static async investIntoStakedNOTE(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
@@ -105,23 +104,11 @@ export default class Treasury {
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
     if (!ethAmount.isWETH) throw Error('Input is not WETH');
 
-    const manager = await this.getManager();
-    return this.populateTxnAndGas(manager, 'investIntoSNOTE', [noteAmount, ethAmount]);
+    const manager = await Treasury.getManager();
+    return Treasury.populateTxnAndGas(manager, 'investWETHToBuyNOTE', [noteAmount, ethAmount]);
   }
 
-  public async claimCOMP() {
-    const system = System.getSystem();
-    system
-      .getTreasuryManager()
-      .harvestCOMPFromNotional([
-        system.getCurrencyBySymbol('ETH').contract.address,
-        system.getCurrencyBySymbol('DAI').contract.address,
-        system.getCurrencyBySymbol('USDC').contract.address,
-        system.getCurrencyBySymbol('WBTC').contract.address,
-      ]);
-  }
-
-  public async submit0xLimitOrder(
+  public static async submit0xLimitOrder(
     chainId: number,
     signer: Signer,
     symbol: string,
