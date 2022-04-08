@@ -4,12 +4,11 @@ import {gql} from '@apollo/client/core';
 import {BigNumberType, TypedBigNumber} from '..';
 import {System} from '../system';
 import {populateTxnAndGas} from '../libs/utils';
-import {TreasuryManager} from '../typechain/TreasuryManager';
 import Order from './Order';
 
 const ORDER_URL = 'https://api.0x.org/sra/v3/orders';
 
-const reserveQuery = gql`
+const reserveQuery = gql`{
   cashGroups {
     currency {
       id
@@ -21,7 +20,7 @@ const reserveQuery = gql`
     id
     value
   }
-`;
+}`;
 
 interface ReserveQueryResult {
   cashGroups: {
@@ -36,21 +35,27 @@ interface ReserveQueryResult {
 }
 
 export default class Treasury {
-  constructor(public treasuryManager: TreasuryManager, public manager: string) {}
-
-  private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
-    return populateTxnAndGas(this.treasuryManager, msgSender, methodName, methodArgs);
+  private static async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
+    const treasuryManager = System.getSystem().getTreasuryManager();
+    return populateTxnAndGas(treasuryManager, msgSender, methodName, methodArgs);
   }
 
-  public async getReserveData() {
+  public static async getManager() {
     const system = System.getSystem();
+    const treasuryManager = system.getTreasuryManager();
+    return treasuryManager.manager();
+  }
+
+  public static async getReserveData() {
+    const system = System.getSystem();
+    const treasuryManager = system.getTreasuryManager();
     const results = await system.graphClient.queryOrThrow<ReserveQueryResult>(reserveQuery);
     const reserveResults = await Promise.all(results.cashGroups.map(async (r) => {
       const currency = system.getCurrencyById(Number(r.currency.id));
       const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
       const reserveBuffer = TypedBigNumber.fromBalance(r.reserveBuffer, currency.symbol, true).toExternalPrecision();
       const reserveBalance = TypedBigNumber.fromBalance(r.reserveBalance, currency.symbol, true).toExternalPrecision();
-      const b = await (currency.underlyingContract || currency.contract).balanceOf(this.treasuryManager.address);
+      const b = await (currency.underlyingContract || currency.contract).balanceOf(treasuryManager.address);
       const treasuryBalance = TypedBigNumber.fromBalance(b, underlyingSymbol, false);
 
       return {
@@ -61,7 +66,7 @@ export default class Treasury {
       };
     }));
 
-    const noteReserve = await system.getNOTE().balanceOf(this.treasuryManager.address).then((b) => ({
+    const noteReserve = await system.getNOTE().balanceOf(treasuryManager.address).then((b) => ({
       symbol: 'NOTE',
       reserveBuffer: TypedBigNumber.fromBalance(0, 'NOTE', false),
       reserveBalance: TypedBigNumber.fromBalance(0, 'NOTE', false),
@@ -77,25 +82,31 @@ export default class Treasury {
     //   }
     // })
 
-    return reserveResults.push(noteReserve);
+    reserveResults.push(noteReserve);
+    return reserveResults;
   }
 
   /** Manager Methods */
-  public async harvestAssetsFromNotional(currencyIds: number[]) {
-    return this.populateTxnAndGas(this.manager, 'harvestAssetsFromNotional', currencyIds);
+  public static async harvestAssetsFromNotional(currencyIds: number[]) {
+    const manager = await this.getManager();
+
+    return this.populateTxnAndGas(manager, 'harvestAssetsFromNotional', currencyIds);
   }
 
-  public async harvestCOMPFromNotional(currencyIds: number[]) {
+  public static async harvestCOMPFromNotional(currencyIds: number[]) {
     const system = System.getSystem();
+    const manager = await this.getManager();
     const cTokens = currencyIds.map((c) => system.getCurrencyById(c).contract.address);
-    return this.populateTxnAndGas(this.manager, 'harvestCOMPFromNotional', cTokens);
+    return this.populateTxnAndGas(manager, 'harvestCOMPFromNotional', cTokens);
   }
 
-  public async investIntoStakedNOTE(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
+  public static async investIntoStakedNOTE(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
     noteAmount.check(BigNumberType.NOTE, 'NOTE');
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
     if (!ethAmount.isWETH) throw Error('Input is not WETH');
-    return this.populateTxnAndGas(this.manager, 'investIntoSNOTE', [noteAmount, ethAmount]);
+
+    const manager = await this.getManager();
+    return this.populateTxnAndGas(manager, 'investIntoSNOTE', [noteAmount, ethAmount]);
   }
 
   public async claimCOMP() {
