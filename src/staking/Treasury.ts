@@ -44,7 +44,7 @@ interface CompQueryResult {
 interface ReserveQueryResult {
   cashGroups: {
     currency: {id: string},
-    reserveBuffer: string,
+    reserveBuffer?: string,
     reserveBalance: string
   }[],
   compbalance: {
@@ -72,7 +72,9 @@ export default class Treasury {
     const reserveResults = await Promise.all(results.cashGroups.map(async (r) => {
       const currency = system.getCurrencyById(Number(r.currency.id));
       const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
-      const reserveBuffer = TypedBigNumber.fromBalance(r.reserveBuffer, currency.symbol, true).toExternalPrecision();
+      const reserveBuffer = TypedBigNumber.fromBalance(
+        r.reserveBuffer || 0, currency.symbol, true,
+      ).toExternalPrecision();
       const reserveBalance = TypedBigNumber.fromBalance(r.reserveBalance, currency.symbol, true).toExternalPrecision();
       const b = await (currency.underlyingContract || currency.contract).balanceOf(treasuryManager.address);
       const treasuryBalance = TypedBigNumber.fromBalance(b, underlyingSymbol, false);
