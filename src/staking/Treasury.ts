@@ -1,4 +1,4 @@
-import {Signer} from 'ethers';
+import {BigNumber, Signer} from 'ethers';
 import axios from 'axios';
 import {gql} from '@apollo/client/core';
 import {BigNumberType, TypedBigNumber} from '..';
@@ -21,6 +21,25 @@ const reserveQuery = gql`{
     value
   }
 }`;
+
+const compReserveQuery = gql`
+{
+  tvlHistoricalDatas(orderBy:timestamp, orderDirection:desc, first: 1){
+    compBalance {
+      value
+      usdValue
+    }
+  }
+}`;
+
+interface CompQueryResult {
+  tvlHistoricalDatas: {
+    compBalance: {
+      value: string;
+      usdValue: string;
+    }
+  }[]
+}
 
 interface ReserveQueryResult {
   cashGroups: {
@@ -73,17 +92,30 @@ export default class Treasury {
       treasuryBalance: TypedBigNumber.fromBalance(b, 'NOTE', false),
     }));
 
-    // const compReserve = system.getCOMP().balanceOf(this.treasuryManager.address).then((b) => {
-    //   return {
-    //     symbol: 'COMP',
-    //     reserveBuffer: TypedBigNumber.fromBalance(0, 'NOTE', false),
-    //     reserveBalance: TypedBigNumber.fromBalance(0, 'NOTE', false),
-    //     treasuryBalance: TypedBigNumber.fromBalance(b, 'NOTE', false)
-    //   }
-    // })
-
     reserveResults.push(noteReserve);
     return reserveResults;
+  }
+
+  public static async getCompData() {
+    const system = System.getSystem();
+    const manager = await Treasury.getManager();
+    const COMP = system.getCOMP();
+    const compBalance = (await COMP?.balanceOf(manager)) || BigNumber.from(0);
+    const results = await system.graphClient.queryOrThrow<CompQueryResult>(compReserveQuery);
+    const reserveBalance = results.tvlHistoricalDatas.length
+      ? BigNumber.from(results.tvlHistoricalDatas[0].compBalance.value)
+      : BigNumber.from(0);
+    const reserveValueUSD = results.tvlHistoricalDatas.length
+      ? BigNumber.from(results.tvlHistoricalDatas[0].compBalance.usdValue)
+      : BigNumber.from(0);
+
+    return {
+      symbol: 'COMP',
+      reserveBuffer: BigNumber.from(0),
+      reserveValueUSD,
+      reserveBalance,
+      treasuryBalance: compBalance,
+    };
   }
 
   /** Manager Methods */

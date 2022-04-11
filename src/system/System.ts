@@ -478,6 +478,10 @@ export default class System {
     return this.contracts.weth;
   }
 
+  public getCOMP() {
+    return this.contracts.comp;
+  }
+
   public getTreasuryManager() {
     return this.contracts.treasury;
   }

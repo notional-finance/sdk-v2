@@ -242,6 +242,7 @@ export interface Contracts {
   balancerPool: BalancerPool;
   exchangeV3: ExchangeV3 | null;
   weth: ERC20;
+  comp: ERC20 | null;
 }
 
 export interface ReturnsBreakdown {
@@ -259,4 +260,11 @@ export interface TransactionHistory {
   transactionHash: string;
   amount: TypedBigNumber;
   rate?: number;
+}
+
+export interface ReserveData {
+  symbol: string;
+  reserveBalance: TypedBigNumber;
+  reserveBuffer: TypedBigNumber;
+  treasuryBalance: TypedBigNumber;
 }
