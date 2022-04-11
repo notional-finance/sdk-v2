@@ -1,4 +1,4 @@
-import {BigNumber, Signer} from 'ethers';
+import {BigNumber, BigNumberish, Signer} from 'ethers';
 import axios from 'axios';
 import {gql} from '@apollo/client/core';
 import {BigNumberType, TypedBigNumber} from '..';
@@ -146,12 +146,14 @@ export default class Treasury {
     chainId: number,
     signer: Signer,
     symbol: string,
-    makerAmount: TypedBigNumber,
+    makerAmount: BigNumberish,
     takerAmount: TypedBigNumber,
   ) {
     // takerTokenAddress is hardcoded to WETH
     if (!takerAmount.isWETH) throw Error('Taker amount is not WETH');
-    if (makerAmount.type !== BigNumberType.ExternalUnderlying) throw Error('Maker amount is not external underlying');
+    // if (makerAmount.type !== BigNumberType.ExternalUnderlying) {
+    //  throw Error('Maker amount is not external underlying');
+    // }
 
     const system = System.getSystem();
     const makerTokenAddress = system.getCurrencyBySymbol(symbol).underlyingContract?.address;
@@ -168,7 +170,7 @@ export default class Treasury {
       system.getTreasuryManager().address,
       makerTokenAddress,
       system.getWETH().address,
-      makerAmount.n,
+      makerAmount,
       takerAmount.n,
     );
     const signature = await order.sign(exchange, signer);
