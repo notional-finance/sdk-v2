@@ -266,7 +266,7 @@ export default class System {
     chainId: number,
     public graphClient: GraphClient,
     private contracts: Contracts,
-    private batchProvider: ethers.providers.JsonRpcBatchProvider,
+    public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public dataSourceType: DataSourceType,
     public refreshIntervalMS: number,
     public refreshConfigurationDataIntervalMs?: number,

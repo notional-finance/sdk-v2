@@ -1,10 +1,16 @@
-import {BigNumber, BigNumberish, Signer} from 'ethers';
+import {
+  BigNumber, BigNumberish, Contract, Signer,
+} from 'ethers';
 import axios from 'axios';
 import {gql} from '@apollo/client/core';
 import {BigNumberType, TypedBigNumber} from '..';
 import {System} from '../system';
 import {populateTxnAndGas} from '../libs/utils';
 import Order from './Order';
+
+import {IAggregator} from '../typechain/IAggregator';
+
+const IAggregatorABI = require('../abi/IAggregator.json');
 
 const ORDER_URL = 'https://api.0x.org/sra/v3/orders';
 
@@ -100,9 +106,9 @@ export default class Treasury {
 
   public static async getCompData() {
     const system = System.getSystem();
-    const manager = await Treasury.getManager();
+    const treasuryManager = system.getTreasuryManager();
     const COMP = system.getCOMP();
-    const compBalance = (await COMP?.balanceOf(manager)) || BigNumber.from(0);
+    const compBalance = (await COMP?.balanceOf(treasuryManager.address)) || BigNumber.from(0);
     const results = await system.graphClient.queryOrThrow<CompQueryResult>(compReserveQuery);
     const reserveBalance = results.tvlHistoricalDatas.length
       ? BigNumber.from(results.tvlHistoricalDatas[0].compBalance.value)
@@ -133,6 +139,14 @@ export default class Treasury {
     return Treasury.populateTxnAndGas(manager, 'harvestCOMPFromNotional', [cTokens]);
   }
 
+  public static async getMaxNotePriceImpact() {
+    const system = System.getSystem();
+    const treasuryManager = system.getTreasuryManager();
+    const purchaseLimit = await treasuryManager.notePurchaseLimit();
+    // Purchase limit is 1e8 precision where 1e8 = 100%
+    return (purchaseLimit.toNumber() / 1e8) * 100;
+  }
+
   public static async investIntoStakedNOTE(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
     noteAmount.check(BigNumberType.NOTE, 'NOTE');
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
@@ -140,6 +154,33 @@ export default class Treasury {
 
     const manager = await Treasury.getManager();
     return Treasury.populateTxnAndGas(manager, 'investWETHToBuyNOTE', [noteAmount, ethAmount]);
+  }
+
+  private static getMakerTokenAddress(symbol: string) {
+    const address = symbol === 'COMP'
+      ? System.getSystem().getCOMP()?.address
+      : System.getSystem().getCurrencyBySymbol(symbol).underlyingContract?.address;
+
+    if (!address) {
+      throw new Error(`Invalid maker token ${symbol}`);
+    }
+
+    return address;
+  }
+
+  public static async getTradePriceData(symbol: string) {
+    const system = System.getSystem();
+    const makerTokenAddress = Treasury.getMakerTokenAddress(symbol);
+    const treasuryManager = system.getTreasuryManager();
+    const priceOracleAddress = await treasuryManager.priceOracles(makerTokenAddress);
+    const slippageLimit = await treasuryManager.slippageLimits(makerTokenAddress);
+    const priceOracle = new Contract(priceOracleAddress, IAggregatorABI, system.batchProvider) as IAggregator;
+    const {answer} = await priceOracle.latestRoundData();
+    const rateDecimals = await priceOracle.decimals();
+
+    // rate * slippageLimit / slippageLimitPrecision (scale up to 10^18)
+    const priceFloor = answer.mul(slippageLimit).div(1e8).mul(BigNumber.from(10).pow(18 - rateDecimals));
+    return {priceFloor, spotPrice: answer};
   }
 
   public static async submit0xLimitOrder(
@@ -156,10 +197,7 @@ export default class Treasury {
     // }
 
     const system = System.getSystem();
-    const makerTokenAddress = system.getCurrencyBySymbol(symbol).underlyingContract?.address;
-    if (!makerTokenAddress) {
-      throw new Error(`Invalid maker token ${symbol}`);
-    }
+    const makerTokenAddress = Treasury.getMakerTokenAddress(symbol);
     const exchange = system.getExchangeV3();
     if (!exchange) {
       throw new Error('Invalid exchange contract');
