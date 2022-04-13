@@ -9,6 +9,8 @@ import {populateTxnAndGas} from '../libs/utils';
 import Order from './Order';
 
 import {IAggregator} from '../typechain/IAggregator';
+import StakedNote from './StakedNote';
+import {RATE_PRECISION} from '../config/constants';
 
 const IAggregatorABI = require('../abi/IAggregator.json');
 
@@ -100,7 +102,15 @@ export default class Treasury {
       treasuryBalance: TypedBigNumber.fromBalance(b, 'NOTE', false),
     }));
 
+    const wethReserve = await system.getWETH().balanceOf(treasuryManager.address).then((b) => ({
+      symbol: 'WETH',
+      reserveBuffer: TypedBigNumber.fromBalance(0, 'WETH', false),
+      reserveBalance: TypedBigNumber.fromBalance(0, 'WETH', false),
+      treasuryBalance: TypedBigNumber.fromBalance(b, 'WETH', false),
+    }));
+
     reserveResults.push(noteReserve);
+    reserveResults.push(wethReserve);
     return reserveResults;
   }
 
@@ -147,13 +157,16 @@ export default class Treasury {
     return (purchaseLimit.toNumber() / 1e8) * 100;
   }
 
-  public static async investIntoStakedNOTE(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
+  public static async investIntoStakedNOTE(noteAmount: TypedBigNumber, wethAmount: TypedBigNumber) {
     noteAmount.check(BigNumberType.NOTE, 'NOTE');
-    ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
-    if (!ethAmount.isWETH) throw Error('Input is not WETH');
+    wethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
+    if (!wethAmount.isWETH) throw Error('Input is not WETH');
 
     const manager = await Treasury.getManager();
-    return Treasury.populateTxnAndGas(manager, 'investWETHToBuyNOTE', [noteAmount, ethAmount]);
+    const minBPT = StakedNote.getExpectedBPT(noteAmount, wethAmount)
+      .mul((1 - 0.005) * RATE_PRECISION)
+      .div(RATE_PRECISION);
+    return Treasury.populateTxnAndGas(manager, 'investWETHAndNOTE', [wethAmount.n, noteAmount.n, minBPT]);
   }
 
   private static getMakerTokenAddress(symbol: string) {
