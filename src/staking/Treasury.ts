@@ -198,7 +198,7 @@ export default class Treasury {
 
     const system = System.getSystem();
     const makerTokenAddress = Treasury.getMakerTokenAddress(symbol);
-    const exchange = system.getExchangeV3();
+    const exchange = system.getExchangeV3()?.connect(signer);
     if (!exchange) {
       throw new Error('Invalid exchange contract');
     }
