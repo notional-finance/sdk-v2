@@ -39,8 +39,9 @@ interface Addresses {
   balancerVault: string;
   balancerPool: string;
   treasury: string;
-  exchangeV3: string;
   weth: string;
+  exchangeV3?: string;
+  comp?: string;
 }
 
 /* ABI imports */
@@ -98,6 +99,9 @@ export default class Notional extends TransactionBuilder {
         ? (new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3)
         : null,
       weth: new Contract(addresses.weth, ERC20ABI, signer) as ERC20,
+      comp: addresses.comp
+        ? (new Contract(addresses.comp, ERC20ABI, signer) as ERC20)
+        : null
     };
   }
 

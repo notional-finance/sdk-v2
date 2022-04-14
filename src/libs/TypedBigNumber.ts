@@ -33,6 +33,13 @@ class TypedBigNumber {
     return this._isWETH;
   }
 
+  get decimals() {
+    const currency = System.getSystem().getCurrencyById(this.currencyId);
+    const decimals = this.isUnderlying() ? currency.underlyingDecimals : currency.decimals;
+    if (!decimals) throw new Error(`Decimals not found for currency ${this.currencyId}`);
+    return decimals;
+  }
+
   private constructor(public n: BigNumber, public type: BigNumberType, public symbol: string) {
     if (symbol === 'NOTE') {
       this.currencyId = NOTE_CURRENCY_ID;
@@ -368,11 +375,7 @@ class TypedBigNumber {
       throw TypeError('Unknown external precision type');
     }
 
-    const currency = System.getSystem().getCurrencyById(this.currencyId);
-    const decimals = this.isUnderlying() ? currency.underlyingDecimals : currency.decimals;
-    if (!decimals) throw new Error(`Decimals not found for currency ${this.currencyId}`);
-
-    return new TypedBigNumber(this.n.mul(INTERNAL_TOKEN_PRECISION).div(decimals), newType, this.symbol);
+    return new TypedBigNumber(this.n.mul(INTERNAL_TOKEN_PRECISION).div(this.decimals), newType, this.symbol);
   }
 
   toExternalPrecision(): TypedBigNumber {
@@ -392,11 +395,7 @@ class TypedBigNumber {
       throw TypeError('Unknown external precision type');
     }
 
-    const currency = System.getSystem().getCurrencyById(this.currencyId);
-    const decimals = this.isUnderlying() ? currency.underlyingDecimals : currency.decimals;
-    if (!decimals) throw new Error(`Decimals not found for currency ${this.currencyId}`);
-
-    return new TypedBigNumber(this.n.mul(decimals).div(INTERNAL_TOKEN_PRECISION), newType, this.symbol);
+    return new TypedBigNumber(this.n.mul(this.decimals).div(INTERNAL_TOKEN_PRECISION), newType, this.symbol);
   }
 
   toETH(useHaircut: boolean) {
