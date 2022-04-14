@@ -180,15 +180,15 @@ export default class BalancerPool {
     const {
       ethBalance, sNOTEBptBalance, noteBalance, balancerPoolTotalSupply: totalSupply,
     } = System.getSystem().getStakedNoteParameters();
-    const ethValue = ethBalance.scale(sNOTEBptBalance, totalSupply);
-    const noteValue = noteBalance.scale(sNOTEBptBalance, totalSupply);
+    const ethValue = ethBalance.scale(sNOTEBptBalance, totalSupply).toInternalPrecision();
+    const noteValue = noteBalance.scale(sNOTEBptBalance, totalSupply).toInternalPrecision();
     return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 
   public static getBptValue() {
     const {ethBalance, noteBalance, balancerPoolTotalSupply} = System.getSystem().getStakedNoteParameters();
-    const ethValue = ethBalance.scale(1, balancerPoolTotalSupply);
-    const noteValue = noteBalance.scale(1, balancerPoolTotalSupply);
+    const ethValue = ethBalance.scale(1, balancerPoolTotalSupply).toInternalPrecision();
+    const noteValue = noteBalance.scale(1, balancerPoolTotalSupply).toInternalPrecision();
     return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
   }
 
