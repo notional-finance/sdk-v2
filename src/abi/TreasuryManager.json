@@ -35,6 +35,21 @@
         "internalType": "address",
         "name": "_assetProxy",
         "type": "address"
+      },
+      {
+        "internalType": "contract IExchangeV3",
+        "name": "_exchange",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_wethIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_noteIndex",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -82,6 +97,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "wethAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "noteAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "AssetsInvested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "beacon",
@@ -115,6 +149,19 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "newCoolDownTimeSeconds",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvestmentCoolDownUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "prevManager",
         "type": "address"
@@ -140,6 +187,31 @@
       }
     ],
     "name": "NOTEPurchaseLimitUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "orderStatus",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "orderHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "orderTakerAssetFilledAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "OrderCancelled",
     "type": "event"
   },
   {
@@ -253,6 +325,32 @@
   },
   {
     "inputs": [],
+    "name": "EXCHANGE",
+    "outputs": [
+      {
+        "internalType": "contract IExchangeV3",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAXIMUM_COOL_DOWN_PERIOD_SECONDS",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "NOTE",
     "outputs": [
       {
@@ -272,6 +370,19 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NOTE_INDEX",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -305,6 +416,19 @@
   },
   {
     "inputs": [],
+    "name": "WETH_INDEX",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "_getNOTESpotPrice",
     "outputs": [
       {
@@ -314,6 +438,13 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "approveBalancer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -335,10 +466,108 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "makerAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "takerAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "feeRecipientAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "senderAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "makerAssetAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerAssetAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "makerFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expirationTimeSeconds",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "salt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "makerAssetData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "takerAssetData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "makerFeeAssetData",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "takerFeeAssetData",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct IExchangeV3.Order",
+        "name": "order",
+        "type": "tuple"
+      }
+    ],
+    "name": "cancelOrder",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "claimOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "coolDownTimeInSeconds",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -378,6 +607,11 @@
         "internalType": "address",
         "name": "_manager",
         "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_coolDownTimeInSeconds",
+        "type": "uint32"
       }
     ],
     "name": "initialize",
@@ -391,9 +625,19 @@
         "internalType": "uint256",
         "name": "wethAmount",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "noteAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minBPT",
+        "type": "uint256"
       }
     ],
-    "name": "investWETHToBuyNOTE",
+    "name": "investWETHAndNOTE",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -417,6 +661,19 @@
         "internalType": "bytes4",
         "name": "",
         "type": "bytes4"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lastInvestTimestamp",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
       }
     ],
     "stateMutability": "view",
@@ -495,12 +752,12 @@
   },
   {
     "inputs": [],
-    "name": "refundGasPrice",
+    "name": "proxiableUUID",
     "outputs": [
       {
-        "internalType": "uint32",
+        "internalType": "bytes32",
         "name": "",
-        "type": "uint32"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -517,6 +774,19 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_coolDownTimeInSeconds",
+        "type": "uint32"
+      }
+    ],
+    "name": "setCoolDownTime",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

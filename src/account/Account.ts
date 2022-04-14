@@ -18,6 +18,7 @@ export default class Account extends AccountRefresh {
     provider: ethers.providers.JsonRpcBatchProvider,
     notionalProxy: NotionalTypechain,
     private graphClient: GraphClient,
+    public signer?: Signer,
   ) {
     super(address, provider, notionalProxy);
   }
@@ -31,26 +32,28 @@ export default class Account extends AccountRefresh {
    * @returns
    */
   public static async load(
-    signer: string | Signer,
+    _signer: string | Signer,
     provider: ethers.providers.JsonRpcBatchProvider,
     system: System,
     graphClient: GraphClient,
   ) {
     let address: string;
     let notionalProxy = system.getNotionalProxy();
+    let signer: Signer | undefined;
 
-    if (typeof signer === 'string') {
-      address = signer;
+    if (typeof _signer === 'string') {
+      address = _signer;
     } else {
       try {
-        address = await signer.getAddress();
+        address = await _signer.getAddress();
       } catch {
         address = ethers.constants.AddressZero;
       }
-      notionalProxy = notionalProxy.connect(signer);
+      notionalProxy = notionalProxy.connect(_signer);
+      signer = _signer;
     }
 
-    const account = new Account(address, provider, notionalProxy, graphClient);
+    const account = new Account(address, provider, notionalProxy, graphClient, signer);
     await account.refresh();
 
     return account;
@@ -191,7 +194,8 @@ export default class Account extends AccountRefresh {
   public async sendTransaction(txn: ethers.PopulatedTransaction) {
     // eslint-disable-next-line no-param-reassign
     txn.from = this.address;
-    return this.notionalProxy.signer.sendTransaction(txn);
+    if (!this.signer) throw Error('No signer on account');
+    return this.signer.sendTransaction(txn);
   }
 
   /**

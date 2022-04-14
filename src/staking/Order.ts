@@ -53,6 +53,11 @@ export default class Order {
     const signature = await signer.signMessage(utils.arrayify(hash));
     // Signature type 7 = wallet signature verification
     // https://github.com/0xProject/0x-protocol-specification/blob/master/v3/v3-specification.md#wallet
-    return `${signature}07`;
+    if (signature.endsWith('1b') || signature.endsWith('1c')) {
+      return `${signature}07`;
+    }
+    // Replace the final two bytes of the signature with 1c (28) so that it passes validation. Ledger wallets
+    // other hardware wallets may not properly input the v parameter.
+    return `${signature.substring(0, signature.length - 2)}1c07`;
   }
 }
