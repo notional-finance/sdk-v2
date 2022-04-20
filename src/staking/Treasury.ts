@@ -10,7 +10,7 @@ import Order from './Order';
 
 import {IAggregator} from '../typechain/IAggregator';
 import StakedNote from './StakedNote';
-import {RATE_PRECISION} from '../config/constants';
+import {DEFAULT_ORDER_EXPIRATION, RATE_PRECISION} from '../config/constants';
 
 const IAggregatorABI = require('../abi/IAggregator.json');
 
@@ -196,6 +196,20 @@ export default class Treasury {
     return {priceFloor, spotPrice: answer};
   }
 
+  public static async getOpenLimitOrders() {
+    const system = System.getSystem();
+    const treasuryManager = system.getTreasuryManager();
+    const ordersURL = `https://api.0x.org/sra/v3/orders?makerAddress=${treasuryManager.address}`;
+    const response = await axios.get(ordersURL);
+
+    return response.data.records.map((r) => Order.fromAPIResponse(r.order));
+  }
+
+  public static async cancelOrder(order: Order) {
+    const manager = await Treasury.getManager();
+    return Treasury.populateTxnAndGas(manager, 'cancelOrder', [order]);
+  }
+
   public static async submit0xLimitOrder(
     chainId: number,
     signer: Signer,
@@ -215,10 +229,13 @@ export default class Treasury {
     if (!exchange) {
       throw new Error('Invalid exchange contract');
     }
+    const timestamp = Math.floor(Date.now() / 1000);
+
     const order = new Order(
       chainId,
-      Math.floor(Date.now() / 1000),
       system.getTreasuryManager().address,
+      BigNumber.from(timestamp),
+      BigNumber.from(timestamp + DEFAULT_ORDER_EXPIRATION),
       makerTokenAddress,
       system.getWETH().address,
       makerAmount,

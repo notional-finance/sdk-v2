@@ -45,7 +45,7 @@ export default class Blockchain extends DataSource {
     const {tokens, balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
     const noteIndex = tokens[0] === this.contracts.note.address ? 0 : 1;
     const ethIndex = noteIndex === 1 ? 0 : 1;
-    const sNOTEBptBalance = await this.contracts.sNOTE.getPoolTokenShare(sNOTETotalSupply)
+    const sNOTEBptBalance = await this.contracts.sNOTE.getPoolTokenShare(sNOTETotalSupply);
 
     return {
       poolId,
