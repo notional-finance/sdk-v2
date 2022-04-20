@@ -155,10 +155,13 @@ export default abstract class AccountRefresh {
           .flatMap((c) => {
             const spender = this.notionalProxy.address;
             if (c.id === ETHER_CURRENCY_ID) {
-              // Special handling for ETH balance (spender is irrelevant)
-              return this.provider
-                .getBalance(this.address)
-                .then((b) => this.updateWalletBalance('ETH', AddressZero, block, b, MaxUint256));
+              return [
+                // Special handling for ETH balance (spender is irrelevant)
+                this.provider.getBalance(this.address)
+                  .then((b) => this.updateWalletBalance('ETH', AddressZero, block, b, MaxUint256)),
+                // This is for cETH
+                this.fetchBalanceAndAllowance(c.symbol, c.contract, spender, block),
+              ]
             }
             if (c.underlyingContract) {
               // Fetch both underlying and asset token
