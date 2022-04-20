@@ -30,7 +30,6 @@ export default class Blockchain extends DataSource {
     const [
       poolId,
       balancerPoolTotalSupply,
-      sNOTEBptBalance,
       swapFee,
       coolDownTimeInSeconds,
       redeemWindowSeconds,
@@ -38,7 +37,6 @@ export default class Blockchain extends DataSource {
     ] = await Promise.all([
       await this.contracts.balancerPool.getPoolId(),
       await this.contracts.balancerPool.totalSupply(),
-      await this.contracts.balancerPool.balanceOf(this.contracts.sNOTE.address),
       await this.contracts.balancerPool.getSwapFeePercentage(),
       await this.contracts.sNOTE.coolDownTimeInSeconds(),
       await this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
@@ -47,6 +45,7 @@ export default class Blockchain extends DataSource {
     const {tokens, balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
     const noteIndex = tokens[0] === this.contracts.note.address ? 0 : 1;
     const ethIndex = noteIndex === 1 ? 0 : 1;
+    const sNOTEBptBalance = await this.contracts.sNOTE.getPoolTokenShare(sNOTETotalSupply)
 
     return {
       poolId,
