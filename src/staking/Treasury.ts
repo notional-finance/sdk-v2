@@ -202,7 +202,7 @@ export default class Treasury {
     const ordersURL = `https://api.0x.org/sra/v3/orders?makerAddress=${treasuryManager.address}`;
     const response = await axios.get(ordersURL);
 
-    return response.data.records.map((r) => Order.fromAPIResponse(r));
+    return response.data.records.map((r) => Order.fromAPIResponse(r.order));
   }
 
   public static async cancelOrder(order: Order) {

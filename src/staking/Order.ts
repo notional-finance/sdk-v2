@@ -42,7 +42,7 @@ export default class Order {
     this.takerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [wethAddress]);
   }
 
-  public static async fromAPIResponse(r: any) {
+  public static fromAPIResponse(r: any) {
     return new Order(
       Number(r.chainId),
       r.makerAddress,

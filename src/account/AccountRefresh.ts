@@ -161,7 +161,7 @@ export default abstract class AccountRefresh {
                   .then((b) => this.updateWalletBalance('ETH', AddressZero, block, b, MaxUint256)),
                 // This is for cETH
                 this.fetchBalanceAndAllowance(c.symbol, c.contract, spender, block),
-              ]
+              ];
             }
             if (c.underlyingContract) {
               // Fetch both underlying and asset token
