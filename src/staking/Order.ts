@@ -2,7 +2,6 @@ import {
   BigNumber, BigNumberish, constants, Signer, utils,
 } from 'ethers';
 import {BytesLike} from '@ethersproject/bytes';
-import {DEFAULT_ORDER_EXPIRATION} from '../config/constants';
 import {ExchangeV3} from '../typechain/ExchangeV3';
 
 const assetProxyInterface = new utils.Interface(['function ERC20Token(address tokenAddress)']);
@@ -22,8 +21,9 @@ export default class Order {
 
   constructor(
     public chainId: number,
-    public ts: number,
     public makerAddress: string,
+    salt: BigNumberish,
+    expirationTimeSeconds: BigNumberish,
     makerTokenAddress: string,
     public wethAddress: string,
     public makerAssetAmount: BigNumberish,
@@ -34,13 +34,25 @@ export default class Order {
     this.senderAddress = constants.AddressZero;
     this.makerFee = BigNumber.from('0');
     this.takerFee = BigNumber.from('0');
-    const expiration = ts + DEFAULT_ORDER_EXPIRATION;
-    this.expirationTimeSeconds = BigNumber.from(expiration.toString());
-    this.salt = BigNumber.from(ts.toString());
+    this.salt = salt;
+    this.expirationTimeSeconds = expirationTimeSeconds;
     this.makerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [makerTokenAddress]);
     this.takerAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [wethAddress]);
     this.makerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [makerTokenAddress]);
     this.takerFeeAssetData = assetProxyInterface.encodeFunctionData('ERC20Token', [wethAddress]);
+  }
+
+  public static fromAPIResponse(r: any) {
+    return new Order(
+      Number(r.chainId),
+      r.makerAddress,
+      BigNumber.from(r.salt),
+      BigNumber.from(r.expirationTimeSeconds),
+      assetProxyInterface.decodeFunctionData('ERC20Token', r.makerAssetData)[0],
+      assetProxyInterface.decodeFunctionData('ERC20Token', r.takerAssetData)[0],
+      BigNumber.from(r.makerAssetAmount),
+      BigNumber.from(r.takerAssetAmount),
+    );
   }
 
   public async hash(exchange: ExchangeV3) {
