@@ -1,10 +1,9 @@
 {
-  "local:http": "http://127.0.0.1:8000/subgraphs/name/notional-finance/local-v2",
   "local:poll": 5000,
   "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2-graft",
   "kovan:poll": 5000,
   "goerli:http": "https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2",
   "goerli:poll": 5000,
-  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v21-graft",
+  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2",
   "mainnet:poll": 7000
 }

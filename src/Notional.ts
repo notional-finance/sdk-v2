@@ -55,15 +55,6 @@ const GovernorABI = require('./abi/Governor.json');
 const TreasuryManagerABI = require('./abi/TreasuryManager.json');
 const ExchangeV3ABI = require('./abi/ExchangeV3.json');
 
-/* eslint-disable */
-let localAddresses: any;
-try {
-  // Local addresses may not be available in non-dev environments
-  localAddresses = require('./config/addresses.local.json');
-} catch {
-  localAddresses = undefined;
-}
-
 /* Endpoints */
 const kovanAddresses = require('./config/kovan.json');
 const goerliAddresses = require('./config/goerli.json');
@@ -101,7 +92,7 @@ export default class Notional extends TransactionBuilder {
       weth: new Contract(addresses.weth, ERC20ABI, signer) as ERC20,
       comp: addresses.comp
         ? (new Contract(addresses.comp, ERC20ABI, signer) as ERC20)
-        : null
+        : null,
     };
   }
 
@@ -138,23 +129,19 @@ export default class Notional extends TransactionBuilder {
         pollInterval = Number(graphEndpoints['kovan:poll']);
         break;
       case 1337:
-        addresses = localAddresses;
-        graphEndpoint = graphEndpoints['local:http'];
+        addresses = mainnetAddresses;
+        graphEndpoint = graphEndpoints['mainnet:http'];
         pollInterval = Number(graphEndpoints['local:poll']);
+        // eslint-disable-next-line no-param-reassign
         refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
+        // eslint-disable-next-line no-param-reassign
         dataSourceType = DataSourceType.Blockchain;
         break;
       default:
         throw new Error(`Undefined chainId: ${chainId}`);
     }
 
-    let signer: Signer;
-    if (chainId === 1337) {
-      // Cannot use the zero address with Ganache due to a bug
-      signer = new VoidSigner(addresses['deployer'], provider);
-    } else {
-      signer = new VoidSigner(ethers.constants.AddressZero, provider);
-    }
+    const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     const contracts = Notional.getContracts(addresses, signer);
     const graphClient = new GraphClient(graphEndpoint, pollInterval);
     const governance = new Governance(addresses.governor, contracts.note, signer, provider, graphClient) as Governance;
@@ -180,11 +167,11 @@ export default class Notional extends TransactionBuilder {
   }
 
   public destroy() {
-    this.system.destroy()
+    this.system.destroy();
   }
 
   public async getAccount(address: string | Signer) {
-    return await Account.load(
+    return Account.load(
       address,
       this.provider as ethers.providers.JsonRpcBatchProvider,
       this.system,
@@ -193,19 +180,19 @@ export default class Notional extends TransactionBuilder {
   }
 
   public async getAccountBalanceSummaryFromGraph(address: string, accountData: AccountData) {
-    return await AccountGraphLoader.getBalanceSummary(address, accountData, this.graphClient);
+    return AccountGraphLoader.getBalanceSummary(address, accountData, this.graphClient);
   }
 
   public async getAccountAssetSummaryFromGraph(address: string, accountData: AccountData) {
-    return await AccountGraphLoader.getAssetSummary(address, accountData, this.graphClient);
+    return AccountGraphLoader.getAssetSummary(address, accountData, this.graphClient);
   }
 
   public async getAccountFromGraph(address: string) {
-    return await AccountGraphLoader.load(this.graphClient, address);
+    return AccountGraphLoader.load(this.graphClient, address);
   }
 
   public async getAccountsFromGraph() {
-    return await AccountGraphLoader.loadBatch(this.graphClient);
+    return AccountGraphLoader.loadBatch(this.graphClient);
   }
 
   public parseInput(input: string, symbol: string, isInternal: boolean) {
@@ -213,15 +200,14 @@ export default class Notional extends TransactionBuilder {
     let decimalPlaces: number;
     if (isInternal) {
       decimalPlaces = INTERNAL_TOKEN_DECIMAL_PLACES;
-    } else if (symbol === 'WETH' || symbol == 'sNOTE') {
+    } else if (symbol === 'WETH' || symbol === 'sNOTE') {
       // This is External WETH or sNOTE (neither are in System as currencies)
       decimalPlaces = 18;
     } else {
       const currency = this.system.getCurrencyBySymbol(symbol);
-      decimalPlaces =
-        bnType === BigNumberType.ExternalAsset
-          ? currency.decimalPlaces
-          : currency.underlyingDecimalPlaces || currency.decimalPlaces;
+      decimalPlaces = bnType === BigNumberType.ExternalAsset
+        ? currency.decimalPlaces
+        : currency.underlyingDecimalPlaces || currency.decimalPlaces;
     }
 
     try {
@@ -234,9 +220,9 @@ export default class Notional extends TransactionBuilder {
 
   public isNotionalContract(counterparty: string) {
     return (
-      counterparty == this.system.getNotionalProxy().address ||
-      counterparty == this.governance.getContract().address ||
-      counterparty == this.note.address
+      counterparty === this.system.getNotionalProxy().address
+      || counterparty === this.governance.getContract().address
+      || counterparty === this.note.address
     );
   }
 }
