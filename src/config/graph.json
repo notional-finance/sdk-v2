@@ -1,6 +1,6 @@
 {
   "local:poll": 5000,
-  "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2-graft",
+  "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2",
   "kovan:poll": 5000,
   "goerli:http": "https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2",
   "goerli:poll": 5000,
