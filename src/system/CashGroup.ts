@@ -1,3 +1,4 @@
+import {BigNumber} from 'ethers';
 import {assetTypeNum, getNowSeconds} from '../libs/utils';
 import {AssetType} from '../libs/types';
 import {
@@ -7,17 +8,17 @@ import {Market} from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
 
 export default class CashGroup {
-  private _blockSupplyRate?: number;
+  private _blockSupplyRate?: BigNumber;
 
   public get blockSupplyRate() {
-    return this._blockSupplyRate;
+    return this._blockSupplyRate?.toNumber();
   }
 
   public getMarket(marketIndex: number): Market {
     return this.markets[marketIndex - 1];
   }
 
-  public setBlockSupplyRate(rate: number | undefined) {
+  public setBlockSupplyRate(rate: BigNumber) {
     this._blockSupplyRate = rate;
   }
 
@@ -50,9 +51,7 @@ export default class CashGroup {
       [...cashGroup.rateScalars],
       cashGroup.markets.map(Market.copy),
     );
-    // This causes some race conditions if blockSupplyRate is undefined
-    copy.setBlockSupplyRate(cashGroup.blockSupplyRate);
-
+    copy.setBlockSupplyRate(BigNumber.from(cashGroup.blockSupplyRate));
     return copy;
   }
 

@@ -3,5 +3,3 @@ coverage/
 src/typechain
 *.tsbuildinfo
 node_modules
-cache/
-.env

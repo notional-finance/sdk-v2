@@ -64,7 +64,6 @@ describe('Cache Refresh', () => {
       expect(cache.nTokenCashBalance.size).toBe(5);
       expect(cache.nTokenLiquidityTokens.size).toBe(5);
       expect(cache.nTokenfCash.size).toBe(5);
-      expect(cache.stakedNoteParameters).toBeDefined();
       expect(cashGroups.get(1)!.markets.length).toBe(2);
       expect(cashGroups.get(1)!.markets[1].totalfCashDisplayString).toBe('180.621');
       expect(mockSetETHRateProvider.mock.calls.length).toBe(1);

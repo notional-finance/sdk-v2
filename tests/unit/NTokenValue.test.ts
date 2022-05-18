@@ -3,9 +3,7 @@ import {getNowSeconds} from '../../src/libs/utils';
 import {
   NOTE_CURRENCY_ID, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
 } from '../../src/config/constants';
-import {
-  System, NTokenValue, CashGroup, Market,
-} from '../../src/system';
+import {System, NTokenValue, CashGroup} from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
 import {AssetType} from '../../src/libs/types';
@@ -16,10 +14,10 @@ describe('nToken value', () => {
   System.overrideSystem(system);
   afterAll(() => { system.destroy(); });
   const blockTime = CashGroup.getTimeReference(getNowSeconds());
-  const tRef = CashGroup.getTimeReference(getNowSeconds());
 
   beforeAll(async () => {
     system.dataSource.refreshData();
+    const tRef = CashGroup.getTimeReference(getNowSeconds());
     const cashGroup = system.getCashGroup(2);
     system.setMarketProvider(cashGroup.markets[0].marketKey, {
       getMarket: () => {
@@ -95,197 +93,44 @@ describe('nToken value', () => {
         },
       ],
     );
-
-    const usdcCashGroup = system.getCashGroup(3);
-    usdcCashGroup.maxMarketIndex = 3;
-    system.setMarketProvider(usdcCashGroup.markets[0].marketKey, {
-      getMarket: () => {
-        const override = usdcCashGroup.markets[0];
-        override.setMarket({
-          totalAssetCash: BigNumber.from(5_000_000e8),
-          totalLiquidity: BigNumber.from(100_000e8),
-          totalfCash: BigNumber.from(100_000e8),
-          previousTradeTime: BigNumber.from(0),
-          lastImpliedRate: BigNumber.from(0.04e9),
-          oracleRate: BigNumber.from(0.04e9),
-        });
-        return override;
-      },
-    });
-    system.setMarketProvider(usdcCashGroup.markets[1].marketKey, {
-      getMarket: () => {
-        const override = usdcCashGroup.markets[1];
-        override.setMarket({
-          totalAssetCash: BigNumber.from(5_000_000e8),
-          totalLiquidity: BigNumber.from(150_000e8),
-          totalfCash: BigNumber.from(100_000e8),
-          previousTradeTime: BigNumber.from(0),
-          lastImpliedRate: BigNumber.from(0.04e9),
-          oracleRate: BigNumber.from(0.04e9),
-        });
-        return override;
-      },
-    });
-
-    usdcCashGroup.markets.push(new Market(
-      3,
-      3,
-      CashGroup.getMaturityForMarketIndex(3, tRef),
-      usdcCashGroup.rateScalars[1],
-      usdcCashGroup.totalFeeBasisPoints,
-      usdcCashGroup.reserveFeeSharePercent,
-      usdcCashGroup.rateOracleTimeWindowSeconds,
-      'cUSDC',
-      'USDC',
-    ));
-    system.setMarketProvider(usdcCashGroup.markets[2].marketKey, {
-      getMarket: () => {
-        const override = usdcCashGroup.markets[2];
-        override.setMarket({
-          totalAssetCash: BigNumber.from(5_000_000e8),
-          totalLiquidity: BigNumber.from(150_000e8),
-          totalfCash: BigNumber.from(100_000e8),
-          previousTradeTime: BigNumber.from(0),
-          lastImpliedRate: BigNumber.from(0.04e9),
-          oracleRate: BigNumber.from(0.04e9),
-        });
-        return override;
-      },
-    });
-    (system as MockSystem).setCashGroup(3, usdcCashGroup);
-    (system as MockSystem).setNTokenPortfolio(
-      3,
-      TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cUSDC'),
-      TypedBigNumber.from(1862606860875000, BigNumberType.InternalAsset, 'cUSDC'),
-      TypedBigNumber.from(1_000_000e8, BigNumberType.nToken, 'nUSDC'),
-      [
-        {
-          currencyId: 3,
-          maturity: tRef + SECONDS_IN_QUARTER,
-          assetType: AssetType.LiquidityToken_3Month,
-          notional: TypedBigNumber.from(100_000e8, BigNumberType.InternalUnderlying, 'USDC'),
-          hasMatured: false,
-          settlementDate: CashGroup.getSettlementDate(AssetType.LiquidityToken_6Month, tRef + SECONDS_IN_QUARTER),
-          isIdiosyncratic: false,
-        },
-        {
-          currencyId: 3,
-          maturity: tRef + SECONDS_IN_QUARTER * 2,
-          assetType: AssetType.LiquidityToken_6Month,
-          notional: TypedBigNumber.from(150_000e8, BigNumberType.InternalUnderlying, 'USDC'),
-          hasMatured: false,
-          settlementDate: CashGroup.getSettlementDate(AssetType.LiquidityToken_6Month, tRef + SECONDS_IN_QUARTER * 2),
-          isIdiosyncratic: false,
-        },
-      ],
-      [
-        {
-          currencyId: 3,
-          maturity: tRef + SECONDS_IN_QUARTER,
-          assetType: AssetType.fCash,
-          notional: TypedBigNumber.from(-10000e8, BigNumberType.InternalUnderlying, 'USDC'),
-          hasMatured: false,
-          settlementDate: tRef + SECONDS_IN_QUARTER,
-          isIdiosyncratic: false,
-        },
-        {
-          currencyId: 3,
-          maturity: tRef + SECONDS_IN_QUARTER * 2,
-          assetType: AssetType.fCash,
-          notional: TypedBigNumber.from(-15000e8, BigNumberType.InternalUnderlying, 'USDC'),
-          hasMatured: false,
-          settlementDate: tRef + SECONDS_IN_QUARTER * 2,
-          isIdiosyncratic: false,
-        },
-        {
-          currencyId: 3,
-          maturity: tRef + SECONDS_IN_QUARTER * 3,
-          assetType: AssetType.fCash,
-          notional: TypedBigNumber.from(-15000e8, BigNumberType.InternalUnderlying, 'USDC'),
-          hasMatured: false,
-          settlementDate: tRef + SECONDS_IN_QUARTER * 2,
-          isIdiosyncratic: false,
-        },
-        {
-          currencyId: 3,
-          maturity: tRef + SECONDS_IN_QUARTER * 4,
-          assetType: AssetType.fCash,
-          notional: TypedBigNumber.from(-15000e8, BigNumberType.InternalUnderlying, 'USDC'),
-          hasMatured: false,
-          settlementDate: tRef + SECONDS_IN_QUARTER * 2,
-          isIdiosyncratic: false,
-        },
-      ],
-    );
   });
 
   it('converts ntokens to ntoken value', () => {
     const nTokenValue = NTokenValue.convertNTokenToInternalAsset(
-      1,
-      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nETH'),
+      3,
+      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nUSDC'),
       false,
     );
     const nTokenValueHaircut = NTokenValue.convertNTokenToInternalAsset(
-      1,
-      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nETH'),
+      3,
+      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nUSDC'),
       true,
     );
     expect(nTokenValue.toString()).toEqual(BigNumber.from(50e8).toString());
-    expect(nTokenValueHaircut.toString()).toEqual(BigNumber.from(42.5e8).toString());
+    expect(nTokenValueHaircut.toString()).toEqual(BigNumber.from(45e8).toString());
   });
 
   it('gets ntokens to mint', () => {
     const nTokensToMint = NTokenValue.getNTokensToMint(
-      1,
-      TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH'),
+      3,
+      TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cUSDC'),
     );
     expect(nTokensToMint.toString()).toEqual(BigNumber.from(200e8).toString());
   });
 
-  it('gets claimable incentives when account requires migration', () => {
+  it('gets claimable incentives', () => {
     const currentTime = getNowSeconds();
-    system.setIncentiveMigration(3, {
-      migrationTime: currentTime,
-      integralTotalSupply: ethers.constants.WeiPerEther.mul(SECONDS_IN_YEAR),
-      emissionRate: BigNumber.from('100000'), // 100k NOTE per year
-    });
-
     const incentives = NTokenValue.getClaimableIncentives(
       3,
-      TypedBigNumber.from(100_000e8, BigNumberType.nToken, 'nUSDC'),
-      BigNumber.from(currentTime - SECONDS_IN_YEAR),
+      TypedBigNumber.from(2000e8, BigNumberType.nToken, 'nUSDC'),
+      currentTime - SECONDS_IN_YEAR,
       BigNumber.from(ethers.constants.WeiPerEther),
+      currentTime,
     );
-
-    // Accumulate 1 NOTE under old calculation, accumulate 100k note under new calculation
-    expect(incentives.toNumber()).toBeCloseTo(1e8 + 100_000e8, -1);
+    expect(incentives.toString()).toBe(BigNumber.from(0.01e8).toString());
   });
 
-  it('gets claimable incentives when account has migrated', () => {
-    const incentives = NTokenValue.getClaimableIncentives(
-      3,
-      TypedBigNumber.from(1e8, BigNumberType.nToken, 'nUSDC'),
-      BigNumber.from(0), // this means we've migrated
-      BigNumber.from(0.5e8),
-    );
-
-    // Accumulate 1 NOTE per nToken, with 0.5 NOTE incentive debt
-    expect(incentives.toString()).toBe(BigNumber.from(0.5e8).toString());
-
-    const incentives2 = NTokenValue.getClaimableIncentives(
-      3,
-      TypedBigNumber.from(1e8, BigNumberType.nToken, 'nUSDC'),
-      BigNumber.from(0), // this means we've migrated
-      BigNumber.from(0.5e8),
-      getNowSeconds() + SECONDS_IN_YEAR, // Fast forward a year
-    );
-
-    // Accumulate another 0.1 NOTE per nToken, with 0.5 NOTE incentive debt
-    // emissionRate / totalSupply = 0.1
-    expect(incentives2.toString()).toBe(BigNumber.from(0.6e8).toString());
-  });
-
-  it('gets smaller redeem ntoken values (no ifCash)', () => {
+  it('gets smaller redeem ntoken values', () => {
     // InterestRateRisk.getNTokenSimulatedValue(TypedBigNumber.fromBalance(100, 'nDAI', true), undefined, blockTime)
     const assetCash = TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash, blockTime);
@@ -293,17 +138,10 @@ describe('nToken value', () => {
     expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -3);
   });
 
-  it('gets larger redeem ntoken values (no ifCash)', () => {
+  it('gets larger redeem ntoken values', () => {
     const assetCash = TypedBigNumber.from(500_000e8, BigNumberType.InternalAsset, 'cDAI');
     const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(2, assetCash);
     const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(2, nTokenRedeem);
-    expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -5);
-  });
-
-  it('gets larger redeem ntoken values (ifCash)', () => {
-    const assetCash = TypedBigNumber.from(500_000e8, BigNumberType.InternalAsset, 'cUSDC');
-    const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(3, assetCash);
-    const assetFromRedeem = NTokenValue.getAssetFromRedeemNToken(3, nTokenRedeem);
     expect(assetCash.n.toNumber()).toBeCloseTo(assetFromRedeem.n.toNumber(), -5);
   });
 

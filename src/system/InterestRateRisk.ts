@@ -50,7 +50,7 @@ export default class InterestRateRisk {
 
       return map;
     }, new Map<number, {
-      currentWeightedAvgInterestRate: number | null,
+      currentWeightedAvgInterestRate: number,
       upperLiquidationInterestRate: number | null,
       lowerLiquidationInterestRate: number | null
     }>());
@@ -85,7 +85,7 @@ export default class InterestRateRisk {
     });
     /* eslint-enable @typescript-eslint/no-shadow */
 
-    return totalLiquidity.isZero() ? null : numerator.div(totalLiquidity).toNumber();
+    return numerator.div(totalLiquidity).toNumber();
   }
 
   public static getMaxInterestRate(

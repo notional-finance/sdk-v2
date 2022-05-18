@@ -11,10 +11,7 @@ describe('System tests', () => {
   const system = new MockSystem();
   System.overrideSystem(system);
   MockSystem.overrideSystem(system);
-  afterAll(() => {
-    system.destroy();
-    expect(() => System.getSystem()).toThrowError('System not initialized');
-  });
+  afterAll(() => system.destroy());
 
   it('gets currencies', () => {
     const symbol = System.getSystem().getCurrencyBySymbol('ETH');

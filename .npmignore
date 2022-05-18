@@ -4,4 +4,3 @@ tests
 coverage
 .prettierrc.js
 .eslintrc.json
-cache

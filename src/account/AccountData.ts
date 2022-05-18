@@ -27,7 +27,7 @@ interface BalanceResult {
   cashBalance: BigNumber;
   nTokenBalance: BigNumber;
   lastClaimTime: BigNumber;
-  accountIncentiveDebt: BigNumber;
+  lastClaimIntegralSupply: BigNumber;
 }
 
 export interface GetAccountResult {
@@ -168,7 +168,7 @@ export default class AccountData {
             ? TypedBigNumber.from(v.nTokenBalance, BigNumberType.nToken, nTokenSymbol)
             : undefined,
           lastClaimTime: v.lastClaimTime,
-          accountIncentiveDebt: v.accountIncentiveDebt,
+          lastClaimIntegralSupply: v.lastClaimIntegralSupply,
         };
       });
   }
@@ -371,7 +371,7 @@ export default class AccountData {
     let loanToValue: number | null = null;
     let haircutLoanToValue: number | null = null;
     let maxLoanToValue: number | null = null;
-    if (!totalETHValue.isZero() && !totalETHValueHaircut.isZero()) {
+    if (!totalETHValue.isZero()) {
       loanToValue = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
       / INTERNAL_TOKEN_PRECISION) * 100;
       haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
@@ -490,7 +490,7 @@ export default class AccountData {
         cashBalance: netCashChange,
         nTokenBalance: netNTokenChange,
         lastClaimTime: BigNumber.from(0),
-        accountIncentiveDebt: BigNumber.from(0),
+        lastClaimIntegralSupply: BigNumber.from(0),
       });
 
       return accountBalances.sort((a, b) => a.currencyId - b.currencyId);

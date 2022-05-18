@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es5",
     "module": "commonjs",
     "sourceMap": true,
     "outDir": "lib",
@@ -23,10 +23,9 @@
     "removeComments": false,
     "lib": [
       "dom",
-      "es6",
+      "es5",
       "es2015.collection",
-      "es2015.iterable",
-      "ES2019.Array"
+      "es2015.iterable"
     ]
   },
   "include": [

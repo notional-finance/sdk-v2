@@ -109,7 +109,7 @@ describe('Cash Group', () => {
     const shortMaturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
     const rate = cashGroup.markets[0].marketOracleRate();
     const maturity = Math.trunc((shortMaturity - blockTime) / 2) + blockTime;
-    cashGroup.setBlockSupplyRate(0.1e9);
+    cashGroup.setBlockSupplyRate(BigNumber.from(0.1e9));
 
     const expectedRate = Math.trunc((rate + 0.1e9) / 2);
     expect(cashGroup.getOracleRate(maturity, blockTime)).toBeCloseTo(expectedRate, -5);

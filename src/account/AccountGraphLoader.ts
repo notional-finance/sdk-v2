@@ -9,7 +9,7 @@ import GraphClient from '../GraphClient';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import AccountData from './AccountData';
-import {AssetType, BalanceHistory} from '../libs/types';
+import {AssetType} from '../libs/types';
 import BalanceSummary from './BalanceSummary';
 import AssetSummary from './AssetSummary';
 
@@ -36,8 +36,6 @@ const accountsQuery = gql`
         nTokenBalance
         lastClaimTime
         lastClaimIntegralSupply
-        accountIncentiveDebt
-        didMigrateIncentives
       }
       portfolio {
         currency {
@@ -72,8 +70,6 @@ const accountQuery = gql`
         nTokenBalance
         lastClaimTime
         lastClaimIntegralSupply
-        accountIncentiveDebt
-        didMigrateIncentives
       }
       portfolio {
         currency {
@@ -109,8 +105,6 @@ interface BalanceResponse {
   nTokenBalance: string;
   lastClaimTime: number;
   lastClaimIntegralSupply: string;
-  accountIncentiveDebt: string;
-  didMigrateIncentives: boolean;
 }
 
 interface AccountResponse {
@@ -143,16 +137,14 @@ export default class AccountGraphLoader {
     const cashBalance = TypedBigNumber.fromBalance(balance.assetCashBalance, currency.symbol, true);
     const nTokenBalance = TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, true);
     const lastClaimTime = BigNumber.from(balance.lastClaimTime);
-    const accountIncentiveDebt = balance.didMigrateIncentives
-      ? BigNumber.from(balance.accountIncentiveDebt)
-      : BigNumber.from(balance.lastClaimIntegralSupply);
+    const lastClaimIntegralSupply = BigNumber.from(balance.lastClaimIntegralSupply);
 
     return {
       currencyId,
       cashBalance,
       nTokenBalance,
       lastClaimTime,
-      accountIncentiveDebt,
+      lastClaimIntegralSupply,
     };
   }
 
@@ -212,18 +204,7 @@ export default class AccountGraphLoader {
   /**
    * Returns a summary of an account's balances with historical transactions and internal return rate
    */
-  public static async getBalanceSummary(
-    address: string,
-    accountData: AccountData | undefined,
-    graphClient: GraphClient,
-  ) {
-    if (!accountData) {
-      return {
-        balanceHistory: new Array<BalanceHistory>(),
-        balanceSummary: new Array<BalanceSummary>(),
-      };
-    }
-
+  public static async getBalanceSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
     const balanceHistory = await BalanceSummary.fetchBalanceHistory(address, graphClient);
     const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
     return {balanceHistory, balanceSummary};
