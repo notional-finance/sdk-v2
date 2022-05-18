@@ -208,7 +208,7 @@ describe('calculates interest rate risk', () => {
 
     const value = InterestRateRisk.simulateLocalCurrencyValue(
       2,
-      interestRate,
+      interestRate!,
       accountData.cashBalance(2)!,
       accountData.portfolio,
       accountData.nTokenBalance(2),
