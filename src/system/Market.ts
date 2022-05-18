@@ -519,10 +519,13 @@ export default class Market {
 
     // Calculate derivative
     let delta = BigNumber.from(0);
+    let numLoops = 0;
     do {
       const exchangeRate = this.getExchangeRate(totalCashUnderlying, rateScalar, rateAnchor, fCashGuess);
       delta = this.calculateDelta(cashAmount, rateScalar, fCashGuess, totalCashUnderlying, exchangeRate, feeRate);
       fCashGuess = TypedBigNumber.from(fCashGuess.n.sub(delta), fCashGuess.type, fCashGuess.symbol);
+      if (numLoops > 200) throw Error('Rate calculation did not converge');
+      numLoops += 1;
     } while (delta.abs().gt(0));
 
     return fCashGuess;
