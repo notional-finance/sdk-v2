@@ -4,7 +4,7 @@ import {System, Market} from '../system';
 import {convertBigNumber, xirr} from '../libs/xirr';
 // prettier-ignore
 import {
-  Asset, AssetType, TradeHistory, TradeType, Currency,
+  Asset, AssetType, TradeHistory, TradeType, Currency, TransactionHistory,
 } from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 import AccountData from './AccountData';
@@ -156,6 +156,16 @@ export default class AssetSummary {
         tradedInterestRate,
       };
     });
+  }
+
+  public getTransactionHistory(): TransactionHistory[] {
+    return this.history.map((h) => ({
+      txnType: h.tradeType,
+      timestampMS: h.blockTime.getTime(),
+      transactionHash: h.transactionHash,
+      amount: h.netUnderlyingCash,
+      rate: h.tradedInterestRate,
+    }));
   }
 
   /**

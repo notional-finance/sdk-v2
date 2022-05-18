@@ -1,10 +1,13 @@
+import {ethers} from 'ethers';
+
 export const SECONDS_IN_YEAR_ACTUAL = 31536000;
 
 export const RATE_PRECISION = 1e9;
-export const MAX_MARKET_PROPORTION = (RATE_PRECISION * 96) / 100;
+export const MAX_MARKET_PROPORTION = (RATE_PRECISION * 99) / 100;
 export const BASIS_POINT = 1e5;
 export const INTERNAL_TOKEN_PRECISION = 1e8;
 export const INTERNAL_TOKEN_DECIMAL_PLACES = 8;
+export const INCENTIVE_ACCUMULATION_PRECISION = ethers.constants.WeiPerEther;
 export const PERCENTAGE_BASIS = 100;
 export const SECONDS_IN_DAY = 86400;
 export const SECONDS_IN_HOUR = 3600;
@@ -29,7 +32,10 @@ export const SECONDS_PER_BLOCK = 13;
 // This value is not actually stored in the smart contract system, we use it here
 // to ensure that we do not clash with any other currency ids
 export const NOTE_CURRENCY_ID = 2 ** 32 - 1;
+export const STAKED_NOTE_CURRENCY_ID = 2 ** 32;
 export const MIN_INTEREST_RATE = 0;
+// 12 hours
+export const DEFAULT_ORDER_EXPIRATION = 12 * 60 * 60;
 
 export function secondsPerBlock(chainId: number) {
   switch (chainId) {

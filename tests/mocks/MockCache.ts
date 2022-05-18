@@ -1,6 +1,5 @@
 import {BigNumber, ethers} from 'ethers';
 import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {SECONDS_IN_YEAR} from '../../src/config/constants';
 import {getNowSeconds} from '../../src/libs/utils';
 import {Market, CashGroup} from '../../src/system';
 import Blockchain from '../../src/system/datasource/Blockchain';
@@ -32,8 +31,7 @@ export default class MockCache extends Blockchain {
       }
       this.assetRateData.set(k, r);
 
-      const supplyRate = BigNumber.from(0.05e9);
-      this.cashGroups.get(k)?.setBlockSupplyRate(supplyRate);
+      this.cashGroups.get(k)?.setBlockSupplyRate(0.05e9);
     });
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -50,8 +48,10 @@ export default class MockCache extends Blockchain {
         this.nTokenAssetCashPV.set(k, pv);
         this.nTokenTotalSupply.set(k, supply);
         this.nTokenIncentiveFactors.set(k, {
-          integralTotalSupply: BigNumber.from(0),
-          lastSupplyChangeTime: BigNumber.from(getNowSeconds() - SECONDS_IN_YEAR),
+          // In 1e18 denomination, this means we have accumulated 1 NOTE per nToken
+          // (both in 1e8 denomination)
+          accumulatedNOTEPerNToken: ethers.constants.WeiPerEther,
+          lastAccumulatedTime: BigNumber.from(getNowSeconds()),
         });
         this.nTokenCashBalance.set(k, pv);
         this.nTokenLiquidityTokens.set(k, []);
@@ -76,7 +76,7 @@ export default class MockCache extends Blockchain {
 
       for (let i = 1; i <= 2; i += 1) {
         const market = new Market(
-          1,
+          currency.id,
           i,
           CashGroup.getMaturityForMarketIndex(i, tRef),
           c.rateScalars[i - 1],

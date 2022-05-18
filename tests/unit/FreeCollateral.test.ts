@@ -28,7 +28,7 @@ describe('calculates free collateral', () => {
           cashBalance: TypedBigNumber.from(50e8, BigNumberType.InternalAsset, 'cWBTC'),
           nTokenBalance: undefined,
           lastClaimTime: BigNumber.from(0),
-          lastClaimIntegralSupply: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
         },
       ];
 
@@ -54,7 +54,7 @@ describe('calculates free collateral', () => {
           cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
           nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
           lastClaimTime: BigNumber.from(0),
-          lastClaimIntegralSupply: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
         },
       ];
       accountData.updateAsset(
@@ -94,7 +94,7 @@ describe('calculates free collateral', () => {
           cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
           nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
           lastClaimTime: BigNumber.from(0),
-          lastClaimIntegralSupply: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
         },
       ];
 
@@ -133,7 +133,7 @@ describe('calculates free collateral', () => {
           cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
           nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
           lastClaimTime: BigNumber.from(0),
-          lastClaimIntegralSupply: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
         },
       ];
       accountData.updateAsset(
@@ -181,7 +181,7 @@ describe('calculates free collateral', () => {
           cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
           nTokenBalance: TypedBigNumber.from(100e8, BigNumberType.nToken, 'nDAI'),
           lastClaimTime: BigNumber.from(0),
-          lastClaimIntegralSupply: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
         },
       ];
       accountData.updateAsset(
@@ -219,7 +219,7 @@ describe('calculates free collateral', () => {
           cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
           nTokenBalance: TypedBigNumber.from(1000e8, BigNumberType.nToken, 'nDAI'),
           lastClaimTime: BigNumber.from(0),
-          lastClaimIntegralSupply: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
         },
       ];
       accountData.updateAsset(
@@ -423,7 +423,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -474,7 +474,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cDAI'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -527,7 +527,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(-2500e8, BigNumberType.InternalAsset, 'cDAI'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -580,7 +580,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(500e8, BigNumberType.InternalAsset, 'cUSDC'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -635,7 +635,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(50000e8, BigNumberType.InternalAsset, 'cUSDC'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -691,14 +691,14 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(250e8, BigNumberType.InternalAsset, 'cETH'),
             nTokenBalance: undefined,
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
           {
             currencyId: collateralCurrencyId,
             cashBalance: TypedBigNumber.from(-5000e8, BigNumberType.InternalAsset, 'cUSDC'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -761,7 +761,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(-5000e8, BigNumberType.InternalAsset, 'cUSDC'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],
@@ -811,7 +811,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [
@@ -862,7 +862,7 @@ describe('calculates free collateral', () => {
             cashBalance: TypedBigNumber.from(-5000e8, BigNumberType.InternalAsset, 'cUSDC'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
-            lastClaimIntegralSupply: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
           },
         ],
         [],

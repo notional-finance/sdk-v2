@@ -6,14 +6,13 @@ import {ETHER_CURRENCY_ID} from '../../config/constants';
 import {SystemEvents} from '../System';
 import {AccountData} from '../../account';
 import {
-  AssetRate, Currency, EthRate, nToken,
+  AssetRate, Contracts, Currency, EthRate, nToken, StakedNoteParameters,
 } from '../../libs/types';
-import {Notional as NotionalProxy} from '../../typechain/Notional';
 import CashGroup from '../CashGroup';
 
 export default class Blockchain extends DataSource {
   constructor(
-    private notionalProxy: NotionalProxy,
+    private contracts: Contracts,
     private batchProvider: ethers.providers.JsonRpcBatchProvider,
     protected currencies: Map<number, Currency>,
     protected ethRates: Map<number, EthRate>,
@@ -26,8 +25,49 @@ export default class Blockchain extends DataSource {
     super(eventEmitter, refreshIntervalMS);
   }
 
+  private async fetchSNOTEParameters(): Promise<StakedNoteParameters> {
+    // eslint-disable-next-line
+    const [
+      poolId,
+      balancerPoolTotalSupply,
+      swapFee,
+      coolDownTimeInSeconds,
+      redeemWindowSeconds,
+      sNOTETotalSupply,
+    ] = await Promise.all([
+      await this.contracts.balancerPool.getPoolId(),
+      await this.contracts.balancerPool.totalSupply(),
+      await this.contracts.balancerPool.getSwapFeePercentage(),
+      await this.contracts.sNOTE.coolDownTimeInSeconds(),
+      await this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
+      await this.contracts.sNOTE.totalSupply(),
+    ]);
+    const {tokens, balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
+    const noteIndex = tokens[0] === this.contracts.note.address ? 0 : 1;
+    const ethIndex = noteIndex === 1 ? 0 : 1;
+    const sNOTEBptBalance = await this.contracts.sNOTE.getPoolTokenShare(sNOTETotalSupply);
+
+    return {
+      poolId,
+      coolDownTimeInSeconds,
+      redeemWindowSeconds: redeemWindowSeconds.toNumber(),
+      ethBalance: TypedBigNumber.fromBalance(balances[ethIndex], 'ETH', false),
+      noteBalance: TypedBigNumber.fromBalance(balances[noteIndex], 'NOTE', false),
+      balancerPoolTotalSupply,
+      sNOTEBptBalance,
+      swapFee,
+      sNOTETotalSupply: TypedBigNumber.fromBalance(sNOTETotalSupply, 'sNOTE', false),
+    };
+  }
+
   async refreshData() {
     const promises = new Array<any>();
+    promises.push(
+      this.fetchSNOTEParameters().then((s) => {
+        this.stakedNoteParameters = s;
+      }),
+    );
+
     this.ethRates.forEach((e, k) => {
       if (k === ETHER_CURRENCY_ID) {
         // Set the eth rate for Ether as 1-1
@@ -75,7 +115,7 @@ export default class Blockchain extends DataSource {
           a.rateAdapter.getAnnualizedSupplyRate().then((r) => {
             if (this.cashGroups.get(k)!.blockSupplyRate !== r.toNumber()) {
               this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, k);
-              this.cashGroups.get(k)!.setBlockSupplyRate(r);
+              this.cashGroups.get(k)!.setBlockSupplyRate(r.toNumber());
             }
           }),
         );
@@ -96,7 +136,7 @@ export default class Blockchain extends DataSource {
       );
 
       promises.push(
-        this.notionalProxy
+        this.contracts.notionalProxy
           .connect(this.batchProvider)
           .getNTokenAccount(n.contract.address)
           .then((r) => {
@@ -110,8 +150,8 @@ export default class Blockchain extends DataSource {
               this.eventEmitter.emit(SystemEvents.NTOKEN_SUPPLY_UPDATE, k);
               this.nTokenTotalSupply.set(k, supply);
               this.nTokenIncentiveFactors.set(k, {
-                integralTotalSupply: r.integralTotalSupply,
-                lastSupplyChangeTime: r.lastSupplyChangeTime,
+                accumulatedNOTEPerNToken: r.accumulatedNOTEPerNToken,
+                lastAccumulatedTime: r.lastAccumulatedTime,
               });
             }
 
@@ -123,7 +163,7 @@ export default class Blockchain extends DataSource {
       );
 
       promises.push(
-        this.notionalProxy.getNTokenPortfolio(n.contract.address).then((value) => {
+        this.contracts.notionalProxy.getNTokenPortfolio(n.contract.address).then((value) => {
           const {liquidityTokens, netfCashAssets} = value;
           this.nTokenLiquidityTokens.set(k, AccountData.parsePortfolioFromBlockchain(liquidityTokens));
           this.nTokenfCash.set(k, AccountData.parsePortfolioFromBlockchain(netfCashAssets));
@@ -134,7 +174,7 @@ export default class Blockchain extends DataSource {
 
     this.cashGroups.forEach((c, k) => {
       promises.push(
-        this.notionalProxy
+        this.contracts.notionalProxy
           .connect(this.batchProvider)
           .getActiveMarkets(k)
           .then((m) => {

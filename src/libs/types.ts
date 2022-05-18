@@ -1,9 +1,17 @@
 import {BigNumber, BigNumberish, BytesLike} from 'ethers';
-import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
-import {ERC20} from '../typechain/ERC20';
-import {IAggregator} from '../typechain/IAggregator';
-import {NTokenERC20} from '../typechain/NTokenERC20';
 import TypedBigNumber from './TypedBigNumber';
+import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
+import {BalancerPool} from '../typechain/BalancerPool';
+import {BalancerVault} from '../typechain/BalancerVault';
+import {ERC20} from '../typechain/ERC20';
+import {Governor} from '../typechain/Governor';
+import {IAggregator} from '../typechain/IAggregator';
+import {NoteERC20} from '../typechain/NoteERC20';
+import {NTokenERC20} from '../typechain/NTokenERC20';
+import {SNOTE} from '../typechain/SNOTE';
+import {TreasuryManager} from '../typechain/TreasuryManager';
+import {Notional as NotionalProxyTypechain} from '../typechain/Notional';
+import {ExchangeV3} from '../typechain/ExchangeV3';
 
 export enum NTokenStatus {
   Ok = 'Ok',
@@ -54,6 +62,7 @@ export interface WalletBalance {
   isUnderlying: boolean;
   balance: TypedBigNumber;
   allowance: TypedBigNumber;
+  spender: string;
 }
 
 export interface Currency {
@@ -79,7 +88,7 @@ export interface Balance {
   cashBalance: TypedBigNumber;
   nTokenBalance: TypedBigNumber | undefined;
   lastClaimTime: BigNumber;
-  lastClaimIntegralSupply: BigNumber;
+  accountIncentiveDebt: BigNumber;
 }
 
 export interface Asset {
@@ -151,6 +160,7 @@ export interface BalanceHistory {
   id: string;
   blockNumber: number;
   blockTime: Date;
+  transactionHash: string;
 
   currencyId: number;
   tradeType: string;
@@ -193,8 +203,14 @@ export interface nToken {
 }
 
 export interface IncentiveFactors {
+  accumulatedNOTEPerNToken: BigNumber;
+  lastAccumulatedTime: BigNumber;
+}
+
+export interface IncentiveMigration {
+  emissionRate: BigNumber;
   integralTotalSupply: BigNumber;
-  lastSupplyChangeTime: BigNumber;
+  migrationTime: number;
 }
 
 export interface SettlementMarket {
@@ -202,4 +218,53 @@ export interface SettlementMarket {
   totalfCash: TypedBigNumber;
   totalAssetCash: TypedBigNumber;
   totalLiquidity: TypedBigNumber;
+}
+
+export interface StakedNoteParameters {
+  poolId: string;
+  coolDownTimeInSeconds: number;
+  redeemWindowSeconds: number;
+  ethBalance: TypedBigNumber;
+  noteBalance: TypedBigNumber;
+  balancerPoolTotalSupply: BigNumber;
+  sNOTEBptBalance: BigNumber;
+  swapFee: BigNumber;
+  sNOTETotalSupply: TypedBigNumber;
+}
+
+export interface Contracts {
+  notionalProxy: NotionalProxyTypechain;
+  sNOTE: SNOTE;
+  note: NoteERC20;
+  governor: Governor;
+  treasury: TreasuryManager;
+  balancerVault: BalancerVault;
+  balancerPool: BalancerPool;
+  exchangeV3: ExchangeV3 | null;
+  weth: ERC20;
+  comp: ERC20 | null;
+}
+
+export interface ReturnsBreakdown {
+  source: string;
+  balance: TypedBigNumber;
+  value: TypedBigNumber;
+  interestEarned?: TypedBigNumber;
+  realizedYield?: number;
+  rateOfChangePerSecond?: number;
+}
+
+export interface TransactionHistory {
+  txnType: string;
+  timestampMS: number;
+  transactionHash: string;
+  amount: TypedBigNumber;
+  rate?: number;
+}
+
+export interface ReserveData {
+  symbol: string;
+  reserveBalance: TypedBigNumber;
+  reserveBuffer: TypedBigNumber;
+  treasuryBalance: TypedBigNumber;
 }

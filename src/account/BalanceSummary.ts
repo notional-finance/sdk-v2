@@ -1,6 +1,6 @@
 import {gql} from '@apollo/client/core';
 import {
-  Balance, BalanceHistory, Currency, nToken, NTokenStatus,
+  Balance, BalanceHistory, Currency, nToken, NTokenStatus, ReturnsBreakdown, TransactionHistory,
 } from '../libs/types';
 import {getNowSeconds} from '../libs/utils';
 import {xirr, CashFlow, convertBigNumber} from '../libs/xirr';
@@ -38,7 +38,7 @@ export default class BalanceSummary {
   private nToken?: nToken;
 
   public get underlyingSymbol() {
-    return this.currency.underlyingSymbol;
+    return this.currency.underlyingSymbol || this.currency.symbol;
   }
 
   public get symbol() {
@@ -50,11 +50,15 @@ export default class BalanceSummary {
   }
 
   public get totalUnderlyingValueDisplayString() {
+    return this.totalUnderlyingValue.toDisplayString();
+  }
+
+  public get totalUnderlyingValue() {
     if (this.nTokenValueUnderlying) {
-      return this.assetCashValueUnderlying.add(this.nTokenValueUnderlying).toDisplayString();
+      return this.assetCashValueUnderlying.add(this.nTokenValueUnderlying);
     }
 
-    return this.assetCashValueUnderlying.toDisplayString();
+    return this.assetCashValueUnderlying;
   }
 
   public get totalCTokenInterest() {
@@ -126,7 +130,7 @@ export default class BalanceSummary {
   public getWithdrawAmounts(withdrawAmountInternalAsset: TypedBigNumber, preferCash: boolean) {
     withdrawAmountInternalAsset.check(BigNumberType.InternalAsset, this.currency.symbol);
     const canWithdrawNToken = (
-      NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId) === NTokenStatus.Ok
+      NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId) !== NTokenStatus.MarketsNotInitialized
     );
 
     if (withdrawAmountInternalAsset.gt(this.maxWithdrawValueAssetCash)) {
@@ -168,6 +172,39 @@ export default class BalanceSummary {
       const cashWithdraw = withdrawAmountInternalAsset.sub(nTokenRedeemValue);
       return {cashWithdraw, nTokenRedeem: this.nTokenBalance};
     }
+  }
+
+  public getTransactionHistory(): TransactionHistory[] {
+    return this.history.map((h) => ({
+      txnType: h.tradeType,
+      timestampMS: h.blockTime.getTime(),
+      transactionHash: h.transactionHash,
+      amount: h.totalUnderlyingValueChange,
+    }));
+  }
+
+  public getReturnsBreakdown(): ReturnsBreakdown[] {
+    const returnsBreakdown: ReturnsBreakdown[] = [];
+
+    if (!this.assetCashBalance.isZero()) {
+      returnsBreakdown.push({
+        source: this.symbol,
+        balance: this.assetCashBalance,
+        value: this.assetCashValueUnderlying,
+        interestEarned: this.totalCTokenInterest,
+      });
+    }
+
+    if (this.nTokenBalance && this.nTokenBalance.isPositive()) {
+      returnsBreakdown.push({
+        source: this.nTokenSymbol!,
+        balance: this.nTokenBalance,
+        value: this.nTokenValueUnderlying!,
+        interestEarned: this.totalNTokenInterest,
+      });
+    }
+
+    return returnsBreakdown;
   }
 
   constructor(
@@ -382,9 +419,8 @@ export default class BalanceSummary {
             ? NTokenValue.getClaimableIncentives(
               v.currencyId,
               v.nTokenBalance,
-              v.lastClaimTime.toNumber(),
-              v.lastClaimIntegralSupply,
-              currentTime,
+              v.lastClaimTime,
+              v.accountIncentiveDebt,
             )
             : TypedBigNumber.fromBalance(0, 'NOTE', true);
 
@@ -518,7 +554,7 @@ export default class BalanceSummary {
     hasDebt: boolean,
   ) {
     let nTokenAssetPV: TypedBigNumber | undefined;
-    if (NTokenValue.getNTokenStatus(balance.currencyId) === NTokenStatus.Ok) {
+    if (NTokenValue.getNTokenStatus(balance.currencyId) !== NTokenStatus.MarketsNotInitialized) {
       // We don't need to take the haircut on the nTokenBalance because this is already taken into
       // account in the free collateral calculation.
       nTokenAssetPV = balance.nTokenBalance?.toAssetCash(true);

@@ -10,6 +10,7 @@ import {ERC20} from '../typechain/ERC20';
 import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
 import {getNowSeconds} from '../libs/utils';
 import AccountGraphLoader from './AccountGraphLoader';
+import NOTESummary from './NOTESummary';
 
 export default class Account extends AccountRefresh {
   private constructor(
@@ -17,6 +18,7 @@ export default class Account extends AccountRefresh {
     provider: ethers.providers.JsonRpcBatchProvider,
     notionalProxy: NotionalTypechain,
     private graphClient: GraphClient,
+    public signer?: Signer,
   ) {
     super(address, provider, notionalProxy);
   }
@@ -30,26 +32,28 @@ export default class Account extends AccountRefresh {
    * @returns
    */
   public static async load(
-    signer: string | Signer,
+    _signer: string | Signer,
     provider: ethers.providers.JsonRpcBatchProvider,
     system: System,
     graphClient: GraphClient,
   ) {
     let address: string;
     let notionalProxy = system.getNotionalProxy();
+    let signer: Signer | undefined;
 
-    if (typeof signer === 'string') {
-      address = signer;
+    if (typeof _signer === 'string') {
+      address = _signer;
     } else {
       try {
-        address = await signer.getAddress();
+        address = await _signer.getAddress();
       } catch {
         address = ethers.constants.AddressZero;
       }
-      notionalProxy = notionalProxy.connect(signer);
+      notionalProxy = notionalProxy.connect(_signer);
+      signer = _signer;
     }
 
-    const account = new Account(address, provider, notionalProxy, graphClient);
+    const account = new Account(address, provider, notionalProxy, graphClient, signer);
     await account.refresh();
 
     return account;
@@ -59,14 +63,12 @@ export default class Account extends AccountRefresh {
    * Returns a summary of an account's balances with historical transactions and internal return rate
    */
   public async getBalanceSummary() {
-    if (!this.accountData) {
-      return {
-        balanceSummary: [],
-        balanceHistory: [],
-      };
-    }
+    const [{balanceSummary}, noteSummary] = await Promise.all([
+      AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient),
+      NOTESummary.build(this, this.graphClient),
+    ]);
 
-    return AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient);
+    return {balanceSummary, noteSummary};
   }
 
   /**
@@ -165,7 +167,8 @@ export default class Account extends AccountRefresh {
    * @returns
    */
   public async hasAllowanceAsync(symbol: string, depositAmount: TypedBigNumber) {
-    const allowance = await this.getAllowance(symbol);
+    const token = System.getSystem().getTokenBySymbol(symbol);
+    const allowance = await this.getAllowance(symbol, token);
     return allowance.gte(depositAmount);
   }
 
@@ -173,14 +176,12 @@ export default class Account extends AccountRefresh {
    * Returns the transfer allowance for a given currency symbol
    * @returns BigNumber
    */
-  private async getAllowance(symbol: string) {
+  private async getAllowance(symbol: string, token: ERC20, spender: string = this.notionalProxy.address) {
     if (symbol === 'ETH') {
       return TypedBigNumber.from(ethers.constants.MaxUint256, BigNumberType.ExternalUnderlying, 'ETH');
     }
 
-    const currency = System.getSystem().getCurrencyBySymbol(symbol);
-    const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
-    const allowance = await contract.allowance(this.address, this.notionalProxy.address);
+    const allowance = await token.allowance(this.address, spender);
     return TypedBigNumber.fromBalance(allowance, symbol, false);
   }
 
@@ -193,7 +194,8 @@ export default class Account extends AccountRefresh {
   public async sendTransaction(txn: ethers.PopulatedTransaction) {
     // eslint-disable-next-line no-param-reassign
     txn.from = this.address;
-    return this.notionalProxy.signer.sendTransaction(txn);
+    if (!this.signer) throw Error('No signer on account');
+    return this.signer.sendTransaction(txn);
   }
 
   /**
@@ -204,15 +206,21 @@ export default class Account extends AccountRefresh {
    * @param overrides
    * @returns
    */
-  public async setAllowance(symbol: string, amount: BigNumber, overrides = {} as Overrides) {
-    const currency = System.getSystem().getCurrencyBySymbol(symbol);
-    const contract = currency.symbol === symbol ? currency.contract : (currency.underlyingContract as ERC20);
-    const allowance = await this.getAllowance(symbol);
+  public async setAllowance(
+    symbol: string,
+    amount: BigNumber,
+    spender: string = this.notionalProxy.address,
+    overrides = {} as Overrides,
+  ) {
+    if (symbol === 'ETH') throw Error('Cannot set allowance on ETH');
+
+    const token = System.getSystem().getTokenBySymbol(symbol);
+    const allowance = await this.getAllowance(symbol, token);
     if (!allowance.isZero() && !amount.isZero()) {
       throw new Error(`Resetting allowance from ${allowance.toString()}, first set allowance to zero`);
     }
 
-    return contract.populateTransaction.approve(this.notionalProxy.address, amount, overrides);
+    return token.populateTransaction.approve(spender, amount, overrides);
   }
 
   public async fetchClaimableIncentives(account: string, blockTime = getNowSeconds()) {

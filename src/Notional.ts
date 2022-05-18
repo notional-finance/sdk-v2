@@ -6,9 +6,6 @@ import Governance from './Governance';
 import GraphClient from './GraphClient';
 import {Account, AccountData, AccountGraphLoader} from './account';
 
-/* typechain imports */
-import {NoteERC20} from './typechain/NoteERC20';
-import {Notional as NotionalProxyTypechain} from './typechain/Notional';
 import {SystemEvents} from './system/System';
 // eslint-disable import/no-named-as-default import/no-named-as-default-member
 import TransactionBuilder from './TransactionBuilder';
@@ -21,18 +18,42 @@ import {
 } from './config/constants';
 import {DataSourceType} from './system/datasource';
 
+/* typechain imports */
+import {NoteERC20} from './typechain/NoteERC20';
+import {ERC20} from './typechain/ERC20';
+import {Notional as NotionalProxyTypechain} from './typechain/Notional';
+import {SNOTE} from './typechain/SNOTE';
+import {Governor} from './typechain/Governor';
+import {TreasuryManager} from './typechain/TreasuryManager';
+import {BalancerPool} from './typechain/BalancerPool';
+import {BalancerVault} from './typechain/BalancerVault';
+import {ExchangeV3} from './typechain/ExchangeV3';
+import {Contracts} from '.';
+
+interface Addresses {
+  airdrop: string;
+  governor: string;
+  note: string;
+  notional: string;
+  sNOTE: string;
+  balancerVault: string;
+  balancerPool: string;
+  treasury: string;
+  weth: string;
+  exchangeV3?: string;
+  comp?: string;
+}
+
 /* ABI imports */
 const NoteERC20ABI = require('./abi/NoteERC20.json');
 const NotionalABI = require('./abi/Notional.json');
-
-/* eslint-disable */
-let localAddresses: any;
-try {
-  // Local addresses may not be available in non-dev environments
-  localAddresses = require('./config/addresses.local.json');
-} catch {
-  localAddresses = undefined;
-}
+const BalancerVaultABI = require('./abi/BalancerVault.json');
+const BalancerPoolABI = require('./abi/BalancerPool.json');
+const sNOTEABI = require('./abi/sNOTE.json');
+const ERC20ABI = require('./abi/ERC20.json');
+const GovernorABI = require('./abi/Governor.json');
+const TreasuryManagerABI = require('./abi/TreasuryManager.json');
+const ExchangeV3ABI = require('./abi/ExchangeV3.json');
 
 /* Endpoints */
 const kovanAddresses = require('./config/kovan.json');
@@ -51,8 +72,28 @@ export default class Notional extends TransactionBuilder {
     public governance: Governance,
     public system: System,
     public provider: ethers.providers.Provider,
+    public contracts: Contracts,
   ) {
     super(system.getNotionalProxy(), system);
+  }
+
+  public static getContracts(addresses: Addresses, signer: Signer): Contracts {
+    return {
+      notionalProxy: new Contract(addresses.notional, NotionalABI, signer) as NotionalProxyTypechain,
+      sNOTE: new Contract(addresses.sNOTE, sNOTEABI, signer) as SNOTE,
+      note: new Contract(addresses.note, NoteERC20ABI, signer) as NoteERC20,
+      governor: new Contract(addresses.governor, GovernorABI, signer) as Governor,
+      treasury: new Contract(addresses.treasury, TreasuryManagerABI, signer) as TreasuryManager,
+      balancerVault: new Contract(addresses.balancerVault, BalancerVaultABI, signer) as BalancerVault,
+      balancerPool: new Contract(addresses.balancerPool, BalancerPoolABI, signer) as BalancerPool,
+      exchangeV3: addresses.exchangeV3
+        ? (new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3)
+        : null,
+      weth: new Contract(addresses.weth, ERC20ABI, signer) as ERC20,
+      comp: addresses.comp
+        ? (new Contract(addresses.comp, ERC20ABI, signer) as ERC20)
+        : null,
+    };
   }
 
   /**
@@ -65,9 +106,9 @@ export default class Notional extends TransactionBuilder {
     chainId: number,
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
-    dataSourceType = DataSourceType.Cache
+    dataSourceType = DataSourceType.Cache,
   ) {
-    let addresses: any;
+    let addresses: Addresses;
     let graphEndpoint: string;
     let pollInterval: number;
 
@@ -88,35 +129,30 @@ export default class Notional extends TransactionBuilder {
         pollInterval = Number(graphEndpoints['kovan:poll']);
         break;
       case 1337:
-        addresses = localAddresses;
-        graphEndpoint = graphEndpoints['local:http'];
+        addresses = mainnetAddresses;
+        graphEndpoint = graphEndpoints['mainnet:http'];
         pollInterval = Number(graphEndpoints['local:poll']);
+        // eslint-disable-next-line no-param-reassign
         refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
+        // eslint-disable-next-line no-param-reassign
         dataSourceType = DataSourceType.Blockchain;
         break;
       default:
         throw new Error(`Undefined chainId: ${chainId}`);
     }
 
-    let signer: Signer;
-    if (chainId === 1337) {
-      // Cannot use the zero address with Ganache due to a bug
-      signer = new VoidSigner(addresses['deployer'], provider);
-    } else {
-      signer = new VoidSigner(ethers.constants.AddressZero, provider);
-    }
-    const note = new Contract(addresses.note, NoteERC20ABI, signer) as NoteERC20;
+    const signer = new VoidSigner(ethers.constants.AddressZero, provider);
+    const contracts = Notional.getContracts(addresses, signer);
     const graphClient = new GraphClient(graphEndpoint, pollInterval);
-    const governance = new Governance(addresses.governor, note, signer, provider, graphClient) as Governance;
-    const notionalProxy = new Contract(addresses.notional, NotionalABI, signer) as NotionalProxyTypechain;
+    const governance = new Governance(addresses.governor, contracts.note, signer, provider, graphClient) as Governance;
     const system = await System.load(
       graphClient,
-      notionalProxy,
+      contracts,
       signer.provider as ethers.providers.JsonRpcBatchProvider,
       chainId,
       dataSourceType,
       refreshDataInterval,
-      DEFAULT_CONFIGURATION_REFRESH_INTERVAL
+      DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
     );
 
     // await for the first data refresh before returning
@@ -127,11 +163,15 @@ export default class Notional extends TransactionBuilder {
       });
     });
 
-    return new Notional(note, graphClient, governance, system, provider);
+    return new Notional(contracts.note, graphClient, governance, system, provider, contracts);
+  }
+
+  public destroy() {
+    this.system.destroy();
   }
 
   public async getAccount(address: string | Signer) {
-    return await Account.load(
+    return Account.load(
       address,
       this.provider as ethers.providers.JsonRpcBatchProvider,
       this.system,
@@ -140,36 +180,38 @@ export default class Notional extends TransactionBuilder {
   }
 
   public async getAccountBalanceSummaryFromGraph(address: string, accountData: AccountData) {
-    return await AccountGraphLoader.getBalanceSummary(address, accountData, this.graphClient);
+    return AccountGraphLoader.getBalanceSummary(address, accountData, this.graphClient);
   }
 
   public async getAccountAssetSummaryFromGraph(address: string, accountData: AccountData) {
-    return await AccountGraphLoader.getAssetSummary(address, accountData, this.graphClient);
+    return AccountGraphLoader.getAssetSummary(address, accountData, this.graphClient);
   }
 
   public async getAccountFromGraph(address: string) {
-    return await AccountGraphLoader.load(this.graphClient, address);
+    return AccountGraphLoader.load(this.graphClient, address);
   }
 
   public async getAccountsFromGraph() {
-    return await AccountGraphLoader.loadBatch(this.graphClient);
+    return AccountGraphLoader.loadBatch(this.graphClient);
   }
 
   public parseInput(input: string, symbol: string, isInternal: boolean) {
     const bnType = TypedBigNumber.getType(symbol, isInternal);
-    const currency = this.system.getCurrencyBySymbol(symbol);
     let decimalPlaces: number;
     if (isInternal) {
       decimalPlaces = INTERNAL_TOKEN_DECIMAL_PLACES;
+    } else if (symbol === 'WETH' || symbol === 'sNOTE') {
+      // This is External WETH or sNOTE (neither are in System as currencies)
+      decimalPlaces = 18;
     } else {
-      decimalPlaces =
-        bnType === BigNumberType.ExternalAsset
-          ? currency.decimalPlaces
-          : currency.underlyingDecimalPlaces || currency.decimalPlaces;
+      const currency = this.system.getCurrencyBySymbol(symbol);
+      decimalPlaces = bnType === BigNumberType.ExternalAsset
+        ? currency.decimalPlaces
+        : currency.underlyingDecimalPlaces || currency.decimalPlaces;
     }
 
     try {
-      const value = utils.parseUnits(input.replace(',',''), decimalPlaces);
+      const value = utils.parseUnits(input.replace(/,/g, ''), decimalPlaces);
       return TypedBigNumber.from(BigNumber.from(value), bnType, symbol);
     } catch {
       return undefined;
@@ -178,9 +220,9 @@ export default class Notional extends TransactionBuilder {
 
   public isNotionalContract(counterparty: string) {
     return (
-      (counterparty == this.system.getNotionalProxy().address) ||
-      (counterparty == this.governance.getContract().address) ||
-      (counterparty == this.note.address)
+      counterparty === this.system.getNotionalProxy().address
+      || counterparty === this.governance.getContract().address
+      || counterparty === this.note.address
     );
   }
 }

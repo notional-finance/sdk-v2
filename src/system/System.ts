@@ -6,8 +6,10 @@ import {
   Asset,
   AssetRate,
   AssetType,
+  Contracts,
   Currency,
   EthRate,
+  IncentiveMigration,
   nToken,
   SettlementMarket,
   TokenType,
@@ -23,7 +25,6 @@ import {
 import {IAggregator} from '../typechain/IAggregator';
 import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
 import {NTokenERC20} from '../typechain/NTokenERC20';
-import {Notional as NotionalProxy} from '../typechain/Notional';
 import {ERC20} from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
 import CashGroup from './CashGroup';
@@ -143,6 +144,11 @@ const systemConfigurationQuery = gql`
         incentiveEmissionRate
         pvHaircutPercentage
       }
+      incentiveMigration {
+        migrationEmissionRate
+        finalIntegralTotalSupply
+        migrationTime
+      }
     }
   }
 `;
@@ -191,6 +197,11 @@ interface SystemQueryResult {
       incentiveEmissionRate: string | null;
       pvHaircutPercentage: number | null;
     } | null;
+    incentiveMigration: {
+      migrationEmissionRate: string;
+      finalIntegralTotalSupply: string;
+      migrationTime: string;
+    } | null;
   }[];
 }
 
@@ -219,6 +230,7 @@ export default class System {
   protected assetRate = new Map<number, AssetRate>();
   protected cashGroups = new Map<number, CashGroup>();
   protected nTokens = new Map<number, nToken>();
+  protected incentiveMigration = new Map<number, IncentiveMigration>();
   public dataSource: DataSource;
 
   public get lastUpdateBlockNumber() {
@@ -252,9 +264,9 @@ export default class System {
   constructor(
     data: SystemQueryResult,
     chainId: number,
-    private graphClient: GraphClient,
-    private notionalProxy: NotionalProxy,
-    private batchProvider: ethers.providers.JsonRpcBatchProvider,
+    public graphClient: GraphClient,
+    private contracts: Contracts,
+    public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public dataSourceType: DataSourceType,
     public refreshIntervalMS: number,
     public refreshConfigurationDataIntervalMs?: number,
@@ -263,8 +275,9 @@ export default class System {
     System._systemInstance = this;
     this.parseQueryResult(data);
     if (dataSourceType === DataSourceType.Blockchain) {
+      // Add address lookup thingy
       this.dataSource = new Blockchain(
-        notionalProxy,
+        contracts,
         batchProvider,
         this.currencies,
         this.ethRates,
@@ -299,11 +312,13 @@ export default class System {
   public destroy() {
     if (this.dataRefreshInterval) clearInterval(this.dataRefreshInterval);
     if (this.configurationRefreshInterval) clearInterval(this.configurationRefreshInterval);
+    // eslint-disable-next-line no-underscore-dangle
+    System._systemInstance = undefined;
   }
 
   public static async load(
     graphClient: GraphClient,
-    notionalProxy: NotionalProxy,
+    contracts: Contracts,
     batchProvider: ethers.providers.JsonRpcBatchProvider,
     chainId: number,
     refreshDataSource,
@@ -315,7 +330,7 @@ export default class System {
       data,
       chainId,
       graphClient,
-      notionalProxy,
+      contracts,
       batchProvider,
       refreshDataSource,
       refreshIntervalMS,
@@ -353,8 +368,8 @@ export default class System {
         }
 
         this.currencies.set(currencyId, currency);
-        this.symbolToCurrencyId.set(c.symbol, Number(c.id));
-        if (c.underlyingSymbol) this.symbolToCurrencyId.set(c.underlyingSymbol, Number(c.id));
+        this.symbolToCurrencyId.set(c.symbol, currencyId);
+        if (c.underlyingSymbol) this.symbolToCurrencyId.set(c.underlyingSymbol, currencyId);
 
         this.ethRates.set(currencyId, {
           rateOracle: new Contract(c.ethExchangeRate.rateOracle, IAggregatorABI, this.batchProvider) as IAggregator,
@@ -413,7 +428,7 @@ export default class System {
         if (c.nToken) {
           const depositShares = (c.nToken.depositShares || []).map((v) => BigNumber.from(v));
           const leverageThresholds = (c.nToken.leverageThresholds || []).map((v) => BigNumber.from(v));
-          this.symbolToCurrencyId.set(c.nToken.symbol, Number(c.id));
+          this.symbolToCurrencyId.set(c.nToken.symbol, currencyId);
 
           this.nTokens.set(currencyId, {
             name: c.nToken.name,
@@ -425,14 +440,54 @@ export default class System {
             contract: new Contract(c.nToken.tokenAddress, NTokenERC20ABI, this.batchProvider) as NTokenERC20,
           });
         }
+
+        if (c.incentiveMigration) {
+          this.incentiveMigration.set(currencyId, {
+            emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
+            integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
+            migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
+          });
+        }
       });
 
     this.eventEmitter.emit(SystemEvents.CONFIGURATION_UPDATE);
     if (this.dataSource) this.dataSource.refreshData();
   }
 
+  public getIncentiveMigration(currencyId: number) {
+    return this.incentiveMigration.get(currencyId);
+  }
+
+  public getStakedNoteParameters() {
+    return this.dataSource.stakedNoteParameters;
+  }
+
   public getNotionalProxy() {
-    return this.notionalProxy;
+    return this.contracts.notionalProxy;
+  }
+
+  public getNOTE() {
+    return this.contracts.note;
+  }
+
+  public getStakedNote() {
+    return this.contracts.sNOTE;
+  }
+
+  public getWETH() {
+    return this.contracts.weth;
+  }
+
+  public getCOMP() {
+    return this.contracts.comp;
+  }
+
+  public getTreasuryManager() {
+    return this.contracts.treasury;
+  }
+
+  public getExchangeV3() {
+    return this.contracts.exchangeV3;
   }
 
   public getAllCurrencies(): Currency[] {
@@ -447,6 +502,20 @@ export default class System {
     const currencyId = this.symbolToCurrencyId.get(symbol);
     if (!currencyId) throw new Error(`Currency ${symbol} not found`);
     return this.getCurrencyById(currencyId);
+  }
+
+  public getTokenBySymbol(symbol: string): ERC20 {
+    if (symbol === 'sNOTE') {
+      return this.getStakedNote() as ERC20;
+    } if (symbol === 'NOTE') {
+      return this.getNOTE() as ERC20;
+    } if (symbol === 'WETH') {
+      return this.getWETH() as ERC20;
+    }
+    const currencyId = this.symbolToCurrencyId.get(symbol);
+    if (!currencyId) throw new Error(`Currency ${symbol} not found`);
+    const currency = this.getCurrencyById(currencyId);
+    return currency.symbol === symbol ? currency.contract : currency.underlyingContract!;
   }
 
   public getCurrencyById(id: number): Currency {
@@ -623,8 +692,9 @@ export default class System {
       {currencyId: currencyId.toString(), maturity},
     );
 
-    const isSettlementRateSet = settlementRateResponse.settlementRates.length > 0
-      && settlementRateResponse.settlementRates[0].assetExchangeRate;
+    // eslint-disable-next-line
+    const isSettlementRateSet =
+      settlementRateResponse.settlementRates.length > 0 && settlementRateResponse.settlementRates[0].assetExchangeRate;
 
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here

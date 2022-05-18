@@ -1,12 +1,15 @@
 import {BigNumber} from 'ethers';
 import EventEmitter from 'eventemitter3';
 import fetch from 'cross-fetch';
+import fetchRetry from 'fetch-retry';
 import {DataSource} from '.';
 import TypedBigNumber from '../../libs/TypedBigNumber';
 import System, {SystemEvents} from '../System';
 import CashGroup from '../CashGroup';
 import {NOTE_CURRENCY_ID} from '../../config/constants';
 import NoteETHRateProvider from '../NoteETHRateProvider';
+
+const retry = fetchRetry(fetch);
 
 export default class Cache extends DataSource {
   private cacheURL: string | null;
@@ -49,7 +52,10 @@ export default class Cache extends DataSource {
 
   async getCacheData(): Promise<any> {
     if (this.cacheURL === null) return '{}';
-    const result = await fetch(this.cacheURL);
+    const result = await retry(this.cacheURL, {
+      retries: 3,
+      retryDelay: (attempt: number) => (2 ** attempt) * 1000,
+    });
     if (result.status >= 400) throw Error(`Error from cache server ${this.cacheURL}`);
     return result.text();
   }
@@ -57,14 +63,26 @@ export default class Cache extends DataSource {
   async refreshData() {
     if (this.cacheURL === null) return;
     const parsedObject = JSON.parse(await this.getCacheData(), this.parseMap);
+    const sNOTEParams = parsedObject.dataSource.stakedNoteParameters;
+    this.stakedNoteParameters = {
+      poolId: sNOTEParams.poolId,
+      coolDownTimeInSeconds: sNOTEParams.coolDownTimeInSeconds,
+      redeemWindowSeconds: sNOTEParams.redeemWindowSeconds,
+      ethBalance: TypedBigNumber.fromObject(sNOTEParams.ethBalance),
+      noteBalance: TypedBigNumber.fromObject(sNOTEParams.noteBalance),
+      balancerPoolTotalSupply: BigNumber.from(sNOTEParams.balancerPoolTotalSupply),
+      sNOTEBptBalance: BigNumber.from(sNOTEParams.sNOTEBptBalance),
+      swapFee: BigNumber.from(sNOTEParams.swapFee),
+      sNOTETotalSupply: TypedBigNumber.fromObject(sNOTEParams.sNOTETotalSupply),
+    };
 
     parsedObject.cashGroups.forEach((value: any, key: number) => {
       const currentCashGroup = this.cashGroups.get(key);
       if (!currentCashGroup) throw Error(`Configuration mismatch during refresh for cash group ${key}`);
       /* eslint-disable no-underscore-dangle */
-      const newBlockSupplyRate = BigNumber.from(value._blockSupplyRate);
+      const newBlockSupplyRate = Number(value._blockSupplyRate);
 
-      if (currentCashGroup.blockSupplyRate !== newBlockSupplyRate.toNumber()) {
+      if (currentCashGroup.blockSupplyRate !== newBlockSupplyRate) {
         this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, key);
         currentCashGroup.setBlockSupplyRate(newBlockSupplyRate);
       }
@@ -82,7 +100,7 @@ export default class Cache extends DataSource {
         if (hasChanged) {
           this.eventEmitter.emit(SystemEvents.MARKET_UPDATE, currentCashGroup.markets[i].marketKey);
         }
-      /* eslint-enable no-underscore-dangle */
+        /* eslint-enable no-underscore-dangle */
       });
     });
 
@@ -108,8 +126,8 @@ export default class Cache extends DataSource {
 
     parsedObject.dataSource.nTokenIncentiveFactors.forEach((value: any, key: number) => {
       this.nTokenIncentiveFactors.set(key, {
-        integralTotalSupply: BigNumber.from(value.integralTotalSupply),
-        lastSupplyChangeTime: BigNumber.from(value.lastSupplyChangeTime),
+        accumulatedNOTEPerNToken: BigNumber.from(value.accumulatedNOTEPerNToken),
+        lastAccumulatedTime: BigNumber.from(value.lastAccumulatedTime),
       });
     });
 
