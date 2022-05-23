@@ -1,5 +1,6 @@
 import {gql} from '@apollo/client/core';
 import {BigNumber, Contract, ethers} from 'ethers';
+import {clearInterval} from 'timers';
 import EventEmitter from 'eventemitter3';
 import {
   Asset,
