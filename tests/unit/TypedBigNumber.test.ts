@@ -240,4 +240,18 @@ describe('Typed Big Number', () => {
     expect(snote?.toExactString()).toBe('1.0');
     expect(snote?.symbol).toBe('sNOTE');
   });
+
+  it('properly converts underlying and asset values for NonMintable tokens', () => {
+    const nonMintable = notional.parseInput('1', 'NOMINT', false);
+    expect(nonMintable?.isAssetCash()).toBeTruthy();
+    expect(nonMintable?.toUnderlying().isUnderlying()).toBeTruthy();
+    expect(nonMintable?.isExternalPrecision()).toBeTruthy();
+    expect(nonMintable?.toInternalPrecision().toUnderlying(false).toString()).toEqual(nonMintable?.toString());
+    expect(nonMintable?.toUnderlying(false).toString()).toEqual(nonMintable?.toString());
+    expect(nonMintable?.toUnderlying(true).toExactString()).toEqual(nonMintable?.toInternalPrecision().toExactString());
+
+    expect(nonMintable?.toUnderlying().toAssetCash(false).toString()).toEqual(nonMintable?.toString());
+    expect(nonMintable?.toUnderlying().toAssetCash(true).toExactString())
+      .toEqual(nonMintable?.toInternalPrecision().toExactString());
+  });
 });

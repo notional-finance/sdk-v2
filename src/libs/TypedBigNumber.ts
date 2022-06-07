@@ -1,6 +1,7 @@
 import {
   BigNumber, BigNumberish, constants, utils,
 } from 'ethers';
+import {TokenType} from './types';
 import {
   INTERNAL_TOKEN_PRECISION,
   PERCENTAGE_BASIS,
@@ -35,7 +36,7 @@ class TypedBigNumber {
 
   get decimals() {
     const currency = System.getSystem().getCurrencyById(this.currencyId);
-    const decimals = this.isUnderlying() ? currency.underlyingDecimals : currency.decimals;
+    const decimals = this.isUnderlying() ? (currency.underlyingDecimals || currency.decimals) : currency.decimals;
     if (!decimals) throw new Error(`Decimals not found for currency ${this.currencyId}`);
     return decimals;
   }
@@ -219,6 +220,11 @@ class TypedBigNumber {
     return this.type === BigNumberType.nToken;
   }
 
+  isNonMintable(): boolean {
+    const currency = System.getSystem().getCurrencyById(this.currencyId);
+    return currency.tokenType === TokenType.NonMintable;
+  }
+
   isNOTE(): boolean {
     return this.type === BigNumberType.NOTE;
   }
@@ -279,9 +285,12 @@ class TypedBigNumber {
   toAssetCash(internalPrecision: boolean = this.isInternalPrecision(), overrideRate?: BigNumber): TypedBigNumber {
     if (this.isAssetCash()) {
       return internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
-    }
-
-    if (this.isUnderlying()) {
+    } if (this.isNonMintable()) {
+      // A non mintable token does not require currency conversion
+      const matchingPrecision = internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
+      const bnType = internalPrecision ? BigNumberType.InternalAsset : BigNumberType.ExternalAsset;
+      return new TypedBigNumber(matchingPrecision.n, bnType, this.symbol);
+    } if (this.isUnderlying()) {
       const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
@@ -306,9 +315,7 @@ class TypedBigNumber {
       const bn = new TypedBigNumber(assetValue, BigNumberType.ExternalAsset, currency.symbol);
       // Convert to internal precision if required by parameter
       return internalPrecision ? bn.toInternalPrecision() : bn;
-    }
-
-    if (this.isNToken()) {
+    } if (this.isNToken()) {
       // This returns the nToken balance in asset cash value (does not include redeem slippage)
       const assetValue = NTokenValue.convertNTokenToInternalAsset(this.currencyId, this, false);
       return internalPrecision ? assetValue : assetValue.toExternalPrecision();
@@ -321,13 +328,14 @@ class TypedBigNumber {
     if (this.isNOTE() || this.isStakedNOTE()) {
       // NOTE does not convert to underlying, just returns itself
       return this;
-    }
-
-    if (this.isUnderlying()) {
+    } if (this.isUnderlying()) {
       return internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
-    }
-
-    if (this.isAssetCash()) {
+    } if (this.isNonMintable()) {
+      // A non mintable token does not require currency conversion
+      const matchingPrecision = internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
+      const bnType = internalPrecision ? BigNumberType.InternalUnderlying : BigNumberType.ExternalUnderlying;
+      return new TypedBigNumber(matchingPrecision.n, bnType, this.symbol);
+    } if (this.isAssetCash()) {
       const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
@@ -353,9 +361,7 @@ class TypedBigNumber {
       const bn = new TypedBigNumber(underlying, BigNumberType.ExternalUnderlying, underlyingSymbol);
       // Convert to internal precision if required by parameter
       return internalPrecision ? bn.toInternalPrecision() : bn;
-    }
-
-    if (this.isNToken()) {
+    } if (this.isNToken()) {
       // This returns the nToken balance in underlying value (does not include redeem slippage)
       return NTokenValue.convertNTokenToInternalAsset(this.currencyId, this, false).toUnderlying(internalPrecision);
     }

@@ -14,6 +14,7 @@ import {Notional as NotionalProxyTypechain} from '../typechain/Notional';
 import {ExchangeV3} from '../typechain/ExchangeV3';
 
 export enum NTokenStatus {
+  NoNToken = 'NoNToken',
   Ok = 'Ok',
   MarketsNotInitialized = 'MarketsNotInitialized',
   nTokenHasResidual = 'nTokenHasResidual',
