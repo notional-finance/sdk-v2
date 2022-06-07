@@ -129,9 +129,8 @@ export default class BalanceSummary {
   // Returns cash balance and nToken withdraw amounts
   public getWithdrawAmounts(withdrawAmountInternalAsset: TypedBigNumber, preferCash: boolean) {
     withdrawAmountInternalAsset.check(BigNumberType.InternalAsset, this.currency.symbol);
-    const canWithdrawNToken = (
-      NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId) !== NTokenStatus.MarketsNotInitialized
-    );
+    const nTokenStatus = NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId);
+    const canWithdrawNToken = nTokenStatus === NTokenStatus.Ok || nTokenStatus === NTokenStatus.nTokenHasResidual;
 
     if (withdrawAmountInternalAsset.gt(this.maxWithdrawValueAssetCash)) {
       throw new Error('Cannot withdraw, over maximum value');
