@@ -266,7 +266,7 @@ export default class BalanceSummary {
       tradeType = 'Deposit';
     }
 
-    if (!nTokenBalanceBefore || !nTokenBalanceAfter) return 'unknown';
+    if (!nTokenBalanceBefore || !nTokenBalanceAfter) return tradeType || 'unknown';
     if (nTokenBalanceBefore.gt(nTokenBalanceAfter)) {
       tradeType = tradeType ? `${tradeType} & Redeem nToken` : 'Redeem nToken';
     } else if (nTokenBalanceBefore.lt(nTokenBalanceAfter)) {
@@ -300,25 +300,27 @@ export default class BalanceSummary {
         ? TypedBigNumber.fromBalance(r.nTokenBalanceAfter, nTokenSymbol, true)
         : undefined;
 
-      const assetCashValueUnderlyingBefore = TypedBigNumber.fromBalance(
+      // Use from instead of fromBalance here to override default for NonMintable tokens
+      // which are always categorized as InternalAsset
+      const assetCashValueUnderlyingBefore = TypedBigNumber.from(
         r.assetCashValueUnderlyingBefore,
+        BigNumberType.InternalUnderlying,
         underlyingSymbol,
-        true,
       );
-      const assetCashValueUnderlyingAfter = TypedBigNumber.fromBalance(
+      const assetCashValueUnderlyingAfter = TypedBigNumber.from(
         r.assetCashValueUnderlyingAfter,
+        BigNumberType.InternalUnderlying,
         underlyingSymbol,
-        true,
       );
-      const nTokenValueUnderlyingBefore = TypedBigNumber.fromBalance(
+      const nTokenValueUnderlyingBefore = TypedBigNumber.from(
         r.nTokenValueUnderlyingBefore,
+        BigNumberType.InternalUnderlying,
         underlyingSymbol,
-        true,
       );
-      const nTokenValueUnderlyingAfter = TypedBigNumber.fromBalance(
+      const nTokenValueUnderlyingAfter = TypedBigNumber.from(
         r.nTokenValueUnderlyingAfter,
+        BigNumberType.InternalUnderlying,
         underlyingSymbol,
-        true,
       );
       const totalUnderlyingValueChange = assetCashValueUnderlyingAfter
         .sub(assetCashValueUnderlyingBefore)
@@ -554,7 +556,8 @@ export default class BalanceSummary {
     hasDebt: boolean,
   ) {
     let nTokenAssetPV: TypedBigNumber | undefined;
-    if (NTokenValue.getNTokenStatus(balance.currencyId) !== NTokenStatus.MarketsNotInitialized) {
+    const nTokenStatus = NTokenValue.getNTokenStatus(balance.currencyId);
+    if (nTokenStatus === NTokenStatus.Ok || nTokenStatus === NTokenStatus.nTokenHasResidual) {
       // We don't need to take the haircut on the nTokenBalance because this is already taken into
       // account in the free collateral calculation.
       nTokenAssetPV = balance.nTokenBalance?.toAssetCash(true);

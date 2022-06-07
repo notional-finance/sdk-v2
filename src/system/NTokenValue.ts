@@ -148,6 +148,7 @@ export default class NTokenValue {
   }
 
   public static getNTokenStatus(currencyId: number) {
+    if (!System.getSystem().getNToken(currencyId)) return NTokenStatus.NoNToken;
     const {liquidityTokens, fCash} = NTokenValue.getNTokenPortfolio(currencyId);
 
     // If there are no liquidity tokens then the markets have not been initialized for the first time,
