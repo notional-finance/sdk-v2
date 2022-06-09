@@ -54,7 +54,7 @@ export default class Account extends AccountRefresh {
     }
 
     const account = new Account(address, provider, notionalProxy, graphClient, signer);
-    await account.refreshAccountData();
+    await account.refresh();
 
     return account;
   }
