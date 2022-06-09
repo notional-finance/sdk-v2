@@ -111,6 +111,15 @@ export default abstract class AccountRefresh {
     }
   }
 
+  public async refreshAccountData() {
+    try {
+      const data = await this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r));
+      this._accountData = data;
+    } catch (e) {
+      throw new Error(`Failed to refresh account data for ${this.address}`);
+    }
+  }
+
   /**
    * Clears the account's update listeners
    */
@@ -157,7 +166,8 @@ export default abstract class AccountRefresh {
             if (c.id === ETHER_CURRENCY_ID) {
               return [
                 // Special handling for ETH balance (spender is irrelevant)
-                this.provider.getBalance(this.address)
+                this.provider
+                  .getBalance(this.address)
                   .then((b) => this.updateWalletBalance('ETH', AddressZero, block, b, MaxUint256)),
                 // This is for cETH
                 this.fetchBalanceAndAllowance(c.symbol, c.contract, spender, block),
