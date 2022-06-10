@@ -1,23 +1,23 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import {
   BigNumber,
   Contract,
   // utils,
   // Wallet,
 } from 'ethers';
-import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
-import {ethers} from 'hardhat';
-import {getAccount, setChainState} from './utils';
-import {System} from '../../src/system';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { ethers } from 'hardhat';
+import { getAccount, setChainState } from './utils';
+import { System } from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
-import {ERC20} from '../../src/typechain/ERC20';
-import {TypedBigNumber} from '../../src';
-import {BalancerVault} from '../../src/typechain/BalancerVault';
-import {BalancerPool} from '../../src/typechain/BalancerPool';
-import {StakedNote} from '../../src/staking';
+import { ERC20 } from '../../src/typechain/ERC20';
+import { TypedBigNumber } from '../../src';
+import { BalancerVault } from '../../src/typechain/BalancerVault';
+import { BalancerPool } from '../../src/typechain/BalancerPool';
+import { StakedNote } from '../../src/staking';
 // import Order from '../../src/staking/Order';
 // import {ExchangeV3} from '../../src/typechain/ExchangeV3';
-import {RATE_PRECISION} from '../../src/config/constants';
+import { RATE_PRECISION } from '../../src/config/constants';
 
 const factoryABI = require('./balancer/poolFactory.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
@@ -48,7 +48,7 @@ describe('staking test', () => {
     balancerVault = new Contract(
       '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
       BalancerVaultABI,
-      signer,
+      signer
     ) as BalancerVault;
     // exchangeV3 = new Contract(
     //   '0x61935cbdd02287b511119ddb11aeb42f1593b7ef',
@@ -67,7 +67,7 @@ describe('staking test', () => {
           [ethers.utils.parseEther('0.2'), ethers.utils.parseEther('0.8')],
           ethers.utils.parseEther('0.005'),
           true,
-          signer.address,
+          signer.address
         )
     ).wait();
     const poolAddress = txn.events.find((e) => e.event === 'PoolCreated').args[0];
@@ -114,7 +114,7 @@ describe('staking test', () => {
       fromInternalBalance: false,
     });
 
-    const {balances} = await balancerVault.getPoolTokens(poolId);
+    const { balances } = await balancerVault.getPoolTokens(poolId);
     const totalSupply = await balancerPool.totalSupply();
     system.setStakedNoteParameters({
       poolId,
@@ -139,10 +139,8 @@ describe('staking test', () => {
     await joinPool(noteIn, ethIn);
     const balanceAfter = await balancerPool.balanceOf(noteWhale.address);
     const diff = balanceAfter.sub(balanceBefore);
-    const errorFactor = 1 - (
-      parseFloat(ethers.utils.formatUnits(expectedBPT, 18))
-        / parseFloat(ethers.utils.formatUnits(diff, 18))
-    );
+    const errorFactor =
+      1 - parseFloat(ethers.utils.formatUnits(expectedBPT, 18)) / parseFloat(ethers.utils.formatUnits(diff, 18));
     expect(errorFactor).to.be.lessThan(1e-12);
   });
 
@@ -207,8 +205,8 @@ describe('staking test', () => {
     const ethIn = TypedBigNumber.fromBalance(ethers.utils.parseEther('10'), 'ETH', false);
     await joinPool(noteIn, ethIn);
     const bptExitAmount = await balancerPool.balanceOf(noteWhale.address);
-    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(
-      TypedBigNumber.fromBalance(bptExitAmount, 'sNOTE', false),
+    const { ethClaim, noteClaim } = StakedNote.getRedemptionValue(
+      TypedBigNumber.fromBalance(bptExitAmount, 'sNOTE', false)
     );
     const minETH = ethClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION);
     const minNOTE = noteClaim.scale((1 - 0.005) * RATE_PRECISION, RATE_PRECISION);

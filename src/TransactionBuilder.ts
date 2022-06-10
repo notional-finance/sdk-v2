@@ -1,7 +1,5 @@
-import {
-  Overrides, ethers, BigNumber, BytesLike,
-} from 'ethers';
-import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
+import { Overrides, ethers, BigNumber, BytesLike } from 'ethers';
+import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
 import {
   DepositActionType,
   TokenType,
@@ -10,9 +8,9 @@ import {
   Asset,
   Currency,
 } from './libs/types';
-import {getNowSeconds, populateTxnAndGas} from './libs/utils';
-import {System, Market, CashGroup} from './system';
-import {Notional as NotionalTypechain} from './typechain/Notional';
+import { getNowSeconds, populateTxnAndGas } from './libs/utils';
+import { System, Market, CashGroup } from './system';
+import { Notional as NotionalTypechain } from './typechain/Notional';
 
 export default abstract class TransactionBuilder {
   constructor(protected notionalProxy: NotionalTypechain, protected system: System) {}
@@ -36,7 +34,7 @@ export default abstract class TransactionBuilder {
     symbol: string,
     amount: TypedBigNumber,
     settleAssets: boolean,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     const currency = this.system.getCurrencyBySymbol(symbol);
     const isUnderlying = currency.underlyingSymbol === symbol;
@@ -54,7 +52,7 @@ export default abstract class TransactionBuilder {
       };
 
       if (isUnderlying && currency.tokenType === TokenType.cETH) {
-        const ethOverrides = Object.assign(overrides, {value: amount.n}) as ethers.PayableOverrides;
+        const ethOverrides = Object.assign(overrides, { value: amount.n }) as ethers.PayableOverrides;
         return this.populateTxnAndGas(address, 'batchBalanceAction', [address, [action], ethOverrides]);
       }
 
@@ -62,7 +60,7 @@ export default abstract class TransactionBuilder {
     }
 
     if (isUnderlying && currency.tokenType === TokenType.cETH) {
-      const ethOverrides = Object.assign(overrides, {value: amount.n}) as ethers.PayableOverrides;
+      const ethOverrides = Object.assign(overrides, { value: amount.n }) as ethers.PayableOverrides;
       return this.populateTxnAndGas(address, 'depositUnderlyingToken', [address, currency.id, amount.n, ethOverrides]);
     }
 
@@ -87,7 +85,7 @@ export default abstract class TransactionBuilder {
     symbol: string,
     amountExternal: TypedBigNumber,
     redeemToUnderlying: boolean,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     const currency = this.system.getCurrencyBySymbol(symbol);
     const withdrawAmount = amountExternal.toAssetCash().toInternalPrecision();
@@ -111,7 +109,7 @@ export default abstract class TransactionBuilder {
     symbol: string,
     amount: TypedBigNumber,
     convertCash: boolean,
-    _overrides = {} as Overrides,
+    _overrides = {} as Overrides
   ) {
     const currency = this.system.getCurrencyBySymbol(symbol);
     const isUnderlying = currency.underlyingSymbol === symbol;
@@ -123,7 +121,7 @@ export default abstract class TransactionBuilder {
     } else if (isUnderlying && currency.tokenType === TokenType.cETH) {
       amount.check(BigNumberType.ExternalUnderlying, currency.underlyingSymbol);
       actionType = DepositActionType.DepositUnderlyingAndMintNToken;
-      overrides = Object.assign(overrides, {value: amount.n}) as ethers.PayableOverrides;
+      overrides = Object.assign(overrides, { value: amount.n }) as ethers.PayableOverrides;
     } else if (isUnderlying) {
       amount.check(BigNumberType.ExternalUnderlying, currency.underlyingSymbol);
       actionType = DepositActionType.DepositUnderlyingAndMintNToken;
@@ -163,7 +161,7 @@ export default abstract class TransactionBuilder {
     withdrawAmountInternalPrecision: TypedBigNumber,
     withdrawEntireCashBalance: boolean,
     redeemToUnderlying: boolean,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     const currency = this.system.getCurrencyById(currencyId);
     const nToken = this.system.getNToken(currency.id);
@@ -225,7 +223,7 @@ export default abstract class TransactionBuilder {
       amount: TypedBigNumber;
       mintNToken: boolean;
     }[],
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     const actions: BatchBalanceAndTradeAction[] = [];
     const borrowCurrency = this.system.getCurrencyBySymbol(borrowCurrencySymbol);
@@ -237,12 +235,12 @@ export default abstract class TransactionBuilder {
       .filter((c) => !c.amount.isZero())
       .forEach((c) => {
         const collateralCurrency = this.system.getCurrencyBySymbol(c.symbol);
-        const {actionType: collateralActionType, overrides: depositOverrides} = this.getDepositAction(
+        const { actionType: collateralActionType, overrides: depositOverrides } = this.getDepositAction(
           c.symbol,
           collateralCurrency,
           c.amount,
           c.mintNToken,
-          borrowOverrides,
+          borrowOverrides
         );
         borrowOverrides = depositOverrides;
 
@@ -298,18 +296,18 @@ export default abstract class TransactionBuilder {
     withdrawAmountInternalPrecision: TypedBigNumber,
     withdrawEntireCashBalance: boolean,
     redeemToUnderlying: boolean,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     const currency = this.system.getCurrencyBySymbol(lendCurrencySymbol);
     lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.symbol);
     withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.symbol);
 
-    const {actionType, overrides: lendOverrides} = this.getDepositAction(
+    const { actionType, overrides: lendOverrides } = this.getDepositAction(
       lendCurrencySymbol,
       currency,
       depositAmount,
       false,
-      overrides,
+      overrides
     );
 
     const lendAction = {
@@ -345,7 +343,7 @@ export default abstract class TransactionBuilder {
     rollToMarketIndex: number,
     minLendSlippageTolerance: number,
     maxBorrowSlippageTolerance: number,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (asset.notional.isPositive() || asset.maturity < getNowSeconds()) throw new Error('Cannot roll borrow asset');
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
@@ -353,26 +351,22 @@ export default abstract class TransactionBuilder {
     const assetMarket = cashGroup.getMarket(currentMarketIndex);
     const rollToMarket = cashGroup.getMarket(rollToMarketIndex);
 
-    let {netCashToAccount: netCashRequiredToLend} = assetMarket.getCashAmountGivenfCashAmount(asset.notional.neg());
-    const {
-      exchangeRatePostSlippage: lendExchangeRatePostSlippage,
-      annualizedRate: minLendSlippage,
-    } = Market.getSlippageRate(
-      asset.notional.neg(),
-      netCashRequiredToLend,
-      assetMarket.maturity,
-      minLendSlippageTolerance,
-    );
+    let { netCashToAccount: netCashRequiredToLend } = assetMarket.getCashAmountGivenfCashAmount(asset.notional.neg());
+    const { exchangeRatePostSlippage: lendExchangeRatePostSlippage, annualizedRate: minLendSlippage } =
+      Market.getSlippageRate(
+        asset.notional.neg(),
+        netCashRequiredToLend,
+        assetMarket.maturity,
+        minLendSlippageTolerance
+      );
     // This is the maximum amount of cash required to lend at the worst case lending slippage, account must
     // borrow this much cash from the rollToMarket. Residuals will be left in the cash balance.
     // Returns a postitive number
     netCashRequiredToLend = Market.cashFromExchangeRate(lendExchangeRatePostSlippage, asset.notional).abs();
     let borrowfCashAmount = rollToMarket.getfCashAmountGivenCashAmount(netCashRequiredToLend);
-    const {netCashToAccount: netCashFromBorrow} = rollToMarket.getCashAmountGivenfCashAmount(borrowfCashAmount);
-    const {
-      exchangeRatePostSlippage: borrowExchangeRatePostSlippage,
-      annualizedRate: maxBorrowSlippage,
-    } = Market.getSlippageRate(borrowfCashAmount, netCashFromBorrow, rollToMarket.maturity, maxBorrowSlippageTolerance);
+    const { netCashToAccount: netCashFromBorrow } = rollToMarket.getCashAmountGivenfCashAmount(borrowfCashAmount);
+    const { exchangeRatePostSlippage: borrowExchangeRatePostSlippage, annualizedRate: maxBorrowSlippage } =
+      Market.getSlippageRate(borrowfCashAmount, netCashFromBorrow, rollToMarket.maturity, maxBorrowSlippageTolerance);
     // This is the amount of fCash required to generate sufficient cash after accounting for slippage
     // Returns a positive number
     borrowfCashAmount = Market.fCashFromExchangeRate(borrowExchangeRatePostSlippage, netCashFromBorrow);
@@ -398,7 +392,7 @@ export default abstract class TransactionBuilder {
       overrides,
     ]);
 
-    return {populatedTransaction, maxBorrowSlippage};
+    return { populatedTransaction, maxBorrowSlippage };
   }
 
   /**
@@ -420,7 +414,7 @@ export default abstract class TransactionBuilder {
     repayNotionalAmount: TypedBigNumber,
     depositAmount: TypedBigNumber,
     minLendSlippage: number,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (asset.notional.isPositive() || asset.maturity < getNowSeconds()) throw new Error('Cannot repay borrow asset');
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
@@ -437,7 +431,7 @@ export default abstract class TransactionBuilder {
       depositAmount.toAssetCash(true).copy(0),
       false,
       false,
-      overrides,
+      overrides
     );
   }
 
@@ -459,7 +453,7 @@ export default abstract class TransactionBuilder {
     redeemNTokenAmount: TypedBigNumber,
     lendfCashAmount: TypedBigNumber,
     minLendSlippage: number,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (repayAsset.notional.isPositive() || repayAsset.maturity < getNowSeconds()) {
       throw new Error('Cannot repay borrow asset');
@@ -501,7 +495,7 @@ export default abstract class TransactionBuilder {
     rollToMarketIndex: number,
     minLendSlippageTolerance: number,
     maxBorrowSlippageTolerance: number,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (asset.notional.isNegative() || asset.maturity < getNowSeconds()) throw new Error('Cannot roll lend asset');
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
@@ -511,27 +505,23 @@ export default abstract class TransactionBuilder {
 
     // This gets the amount of cash generated by borrowing the fCash amount to net off the lending position.
     // Returns a positive number.
-    let {netCashToAccount: netCashGeneratedByBorrow} = assetMarket.getCashAmountGivenfCashAmount(
-      asset.notional.neg(),
+    let { netCashToAccount: netCashGeneratedByBorrow } = assetMarket.getCashAmountGivenfCashAmount(
+      asset.notional.neg()
     );
-    const {
-      exchangeRatePostSlippage: borrowExchangeRatePostSlippage,
-      annualizedRate: maxBorrowSlippage,
-    } = Market.getSlippageRate(
-      asset.notional.neg(),
-      netCashGeneratedByBorrow,
-      assetMarket.maturity,
-      maxBorrowSlippageTolerance,
-    );
+    const { exchangeRatePostSlippage: borrowExchangeRatePostSlippage, annualizedRate: maxBorrowSlippage } =
+      Market.getSlippageRate(
+        asset.notional.neg(),
+        netCashGeneratedByBorrow,
+        assetMarket.maturity,
+        maxBorrowSlippageTolerance
+      );
     // Minimum amount of cash generated by borrowing during worst case slippage (this is a positive number)
     netCashGeneratedByBorrow = Market.cashFromExchangeRate(borrowExchangeRatePostSlippage, asset.notional);
 
     let lendfCashAmount = rollToMarket.getfCashAmountGivenCashAmount(netCashGeneratedByBorrow.neg());
-    const {netCashToAccount: netCashRequiredToLend} = rollToMarket.getCashAmountGivenfCashAmount(lendfCashAmount);
-    const {
-      exchangeRatePostSlippage: lendExchangeRatePostSlippage,
-      annualizedRate: minLendSlippage,
-    } = Market.getSlippageRate(lendfCashAmount, netCashRequiredToLend, rollToMarket.maturity, minLendSlippageTolerance);
+    const { netCashToAccount: netCashRequiredToLend } = rollToMarket.getCashAmountGivenfCashAmount(lendfCashAmount);
+    const { exchangeRatePostSlippage: lendExchangeRatePostSlippage, annualizedRate: minLendSlippage } =
+      Market.getSlippageRate(lendfCashAmount, netCashRequiredToLend, rollToMarket.maturity, minLendSlippageTolerance);
 
     // This is the minimum amount of fCash that can be generated given the slippage to lending (this is a positive
     // amount)
@@ -558,7 +548,7 @@ export default abstract class TransactionBuilder {
       overrides,
     ]);
 
-    return {populatedTransaction, minLendSlippage};
+    return { populatedTransaction, minLendSlippage };
   }
 
   /**
@@ -581,7 +571,7 @@ export default abstract class TransactionBuilder {
     maxBorrowSlippage: number,
     withdrawEntireCashBalance: boolean,
     redeemToUnderlying: boolean,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (asset.notional.isNegative() || asset.maturity < getNowSeconds()) throw new Error('Cannot repay lend asset');
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
@@ -609,14 +599,14 @@ export default abstract class TransactionBuilder {
     currency: Currency,
     amount: TypedBigNumber,
     mintNToken: boolean,
-    overrides: Overrides,
+    overrides: Overrides
   ) {
     const isUnderlying = currency.underlyingSymbol === symbol;
     if (isUnderlying && currency.tokenType === TokenType.cETH) {
       amount.check(BigNumberType.ExternalUnderlying, 'ETH');
       return {
         actionType: mintNToken ? DepositActionType.DepositUnderlyingAndMintNToken : DepositActionType.DepositUnderlying,
-        overrides: Object.assign(overrides, {value: amount.n}) as ethers.PayableOverrides,
+        overrides: Object.assign(overrides, { value: amount.n }) as ethers.PayableOverrides,
       };
     }
 
@@ -640,20 +630,20 @@ export default abstract class TransactionBuilder {
     marketIndex: number,
     fCashAmount: TypedBigNumber,
     minSlippage: number,
-    maxSlippage: number,
+    maxSlippage: number
   ): BytesLike {
     fCashAmount.checkType(BigNumberType.InternalUnderlying);
     switch (tradeActionType) {
       case TradeActionType.Lend:
         return ethers.utils.solidityPack(
           ['uint8', 'uint8', 'uint88', 'uint32', 'uint120'],
-          [tradeActionType, marketIndex, fCashAmount, minSlippage, BigNumber.from(0)],
+          [tradeActionType, marketIndex, fCashAmount, minSlippage, BigNumber.from(0)]
         );
 
       case TradeActionType.Borrow:
         return ethers.utils.solidityPack(
           ['uint8', 'uint8', 'uint88', 'uint32', 'uint120'],
-          [tradeActionType, marketIndex, fCashAmount, maxSlippage, BigNumber.from(0)],
+          [tradeActionType, marketIndex, fCashAmount, maxSlippage, BigNumber.from(0)]
         );
 
       default:

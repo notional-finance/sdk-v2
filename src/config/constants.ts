@@ -1,4 +1,4 @@
-import {ethers} from 'ethers';
+import { ethers } from 'ethers';
 
 export const SECONDS_IN_YEAR_ACTUAL = 31536000;
 

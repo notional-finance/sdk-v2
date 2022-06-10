@@ -1,17 +1,17 @@
-import {BigNumber, BigNumberish, BytesLike} from 'ethers';
+import { BigNumber, BigNumberish, BytesLike } from 'ethers';
 import TypedBigNumber from './TypedBigNumber';
-import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
-import {BalancerPool} from '../typechain/BalancerPool';
-import {BalancerVault} from '../typechain/BalancerVault';
-import {ERC20} from '../typechain/ERC20';
-import {Governor} from '../typechain/Governor';
-import {IAggregator} from '../typechain/IAggregator';
-import {NoteERC20} from '../typechain/NoteERC20';
-import {NTokenERC20} from '../typechain/NTokenERC20';
-import {SNOTE} from '../typechain/SNOTE';
-import {TreasuryManager} from '../typechain/TreasuryManager';
-import {Notional as NotionalProxyTypechain} from '../typechain/Notional';
-import {ExchangeV3} from '../typechain/ExchangeV3';
+import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
+import { BalancerPool } from '../typechain/BalancerPool';
+import { BalancerVault } from '../typechain/BalancerVault';
+import { ERC20 } from '../typechain/ERC20';
+import { Governor } from '../typechain/Governor';
+import { IAggregator } from '../typechain/IAggregator';
+import { NoteERC20 } from '../typechain/NoteERC20';
+import { NTokenERC20 } from '../typechain/NTokenERC20';
+import { SNOTE } from '../typechain/SNOTE';
+import { TreasuryManager } from '../typechain/TreasuryManager';
+import { Notional as NotionalProxyTypechain } from '../typechain/Notional';
+import { ExchangeV3 } from '../typechain/ExchangeV3';
 
 export enum NTokenStatus {
   NoNToken = 'NoNToken',

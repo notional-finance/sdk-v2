@@ -1,12 +1,12 @@
-import {BigNumber} from 'ethers';
+import { BigNumber } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import fetch from 'cross-fetch';
 import fetchRetry from 'fetch-retry';
-import {DataSource} from '.';
+import { DataSource } from '.';
 import TypedBigNumber from '../../libs/TypedBigNumber';
-import System, {SystemEvents} from '../System';
+import System, { SystemEvents } from '../System';
 import CashGroup from '../CashGroup';
-import {NOTE_CURRENCY_ID} from '../../config/constants';
+import { NOTE_CURRENCY_ID } from '../../config/constants';
 import NoteETHRateProvider from '../NoteETHRateProvider';
 
 const retry = fetchRetry(fetch);
@@ -18,7 +18,7 @@ export default class Cache extends DataSource {
     chainId: number,
     protected cashGroups: Map<number, CashGroup>,
     protected eventEmitter: EventEmitter,
-    public refreshIntervalMS: number,
+    public refreshIntervalMS: number
   ) {
     super(eventEmitter, refreshIntervalMS);
     switch (chainId) {
@@ -54,7 +54,7 @@ export default class Cache extends DataSource {
     if (this.cacheURL === null) return '{}';
     const result = await retry(this.cacheURL, {
       retries: 3,
-      retryDelay: (attempt: number) => (2 ** attempt) * 1000,
+      retryDelay: (attempt: number) => 2 ** attempt * 1000,
     });
     if (result.status >= 400) throw Error(`Error from cache server ${this.cacheURL}`);
     return result.text();

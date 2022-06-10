@@ -1,9 +1,7 @@
-import {BigNumber} from 'ethers';
-import {getNowSeconds} from '../libs/utils';
-import {
-  INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR, MAX_MARKET_PROPORTION,
-} from '../config/constants';
-import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
+import { BigNumber } from 'ethers';
+import { getNowSeconds } from '../libs/utils';
+import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR, MAX_MARKET_PROPORTION } from '../config/constants';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 
 interface MarketData {
   totalfCash: TypedBigNumber;
@@ -49,10 +47,11 @@ export default class Market {
   }
 
   public get fCashUtilization(): number {
-    return this.market.totalfCash.scale(
-      RATE_PRECISION,
-      this.market.totalfCash.add(this.market.totalAssetCash.toUnderlying()).n,
-    ).toNumber() / RATE_PRECISION;
+    return (
+      this.market.totalfCash
+        .scale(RATE_PRECISION, this.market.totalfCash.add(this.market.totalAssetCash.toUnderlying()).n)
+        .toNumber() / RATE_PRECISION
+    );
   }
 
   public get hasLiquidity(): boolean {
@@ -110,17 +109,9 @@ export default class Market {
     }
 
     this._market = {
-      totalfCash: TypedBigNumber.from(
-        m.totalfCash,
-        BigNumberType.InternalUnderlying,
-        this.underlyingSymbol,
-      ),
+      totalfCash: TypedBigNumber.from(m.totalfCash, BigNumberType.InternalUnderlying, this.underlyingSymbol),
       totalAssetCash: TypedBigNumber.from(m.totalAssetCash, BigNumberType.InternalAsset, this.assetSymbol),
-      totalLiquidity: TypedBigNumber.from(
-        m.totalLiquidity,
-        BigNumberType.LiquidityToken,
-        this.assetSymbol,
-      ),
+      totalLiquidity: TypedBigNumber.from(m.totalLiquidity, BigNumberType.LiquidityToken, this.assetSymbol),
       lastImpliedRate: m.lastImpliedRate.toNumber(),
       oracleRate: m.oracleRate.toNumber(),
       previousTradeTime: m.previousTradeTime.toNumber(),
@@ -138,7 +129,7 @@ export default class Market {
     public reserveFeeShare: number,
     public rateOracleTimeWindow: number,
     public assetSymbol: string,
-    public underlyingSymbol: string,
+    public underlyingSymbol: string
   ) {}
 
   /**
@@ -156,7 +147,7 @@ export default class Market {
       market.reserveFeeShare,
       market.rateOracleTimeWindow,
       market.assetSymbol,
-      market.underlyingSymbol,
+      market.underlyingSymbol
     );
 
     const originalMarketData = market.market;
@@ -182,8 +173,7 @@ export default class Market {
     if (rate === undefined || rate === 0) return '';
     const rateValue = (rate / RATE_PRECISION) * 100;
     // This removes the leading (-) when we have a -0.000% rate
-    const rateString = Math.abs(rateValue) < 10 ** (-precision)
-      ? (0).toFixed(precision) : rateValue.toFixed(precision);
+    const rateString = Math.abs(rateValue) < 10 ** -precision ? (0).toFixed(precision) : rateValue.toFixed(precision);
 
     return `${rateString}%`;
   }
@@ -256,7 +246,7 @@ export default class Market {
     cashAmount: TypedBigNumber,
     maturity: number,
     annualizedSlippage: number,
-    blockTime = getNowSeconds(),
+    blockTime = getNowSeconds()
   ) {
     const exchangeRate = Market.exchangeRate(fCashAmount, cashAmount);
     const exchangeSlippageFactor = Market.interestToExchangeRate(annualizedSlippage, blockTime, maturity);
@@ -294,7 +284,7 @@ export default class Market {
    * Returns the maximum interest rate the market can support at max utilization
    */
   public maxInterestRate(blockTime = getNowSeconds()): number {
-    const {rateScalar, rateAnchor} = this.getExchangeRateFactors(blockTime);
+    const { rateScalar, rateAnchor } = this.getExchangeRateFactors(blockTime);
 
     // get exchange rate at 96% utilization
     const exchangeRate = Market.logProportion(BigNumber.from(MAX_MARKET_PROPORTION).sub(1))
@@ -313,12 +303,12 @@ export default class Market {
    * @returns exchange rate at `blockTime`
    */
   public marketExchangeRate(blockTime = getNowSeconds()) {
-    const {rateScalar, totalCashUnderlying, rateAnchor} = this.getExchangeRateFactors(blockTime);
+    const { rateScalar, totalCashUnderlying, rateAnchor } = this.getExchangeRateFactors(blockTime);
     const preFeeExchangeRate = this.getExchangeRate(
       totalCashUnderlying,
       rateScalar,
       rateAnchor,
-      TypedBigNumber.from(0, BigNumberType.InternalUnderlying, this.underlyingSymbol),
+      TypedBigNumber.from(0, BigNumberType.InternalUnderlying, this.underlyingSymbol)
     );
     return preFeeExchangeRate.toNumber();
   }
@@ -342,7 +332,7 @@ export default class Market {
     const oracleWeight = RATE_PRECISION - lastTradeWeight;
 
     const newOracleRate = Math.trunc(
-      (this.market.lastImpliedRate * lastTradeWeight + this.market.oracleRate * oracleWeight) / RATE_PRECISION,
+      (this.market.lastImpliedRate * lastTradeWeight + this.market.oracleRate * oracleWeight) / RATE_PRECISION
     );
 
     return newOracleRate;
@@ -357,7 +347,7 @@ export default class Market {
    */
   public getCashAmountGivenfCashAmount(fCashAmount: TypedBigNumber, blockTime = getNowSeconds()) {
     fCashAmount.check(BigNumberType.InternalUnderlying, this.underlyingSymbol);
-    const {rateScalar, totalCashUnderlying, rateAnchor} = this.getExchangeRateFactors(blockTime);
+    const { rateScalar, totalCashUnderlying, rateAnchor } = this.getExchangeRateFactors(blockTime);
     const preFeeExchangeRate = this.getExchangeRate(totalCashUnderlying, rateScalar, rateAnchor, fCashAmount);
 
     if (preFeeExchangeRate.lt(RATE_PRECISION)) {
@@ -384,18 +374,9 @@ export default class Market {
   public getSimulatedMarket(interestRate: number, blockTime: number) {
     // eslint-disable-next-line max-len
     // Adapted from: https://github.com/T-Woodward/Notional-Governance/blob/63ecc334baf040d394288865282c14fbda1da100/cashMarketV2.py#L199-L229
-    const {
-      rateAnchor,
-      totalCashUnderlying,
-      currentExchangeRate,
-      rateScalar,
-    } = this.getExchangeRateFactors(blockTime);
+    const { rateAnchor, totalCashUnderlying, currentExchangeRate, rateScalar } = this.getExchangeRateFactors(blockTime);
 
-    const simulatedExchangeRate = Market.interestToExchangeRate(
-      interestRate,
-      blockTime,
-      this.maturity,
-    );
+    const simulatedExchangeRate = Market.interestToExchangeRate(interestRate, blockTime, this.maturity);
 
     const expValue = ((simulatedExchangeRate - rateAnchor.toNumber()) * rateScalar.toNumber()) / RATE_PRECISION;
     const exp = Math.exp(expValue / RATE_PRECISION);
@@ -403,15 +384,16 @@ export default class Market {
 
     // Rough avg, todo: why?
     const tradedExchangeRate = Math.floor(currentExchangeRate + (simulatedExchangeRate - currentExchangeRate) / 2);
-    const cashAmountToTradeDenom = Math.floor(tradedExchangeRate
-      // Multiply by RATE_PRECISION to bring denomination back to 1e9
-      + ((simulatedProportion / (RATE_PRECISION - simulatedProportion)) * RATE_PRECISION));
+    const cashAmountToTradeDenom = Math.floor(
+      tradedExchangeRate +
+        // Multiply by RATE_PRECISION to bring denomination back to 1e9
+        (simulatedProportion / (RATE_PRECISION - simulatedProportion)) * RATE_PRECISION
+    );
 
     // Calculate the amount of cash required to trade the market to the given interest rate
-    const cashAmountToTradeNum = this._market.totalfCash.scale(
-      simulatedProportion,
-      RATE_PRECISION - simulatedProportion,
-    ).sub(this._market.totalfCash);
+    const cashAmountToTradeNum = this._market.totalfCash
+      .scale(simulatedProportion, RATE_PRECISION - simulatedProportion)
+      .sub(this._market.totalfCash);
 
     const cashAmountToTrade = cashAmountToTradeNum.scale(RATE_PRECISION, cashAmountToTradeDenom);
     const fCashAmountToTrade = Market.fCashFromExchangeRate(tradedExchangeRate, cashAmountToTrade);
@@ -427,7 +409,7 @@ export default class Market {
       this.reserveFeeShare,
       this.rateOracleTimeWindow,
       this.assetSymbol,
-      this.underlyingSymbol,
+      this.underlyingSymbol
     );
 
     newMarket.setMarket({
@@ -482,7 +464,7 @@ export default class Market {
     totalCashUnderlying: TypedBigNumber,
     rateScalar: BigNumber,
     rateAnchor: BigNumber,
-    fCashAmount: TypedBigNumber,
+    fCashAmount: TypedBigNumber
   ) {
     const proportion = this.market.totalfCash
       .sub(fCashAmount)
@@ -509,11 +491,11 @@ export default class Market {
     const netCashToAccount = preFeeCashToAccount.sub(netFee);
     const netCashToMarket = preFeeCashToAccount.sub(netFee).add(cashToReserve).neg();
 
-    return {cashToReserve, netCashToAccount, netCashToMarket};
+    return { cashToReserve, netCashToAccount, netCashToMarket };
   }
 
   private iterateRates(cashAmount: TypedBigNumber, blockTime: number) {
-    const {rateScalar, totalCashUnderlying, rateAnchor} = this.getExchangeRateFactors(blockTime);
+    const { rateScalar, totalCashUnderlying, rateAnchor } = this.getExchangeRateFactors(blockTime);
     let fCashGuess = Market.fCashFromExchangeRate(rateAnchor.toNumber(), cashAmount).neg();
     const feeRate = Market.interestToExchangeRate(this.totalFee, blockTime, this.maturity);
 
@@ -537,7 +519,7 @@ export default class Market {
     fCashGuess: TypedBigNumber,
     totalCashUnderlying: TypedBigNumber,
     _exchangeRate: BigNumber,
-    feeRate: number,
+    feeRate: number
   ) {
     let exchangeRate = _exchangeRate;
     const denominator = rateScalar

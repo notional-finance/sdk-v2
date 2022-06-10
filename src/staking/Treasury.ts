@@ -1,64 +1,65 @@
-import {
-  BigNumber, BigNumberish, Contract, Signer,
-} from 'ethers';
+import { BigNumber, BigNumberish, Contract, Signer } from 'ethers';
 import axios from 'axios';
-import {gql} from '@apollo/client/core';
-import {BigNumberType, TypedBigNumber} from '..';
-import {System} from '../system';
-import {populateTxnAndGas} from '../libs/utils';
+import { gql } from '@apollo/client/core';
+import { BigNumberType, TypedBigNumber } from '..';
+import { System } from '../system';
+import { populateTxnAndGas } from '../libs/utils';
 import Order from './Order';
 
-import {IAggregator} from '../typechain/IAggregator';
+import { IAggregator } from '../typechain/IAggregator';
 import StakedNote from './StakedNote';
-import {DEFAULT_ORDER_EXPIRATION, RATE_PRECISION} from '../config/constants';
+import { DEFAULT_ORDER_EXPIRATION, RATE_PRECISION } from '../config/constants';
 
 const IAggregatorABI = require('../abi/IAggregator.json');
 
 const ORDER_URL = 'https://api.0x.org/sra/v3/orders';
 
-const reserveQuery = gql`{
-  cashGroups {
-    currency {
-      id
+const reserveQuery = gql`
+  {
+    cashGroups {
+      currency {
+        id
+      }
+      reserveBuffer
+      reserveBalance
     }
-    reserveBuffer
-    reserveBalance
+    compbalance(id: "tvl:19090") {
+      id
+      value
+    }
   }
-  compbalance(id: "tvl:19090") {
-    id
-    value
-  }
-}`;
+`;
 
 const compReserveQuery = gql`
-{
-  tvlHistoricalDatas(orderBy:timestamp, orderDirection:desc, first: 1){
-    compBalance {
-      value
-      usdValue
+  {
+    tvlHistoricalDatas(orderBy: timestamp, orderDirection: desc, first: 1) {
+      compBalance {
+        value
+        usdValue
+      }
     }
   }
-}`;
+`;
 
 interface CompQueryResult {
   tvlHistoricalDatas: {
     compBalance: {
       value: string;
       usdValue: string;
-    }
-  }[]
+    };
+  }[];
 }
 
 interface ReserveQueryResult {
   cashGroups: {
-    currency: {id: string},
-    reserveBuffer?: string,
-    reserveBalance: string
-  }[],
+    currency: { id: string };
+    reserveBuffer?: string;
+    reserveBalance: string;
+  }[];
   compbalance: {
     id: string;
     value: string;
-  }
+  };
 }
 
 export default class Treasury {
@@ -77,37 +78,51 @@ export default class Treasury {
     const system = System.getSystem();
     const treasuryManager = system.getTreasuryManager();
     const results = await system.graphClient.queryOrThrow<ReserveQueryResult>(reserveQuery);
-    const reserveResults = await Promise.all(results.cashGroups.map(async (r) => {
-      const currency = system.getCurrencyById(Number(r.currency.id));
-      const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
-      const reserveBuffer = TypedBigNumber.fromBalance(
-        r.reserveBuffer || 0, currency.symbol, true,
-      ).toExternalPrecision();
-      const reserveBalance = TypedBigNumber.fromBalance(r.reserveBalance, currency.symbol, true).toExternalPrecision();
-      const b = await (currency.underlyingContract || currency.contract).balanceOf(treasuryManager.address);
-      const treasuryBalance = TypedBigNumber.fromBalance(b, underlyingSymbol, false);
+    const reserveResults = await Promise.all(
+      results.cashGroups.map(async (r) => {
+        const currency = system.getCurrencyById(Number(r.currency.id));
+        const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
+        const reserveBuffer = TypedBigNumber.fromBalance(
+          r.reserveBuffer || 0,
+          currency.symbol,
+          true
+        ).toExternalPrecision();
+        const reserveBalance = TypedBigNumber.fromBalance(
+          r.reserveBalance,
+          currency.symbol,
+          true
+        ).toExternalPrecision();
+        const b = await (currency.underlyingContract || currency.contract).balanceOf(treasuryManager.address);
+        const treasuryBalance = TypedBigNumber.fromBalance(b, underlyingSymbol, false);
 
-      return {
-        symbol: underlyingSymbol,
-        reserveBuffer,
-        reserveBalance,
-        treasuryBalance,
-      };
-    }));
+        return {
+          symbol: underlyingSymbol,
+          reserveBuffer,
+          reserveBalance,
+          treasuryBalance,
+        };
+      })
+    );
 
-    const noteReserve = await system.getNOTE().balanceOf(treasuryManager.address).then((b) => ({
-      symbol: 'NOTE',
-      reserveBuffer: TypedBigNumber.fromBalance(0, 'NOTE', false),
-      reserveBalance: TypedBigNumber.fromBalance(0, 'NOTE', false),
-      treasuryBalance: TypedBigNumber.fromBalance(b, 'NOTE', false),
-    }));
+    const noteReserve = await system
+      .getNOTE()
+      .balanceOf(treasuryManager.address)
+      .then((b) => ({
+        symbol: 'NOTE',
+        reserveBuffer: TypedBigNumber.fromBalance(0, 'NOTE', false),
+        reserveBalance: TypedBigNumber.fromBalance(0, 'NOTE', false),
+        treasuryBalance: TypedBigNumber.fromBalance(b, 'NOTE', false),
+      }));
 
-    const wethReserve = await system.getWETH().balanceOf(treasuryManager.address).then((b) => ({
-      symbol: 'WETH',
-      reserveBuffer: TypedBigNumber.fromBalance(0, 'WETH', false),
-      reserveBalance: TypedBigNumber.fromBalance(0, 'WETH', false),
-      treasuryBalance: TypedBigNumber.fromBalance(b, 'WETH', false),
-    }));
+    const wethReserve = await system
+      .getWETH()
+      .balanceOf(treasuryManager.address)
+      .then((b) => ({
+        symbol: 'WETH',
+        reserveBuffer: TypedBigNumber.fromBalance(0, 'WETH', false),
+        reserveBalance: TypedBigNumber.fromBalance(0, 'WETH', false),
+        treasuryBalance: TypedBigNumber.fromBalance(b, 'WETH', false),
+      }));
 
     reserveResults.push(noteReserve);
     reserveResults.push(wethReserve);
@@ -170,9 +185,10 @@ export default class Treasury {
   }
 
   private static getMakerTokenAddress(symbol: string) {
-    const address = symbol === 'COMP'
-      ? System.getSystem().getCOMP()?.address
-      : System.getSystem().getCurrencyBySymbol(symbol).underlyingContract?.address;
+    const address =
+      symbol === 'COMP'
+        ? System.getSystem().getCOMP()?.address
+        : System.getSystem().getCurrencyBySymbol(symbol).underlyingContract?.address;
 
     if (!address) {
       throw new Error(`Invalid maker token ${symbol}`);
@@ -188,12 +204,15 @@ export default class Treasury {
     const priceOracleAddress = await treasuryManager.priceOracles(makerTokenAddress);
     const slippageLimit = await treasuryManager.slippageLimits(makerTokenAddress);
     const priceOracle = new Contract(priceOracleAddress, IAggregatorABI, system.batchProvider) as IAggregator;
-    const {answer} = await priceOracle.latestRoundData();
+    const { answer } = await priceOracle.latestRoundData();
     const rateDecimals = await priceOracle.decimals();
 
     // rate * slippageLimit / slippageLimitPrecision (scale up to 10^18)
-    const priceFloor = answer.mul(slippageLimit).div(1e8).mul(BigNumber.from(10).pow(18 - rateDecimals));
-    return {priceFloor, spotPrice: answer};
+    const priceFloor = answer
+      .mul(slippageLimit)
+      .div(1e8)
+      .mul(BigNumber.from(10).pow(18 - rateDecimals));
+    return { priceFloor, spotPrice: answer };
   }
 
   public static async getOpenLimitOrders() {
@@ -215,7 +234,7 @@ export default class Treasury {
     signer: Signer,
     symbol: string,
     makerAmount: BigNumberish,
-    takerAmount: TypedBigNumber,
+    takerAmount: TypedBigNumber
   ) {
     // takerTokenAddress is hardcoded to WETH
     if (!takerAmount.isWETH) throw Error('Taker amount is not WETH');
@@ -239,7 +258,7 @@ export default class Treasury {
       makerTokenAddress,
       system.getWETH().address,
       makerAmount,
-      takerAmount.n,
+      takerAmount.n
     );
     const signature = await order.sign(exchange, signer);
     return axios.post(ORDER_URL, [

@@ -1,34 +1,32 @@
-import {
-  Signer, Contract, ethers, VoidSigner, utils, BigNumber,
-} from 'ethers';
-import {System} from './system';
+import { Signer, Contract, ethers, VoidSigner, utils, BigNumber } from 'ethers';
+import { System } from './system';
 import Governance from './Governance';
 import GraphClient from './GraphClient';
-import {Account, AccountData, AccountGraphLoader} from './account';
+import { Account, AccountData, AccountGraphLoader } from './account';
 
-import {SystemEvents} from './system/System';
+import { SystemEvents } from './system/System';
 // eslint-disable import/no-named-as-default import/no-named-as-default-member
 import TransactionBuilder from './TransactionBuilder';
-import TypedBigNumber, {BigNumberType} from './libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
 import {
   CACHE_DATA_REFRESH_INTERVAL,
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   INTERNAL_TOKEN_DECIMAL_PLACES,
   LOCAL_DATA_REFRESH_INTERVAL,
 } from './config/constants';
-import {DataSourceType} from './system/datasource';
+import { DataSourceType } from './system/datasource';
 
 /* typechain imports */
-import {NoteERC20} from './typechain/NoteERC20';
-import {ERC20} from './typechain/ERC20';
-import {Notional as NotionalProxyTypechain} from './typechain/Notional';
-import {SNOTE} from './typechain/SNOTE';
-import {Governor} from './typechain/Governor';
-import {TreasuryManager} from './typechain/TreasuryManager';
-import {BalancerPool} from './typechain/BalancerPool';
-import {BalancerVault} from './typechain/BalancerVault';
-import {ExchangeV3} from './typechain/ExchangeV3';
-import {Contracts} from '.';
+import { NoteERC20 } from './typechain/NoteERC20';
+import { ERC20 } from './typechain/ERC20';
+import { Notional as NotionalProxyTypechain } from './typechain/Notional';
+import { SNOTE } from './typechain/SNOTE';
+import { Governor } from './typechain/Governor';
+import { TreasuryManager } from './typechain/TreasuryManager';
+import { BalancerPool } from './typechain/BalancerPool';
+import { BalancerVault } from './typechain/BalancerVault';
+import { ExchangeV3 } from './typechain/ExchangeV3';
+import { Contracts } from '.';
 
 interface Addresses {
   airdrop: string;
@@ -72,7 +70,7 @@ export default class Notional extends TransactionBuilder {
     public governance: Governance,
     public system: System,
     public provider: ethers.providers.Provider,
-    public contracts: Contracts,
+    public contracts: Contracts
   ) {
     super(system.getNotionalProxy(), system);
   }
@@ -90,9 +88,7 @@ export default class Notional extends TransactionBuilder {
         ? (new Contract(addresses.exchangeV3, ExchangeV3ABI, signer) as ExchangeV3)
         : null,
       weth: new Contract(addresses.weth, ERC20ABI, signer) as ERC20,
-      comp: addresses.comp
-        ? (new Contract(addresses.comp, ERC20ABI, signer) as ERC20)
-        : null,
+      comp: addresses.comp ? (new Contract(addresses.comp, ERC20ABI, signer) as ERC20) : null,
     };
   }
 
@@ -106,7 +102,7 @@ export default class Notional extends TransactionBuilder {
     chainId: number,
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
-    dataSourceType = DataSourceType.Cache,
+    dataSourceType = DataSourceType.Cache
   ) {
     let addresses: Addresses;
     let graphEndpoint: string;
@@ -152,7 +148,7 @@ export default class Notional extends TransactionBuilder {
       chainId,
       dataSourceType,
       refreshDataInterval,
-      DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
+      DEFAULT_CONFIGURATION_REFRESH_INTERVAL
     );
 
     // await for the first data refresh before returning
@@ -171,12 +167,7 @@ export default class Notional extends TransactionBuilder {
   }
 
   public async getAccount(address: string | Signer) {
-    return Account.load(
-      address,
-      this.provider as ethers.providers.JsonRpcBatchProvider,
-      this.system,
-      this.graphClient,
-    );
+    return Account.load(address, this.provider as ethers.providers.JsonRpcBatchProvider, this.system, this.graphClient);
   }
 
   public async getAccountBalanceSummaryFromGraph(address: string, accountData: AccountData) {
@@ -205,9 +196,10 @@ export default class Notional extends TransactionBuilder {
       decimalPlaces = 18;
     } else {
       const currency = this.system.getCurrencyBySymbol(symbol);
-      decimalPlaces = bnType === BigNumberType.ExternalAsset
-        ? currency.decimalPlaces
-        : currency.underlyingDecimalPlaces || currency.decimalPlaces;
+      decimalPlaces =
+        bnType === BigNumberType.ExternalAsset
+          ? currency.decimalPlaces
+          : currency.underlyingDecimalPlaces || currency.decimalPlaces;
     }
 
     try {
@@ -220,9 +212,9 @@ export default class Notional extends TransactionBuilder {
 
   public isNotionalContract(counterparty: string) {
     return (
-      counterparty === this.system.getNotionalProxy().address
-      || counterparty === this.governance.getContract().address
-      || counterparty === this.note.address
+      counterparty === this.system.getNotionalProxy().address ||
+      counterparty === this.governance.getContract().address ||
+      counterparty === this.note.address
     );
   }
 }
