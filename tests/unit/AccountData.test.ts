@@ -1,10 +1,10 @@
-import {BigNumber, ethers} from 'ethers';
-import {AccountData} from '../../src/account';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {AssetType} from '../../src/libs/types';
+import { BigNumber, ethers } from 'ethers';
+import { AccountData } from '../../src/account';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
+import { AssetType } from '../../src/libs/types';
 import MockSystem from '../mocks/MockSystem';
-import {FreeCollateral, System} from '../../src/system';
-import {getNowSeconds} from '../../src/libs/utils';
+import { FreeCollateral, System } from '../../src/system';
+import { getNowSeconds } from '../../src/libs/utils';
 import MockAccountData from '../mocks/MockAccountData';
 
 describe('Account Data', () => {
@@ -29,7 +29,7 @@ describe('Account Data', () => {
       },
     ],
     [],
-    false,
+    false
   );
 
   it('creates a zero cash balance entry if required on construction', () => {
@@ -49,23 +49,24 @@ describe('Account Data', () => {
           settlementDate: 100,
           isIdiosyncratic: false,
         },
-
       ],
-      false,
+      false
     );
 
     expect(mockAccount.cashBalance(2)?.isZero()).toBeTruthy();
   });
 
   it('does not update non copy', () => {
-    expect(() => accountData.updateBalance(
-      1,
-      TypedBigNumber.from(-100e8, BigNumberType.InternalAsset, 'cETH'),
-      TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
-    )).toThrowError();
+    expect(() =>
+      accountData.updateBalance(
+        1,
+        TypedBigNumber.from(-100e8, BigNumberType.InternalAsset, 'cETH'),
+        TypedBigNumber.from(0, BigNumberType.nToken, 'nETH')
+      )
+    ).toThrowError();
 
-    expect(() => accountData.updateAsset(
-      {
+    expect(() =>
+      accountData.updateAsset({
         currencyId: 2,
         maturity: 100,
         assetType: AssetType.fCash,
@@ -73,8 +74,8 @@ describe('Account Data', () => {
         hasMatured: false,
         settlementDate: 100,
         isIdiosyncratic: false,
-      },
-    )).toThrowError();
+      })
+    ).toThrowError();
   });
 
   it('updates cash balances', () => {
@@ -90,11 +91,13 @@ describe('Account Data', () => {
     // eslint-disable-next-line
     expect(() => accountDataCopy.updateBalance(1, TypedBigNumber.from(-100e8, BigNumberType.ExternalAsset, 'cDAI'))).toThrowError();
 
-    expect(() => accountDataCopy.updateBalance(
-      1,
-      TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
-      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nDAI'),
-    )).toThrowError();
+    expect(() =>
+      accountDataCopy.updateBalance(
+        1,
+        TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
+        TypedBigNumber.from(100e8, BigNumberType.nToken, 'nDAI')
+      )
+    ).toThrowError();
   });
 
   it('adds cash balances', () => {
@@ -102,7 +105,7 @@ describe('Account Data', () => {
     accountDataCopy.updateBalance(
       2,
       TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cDAI'),
-      TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+      TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI')
     );
     expect(accountDataCopy.cashBalance(2)!.n).toEqual(BigNumber.from(100e8));
   });
@@ -112,7 +115,7 @@ describe('Account Data', () => {
     accountDataCopy.updateBalance(
       2,
       TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
-      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nDAI'),
+      TypedBigNumber.from(100e8, BigNumberType.nToken, 'nDAI')
     );
     expect(accountDataCopy.nTokenBalance(2)!.n).toEqual(BigNumber.from(100e8));
   });
@@ -180,33 +183,37 @@ describe('Account Data', () => {
         activeCurrencies: '',
       },
       accountBalances: [],
-      portfolio: [{
-        currencyId: BigNumber.from(2),
-        maturity,
-        assetType: BigNumber.from(1),
-        notional: BigNumber.from(1000e8),
-        storageSlot: BigNumber.from(0),
-        storageState: 0,
-      }],
+      portfolio: [
+        {
+          currencyId: BigNumber.from(2),
+          maturity,
+          assetType: BigNumber.from(1),
+          notional: BigNumber.from(1000e8),
+          storageSlot: BigNumber.from(0),
+          storageState: 0,
+        },
+      ],
     };
 
     system.setSettlementRate(2, maturity.toNumber(), BigNumber.from('250000000000000000000000000'));
 
-    AccountData.loadFromBlockchain(accountResult).then((a) => {
-      expect(a.cashBalance(2)?.toExactString()).toEqual('40000.0');
-      expect(a.portfolio.length).toEqual(0);
-      expect(a.portfolioWithMaturedAssets.length).toEqual(1);
-      done();
-    }).catch((e) => {
-      console.log(e);
-      expect(false).toBeTruthy();
-      done();
-    });
+    AccountData.loadFromBlockchain(accountResult)
+      .then((a) => {
+        expect(a.cashBalance(2)?.toExactString()).toEqual('40000.0');
+        expect(a.portfolio.length).toEqual(0);
+        expect(a.portfolioWithMaturedAssets.length).toEqual(1);
+        done();
+      })
+      .catch((e) => {
+        console.log(e);
+        expect(false).toBeTruthy();
+        done();
+      });
   });
 
   describe('loan to value ratio', () => {
     it('no debt', () => {
-      const {totalETHDebts, totalETHValue, loanToValue} = accountData.loanToValueRatio();
+      const { totalETHDebts, totalETHValue, loanToValue } = accountData.loanToValueRatio();
       expect(totalETHValue.toNumber()).toBe(100e8);
       expect(totalETHDebts.isZero()).toBeTruthy();
       expect(loanToValue).toBe(0);
@@ -228,10 +235,10 @@ describe('Account Data', () => {
           },
         ],
         [],
-        false,
+        false
       );
 
-      const {totalETHDebts, totalETHValue, loanToValue} = accountData2.loanToValueRatio();
+      const { totalETHDebts, totalETHValue, loanToValue } = accountData2.loanToValueRatio();
       expect(totalETHValue.toNumber()).toBe(150e8);
       expect(totalETHDebts.isZero()).toBeTruthy();
       expect(loanToValue).toBe(0);
@@ -260,15 +267,12 @@ describe('Account Data', () => {
           },
         ],
         [],
-        false,
+        false
       );
 
-      const {
-        netETHCollateralWithHaircut,
-        netETHDebtWithBuffer,
-      } = FreeCollateral.getFreeCollateral(accountData2);
+      const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = FreeCollateral.getFreeCollateral(accountData2);
       expect(netETHCollateralWithHaircut.sub(netETHDebtWithBuffer).isZero()).toBeTruthy();
-      const {haircutLoanToValue, maxLoanToValue, loanToValue} = accountData2.loanToValueRatio();
+      const { haircutLoanToValue, maxLoanToValue, loanToValue } = accountData2.loanToValueRatio();
       expect(haircutLoanToValue).toBe(100);
       expect(maxLoanToValue).toBe(loanToValue);
     });
@@ -310,13 +314,13 @@ describe('Account Data', () => {
             isIdiosyncratic: true,
           },
         ],
-        false,
+        false
       );
 
       let ethRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
       const ethRateConfig = system.getETHRate(2)!.ethRateConfig!;
       const rateProvider = {
-        getETHRate: () => ({ethRateConfig, ethRate}),
+        getETHRate: () => ({ ethRateConfig, ethRate }),
       };
 
       system.setETHRateProvider(2, rateProvider);
@@ -325,7 +329,7 @@ describe('Account Data', () => {
       expect(liquidationPrice?.symbol).toBe('DAI');
 
       ethRate = ethers.utils.parseUnits('1').mul(1e8).div(liquidationPrice!.n);
-      const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = account.getFreeCollateral();
+      const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = account.getFreeCollateral();
       const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
       expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
     });
@@ -363,7 +367,7 @@ describe('Account Data', () => {
             isIdiosyncratic: true,
           },
         ],
-        false,
+        false
       );
 
       expect(account.getLiquidationPrice(2, 1)).toBeNull();
@@ -402,12 +406,12 @@ describe('Account Data', () => {
             isIdiosyncratic: true,
           },
         ],
-        false,
+        false
       );
       let ethRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
       const ethRateConfig = system.getETHRate(2)!.ethRateConfig!;
       const rateProvider = {
-        getETHRate: () => ({ethRateConfig, ethRate}),
+        getETHRate: () => ({ ethRateConfig, ethRate }),
       };
       system.setETHRateProvider(2, rateProvider);
 
@@ -416,7 +420,7 @@ describe('Account Data', () => {
       expect(liquidationPrice?.toNumber()).toBeCloseTo(0.921e8, -6);
 
       ethRate = ethers.utils.parseUnits('1').mul(1e8).div(liquidationPrice!.n.mul(100));
-      const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = account.getFreeCollateral();
+      const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = account.getFreeCollateral();
       const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
       expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
     });

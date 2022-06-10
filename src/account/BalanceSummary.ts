@@ -1,15 +1,19 @@
-import {gql} from '@apollo/client/core';
+import { gql } from '@apollo/client/core';
 import {
-  Balance, BalanceHistory, Currency, nToken, NTokenStatus, ReturnsBreakdown, TransactionHistory,
+  Balance,
+  BalanceHistory,
+  Currency,
+  nToken,
+  NTokenStatus,
+  ReturnsBreakdown,
+  TransactionHistory,
 } from '../libs/types';
-import {getNowSeconds} from '../libs/utils';
-import {xirr, CashFlow, convertBigNumber} from '../libs/xirr';
+import { getNowSeconds } from '../libs/utils';
+import { xirr, CashFlow, convertBigNumber } from '../libs/xirr';
 import AccountData from './AccountData';
 import GraphClient from '../GraphClient';
-import {
-  System, FreeCollateral, NTokenValue,
-} from '../system';
-import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
+import { System, FreeCollateral, NTokenValue } from '../system';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 
 interface BalanceHistoryQueryResult {
   balanceChanges: {
@@ -35,6 +39,7 @@ interface BalanceHistoryQueryResult {
 
 export default class BalanceSummary {
   private currency: Currency;
+
   private nToken?: nToken;
 
   public get underlyingSymbol() {
@@ -64,12 +69,12 @@ export default class BalanceSummary {
   public get totalCTokenInterest() {
     const netUnderlyingDeposit = this.history.reduce(
       (s, b) => s.add(b.assetCashValueUnderlyingAfter.sub(b.assetCashValueUnderlyingBefore)),
-      this.assetCashValueUnderlying.copy(0),
+      this.assetCashValueUnderlying.copy(0)
     );
 
     const netAssetCashDeposit = this.history.reduce(
       (s, b) => s.add(b.assetCashBalanceAfter.sub(b.assetCashBalanceBefore)),
-      this.assetCashBalance.copy(0),
+      this.assetCashBalance.copy(0)
     );
 
     return netAssetCashDeposit.toUnderlying().sub(netUnderlyingDeposit);
@@ -89,7 +94,7 @@ export default class BalanceSummary {
 
     const netUnderlyingDeposit = this.history.reduce(
       (s, b) => s.add(b.totalUnderlyingValueChange),
-      totalUnderlyingValue.copy(0),
+      totalUnderlyingValue.copy(0)
     );
 
     return totalUnderlyingValue.sub(netUnderlyingDeposit);
@@ -138,7 +143,7 @@ export default class BalanceSummary {
       // If the nToken cannot be withdrawn, only return cash amounts
       const cashWithdraw = TypedBigNumber.min(withdrawAmountInternalAsset, this.assetCashBalance);
       const nTokenRedeem = this.nTokenBalance?.copy(0);
-      return {cashWithdraw, nTokenRedeem};
+      return { cashWithdraw, nTokenRedeem };
     } else if (preferCash) {
       // Cash preference supersedes nToken
       if (withdrawAmountInternalAsset.lte(this.assetCashBalance)) {
@@ -163,13 +168,13 @@ export default class BalanceSummary {
       const nTokenRedeem = NTokenValue.getNTokenRedeemFromAsset(this.currencyId, withdrawAmountInternalAsset);
       if (nTokenRedeem.lte(this.nTokenBalance)) {
         // nTokenRedeem is sufficient for the withdraw
-        return {cashWithdraw: this.assetCashBalance.copy(0), nTokenRedeem};
+        return { cashWithdraw: this.assetCashBalance.copy(0), nTokenRedeem };
       }
 
       // Withdraw all nToken balance and some part of the cash
       const nTokenRedeemValue = NTokenValue.getAssetFromRedeemNToken(this.currencyId, this.nTokenBalance);
       const cashWithdraw = withdrawAmountInternalAsset.sub(nTokenRedeemValue);
-      return {cashWithdraw, nTokenRedeem: this.nTokenBalance};
+      return { cashWithdraw, nTokenRedeem: this.nTokenBalance };
     }
   }
 
@@ -217,7 +222,7 @@ export default class BalanceSummary {
     public cTokenYield: number,
     public nTokenYield: number,
     public nTokenTotalYield: number,
-    public maxWithdrawValueAssetCash: TypedBigNumber,
+    public maxWithdrawValueAssetCash: TypedBigNumber
   ) {
     const system = System.getSystem();
     this.currency = system.getCurrencyById(this.currencyId);
@@ -256,7 +261,7 @@ export default class BalanceSummary {
     assetCashBalanceBefore: TypedBigNumber,
     assetCashBalanceAfter: TypedBigNumber,
     nTokenBalanceBefore?: TypedBigNumber,
-    nTokenBalanceAfter?: TypedBigNumber,
+    nTokenBalanceAfter?: TypedBigNumber
   ) {
     let tradeType = '';
     if (assetCashBalanceBefore.gt(assetCashBalanceAfter)) {
@@ -275,13 +280,10 @@ export default class BalanceSummary {
     return tradeType || 'unknown';
   }
 
-  public static async fetchBalanceHistory(
-    address: string,
-    graphClient: GraphClient,
-  ): Promise<BalanceHistory[]> {
+  public static async fetchBalanceHistory(address: string, graphClient: GraphClient): Promise<BalanceHistory[]> {
     const system = System.getSystem();
     const queryResult = await graphClient.queryOrThrow<BalanceHistoryQueryResult>(
-      BalanceSummary.balanceHistoryQuery(address),
+      BalanceSummary.balanceHistoryQuery(address)
     );
 
     return queryResult.balanceChanges.map((r) => {
@@ -304,22 +306,22 @@ export default class BalanceSummary {
       const assetCashValueUnderlyingBefore = TypedBigNumber.from(
         r.assetCashValueUnderlyingBefore,
         BigNumberType.InternalUnderlying,
-        underlyingSymbol,
+        underlyingSymbol
       );
       const assetCashValueUnderlyingAfter = TypedBigNumber.from(
         r.assetCashValueUnderlyingAfter,
         BigNumberType.InternalUnderlying,
-        underlyingSymbol,
+        underlyingSymbol
       );
       const nTokenValueUnderlyingBefore = TypedBigNumber.from(
         r.nTokenValueUnderlyingBefore,
         BigNumberType.InternalUnderlying,
-        underlyingSymbol,
+        underlyingSymbol
       );
       const nTokenValueUnderlyingAfter = TypedBigNumber.from(
         r.nTokenValueUnderlyingAfter,
         BigNumberType.InternalUnderlying,
-        underlyingSymbol,
+        underlyingSymbol
       );
       const totalUnderlyingValueChange = assetCashValueUnderlyingAfter
         .sub(assetCashValueUnderlyingBefore)
@@ -329,7 +331,7 @@ export default class BalanceSummary {
         assetCashBalanceBefore,
         assetCashBalanceAfter,
         nTokenBalanceBefore,
-        nTokenBalanceAfter,
+        nTokenBalanceAfter
       );
 
       return {
@@ -347,32 +349,17 @@ export default class BalanceSummary {
         nTokenBalanceAfter,
         nTokenValueUnderlyingBefore,
         nTokenValueUnderlyingAfter,
-        nTokenValueAssetBefore: TypedBigNumber.from(
-          r.nTokenValueAssetBefore,
-          BigNumberType.InternalAsset,
-          assetSymbol,
-        ),
-        nTokenValueAssetAfter: TypedBigNumber.from(
-          r.nTokenValueAssetAfter,
-          BigNumberType.InternalAsset,
-          assetSymbol,
-        ),
+        nTokenValueAssetBefore: TypedBigNumber.from(r.nTokenValueAssetBefore, BigNumberType.InternalAsset, assetSymbol),
+        nTokenValueAssetAfter: TypedBigNumber.from(r.nTokenValueAssetAfter, BigNumberType.InternalAsset, assetSymbol),
         totalUnderlyingValueChange,
       };
     });
   }
 
-  public static build(
-    accountData: AccountData,
-    balanceHistory: BalanceHistory[],
-    currentTime = getNowSeconds(),
-  ) {
+  public static build(accountData: AccountData, balanceHistory: BalanceHistory[], currentTime = getNowSeconds()) {
     const system = System.getSystem();
-    const {
-      netETHCollateralWithHaircut,
-      netETHDebtWithBuffer,
-      netUnderlyingAvailable,
-    } = FreeCollateral.getFreeCollateral(accountData);
+    const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } =
+      FreeCollateral.getFreeCollateral(accountData);
     const fcAggregate = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
 
     return (
@@ -385,7 +372,7 @@ export default class BalanceSummary {
           const cashBalanceCashFlows = BalanceSummary.getCashBalanceCashFlows(
             v.cashBalance,
             filteredHistory,
-            currentTime,
+            currentTime
           );
 
           const nTokenCashFlows = v.nTokenBalance
@@ -393,12 +380,7 @@ export default class BalanceSummary {
             : [];
 
           const nTokenAssetCashFlows = v.nTokenBalance
-            ? BalanceSummary.getNTokenAssetCashFlows(
-              v.currencyId,
-              v.nTokenBalance,
-              filteredHistory,
-              currentTime,
-            )
+            ? BalanceSummary.getNTokenAssetCashFlows(v.currencyId, v.nTokenBalance, filteredHistory, currentTime)
             : [];
 
           let cTokenYield = 0;
@@ -417,20 +399,20 @@ export default class BalanceSummary {
           }
 
           const claimableIncentives = v.nTokenBalance
-            ? NTokenValue.getClaimableIncentives(
-              v.currencyId,
-              v.nTokenBalance,
-              v.lastClaimTime,
-              v.accountIncentiveDebt,
-            )
+            ? NTokenValue.getClaimableIncentives(v.currencyId, v.nTokenBalance, v.lastClaimTime, v.accountIncentiveDebt)
             : TypedBigNumber.fromBalance(0, 'NOTE', true);
 
           const currency = system.getCurrencyById(v.currencyId);
           const underlyingSymbol = currency.underlyingSymbol || currency.symbol;
-          const localNetAvailable = netUnderlyingAvailable.get(v.currencyId)
-            || TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
+          const localNetAvailable =
+            netUnderlyingAvailable.get(v.currencyId) ||
+            TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
           const maxWithdrawValueAssetCash = BalanceSummary.getMaxWithdrawData(
-            v, fcAggregate, localNetAvailable, system, accountData.hasAssetDebt || accountData.hasCashDebt,
+            v,
+            fcAggregate,
+            localNetAvailable,
+            system,
+            accountData.hasAssetDebt || accountData.hasCashDebt
           );
 
           return new BalanceSummary(
@@ -446,7 +428,7 @@ export default class BalanceSummary {
             cTokenYield,
             nTokenTradingYield,
             nTokenTotalYield,
-            maxWithdrawValueAssetCash,
+            maxWithdrawValueAssetCash
           );
         })
         // Ensure that there is some balance for each summary
@@ -458,7 +440,7 @@ export default class BalanceSummary {
   private static getCashBalanceCashFlows(
     currentCashBalance: TypedBigNumber,
     balanceHistory: BalanceHistory[],
-    currentTime: number,
+    currentTime: number
   ) {
     if (currentCashBalance.isZero()) return [];
 
@@ -467,7 +449,7 @@ export default class BalanceSummary {
         before: h.assetCashValueUnderlyingBefore,
         after: h.assetCashValueUnderlyingAfter,
         blockTime: h.blockTime,
-      })),
+      }))
     );
 
     cashFlows.push({
@@ -482,7 +464,7 @@ export default class BalanceSummary {
     currencyId: number,
     currentNTokenBalance: TypedBigNumber,
     balanceHistory: BalanceHistory[],
-    currentTime: number,
+    currentTime: number
   ) {
     if (currentNTokenBalance.isZero()) return [];
 
@@ -491,12 +473,12 @@ export default class BalanceSummary {
         before: h.nTokenValueUnderlyingBefore!,
         after: h.nTokenValueUnderlyingAfter!,
         blockTime: h.blockTime,
-      })),
+      }))
     );
 
     cashFlows.push({
       amount: convertBigNumber(
-        NTokenValue.convertNTokenToInternalAsset(currencyId, currentNTokenBalance, false).toUnderlying().n,
+        NTokenValue.convertNTokenToInternalAsset(currencyId, currentNTokenBalance, false).toUnderlying().n
       ),
       date: new Date(currentTime * 1000),
     });
@@ -508,7 +490,7 @@ export default class BalanceSummary {
     currencyId: number,
     currentNTokenBalance: TypedBigNumber,
     balanceHistory: BalanceHistory[],
-    currentTime: number,
+    currentTime: number
   ) {
     if (currentNTokenBalance.isZero()) return [];
 
@@ -517,7 +499,7 @@ export default class BalanceSummary {
         before: h.nTokenValueAssetBefore!,
         after: h.nTokenValueAssetAfter!,
         blockTime: h.blockTime,
-      })),
+      }))
     );
 
     cashFlows.push({
@@ -528,7 +510,7 @@ export default class BalanceSummary {
     return cashFlows;
   }
 
-  private static parseCashFlows(history: {before: TypedBigNumber; after: TypedBigNumber; blockTime: Date}[]) {
+  private static parseCashFlows(history: { before: TypedBigNumber; after: TypedBigNumber; blockTime: Date }[]) {
     return history.reduce((cashFlows, h) => {
       // If the cash value is cleared to zero we reset the cash flow so that we don't accumulate
       // across withdraws
@@ -538,7 +520,7 @@ export default class BalanceSummary {
       // No Change in net cash, no need to push a cash flow
       if (netCash.isZero()) return cashFlows;
 
-      cashFlows.push({amount: convertBigNumber(netCash.n), date: h.blockTime});
+      cashFlows.push({ amount: convertBigNumber(netCash.n), date: h.blockTime });
       return cashFlows;
     }, [] as CashFlow[]);
   }
@@ -552,7 +534,7 @@ export default class BalanceSummary {
     fcAggregate: TypedBigNumber,
     localNetAvailable: TypedBigNumber,
     system: System,
-    hasDebt: boolean,
+    hasDebt: boolean
   ) {
     let nTokenAssetPV: TypedBigNumber | undefined;
     const nTokenStatus = NTokenValue.getNTokenStatus(balance.currencyId);
@@ -565,7 +547,7 @@ export default class BalanceSummary {
     const totalAccountAssetValue = nTokenAssetPV ? balance.cashBalance.add(nTokenAssetPV) : balance.cashBalance;
     if (!hasDebt) return totalAccountAssetValue;
 
-    const {ethRateConfig} = system.getETHRate(balance.currencyId);
+    const { ethRateConfig } = system.getETHRate(balance.currencyId);
     if (!ethRateConfig) throw Error(`Cannot find ethRateConfig for currency ${balance.currencyId}`);
     const multiplier = localNetAvailable.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
     let fcLocal: TypedBigNumber;

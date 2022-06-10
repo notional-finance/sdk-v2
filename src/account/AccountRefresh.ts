@@ -1,18 +1,18 @@
-import {BigNumber, ethers, providers} from 'ethers';
-import {EventEmitter} from 'eventemitter3';
+import { BigNumber, ethers, providers } from 'ethers';
+import { EventEmitter } from 'eventemitter3';
 import BlocknativeSdk from 'bnc-sdk';
-import {setIntervalAsync, clearIntervalAsync} from 'set-interval-async/fixed';
-import {SetIntervalAsyncTimer} from 'set-interval-async';
-import {Emitter} from 'bnc-sdk/dist/types/src/interfaces';
-import {Notional as NotionalTypechain} from '../typechain/Notional';
-import {System} from '../system';
+import { setIntervalAsync, clearIntervalAsync } from 'set-interval-async/fixed';
+import { SetIntervalAsyncTimer } from 'set-interval-async';
+import { Emitter } from 'bnc-sdk/dist/types/src/interfaces';
+import { Notional as NotionalTypechain } from '../typechain/Notional';
+import { System } from '../system';
 import AccountData from './AccountData';
-import {WalletBalance} from '../libs/types';
-import {ETHER_CURRENCY_ID} from '../config/constants';
-import {ERC20} from '../typechain/ERC20';
+import { WalletBalance } from '../libs/types';
+import { ETHER_CURRENCY_ID } from '../config/constants';
+import { ERC20 } from '../typechain/ERC20';
 import TypedBigNumber from '../libs/TypedBigNumber';
 
-const {AddressZero, MaxUint256} = ethers.constants;
+const { AddressZero, MaxUint256 } = ethers.constants;
 
 export enum AccountEvents {
   ACCOUNT_DATA_REFRESH = 'ACCOUNT_DATA_REFRESH',
@@ -57,12 +57,19 @@ export interface GetAccountResult {
  */
 export default abstract class AccountRefresh {
   public eventEmitter = new EventEmitter();
-  private _lastUpdateBlockNumber: number = 0;
+
+  private _lastUpdateBlockNumber = 0;
+
   private _lastUpdateTime: Date = new Date(0);
+
   private _accountData?: AccountData;
+
   private _lastAccountHash?: string;
+
   private _walletBalances = new Map<string, WalletBalance>();
+
   private accountRefreshInterval?: SetIntervalAsyncTimer;
+
   private accountBlocknativeListener?: Emitter;
 
   get lastUpdateBlockNumber() {
@@ -88,14 +95,14 @@ export default abstract class AccountRefresh {
   constructor(
     public address: string,
     protected provider: ethers.providers.JsonRpcBatchProvider,
-    protected notionalProxy: NotionalTypechain,
+    protected notionalProxy: NotionalTypechain
   ) {}
 
   /**
    * Enables a refresh of the account's wallet balances
    * @param opts
    */
-  public enableRefresh(opts: {pollingIntervalMs?: number; blockNativeSDK?: BlocknativeSdk}) {
+  public enableRefresh(opts: { pollingIntervalMs?: number; blockNativeSDK?: BlocknativeSdk }) {
     if (opts.pollingIntervalMs) {
       this.accountRefreshInterval = setIntervalAsync(async () => {
         await this.refresh();
@@ -103,7 +110,7 @@ export default abstract class AccountRefresh {
     }
 
     if (opts.blockNativeSDK) {
-      const {emitter} = opts.blockNativeSDK.account(this.address);
+      const { emitter } = opts.blockNativeSDK.account(this.address);
       emitter.on('txConfirmed', () => {
         this.refresh();
       });
@@ -187,8 +194,8 @@ export default abstract class AccountRefresh {
           .concat(
             this.fetchBalanceAndAllowance('NOTE', system.getNOTE() as ERC20, system.getStakedNote().address, block),
             this.fetchBalanceAndAllowance('WETH', system.getWETH() as ERC20, system.getStakedNote().address, block),
-            this.fetchBalanceAndAllowance('sNOTE', system.getStakedNote() as ERC20, AddressZero, block),
-          ),
+            this.fetchBalanceAndAllowance('sNOTE', system.getStakedNote() as ERC20, AddressZero, block)
+          )
       )
     ).filter((v) => v !== null) as string[];
 
@@ -199,7 +206,7 @@ export default abstract class AccountRefresh {
 
   private async fetchBalanceAndAllowance(symbol: string, contract: ERC20, spender: string, block: providers.Block) {
     return Promise.all([contract.balanceOf(this.address), contract.allowance(this.address, spender)]).then(
-      ([_balance, _allowance]) => this.updateWalletBalance(symbol, spender, block, _balance, _allowance),
+      ([_balance, _allowance]) => this.updateWalletBalance(symbol, spender, block, _balance, _allowance)
     );
   }
 
@@ -208,7 +215,7 @@ export default abstract class AccountRefresh {
     spender: string,
     block: providers.Block,
     _balance: BigNumber,
-    _allowance: BigNumber,
+    _allowance: BigNumber
   ) {
     let didUpdate = false;
     const balance = TypedBigNumber.fromBalance(_balance, symbol, false);

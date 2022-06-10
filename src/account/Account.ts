@@ -1,14 +1,11 @@
-// prettier-ignore
-import {
-  BigNumber, ethers, Overrides, Signer,
-} from 'ethers';
-import {System} from '../system';
-import {Notional as NotionalTypechain} from '../typechain/Notional';
+import { BigNumber, ethers, Overrides, Signer } from 'ethers';
+import { System } from '../system';
+import { Notional as NotionalTypechain } from '../typechain/Notional';
 import AccountRefresh from './AccountRefresh';
 import GraphClient from '../GraphClient';
-import {ERC20} from '../typechain/ERC20';
-import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
-import {getNowSeconds} from '../libs/utils';
+import { ERC20 } from '../typechain/ERC20';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
+import { getNowSeconds } from '../libs/utils';
 import AccountGraphLoader from './AccountGraphLoader';
 import NOTESummary from './NOTESummary';
 
@@ -18,7 +15,7 @@ export default class Account extends AccountRefresh {
     provider: ethers.providers.JsonRpcBatchProvider,
     notionalProxy: NotionalTypechain,
     private graphClient: GraphClient,
-    public signer?: Signer,
+    public signer?: Signer
   ) {
     super(address, provider, notionalProxy);
   }
@@ -35,7 +32,7 @@ export default class Account extends AccountRefresh {
     _signer: string | Signer,
     provider: ethers.providers.JsonRpcBatchProvider,
     system: System,
-    graphClient: GraphClient,
+    graphClient: GraphClient
   ) {
     let address: string;
     let notionalProxy = system.getNotionalProxy();
@@ -63,12 +60,12 @@ export default class Account extends AccountRefresh {
    * Returns a summary of an account's balances with historical transactions and internal return rate
    */
   public async getBalanceSummary() {
-    const [{balanceSummary}, noteSummary] = await Promise.all([
+    const [{ balanceSummary }, noteSummary] = await Promise.all([
       AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient),
       NOTESummary.build(this, this.graphClient),
     ]);
 
-    return {balanceSummary, noteSummary};
+    return { balanceSummary, noteSummary };
   }
 
   /**
@@ -96,8 +93,9 @@ export default class Account extends AccountRefresh {
   public getNetCashAmount(symbol: string, netCashRequiredInternal: TypedBigNumber) {
     const currency = System.getSystem().getCurrencyBySymbol(symbol);
     const isUnderlying = currency.underlyingSymbol === symbol;
-    const cashBalance = this.accountData?.cashBalance(currency.id)
-      || TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.symbol);
+    const cashBalance =
+      this.accountData?.cashBalance(currency.id) ||
+      TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.symbol);
     const assetCashRequired = netCashRequiredInternal.toAssetCash(true);
 
     if (netCashRequiredInternal.isNegative()) throw new Error('Net cash required must be positive');
@@ -115,7 +113,7 @@ export default class Account extends AccountRefresh {
       depositAmount: TypedBigNumber.from(
         0,
         isUnderlying ? BigNumberType.ExternalUnderlying : BigNumberType.ExternalAsset,
-        symbol,
+        symbol
       ),
       cashBalanceApplied: netCashRequiredInternal,
     };
@@ -135,7 +133,7 @@ export default class Account extends AccountRefresh {
     // Net cash required cannot be negative, this would result in negative account balances
     if (!walletBalance || netCashRequiredInternal.isNegative()) return false;
     if (useCashBalance) {
-      const {depositAmount} = this.getNetCashAmount(symbol, netCashRequiredInternal);
+      const { depositAmount } = this.getNetCashAmount(symbol, netCashRequiredInternal);
       return walletBalance.balance.gte(depositAmount);
     }
 
@@ -210,7 +208,7 @@ export default class Account extends AccountRefresh {
     symbol: string,
     amount: BigNumber,
     spender: string = this.notionalProxy.address,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (symbol === 'ETH') throw Error('Cannot set allowance on ETH');
 

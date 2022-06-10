@@ -1,15 +1,15 @@
-import {BigNumber} from 'ethers';
-import {gql} from '@apollo/client/core';
-import {System, Market} from '../system';
-import {convertBigNumber, xirr} from '../libs/xirr';
+import { BigNumber } from 'ethers';
+import { gql } from '@apollo/client/core';
+import { System, Market } from '../system';
+import { convertBigNumber, xirr } from '../libs/xirr';
 // prettier-ignore
 import {
   Asset, AssetType, TradeHistory, TradeType, Currency, TransactionHistory,
 } from '../libs/types';
-import {getNowSeconds} from '../libs/utils';
+import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
 import GraphClient from '../GraphClient';
-import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 
 interface TradeHistoryQueryResult {
   trades: {
@@ -37,7 +37,9 @@ interface TradeHistoryQueryResult {
 
 export default class AssetSummary {
   public maturity: number;
+
   public currencyId: number;
+
   private currency: Currency;
 
   public get hasMatured() {
@@ -72,7 +74,7 @@ export default class AssetSummary {
     public irr: number,
     public history: TradeHistory[],
     public fCash?: Asset,
-    public liquidityToken?: Asset,
+    public liquidityToken?: Asset
   ) {
     if (!fCash && !liquidityToken) throw new Error('Invalid asset summary input');
     this.maturity = (fCash?.maturity || liquidityToken?.maturity) as number;
@@ -110,12 +112,9 @@ export default class AssetSummary {
     }`;
   }
 
-  public static async fetchTradeHistory(
-    address: string,
-    graphClient: GraphClient,
-  ): Promise<TradeHistory[]> {
+  public static async fetchTradeHistory(address: string, graphClient: GraphClient): Promise<TradeHistory[]> {
     const queryResult = await graphClient.queryOrThrow<TradeHistoryQueryResult>(
-      AssetSummary.tradeHistoryQuery(address),
+      AssetSummary.tradeHistoryQuery(address)
     );
 
     return queryResult.trades.map((t) => {
@@ -127,14 +126,14 @@ export default class AssetSummary {
       const netUnderlyingCash = TypedBigNumber.from(
         t.netUnderlyingCash,
         BigNumberType.InternalUnderlying,
-        underlyingSymbol,
+        underlyingSymbol
       );
       const netfCash = TypedBigNumber.from(t.netfCash, BigNumberType.InternalUnderlying, underlyingSymbol);
 
       const tradedInterestRate = Market.exchangeToInterestRate(
         Market.exchangeRate(netfCash, netUnderlyingCash),
         t.timestamp,
-        maturity.toNumber(),
+        maturity.toNumber()
       );
 
       return {
@@ -173,11 +172,7 @@ export default class AssetSummary {
    * @param accountData
    * @param tradeHistory
    */
-  public static build(
-    accountData: AccountData,
-    tradeHistory: TradeHistory[],
-    currentTime = getNowSeconds(),
-  ) {
+  public static build(accountData: AccountData, tradeHistory: TradeHistory[], currentTime = getNowSeconds()) {
     const system = System.getSystem();
     // Reduce portfolio to combine fCash and liquidity tokens at the same maturity, if liquidity tokens
     // exist. This makes it easier to reason about.
@@ -203,7 +198,7 @@ export default class AssetSummary {
           fCash?: Asset;
           liquidityToken?: Asset;
         };
-      },
+      }
     );
 
     return Object.keys(assetsReduced)
@@ -222,14 +217,14 @@ export default class AssetSummary {
           date: h.blockTime,
         }));
 
-        const {liquidityToken, fCash} = assetsReduced[assetKey];
+        const { liquidityToken, fCash } = assetsReduced[assetKey];
         const currency = system.getCurrencyById(liquidityToken?.currencyId || (fCash?.currencyId as number));
         const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
-        const {underlyingInternalPV, fCashValue} = AssetSummary.getAssetValue(
+        const { underlyingInternalPV, fCashValue } = AssetSummary.getAssetValue(
           system,
           underlyingSymbol,
           liquidityToken,
-          fCash,
+          fCash
         );
 
         // Add the current value of the asset as the final cash flow
@@ -249,7 +244,7 @@ export default class AssetSummary {
         const underlyingInternalProfitLoss = filteredHistory
           .reduce(
             (s, h) => s.add(h.netUnderlyingCash),
-            TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol),
+            TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol)
           )
           .add(underlyingInternalPV);
 
@@ -261,7 +256,7 @@ export default class AssetSummary {
           irr,
           filteredHistory,
           fCash,
-          liquidityToken,
+          liquidityToken
         );
       })
       .sort((a, b) => a.assetKey.localeCompare(b.assetKey, 'en'));
@@ -276,10 +271,10 @@ export default class AssetSummary {
     let underlyingInternalPV = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     let fCashValue = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     if (liquidityToken) {
-      const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(
+      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
         liquidityToken.assetType,
         liquidityToken.notional,
-        false,
+        false
       );
 
       fCashValue = fCashClaim;
@@ -292,10 +287,10 @@ export default class AssetSummary {
     if (fCash) {
       fCashValue = fCashValue.add(fCash.notional);
       underlyingInternalPV = underlyingInternalPV.add(
-        cashGroup.getfCashPresentValueUnderlyingInternal(fCash.maturity, fCash.notional, false),
+        cashGroup.getfCashPresentValueUnderlyingInternal(fCash.maturity, fCash.notional, false)
       );
     }
 
-    return {underlyingInternalPV, fCashValue};
+    return { underlyingInternalPV, fCashValue };
   }
 }

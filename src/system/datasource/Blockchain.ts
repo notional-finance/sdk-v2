@@ -1,13 +1,11 @@
-import {BigNumber, ethers} from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
-import {DataSource} from '.';
-import TypedBigNumber, {BigNumberType} from '../../libs/TypedBigNumber';
-import {ETHER_CURRENCY_ID} from '../../config/constants';
-import {SystemEvents} from '../System';
-import {AccountData} from '../../account';
-import {
-  AssetRate, Contracts, Currency, EthRate, nToken, StakedNoteParameters,
-} from '../../libs/types';
+import { DataSource } from '.';
+import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
+import { ETHER_CURRENCY_ID } from '../../config/constants';
+import { SystemEvents } from '../System';
+import { AccountData } from '../../account';
+import { AssetRate, Contracts, Currency, EthRate, nToken, StakedNoteParameters } from '../../libs/types';
 import CashGroup from '../CashGroup';
 
 export default class Blockchain extends DataSource {
@@ -20,29 +18,23 @@ export default class Blockchain extends DataSource {
     protected cashGroups: Map<number, CashGroup>,
     protected nTokens: Map<number, nToken>,
     protected eventEmitter: EventEmitter,
-    public refreshIntervalMS: number,
+    public refreshIntervalMS: number
   ) {
     super(eventEmitter, refreshIntervalMS);
   }
 
   private async fetchSNOTEParameters(): Promise<StakedNoteParameters> {
     // eslint-disable-next-line
-    const [
-      poolId,
-      balancerPoolTotalSupply,
-      swapFee,
-      coolDownTimeInSeconds,
-      redeemWindowSeconds,
-      sNOTETotalSupply,
-    ] = await Promise.all([
-      await this.contracts.balancerPool.getPoolId(),
-      await this.contracts.balancerPool.totalSupply(),
-      await this.contracts.balancerPool.getSwapFeePercentage(),
-      await this.contracts.sNOTE.coolDownTimeInSeconds(),
-      await this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
-      await this.contracts.sNOTE.totalSupply(),
-    ]);
-    const {tokens, balances} = await this.contracts.balancerVault.getPoolTokens(poolId);
+    const [poolId, balancerPoolTotalSupply, swapFee, coolDownTimeInSeconds, redeemWindowSeconds, sNOTETotalSupply] =
+      await Promise.all([
+        this.contracts.balancerPool.getPoolId(),
+        this.contracts.balancerPool.totalSupply(),
+        this.contracts.balancerPool.getSwapFeePercentage(),
+        this.contracts.sNOTE.coolDownTimeInSeconds(),
+        this.contracts.sNOTE.REDEEM_WINDOW_SECONDS(),
+        this.contracts.sNOTE.totalSupply(),
+      ]);
+    const { tokens, balances } = await this.contracts.balancerVault.getPoolTokens(poolId);
     const noteIndex = tokens[0] === this.contracts.note.address ? 0 : 1;
     const ethIndex = noteIndex === 1 ? 0 : 1;
     const sNOTEBptBalance = await this.contracts.sNOTE.getPoolTokenShare(sNOTETotalSupply);
@@ -65,7 +57,7 @@ export default class Blockchain extends DataSource {
     promises.push(
       this.fetchSNOTEParameters().then((s) => {
         this.stakedNoteParameters = s;
-      }),
+      })
     );
 
     this.ethRates.forEach((e, k) => {
@@ -91,7 +83,7 @@ export default class Blockchain extends DataSource {
             this.eventEmitter.emit(SystemEvents.ETH_RATE_UPDATE, k);
             this.ethRateData.set(k, typedRate);
           }
-        }),
+        })
       );
     });
 
@@ -105,7 +97,7 @@ export default class Blockchain extends DataSource {
             this.eventEmitter.emit(SystemEvents.ASSET_RATE_UPDATE, k);
             this.assetRateData.set(k, rate);
           }
-        }),
+        })
       );
 
       if (this.cashGroups.has(k)) {
@@ -117,7 +109,7 @@ export default class Blockchain extends DataSource {
               this.eventEmitter.emit(SystemEvents.BLOCK_SUPPLY_RATE_UPDATE, k);
               this.cashGroups.get(k)!.setBlockSupplyRate(r.toNumber());
             }
-          }),
+          })
         );
       }
     });
@@ -125,14 +117,14 @@ export default class Blockchain extends DataSource {
     this.nTokens.forEach((n, k) => {
       promises.push(
         n.contract.getPresentValueAssetDenominated().then((r) => {
-          const {symbol} = this.currencies.get(k)!;
+          const { symbol } = this.currencies.get(k)!;
           const pv = TypedBigNumber.from(r, BigNumberType.InternalAsset, symbol);
 
           if (!this.nTokenAssetCashPV.get(k)?.eq(pv)) {
             this.eventEmitter.emit(SystemEvents.NTOKEN_PV_UPDATE, k);
             this.nTokenAssetCashPV.set(k, pv);
           }
-        }),
+        })
       );
 
       promises.push(
@@ -141,7 +133,7 @@ export default class Blockchain extends DataSource {
           .getNTokenAccount(n.contract.address)
           .then((r) => {
             const nTokenSymbol = this.nTokens.get(k)?.symbol;
-            const {symbol} = this.currencies.get(k)!;
+            const { symbol } = this.currencies.get(k)!;
             if (!nTokenSymbol) throw Error(`unknown nToken ${k}`);
             const supply = TypedBigNumber.from(r.totalSupply, BigNumberType.nToken, nTokenSymbol);
             const cashBalance = TypedBigNumber.from(r.cashBalance, BigNumberType.InternalAsset, symbol);
@@ -159,16 +151,16 @@ export default class Blockchain extends DataSource {
               this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, k);
               this.nTokenCashBalance.set(k, cashBalance);
             }
-          }),
+          })
       );
 
       promises.push(
         this.contracts.notionalProxy.getNTokenPortfolio(n.contract.address).then((value) => {
-          const {liquidityTokens, netfCashAssets} = value;
+          const { liquidityTokens, netfCashAssets } = value;
           this.nTokenLiquidityTokens.set(k, AccountData.parsePortfolioFromBlockchain(liquidityTokens));
           this.nTokenfCash.set(k, AccountData.parsePortfolioFromBlockchain(netfCashAssets));
           this.eventEmitter.emit(SystemEvents.NTOKEN_ACCOUNT_UPDATE, k);
-        }),
+        })
       );
     });
 
@@ -184,7 +176,7 @@ export default class Blockchain extends DataSource {
                 this.eventEmitter.emit(SystemEvents.MARKET_UPDATE, c.markets[i].marketKey);
               }
             });
-          }),
+          })
       );
     });
 
@@ -192,7 +184,7 @@ export default class Blockchain extends DataSource {
       this.batchProvider.getBlock('latest').then((b) => {
         this.lastUpdateBlockNumber = b.number;
         this.lastUpdateTimestamp = new Date(b.timestamp * 1000);
-      }),
+      })
     );
 
     await Promise.all(promises);
