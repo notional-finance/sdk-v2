@@ -1,12 +1,15 @@
-import {BigNumber, ethers} from 'ethers';
-import {getNowSeconds} from '../../src/libs/utils';
+import { BigNumber, ethers } from 'ethers';
+import { getNowSeconds } from '../../src/libs/utils';
 import {
-  BASIS_POINT, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
+  BASIS_POINT,
+  RATE_PRECISION,
+  SECONDS_IN_QUARTER,
+  SECONDS_IN_YEAR,
   SECONDS_IN_DAY,
 } from '../../src/config/constants';
-import {CashGroup, Market, System} from '../../src/system';
-import {AssetType} from '../../src/libs/types';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import { CashGroup, Market, System } from '../../src/system';
+import { AssetType } from '../../src/libs/types';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
 
 describe('Cash Group', () => {
@@ -15,7 +18,9 @@ describe('Cash Group', () => {
   const debtBufferBasisPoints = 60 * BASIS_POINT;
   const system = new MockSystem();
   System.overrideSystem(system);
-  afterAll(() => { system.destroy(); });
+  afterAll(() => {
+    system.destroy();
+  });
 
   let cashGroup: CashGroup;
 
@@ -34,7 +39,7 @@ describe('Cash Group', () => {
         reserveFeeSharePercent,
         rateOracleTimeWindow,
         'cETH',
-        'ETH',
+        'ETH'
       );
 
       const lastImpliedRate = BigNumber.from((i * RATE_PRECISION) / 10);
@@ -61,9 +66,9 @@ describe('Cash Group', () => {
       fCashHaircutBasisPoints,
       Array(7).fill(90),
       Array(7).fill(10),
-      markets,
+      markets
     );
-    System.overrideSystem((system as unknown) as System);
+    System.overrideSystem(system as unknown as System);
   });
 
   it('gets a time reference', () => {
@@ -164,20 +169,20 @@ describe('Cash Group', () => {
   });
 
   it('gets liquidity token claims', () => {
-    const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(
+    const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
       AssetType.LiquidityToken_3Month,
       TypedBigNumber.from(1e8, BigNumberType.LiquidityToken, 'ETH'),
-      false,
+      false
     );
     expect(fCashClaim.n).toEqual(BigNumber.from(1e8));
     expect(assetCashClaim.n).toEqual(BigNumber.from(2e8));
   });
 
   it('gets haircut liquidity token claims', () => {
-    const {fCashClaim, assetCashClaim} = cashGroup.getLiquidityTokenValue(
+    const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
       AssetType.LiquidityToken_3Month,
       TypedBigNumber.from(1e8, BigNumberType.LiquidityToken, 'ETH'),
-      true,
+      true
     );
     expect(fCashClaim.n).toEqual(BigNumber.from(0.9e8));
     expect(assetCashClaim.n).toEqual(BigNumber.from(1.8e8));

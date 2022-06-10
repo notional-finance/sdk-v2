@@ -1,0 +1,56 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "extends": ["airbnb-base", "prettier", "plugin:@typescript-eslint/recommended"],
+  "plugins": ["prettier", "import", "@typescript-eslint"],
+  "parserOptions": {
+    "ecmaVersion": 2019,
+    "project": "./tsconfig.json"
+  },
+  "rules": {
+    "prettier/prettier": "error",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+   ],
+   "no-underscore-dangle": "off",
+   "import/no-cycle": "off",
+   "@typescript-eslint/no-var-requires": "warn",
+   "@typescript-eslint/no-empty-function": "warn",
+   "class-methods-use-this": "off",
+   "no-shadow": "warn",
+   "no-useless-constructor": "warn",
+   "default-param-last": "warn"
+  },
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts"]
+    },
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    }
+  },
+  "overrides": [
+    {
+      "files":[
+        "*.test.ts",
+        "*.spec.ts"
+      ],
+      "rules": {
+        "import/no-unresolved": "off",
+        "import/no-useless-constructor": "off",
+        "import/no-empty-function": "off"
+      },
+      "env": {
+        "jest": true
+      }
+    }
+  ]
+}

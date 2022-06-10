@@ -1,5 +1,5 @@
-import {gql} from '@apollo/client/core';
-import {BigNumber, Contract, ethers} from 'ethers';
+import { gql } from '@apollo/client/core';
+import { BigNumber, Contract, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import {
   Asset,
@@ -13,7 +13,7 @@ import {
   SettlementMarket,
   TokenType,
 } from '../libs/types';
-import {getNowSeconds} from '../libs/utils';
+import { getNowSeconds } from '../libs/utils';
 import {
   DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   RATE_PRECISION,
@@ -21,23 +21,22 @@ import {
   DEFAULT_DATA_REFRESH_INTERVAL,
 } from '../config/constants';
 
-import {IAggregator} from '../typechain/IAggregator';
-import {AssetRateAggregator} from '../typechain/AssetRateAggregator';
-import {NTokenERC20} from '../typechain/NTokenERC20';
-import {ERC20} from '../typechain/ERC20';
+import { IAggregator } from '../typechain/IAggregator';
+import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
+import { NTokenERC20 } from '../typechain/NTokenERC20';
+import { ERC20 } from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
 import CashGroup from './CashGroup';
 import Market from './Market';
-import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import NoteETHRateProvider from './NoteETHRateProvider';
-import {DataSource, DataSourceType} from './datasource';
+import { DataSource, DataSourceType } from './datasource';
 import Blockchain from './datasource/Blockchain';
 import Cache from './datasource/Cache';
-
-const ERC20ABI = require('../abi/ERC20.json');
-const IAggregatorABI = require('../abi/IAggregator.json');
-const AssetRateAggregatorABI = require('../abi/AssetRateAggregator.json');
-const NTokenERC20ABI = require('../abi/nTokenERC20.json');
+import ERC20ABI from '../abi/ERC20.json';
+import IAggregatorABI from '../abi/IAggregator.json';
+import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
+import NTokenERC20ABI from '../abi/nTokenERC20.json';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -213,7 +212,7 @@ interface IMarketProvider {
 }
 
 interface IETHRateProvider {
-  getETHRate(): {ethRateConfig: EthRate; ethRate: BigNumber};
+  getETHRate(): { ethRateConfig: EthRate; ethRate: BigNumber };
 }
 
 interface INTokenAssetCashPVProvider {
@@ -222,14 +221,24 @@ interface INTokenAssetCashPVProvider {
 
 export default class System {
   public eventEmitter = new EventEmitter();
+
+  // eslint-disable-next-line no-use-before-define
   private static _systemInstance?: System;
+
   protected symbolToCurrencyId = new Map<string, number>();
+
   protected currencies = new Map<number, Currency>();
+
   protected ethRates = new Map<number, EthRate>();
+
   protected assetRate = new Map<number, AssetRate>();
+
   protected cashGroups = new Map<number, CashGroup>();
+
   protected nTokens = new Map<number, nToken>();
+
   protected incentiveMigration = new Map<number, IncentiveMigration>();
+
   public dataSource: DataSource;
 
   public get lastUpdateBlockNumber() {
@@ -251,13 +260,19 @@ export default class System {
   }
 
   protected settlementRates = new Map<string, BigNumber>();
+
   protected settlementMarkets = new Map<string, SettlementMarket>();
 
   private dataRefreshInterval?: NodeJS.Timeout;
+
   private configurationRefreshInterval?: NodeJS.Timeout;
+
   private ethRateProviders = new Map<number, IETHRateProvider>();
+
   private assetRateProviders = new Map<number, IAssetRateProvider>();
+
   private nTokenAssetCashPVProviders = new Map<number, INTokenAssetCashPVProvider>();
+
   private marketProviders = new Map<string, IMarketProvider>();
 
   constructor(
@@ -269,7 +284,7 @@ export default class System {
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public dataSourceType: DataSourceType,
     public refreshIntervalMS: number,
-    public refreshConfigurationDataIntervalMs?: number,
+    public refreshConfigurationDataIntervalMs?: number
   ) {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
@@ -285,15 +300,19 @@ export default class System {
         this.cashGroups,
         this.nTokens,
         this.eventEmitter,
-        refreshIntervalMS,
+        refreshIntervalMS
       );
       // This will fetch the NOTE price via CoinGecko
       this.ethRateProviders.set(
         NOTE_CURRENCY_ID,
-        new NoteETHRateProvider(undefined, {
-          notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
-          eventEmitter: this.eventEmitter,
-        }, skipFetchSetup),
+        new NoteETHRateProvider(
+          undefined,
+          {
+            notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
+            eventEmitter: this.eventEmitter,
+          },
+          skipFetchSetup
+        )
       );
     } else {
       this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
@@ -324,7 +343,7 @@ export default class System {
     refreshDataSource,
     refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
     refreshConfigurationDataIntervalMs = DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
-    skipFetchSetup: boolean,
+    skipFetchSetup: boolean
   ) {
     const data = await graphClient.queryOrThrow<SystemQueryResult>(systemConfigurationQuery);
     return new System(
@@ -336,7 +355,7 @@ export default class System {
       batchProvider,
       refreshDataSource,
       refreshIntervalMS,
-      refreshConfigurationDataIntervalMs,
+      refreshConfigurationDataIntervalMs
     );
   }
 
@@ -386,7 +405,7 @@ export default class System {
             rateAdapter: new Contract(
               c.assetExchangeRate.rateAdapterAddress,
               AssetRateAggregatorABI,
-              this.batchProvider,
+              this.batchProvider
             ) as AssetRateAggregator,
             underlyingDecimalPlaces: c.assetExchangeRate.underlyingDecimalPlaces,
           });
@@ -406,8 +425,8 @@ export default class System {
                 c.cashGroup!.reserveFeeSharePercent,
                 c.cashGroup!.rateOracleTimeWindowSeconds,
                 c.symbol,
-                c.underlyingSymbol || c.symbol,
-              ),
+                c.underlyingSymbol || c.symbol
+              )
             );
           }
 
@@ -422,8 +441,8 @@ export default class System {
               c.cashGroup.fCashHaircutBasisPoints,
               c.cashGroup.liquidityTokenHaircutsPercent,
               c.cashGroup.rateScalars.map((s) => s * RATE_PRECISION),
-              markets,
-            ),
+              markets
+            )
           );
         }
 
@@ -509,9 +528,11 @@ export default class System {
   public getTokenBySymbol(symbol: string): ERC20 {
     if (symbol === 'sNOTE') {
       return this.getStakedNote() as ERC20;
-    } if (symbol === 'NOTE') {
+    }
+    if (symbol === 'NOTE') {
       return this.getNOTE() as ERC20;
-    } if (symbol === 'WETH') {
+    }
+    if (symbol === 'WETH') {
       return this.getWETH() as ERC20;
     }
     const currencyId = this.symbolToCurrencyId.get(symbol);
@@ -559,7 +580,7 @@ export default class System {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
     const provider = this.assetRateProviders.get(currencyId);
     const assetRate = provider?.getAssetRate() ?? this.dataSource.assetRateData.get(currencyId);
-    return {underlyingDecimalPlaces, assetRate};
+    return { underlyingDecimalPlaces, assetRate };
   }
 
   public getETHProvider(currencyId: number) {
@@ -573,7 +594,7 @@ export default class System {
     }
     const ethRateConfig = this.ethRates.get(currencyId);
     const ethRate = this.dataSource.ethRateData.get(currencyId);
-    return {ethRateConfig, ethRate};
+    return { ethRateConfig, ethRate };
   }
 
   public getNTokenAssetCashPV(currencyId: number) {
@@ -593,7 +614,7 @@ export default class System {
     const liquidityTokens = this.dataSource.nTokenLiquidityTokens.get(currencyId);
     const fCash = this.dataSource.nTokenfCash.get(currencyId);
 
-    return {cashBalance, liquidityTokens, fCash};
+    return { cashBalance, liquidityTokens, fCash };
   }
 
   public getNTokenIncentiveFactors(currencyId: number) {
@@ -691,7 +712,7 @@ export default class System {
 
     const settlementRateResponse = await this.graphClient.queryOrThrow<SettlementRateQueryResponse>(
       settlementRateQuery,
-      {currencyId: currencyId.toString(), maturity},
+      { currencyId: currencyId.toString(), maturity }
     );
 
     // eslint-disable-next-line
@@ -701,7 +722,7 @@ export default class System {
     if (!isSettlementRateSet) {
       // This means the rate is not set and we get the current asset rate, don't set the rate here
       // will refetch on the next call.
-      const {underlyingDecimalPlaces, assetRate} = this.getAssetRate(currencyId);
+      const { underlyingDecimalPlaces, assetRate } = this.getAssetRate(currencyId);
       if (!assetRate || !underlyingDecimalPlaces) throw new Error(`Asset rate data for ${currencyId} is not found`);
 
       return assetRate;
@@ -721,7 +742,7 @@ export default class System {
 
     const settlementMarkets = await this.graphClient.queryOrThrow<SettlementMarketsQueryResponse>(
       settlementMarketsQuery,
-      {currencyId: currencyId.toString(), settlementDate},
+      { currencyId: currencyId.toString(), settlementDate }
     );
     settlementMarkets.markets.forEach((m) => {
       const k = `${currencyId}:${settlementDate}:${m.maturity}`;

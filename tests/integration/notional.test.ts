@@ -1,4 +1,4 @@
-import {ethers, Wallet} from 'ethers';
+import { ethers, Wallet } from 'ethers';
 import Notional from '../../src/Notional';
 
 const abiDecoder = require('abi-decoder');

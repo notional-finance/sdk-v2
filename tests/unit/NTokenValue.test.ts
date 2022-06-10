@@ -1,20 +1,18 @@
-import {BigNumber, ethers} from 'ethers';
-import {getNowSeconds} from '../../src/libs/utils';
-import {
-  NOTE_CURRENCY_ID, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
-} from '../../src/config/constants';
-import {
-  System, NTokenValue, CashGroup, Market,
-} from '../../src/system';
+import { BigNumber, ethers } from 'ethers';
+import { getNowSeconds } from '../../src/libs/utils';
+import { NOTE_CURRENCY_ID, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR } from '../../src/config/constants';
+import { System, NTokenValue, CashGroup, Market } from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {AssetType} from '../../src/libs/types';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
+import { AssetType } from '../../src/libs/types';
 import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
 
 describe('nToken value', () => {
   const system = new MockSystem();
   System.overrideSystem(system);
-  afterAll(() => { system.destroy(); });
+  afterAll(() => {
+    system.destroy();
+  });
   const blockTime = CashGroup.getTimeReference(getNowSeconds());
   const tRef = CashGroup.getTimeReference(getNowSeconds());
 
@@ -93,7 +91,7 @@ describe('nToken value', () => {
           settlementDate: tRef + SECONDS_IN_QUARTER * 2,
           isIdiosyncratic: false,
         },
-      ],
+      ]
     );
 
     const usdcCashGroup = system.getCashGroup(3);
@@ -127,17 +125,19 @@ describe('nToken value', () => {
       },
     });
 
-    usdcCashGroup.markets.push(new Market(
-      3,
-      3,
-      CashGroup.getMaturityForMarketIndex(3, tRef),
-      usdcCashGroup.rateScalars[1],
-      usdcCashGroup.totalFeeBasisPoints,
-      usdcCashGroup.reserveFeeSharePercent,
-      usdcCashGroup.rateOracleTimeWindowSeconds,
-      'cUSDC',
-      'USDC',
-    ));
+    usdcCashGroup.markets.push(
+      new Market(
+        3,
+        3,
+        CashGroup.getMaturityForMarketIndex(3, tRef),
+        usdcCashGroup.rateScalars[1],
+        usdcCashGroup.totalFeeBasisPoints,
+        usdcCashGroup.reserveFeeSharePercent,
+        usdcCashGroup.rateOracleTimeWindowSeconds,
+        'cUSDC',
+        'USDC'
+      )
+    );
     system.setMarketProvider(usdcCashGroup.markets[2].marketKey, {
       getMarket: () => {
         const override = usdcCashGroup.markets[2];
@@ -215,7 +215,7 @@ describe('nToken value', () => {
           settlementDate: tRef + SECONDS_IN_QUARTER * 2,
           isIdiosyncratic: false,
         },
-      ],
+      ]
     );
   });
 
@@ -223,12 +223,12 @@ describe('nToken value', () => {
     const nTokenValue = NTokenValue.convertNTokenToInternalAsset(
       1,
       TypedBigNumber.from(100e8, BigNumberType.nToken, 'nETH'),
-      false,
+      false
     );
     const nTokenValueHaircut = NTokenValue.convertNTokenToInternalAsset(
       1,
       TypedBigNumber.from(100e8, BigNumberType.nToken, 'nETH'),
-      true,
+      true
     );
     expect(nTokenValue.toString()).toEqual(BigNumber.from(50e8).toString());
     expect(nTokenValueHaircut.toString()).toEqual(BigNumber.from(42.5e8).toString());
@@ -237,7 +237,7 @@ describe('nToken value', () => {
   it('gets ntokens to mint', () => {
     const nTokensToMint = NTokenValue.getNTokensToMint(
       1,
-      TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH'),
+      TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH')
     );
     expect(nTokensToMint.toString()).toEqual(BigNumber.from(200e8).toString());
   });
@@ -254,7 +254,7 @@ describe('nToken value', () => {
       3,
       TypedBigNumber.from(100_000e8, BigNumberType.nToken, 'nUSDC'),
       BigNumber.from(currentTime - SECONDS_IN_YEAR),
-      BigNumber.from(ethers.constants.WeiPerEther),
+      BigNumber.from(ethers.constants.WeiPerEther)
     );
 
     // Accumulate 1 NOTE under old calculation, accumulate 100k note under new calculation
@@ -266,7 +266,7 @@ describe('nToken value', () => {
       3,
       TypedBigNumber.from(1e8, BigNumberType.nToken, 'nUSDC'),
       BigNumber.from(0), // this means we've migrated
-      BigNumber.from(0.5e8),
+      BigNumber.from(0.5e8)
     );
 
     // Accumulate 1 NOTE per nToken, with 0.5 NOTE incentive debt
@@ -277,7 +277,7 @@ describe('nToken value', () => {
       TypedBigNumber.from(1e8, BigNumberType.nToken, 'nUSDC'),
       BigNumber.from(0), // this means we've migrated
       BigNumber.from(0.5e8),
-      getNowSeconds() + SECONDS_IN_YEAR, // Fast forward a year
+      getNowSeconds() + SECONDS_IN_YEAR // Fast forward a year
     );
 
     // Accumulate another 0.1 NOTE per nToken, with 0.5 NOTE incentive debt
@@ -316,7 +316,7 @@ describe('nToken value', () => {
   it('calculates the nToken incentive yield', () => {
     system.setETHRateProvider(
       NOTE_CURRENCY_ID,
-      new NoteETHRateProvider(BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100)),
+      new NoteETHRateProvider(BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100))
     );
     const incentiveYield = NTokenValue.getNTokenIncentiveYield(2);
     // Underlying PV is 372,528e8, token value is 175,000e8 per annum

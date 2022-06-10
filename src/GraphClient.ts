@@ -10,17 +10,17 @@ import {
   TypedDocumentNode,
   gql,
 } from '@apollo/client/core';
-import {onError} from '@apollo/client/link/error';
-import {RetryLink} from '@apollo/client/link/retry';
+import { onError } from '@apollo/client/link/error';
+import { RetryLink } from '@apollo/client/link/retry';
 import fetch from 'cross-fetch';
 
 export default class GraphClient {
   public apollo: ApolloClient<NormalizedCacheObject>;
 
   constructor(public graphHttpEndpoint: string, public pollInterval: number, skipFetchSetup) {
-    const errorLink = onError(({graphQLErrors, networkError}) => {
+    const errorLink = onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
-        graphQLErrors.forEach(({message, locations, path}) => {
+        graphQLErrors.forEach(({ message, locations, path }) => {
           console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`);
         });
       }
@@ -29,9 +29,9 @@ export default class GraphClient {
     const retryLink = new RetryLink();
     let httpLink: HttpLink;
     if (skipFetchSetup) {
-      httpLink = new HttpLink({uri: graphHttpEndpoint});
+      httpLink = new HttpLink({ uri: graphHttpEndpoint });
     } else {
-      httpLink = new HttpLink({uri: graphHttpEndpoint, fetch});
+      httpLink = new HttpLink({ uri: graphHttpEndpoint, fetch });
     }
 
     this.apollo = new ApolloClient<NormalizedCacheObject>({
@@ -43,9 +43,9 @@ export default class GraphClient {
 
   public async queryOrThrow<TData = any, TVariables = OperationVariables>(
     query: DocumentNode | TypedDocumentNode<TData, TVariables>,
-    variables?: TVariables,
+    variables?: TVariables
   ) {
-    const result = await this.apollo.query<TData, TVariables>({query, fetchPolicy: 'network-only', variables});
+    const result = await this.apollo.query<TData, TVariables>({ query, fetchPolicy: 'network-only', variables });
     if (result.error) {
       throw new Error(result.error.message);
     }
@@ -81,9 +81,9 @@ export default class GraphClient {
   public async batchQuery<TData = any, TVariables = OperationVariables>(
     query: DocumentNode | TypedDocumentNode<TData, TVariables>,
     variables?: TVariables,
-    initialID: string = '0',
-    listKey: string = 'batch',
-    pageSize = 1000,
+    initialID = '0',
+    listKey = 'batch',
+    pageSize = 1000
   ) {
     let hasMoreResults = false;
     let lastID = initialID;
@@ -91,10 +91,11 @@ export default class GraphClient {
 
     do {
       // eslint-disable-next-line no-await-in-loop
-      const results = await this.queryOrThrow<TData, TVariables>(
-        query,
-        {...variables, pageSize, lastID} as unknown as TVariables,
-      );
+      const results = await this.queryOrThrow<TData, TVariables>(query, {
+        ...variables,
+        pageSize,
+        lastID,
+      } as unknown as TVariables);
       batchResult.push(...results[listKey]);
 
       hasMoreResults = results[listKey].length > 0;
@@ -110,10 +111,7 @@ export default class GraphClient {
    * @param queryBody
    * @returns DocumentNode
    */
-  public makeBatchQuery(
-    objectName: string,
-    queryBody: string,
-  ) {
+  public makeBatchQuery(objectName: string, queryBody: string) {
     return gql`
       query batchQuery($pageSize: Int!, $lastID: String) {
         batch: ${objectName}(

@@ -1,9 +1,7 @@
-import {assetTypeNum, getNowSeconds} from '../libs/utils';
-import {AssetType} from '../libs/types';
-import {
-  PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR,
-} from '../config/constants';
-import {Market} from '.';
+import { assetTypeNum, getNowSeconds } from '../libs/utils';
+import { AssetType } from '../libs/types';
+import { PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR } from '../config/constants';
+import { Market } from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
 
 export default class CashGroup {
@@ -30,7 +28,7 @@ export default class CashGroup {
     public fCashHaircutBasisPoints: number,
     public liquidityTokenHaircutsPercent: number[],
     public rateScalars: number[],
-    public markets: Market[],
+    public markets: Market[]
   ) {}
 
   /**
@@ -48,7 +46,7 @@ export default class CashGroup {
       cashGroup.fCashHaircutBasisPoints,
       [...cashGroup.liquidityTokenHaircutsPercent],
       [...cashGroup.rateScalars],
-      cashGroup.markets.map(Market.copy),
+      cashGroup.markets.map(Market.copy)
     );
     // This causes some race conditions if blockSupplyRate is undefined
     copy.setBlockSupplyRate(cashGroup.blockSupplyRate);
@@ -111,7 +109,7 @@ export default class CashGroup {
     maturity: number,
     blockTime = getNowSeconds(),
     marketOverrides?: Market[],
-    blockSupplyRateOverride?: number,
+    blockSupplyRateOverride?: number
   ) {
     const markets = marketOverrides || this.markets;
     const blockSupplyRate = blockSupplyRateOverride || this.blockSupplyRate;
@@ -138,7 +136,7 @@ export default class CashGroup {
     }
 
     return Math.trunc(
-      ((longRate - shortRate) * (maturity - shortMaturity)) / (longMaturity - shortMaturity) + shortRate,
+      ((longRate - shortRate) * (maturity - shortMaturity)) / (longMaturity - shortMaturity) + shortRate
     );
   }
 
@@ -148,7 +146,7 @@ export default class CashGroup {
     useHaircut: boolean,
     blockTime = getNowSeconds(),
     marketOverrides?: Market[],
-    blockSupplyRateOverride?: number,
+    blockSupplyRateOverride?: number
   ): TypedBigNumber {
     let oracleRate = this.getOracleRate(maturity, blockTime, marketOverrides, blockSupplyRateOverride);
     if (useHaircut && notional.isNegative()) {
@@ -171,21 +169,15 @@ export default class CashGroup {
     assetType: AssetType,
     tokens: TypedBigNumber,
     useHaircut: boolean,
-    marketOverrides?: Market[],
+    marketOverrides?: Market[]
   ): {
-      fCashClaim: TypedBigNumber;
-      assetCashClaim: TypedBigNumber;
-    } {
+    fCashClaim: TypedBigNumber;
+    assetCashClaim: TypedBigNumber;
+  } {
     const index = assetTypeNum(assetType) - 2;
     const markets = marketOverrides || this.markets;
-    const fCashClaim = markets[index].market.totalfCash.scale(
-      tokens.n,
-      markets[index].market.totalLiquidity.n,
-    );
-    const assetCashClaim = markets[index].market.totalAssetCash.scale(
-      tokens.n,
-      markets[index].market.totalLiquidity.n,
-    );
+    const fCashClaim = markets[index].market.totalfCash.scale(tokens.n, markets[index].market.totalLiquidity.n);
+    const assetCashClaim = markets[index].market.totalAssetCash.scale(tokens.n, markets[index].market.totalLiquidity.n);
 
     if (useHaircut) {
       return {
@@ -194,6 +186,6 @@ export default class CashGroup {
       };
     }
 
-    return {fCashClaim, assetCashClaim};
+    return { fCashClaim, assetCashClaim };
   }
 }

@@ -1,4 +1,4 @@
-import {BigNumber, utils} from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import {
   ETHER_CURRENCY_ID,
   INTERNAL_TOKEN_PRECISION,
@@ -6,12 +6,10 @@ import {
   MAX_BITMAP_ASSETS,
   MAX_PORTFOLIO_ASSETS,
 } from '../config/constants';
-import TypedBigNumber, {BigNumberType} from '../libs/TypedBigNumber';
-import {Asset, AssetType, Balance} from '../libs/types';
-import {assetTypeNum, convertAssetType, getNowSeconds} from '../libs/utils';
-import {
-  System, CashGroup, FreeCollateral, NTokenValue,
-} from '../system';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
+import { Asset, AssetType, Balance } from '../libs/types';
+import { assetTypeNum, convertAssetType, getNowSeconds } from '../libs/utils';
+import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -52,23 +50,19 @@ export default class AccountData {
     public bitmapCurrencyId: number | undefined,
     _accountBalances: Balance[],
     private _portfolio: Asset[],
-    public isCopy: boolean,
+    public isCopy: boolean
   ) {
     // Assets of a currency that are not found in accountBalances must be marked as having a zero
     // balance in the accountBalances list
-    const missingCurrencies = new Set(_portfolio
-      .filter((a) => !_accountBalances.find((b) => b.currencyId === a.currencyId))
-      .map((a) => a.currencyId));
+    const missingCurrencies = new Set(
+      _portfolio.filter((a) => !_accountBalances.find((b) => b.currencyId === a.currencyId)).map((a) => a.currencyId)
+    );
 
     let tmpBalances = _accountBalances;
     missingCurrencies.forEach((c) => {
       // Set the balance as having a zero asset cash balance
       // eslint-disable-next-line no-underscore-dangle
-      tmpBalances = AccountData._updateBalance(
-        tmpBalances,
-        c,
-        TypedBigNumber.getZeroUnderlying(c).toAssetCash(true),
-      );
+      tmpBalances = AccountData._updateBalance(tmpBalances, c, TypedBigNumber.getZeroUnderlying(c).toAssetCash(true));
     });
 
     this.accountBalances = tmpBalances;
@@ -101,7 +95,7 @@ export default class AccountData {
         this.accountBalances.toString(),
         this.portfolio.toString(),
         this.isCopy.toString(),
-      ].join(':'),
+      ].join(':')
     );
   }
 
@@ -124,9 +118,9 @@ export default class AccountData {
       accountData.hasCashDebt,
       accountData.hasAssetDebt,
       accountData.bitmapCurrencyId,
-      accountData.accountBalances.map((b) => ({...b})),
-      accountData.portfolio.map((a) => ({...a})),
-      true,
+      accountData.accountBalances.map((b) => ({ ...b })),
+      accountData.portfolio.map((a) => ({ ...a })),
+      true
     );
   }
 
@@ -137,9 +131,10 @@ export default class AccountData {
       const underlyingSymbol = system.getUnderlyingSymbol(v.currencyId.toNumber());
       const maturity = v.maturity.toNumber();
       const assetType = convertAssetType(v.assetType);
-      const notional = assetType === AssetType.fCash
-        ? TypedBigNumber.from(v.notional, BigNumberType.InternalUnderlying, underlyingSymbol)
-        : TypedBigNumber.from(v.notional, BigNumberType.LiquidityToken, currency.symbol);
+      const notional =
+        assetType === AssetType.fCash
+          ? TypedBigNumber.from(v.notional, BigNumberType.InternalUnderlying, underlyingSymbol)
+          : TypedBigNumber.from(v.notional, BigNumberType.LiquidityToken, currency.symbol);
       const settlementDate = CashGroup.getSettlementDate(assetType, maturity);
 
       return {
@@ -159,7 +154,7 @@ export default class AccountData {
     return accountBalances
       .filter((v) => v.currencyId !== 0)
       .map((v) => {
-        const {symbol} = system.getCurrencyById(v.currencyId);
+        const { symbol } = system.getCurrencyById(v.currencyId);
         const nTokenSymbol = system.getNToken(v.currencyId)?.symbol;
         return {
           currencyId: v.currencyId,
@@ -187,7 +182,7 @@ export default class AccountData {
       result.accountContext.hasDebt === '0x01' || result.accountContext.hasDebt === '0x03',
       bitmapCurrencyId,
       balances,
-      portfolio,
+      portfolio
     );
   }
 
@@ -197,7 +192,7 @@ export default class AccountData {
     hasAssetDebt: boolean,
     bitmapCurrencyId: number | undefined,
     balances: Balance[],
-    portfolio: Asset[],
+    portfolio: Asset[]
   ): Promise<AccountData> {
     const system = System.getSystem();
 
@@ -207,7 +202,7 @@ export default class AccountData {
     // eslint-disable-next-line no-restricted-syntax
     for (const asset of maturedAssets) {
       // eslint-disable-next-line no-await-in-loop
-      const {assetCash, fCashAsset} = await system.settlePortfolioAsset(asset);
+      const { assetCash, fCashAsset } = await system.settlePortfolioAsset(asset);
 
       // Use private static methods to bypass copy check
       // eslint-disable-next-line no-underscore-dangle
@@ -234,7 +229,7 @@ export default class AccountData {
       currencyId,
       netCashChange,
       netNTokenChange,
-      this.bitmapCurrencyId,
+      this.bitmapCurrencyId
     );
   }
 
@@ -249,7 +244,7 @@ export default class AccountData {
 
     // eslint-disable-next-line no-underscore-dangle
     this._portfolio = AccountData._updateAsset(this._portfolio, asset, this.bitmapCurrencyId);
-    const {symbol} = System.getSystem().getCurrencyById(asset.currencyId);
+    const { symbol } = System.getSystem().getCurrencyById(asset.currencyId);
 
     // Do this to ensure that there is a balance slot set for the asset
     this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, symbol));
@@ -265,102 +260,94 @@ export default class AccountData {
 
     /* eslint-disable @typescript-eslint/no-shadow */
     /* eslint-disable no-param-reassign */
-    const {
-      cashDebts,
-      cashAssets,
-      cashDebtsWithBuffer,
-      cashAssetsWithHaircut,
-      cashGroups,
-    } = this.accountBalances.reduce(({
-      cashDebts,
-      cashAssets,
-      cashDebtsWithBuffer,
-      cashAssetsWithHaircut,
-      cashGroups,
-    }, b) => {
-      if (b.cashBalance.isNegative()) {
-        cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
-        cashDebtsWithBuffer = cashDebtsWithBuffer.add(b.cashBalance.toETH(true).abs());
-      } else if (b.cashBalance.isPositive()) {
-        cashAssets = cashAssets.add(b.cashBalance.toETH(false));
-        cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.cashBalance.toETH(true));
-      }
+    const { cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups } =
+      this.accountBalances.reduce(
+        ({ cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups }, b) => {
+          if (b.cashBalance.isNegative()) {
+            cashDebts = cashDebts.add(b.cashBalance.toETH(false).abs());
+            cashDebtsWithBuffer = cashDebtsWithBuffer.add(b.cashBalance.toETH(true).abs());
+          } else if (b.cashBalance.isPositive()) {
+            cashAssets = cashAssets.add(b.cashBalance.toETH(false));
+            cashAssetsWithHaircut = cashAssetsWithHaircut.add(b.cashBalance.toETH(true));
+          }
 
-      if (b.nTokenBalance?.isPositive()) {
-        cashAssets = cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
-        const nTokenHaircut = NTokenValue.convertNTokenToInternalAsset(b.currencyId, b.nTokenBalance, true);
-        cashAssetsWithHaircut = cashAssetsWithHaircut.add(nTokenHaircut.toETH(true));
-      }
+          if (b.nTokenBalance?.isPositive()) {
+            cashAssets = cashAssets.add(b.nTokenBalance.toAssetCash().toETH(false));
+            const nTokenHaircut = NTokenValue.convertNTokenToInternalAsset(b.currencyId, b.nTokenBalance, true);
+            cashAssetsWithHaircut = cashAssetsWithHaircut.add(nTokenHaircut.toETH(true));
+          }
 
-      const {
-        totalCashClaims,
-        fCashAssets,
-      } = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, false);
-      const {
-        totalCashClaims: totalCashClaimsHaircut,
-        fCashAssets: fCashAssetsHaircut,
-      } = FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, true);
+          const { totalCashClaims, fCashAssets } = FreeCollateral.getNetfCashPositions(
+            b.currencyId,
+            this.portfolio,
+            undefined,
+            false
+          );
+          const { totalCashClaims: totalCashClaimsHaircut, fCashAssets: fCashAssetsHaircut } =
+            FreeCollateral.getNetfCashPositions(b.currencyId, this.portfolio, undefined, true);
 
-      cashAssets = cashAssets.add(totalCashClaims.toETH(false));
-      cashAssetsWithHaircut = cashAssetsWithHaircut.add(totalCashClaimsHaircut.toETH(true));
-      if (fCashAssets.length > 0 || fCashAssetsHaircut.length > 0) {
-        cashGroups.push({currencyId: b.currencyId, noHaircut: fCashAssets, haircut: fCashAssetsHaircut});
-      }
+          cashAssets = cashAssets.add(totalCashClaims.toETH(false));
+          cashAssetsWithHaircut = cashAssetsWithHaircut.add(totalCashClaimsHaircut.toETH(true));
+          if (fCashAssets.length > 0 || fCashAssetsHaircut.length > 0) {
+            cashGroups.push({ currencyId: b.currencyId, noHaircut: fCashAssets, haircut: fCashAssetsHaircut });
+          }
 
-      return {
-        cashDebts, cashAssets, cashDebtsWithBuffer, cashAssetsWithHaircut, cashGroups,
-      };
-    }, {
-      cashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
-      cashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
-      cashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
-      cashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
-      cashGroups: Array<{currencyId: number, noHaircut: Asset[], haircut: Asset[]}>(),
-    });
-
-    const {
-      fCashDebts,
-      fCashAssets,
-      fCashAssetsWithHaircut,
-      fCashDebtsWithBuffer,
-    } = cashGroups.reduce(({
-      fCashDebts,
-      fCashAssets,
-      fCashAssetsWithHaircut,
-      fCashDebtsWithBuffer,
-    }, {currencyId, haircut, noHaircut}) => {
-      const cashGroup = system.getCashGroup(currencyId);
-
-      noHaircut.forEach((a) => {
-        const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false).toETH(false);
-        if (a.notional.isPositive()) {
-          fCashAssets = fCashAssets.add(ethPV);
-        } else {
-          fCashDebts = fCashDebts.add(ethPV.abs());
+          return {
+            cashDebts,
+            cashAssets,
+            cashDebtsWithBuffer,
+            cashAssetsWithHaircut,
+            cashGroups,
+          };
+        },
+        {
+          cashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
+          cashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+          cashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
+          cashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
+          cashGroups: Array<{ currencyId: number; noHaircut: Asset[]; haircut: Asset[] }>(),
         }
-      });
+      );
 
-      haircut.forEach((a) => {
-        const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, true).toETH(true);
-        if (a.notional.isPositive()) {
-          fCashAssetsWithHaircut = fCashAssetsWithHaircut.add(ethPV);
-        } else {
-          fCashDebtsWithBuffer = fCashDebtsWithBuffer.add(ethPV.abs());
-        }
-      });
+    const { fCashDebts, fCashAssets, fCashAssetsWithHaircut, fCashDebtsWithBuffer } = cashGroups.reduce(
+      (
+        { fCashDebts, fCashAssets, fCashAssetsWithHaircut, fCashDebtsWithBuffer },
+        { currencyId, haircut, noHaircut }
+      ) => {
+        const cashGroup = system.getCashGroup(currencyId);
 
-      return {
-        fCashDebts,
-        fCashAssets,
-        fCashAssetsWithHaircut,
-        fCashDebtsWithBuffer,
-      };
-    }, {
-      fCashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
-      fCashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
-      fCashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
-      fCashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
-    });
+        noHaircut.forEach((a) => {
+          const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false).toETH(false);
+          if (a.notional.isPositive()) {
+            fCashAssets = fCashAssets.add(ethPV);
+          } else {
+            fCashDebts = fCashDebts.add(ethPV.abs());
+          }
+        });
+
+        haircut.forEach((a) => {
+          const ethPV = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, true).toETH(true);
+          if (a.notional.isPositive()) {
+            fCashAssetsWithHaircut = fCashAssetsWithHaircut.add(ethPV);
+          } else {
+            fCashDebtsWithBuffer = fCashDebtsWithBuffer.add(ethPV.abs());
+          }
+        });
+
+        return {
+          fCashDebts,
+          fCashAssets,
+          fCashAssetsWithHaircut,
+          fCashDebtsWithBuffer,
+        };
+      },
+      {
+        fCashDebts: TypedBigNumber.fromBalance(0, 'ETH', true),
+        fCashAssets: TypedBigNumber.fromBalance(0, 'ETH', true),
+        fCashAssetsWithHaircut: TypedBigNumber.fromBalance(0, 'ETH', true),
+        fCashDebtsWithBuffer: TypedBigNumber.fromBalance(0, 'ETH', true),
+      }
+    );
     /* eslint-enable @typescript-eslint/no-shadow */
     /* eslint-enable no-param-reassign */
 
@@ -372,10 +359,12 @@ export default class AccountData {
     let haircutLoanToValue: number | null = null;
     let maxLoanToValue: number | null = null;
     if (!totalETHValue.isZero() && !totalETHValueHaircut.isZero()) {
-      loanToValue = (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber()
-      / INTERNAL_TOKEN_PRECISION) * 100;
-      haircutLoanToValue = (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber()
-      / INTERNAL_TOKEN_PRECISION) * 100;
+      loanToValue =
+        (totalETHDebts.scale(INTERNAL_TOKEN_PRECISION, totalETHValue.n).toNumber() / INTERNAL_TOKEN_PRECISION) * 100;
+      haircutLoanToValue =
+        (totalETHDebtsBuffer.scale(INTERNAL_TOKEN_PRECISION, totalETHValueHaircut.n).toNumber() /
+          INTERNAL_TOKEN_PRECISION) *
+        100;
       maxLoanToValue = (loanToValue / haircutLoanToValue) * 100;
     }
 
@@ -404,11 +393,8 @@ export default class AccountData {
    * @returns ETH denominated liquidation price
    */
   public getLiquidationPrice(collateralId: number, debtCurrencyId: number) {
-    const {
-      netETHCollateralWithHaircut,
-      netETHDebtWithBuffer,
-      netUnderlyingAvailable,
-    } = FreeCollateral.getFreeCollateral(this);
+    const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } =
+      FreeCollateral.getFreeCollateral(this);
     const collateralAmount = netUnderlyingAvailable.get(collateralId);
     // There is no collateral in the specified currency so we do not have a liquidation price
     if (!collateralAmount || collateralAmount.n.lte(0)) return null;
@@ -432,9 +418,10 @@ export default class AccountData {
     const singleUnitTargetCurrency = fcSurplusProportion.copy(INTERNAL_TOKEN_PRECISION);
     // This is the max exchange rate decrease as a portion of a single token in internal token precision, can
     // see this as the liquidation price of a single unit of ETH
-    const maxExchangeRateDecrease = collateralId === ETHER_CURRENCY_ID
-      ? singleUnitTargetCurrency.add(fcSurplusProportion)
-      : singleUnitTargetCurrency.sub(fcSurplusProportion);
+    const maxExchangeRateDecrease =
+      collateralId === ETHER_CURRENCY_ID
+        ? singleUnitTargetCurrency.add(fcSurplusProportion)
+        : singleUnitTargetCurrency.sub(fcSurplusProportion);
 
     // If the max exchange rate decrease is negative then there is no possible liquidation price, this can
     // happen if aggregateFC > netUnderlying.
@@ -458,7 +445,7 @@ export default class AccountData {
    * applying any buffers or haircuts. This is used as a user friendly way of showing free collateral.
    */
   public collateralRatio() {
-    const {netETHCollateral, netETHDebt} = FreeCollateral.getFreeCollateral(this);
+    const { netETHCollateral, netETHDebt } = FreeCollateral.getFreeCollateral(this);
     return FreeCollateral.calculateCollateralRatio(netETHCollateral, netETHDebt);
   }
 
@@ -467,7 +454,7 @@ export default class AccountData {
    * after applying buffers and haircuts. An account is liquidatable when this is below 100.
    */
   public bufferedCollateralRatio() {
-    const {netETHCollateralWithHaircut, netETHDebtWithBuffer} = FreeCollateral.getFreeCollateral(this);
+    const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = FreeCollateral.getFreeCollateral(this);
     return FreeCollateral.calculateCollateralRatio(netETHCollateralWithHaircut, netETHDebtWithBuffer);
   }
 
@@ -476,7 +463,7 @@ export default class AccountData {
     currencyId: number,
     netCashChange: TypedBigNumber,
     netNTokenChange?: TypedBigNumber,
-    bitmapCurrencyId?: number,
+    bitmapCurrencyId?: number
   ) {
     const balance = accountBalances.find((v) => v.currencyId === currencyId);
     if (!balance) {
@@ -510,7 +497,7 @@ export default class AccountData {
 
   private static _updateAsset(portfolio: Asset[], asset: Asset, bitmapCurrencyId?: number) {
     const existingAsset = portfolio.find(
-      (a) => a.currencyId === asset.currencyId && a.assetType === asset.assetType && a.maturity === asset.maturity,
+      (a) => a.currencyId === asset.currencyId && a.assetType === asset.assetType && a.maturity === asset.maturity
     );
 
     if (existingAsset) {
@@ -523,9 +510,10 @@ export default class AccountData {
 
       // Sorting is done in place
       portfolio.sort(
-        (a, b) => a.currencyId - b.currencyId
-          || assetTypeNum(a.assetType) - assetTypeNum(b.assetType)
-          || a.maturity - b.maturity,
+        (a, b) =>
+          a.currencyId - b.currencyId ||
+          assetTypeNum(a.assetType) - assetTypeNum(b.assetType) ||
+          a.maturity - b.maturity
       );
     }
 

@@ -1,10 +1,8 @@
-import {gql} from '@apollo/client/core';
-import {
-  BigNumber, ethers, PopulatedTransaction, Wallet,
-} from 'ethers';
-import {Account} from '../../src/account';
-import {BASIS_POINT} from '../../src/config/constants';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import { gql } from '@apollo/client/core';
+import { BigNumber, ethers, PopulatedTransaction, Wallet } from 'ethers';
+import { Account } from '../../src/account';
+import { BASIS_POINT } from '../../src/config/constants';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import Notional from '../../src/Notional';
 
 const lastMinedBlock = gql`
@@ -104,6 +102,7 @@ const accountQuery = gql`
 `;
 
 function sleep(ms) {
+  // eslint-disable-next-line no-promise-executor-return
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -145,16 +144,16 @@ describe('Account Integration Test', () => {
         account.address,
         'cDAI',
         TypedBigNumber.from(100e8, BigNumberType.ExternalAsset, 'cDAI', notional.system),
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(100e8);
       },
@@ -169,18 +168,18 @@ describe('Account Integration Test', () => {
           ethers.constants.WeiPerEther.mul(100),
           BigNumberType.ExternalUnderlying,
           'DAI',
-          notional.system,
+          notional.system
         ),
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(5000e8);
       },
@@ -195,18 +194,18 @@ describe('Account Integration Test', () => {
           ethers.constants.WeiPerEther.mul(2),
           BigNumberType.ExternalUnderlying,
           'ETH',
-          notional.system,
+          notional.system
         ),
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(100e8);
       },
@@ -218,16 +217,16 @@ describe('Account Integration Test', () => {
         account.address,
         'cETH',
         TypedBigNumber.from(BigNumber.from(50e8), BigNumberType.ExternalAsset, 'cETH', notional.system),
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         expect(balanceBefore.sub(balanceAfter).toNumber()).toEqual(50e8);
       },
@@ -239,16 +238,16 @@ describe('Account Integration Test', () => {
         account.address,
         'ETH',
         TypedBigNumber.from(ethers.constants.WeiPerEther, BigNumberType.ExternalUnderlying, 'ETH', notional.system),
-        true,
+        true
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         expect(balanceBefore.sub(balanceAfter).toNumber()).toEqual(50e8);
       },
@@ -260,15 +259,15 @@ describe('Account Integration Test', () => {
         account.address,
         'ETH',
         TypedBigNumber.from(ethers.constants.WeiPerEther, BigNumberType.ExternalUnderlying, 'ETH', notional.system),
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').nTokenBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').nTokenBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cETH').nTokenBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cETH').nTokenBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(50e8);
       },
@@ -280,15 +279,15 @@ describe('Account Integration Test', () => {
         account.address,
         'cDAI',
         TypedBigNumber.from(5000e8, BigNumberType.ExternalAsset, 'cDAI', notional.system),
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(5000e8);
       },
@@ -300,23 +299,23 @@ describe('Account Integration Test', () => {
         account.address,
         'cDAI',
         TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI', notional.system),
-        true,
+        true
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const cashBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance
         );
         const cashAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cDAI').assetCashBalance
         );
         expect(cashAfter.sub(cashBefore).toNumber()).toEqual(-5000e8);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(5000e8);
       },
@@ -330,15 +329,15 @@ describe('Account Integration Test', () => {
         TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nDAI', notional.system),
         TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI', notional.system),
         false,
-        false,
+        false
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.balanceChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cDAI').nTokenBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(-5000e8);
       },
@@ -355,7 +354,7 @@ describe('Account Integration Test', () => {
         0,
         TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cUSDC', notional.system),
         true,
-        true,
+        true
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
@@ -364,7 +363,7 @@ describe('Account Integration Test', () => {
         expect(
           BigNumber.from(assetAfter.notional)
             .sub(assetBefore?.notional || 0)
-            .toNumber(),
+            .toNumber()
         ).toEqual(100e8);
       },
     });
@@ -380,7 +379,7 @@ describe('Account Integration Test', () => {
         0,
         TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cUSDC', notional.system),
         true,
-        true,
+        true
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
@@ -389,7 +388,7 @@ describe('Account Integration Test', () => {
         expect(
           BigNumber.from(assetAfter.notional)
             .sub(assetBefore?.notional || 0)
-            .toNumber(),
+            .toNumber()
         ).toEqual(100e8);
       },
     });
@@ -412,11 +411,11 @@ describe('Account Integration Test', () => {
               ethers.constants.WeiPerEther,
               BigNumberType.ExternalUnderlying,
               'ETH',
-              notional.system,
+              notional.system
             ),
             mintNToken: false,
           },
-        ],
+        ]
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
@@ -427,14 +426,14 @@ describe('Account Integration Test', () => {
         expect(
           BigNumber.from(assetAfter.notional)
             .sub(assetBefore?.notional || 0)
-            .toNumber(),
+            .toNumber()
         ).toEqual(-100e8);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cETH').assetCashBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(50e8);
       },
@@ -457,7 +456,7 @@ describe('Account Integration Test', () => {
             amount: TypedBigNumber.from(5000e8, BigNumberType.ExternalAsset, 'cUSDC', notional.system),
             mintNToken: false,
           },
-        ],
+        ]
       ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
@@ -468,14 +467,14 @@ describe('Account Integration Test', () => {
         expect(
           BigNumber.from(assetAfter.notional)
             .sub(assetBefore?.notional || 0)
-            .toNumber(),
+            .toNumber()
         ).toEqual(-100e8);
 
         const balanceBefore = BigNumber.from(
-          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cUSDC').assetCashBalance,
+          graphResultBefore.account.balances.find((b) => b.currency.symbol === 'cUSDC').assetCashBalance
         );
         const balanceAfter = BigNumber.from(
-          result.account.balances.find((b) => b.currency.symbol === 'cUSDC').assetCashBalance,
+          result.account.balances.find((b) => b.currency.symbol === 'cUSDC').assetCashBalance
         );
         expect(balanceAfter.sub(balanceBefore).toNumber()).toEqual(5000e8);
       },
@@ -483,15 +482,16 @@ describe('Account Integration Test', () => {
 
     transactions.push({
       label: 'roll borrow',
-      transactionFn: async (acct) => (
-        await notional.rollBorrow(
-          acct.address,
-          acct.accountData!.portfolio.find((a) => a.currencyId === 2)!,
-          2,
-          -50 * BASIS_POINT,
-          50 * BASIS_POINT,
-        )
-      ).populatedTransaction,
+      transactionFn: async (acct) =>
+        (
+          await notional.rollBorrow(
+            acct.address,
+            acct.accountData!.portfolio.find((a) => a.currencyId === 2)!,
+            2,
+            -50 * BASIS_POINT,
+            50 * BASIS_POINT
+          )
+        ).populatedTransaction,
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const assetBefore: any = graphResultBefore.account.portfolio.find((b) => b.currency.symbol === 'cDAI');
@@ -502,19 +502,20 @@ describe('Account Integration Test', () => {
 
     transactions.push({
       label: 'repay borrow',
-      transactionFn: async (acct) => notional.repayBorrow(
-        account.address,
-        acct.accountData!.portfolio.find((a) => a.currencyId === 2)!,
-        'DAI',
-        acct.accountData!.portfolio.find((a) => a.currencyId === 2)!.notional.abs(),
-        TypedBigNumber.from(
-          ethers.constants.WeiPerEther.mul(200),
-          BigNumberType.ExternalUnderlying,
+      transactionFn: async (acct) =>
+        notional.repayBorrow(
+          account.address,
+          acct.accountData!.portfolio.find((a) => a.currencyId === 2)!,
           'DAI',
-          notional.system,
+          acct.accountData!.portfolio.find((a) => a.currencyId === 2)!.notional.abs(),
+          TypedBigNumber.from(
+            ethers.constants.WeiPerEther.mul(200),
+            BigNumberType.ExternalUnderlying,
+            'DAI',
+            notional.system
+          ),
+          0
         ),
-        0,
-      ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const assetAfter: any = result.account.portfolio.find((b) => b.currency.symbol === 'cDAI');
@@ -524,15 +525,16 @@ describe('Account Integration Test', () => {
 
     transactions.push({
       label: 'roll lend',
-      transactionFn: async (acct) => (
-        await notional.rollLend(
-          acct.address,
-          acct.accountData!.portfolio.find((a) => a.currencyId === 3)!,
-          2,
-          -50 * BASIS_POINT,
-          50 * BASIS_POINT,
-        )
-      ).populatedTransaction,
+      transactionFn: async (acct) =>
+        (
+          await notional.rollLend(
+            acct.address,
+            acct.accountData!.portfolio.find((a) => a.currencyId === 3)!,
+            2,
+            -50 * BASIS_POINT,
+            50 * BASIS_POINT
+          )
+        ).populatedTransaction,
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const assetBefore: any = graphResultBefore.account.portfolio.find((b) => b.currency.symbol === 'cUSDC');
@@ -543,14 +545,15 @@ describe('Account Integration Test', () => {
 
     transactions.push({
       label: 'withdraw lend',
-      transactionFn: async (acct) => notional.withdrawLend(
-        acct.address,
-        acct.accountData!.portfolio.find((a) => a.currencyId === 3)!,
-        acct.accountData!.portfolio.find((a) => a.currencyId === 3)!.notional.abs(),
-        1e9,
-        true,
-        true,
-      ),
+      transactionFn: async (acct) =>
+        notional.withdrawLend(
+          acct.address,
+          acct.accountData!.portfolio.find((a) => a.currencyId === 3)!,
+          acct.accountData!.portfolio.find((a) => a.currencyId === 3)!.notional.abs(),
+          1e9,
+          true,
+          true
+        ),
       validateGraphRequest: (result, receipt) => {
         expect(result.account.assetChanges[0].blockNumber).toEqual(receipt.blockNumber);
         const assetAfter: any = result.account.portfolio.find((b) => b.currency.symbol === 'cUSDC');
@@ -576,7 +579,7 @@ describe('Account Integration Test', () => {
         await sleep(1000);
         graphLastBlock = await notional.graphClient.queryOrThrow(lastMinedBlock);
         console.log(
-          `Pending graph update for ${label}, ${receipt.blockNumber} at ${graphLastBlock._meta.block.number}`,
+          `Pending graph update for ${label}, ${receipt.blockNumber} at ${graphLastBlock._meta.block.number}`
         );
       } while (graphLastBlock._meta.block.number < receipt.blockNumber);
 

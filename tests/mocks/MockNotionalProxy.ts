@@ -1,14 +1,14 @@
-import {ethers, BigNumber} from 'ethers';
-import {SECONDS_IN_QUARTER} from '../../src/config/constants';
-import {getNowSeconds} from '../../src/libs/utils';
-import {CashGroup} from '../../src/system';
-import {Notional as NotionalTypechain} from '../../src/typechain/Notional';
+import { ethers, BigNumber } from 'ethers';
+import { SECONDS_IN_QUARTER } from '../../src/config/constants';
+import { getNowSeconds } from '../../src/libs/utils';
+import { CashGroup } from '../../src/system';
+import { Notional as NotionalTypechain } from '../../src/typechain/Notional';
 
 const MockNotionalProxy = {
   getSettlementRate: (
     currencyId: ethers.BigNumberish,
     _maturity: ethers.BigNumberish,
-    _overrides?: ethers.CallOverrides | undefined,
+    _overrides?: ethers.CallOverrides | undefined
   ): Promise<{
     rateOracle: string;
     rate: BigNumber;
@@ -32,22 +32,23 @@ const MockNotionalProxy = {
   getActiveMarketsAtBlockTime: (
     _currencyId: ethers.BigNumberish,
     _blockTime: ethers.BigNumberish,
-    _overrides?: ethers.CallOverrides | undefined,
+    _overrides?: ethers.CallOverrides | undefined
   ): Promise<
-  {
-    maturity: BigNumber;
-    totalfCash: BigNumber;
-    totalAssetCash: BigNumber;
-    totalLiquidity: BigNumber;
-  }[]
-  > => Promise.resolve([
     {
-      maturity: BigNumber.from(CashGroup.getTimeReference(getNowSeconds()) + SECONDS_IN_QUARTER),
-      totalfCash: BigNumber.from(1e8),
-      totalAssetCash: BigNumber.from(1e8),
-      totalLiquidity: BigNumber.from(1e8),
-    },
-  ]),
+      maturity: BigNumber;
+      totalfCash: BigNumber;
+      totalAssetCash: BigNumber;
+      totalLiquidity: BigNumber;
+    }[]
+  > =>
+    Promise.resolve([
+      {
+        maturity: BigNumber.from(CashGroup.getTimeReference(getNowSeconds()) + SECONDS_IN_QUARTER),
+        totalfCash: BigNumber.from(1e8),
+        totalAssetCash: BigNumber.from(1e8),
+        totalLiquidity: BigNumber.from(1e8),
+      },
+    ]),
 };
 
-export default (MockNotionalProxy as unknown) as NotionalTypechain;
+export default MockNotionalProxy as unknown as NotionalTypechain;

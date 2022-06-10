@@ -1,8 +1,8 @@
 import fs from 'fs';
 import EventEmitter from 'eventemitter3';
 import Cache from '../../src/system/datasource/Cache';
-import {System, CashGroup, Market} from '../../src/system';
-import {SystemEvents} from '../../src';
+import { System, CashGroup, Market } from '../../src/system';
+import { SystemEvents } from '../../src';
 import MockSystem from '../mocks/MockSystem';
 
 describe('Cache Refresh', () => {
@@ -11,44 +11,30 @@ describe('Cache Refresh', () => {
   afterAll(() => system.destroy());
   const eventEmitter = new EventEmitter();
   const cashGroups = new Map<number, CashGroup>();
-  cashGroups.set(1, new CashGroup(
-    2,
-    1500,
-    5000000,
-    50,
-    100000000,
-    100000000,
-    [95, 90],
-    [18000000000, 18000000000],
-    [new Market(
-      1,
-      1,
-      1640736000,
-      18000000000,
-      5000000,
-      50,
-      1500,
-      'cETH',
-      'ETH',
-    ), new Market(
-      1,
+  cashGroups.set(
+    1,
+    new CashGroup(
       2,
-      1648512000,
-      18000000000,
+      1500,
       5000000,
       50,
-      1500,
-      'cETH',
-      'ETH',
-    )],
-  ));
+      100000000,
+      100000000,
+      [95, 90],
+      [18000000000, 18000000000],
+      [
+        new Market(1, 1, 1640736000, 18000000000, 5000000, 50, 1500, 'cETH', 'ETH'),
+        new Market(1, 2, 1648512000, 18000000000, 5000000, 50, 1500, 'cETH', 'ETH'),
+      ]
+    )
+  );
   const cache: Cache = new Cache(1, cashGroups, eventEmitter, 10000);
   const mockResult = fs.readFileSync(`${__dirname}/../mocks/MockCacheResult.json`).toString();
   const mockSetETHRateProvider = jest.fn(() => {});
-  System.overrideSystem(({
-    getCurrencyBySymbol: () => ({id: 1}),
+  System.overrideSystem({
+    getCurrencyBySymbol: () => ({ id: 1 }),
     setETHRateProvider: mockSetETHRateProvider,
-  } as unknown) as System);
+  } as unknown as System);
 
   beforeEach(() => {
     jest.spyOn(cache, 'getCacheData').mockResolvedValue(mockResult);

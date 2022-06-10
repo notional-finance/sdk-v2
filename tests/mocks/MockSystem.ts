@@ -1,11 +1,9 @@
-import {BigNumber, ethers} from 'ethers';
-import {CashGroup, System} from '../../src/system';
+import { BigNumber, ethers } from 'ethers';
+import { CashGroup, System } from '../../src/system';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
-import {
-  Asset, Contracts, IncentiveFactors, IncentiveMigration, StakedNoteParameters,
-} from '../../src/libs/types';
+import { Asset, Contracts, IncentiveFactors, IncentiveMigration, StakedNoteParameters } from '../../src/libs/types';
 import GraphClient from '../../src/GraphClient';
-import {DataSourceType} from '../../src/system/datasource';
+import { DataSourceType } from '../../src/system/datasource';
 import MockCache from './MockCache';
 
 const systemQueryResult = {
@@ -251,14 +249,14 @@ export default class MockSystem extends System {
       systemQueryResult,
       9999,
       false,
-      ({} as unknown) as GraphClient,
-      ({} as unknown) as Contracts,
+      {} as unknown as GraphClient,
+      {} as unknown as Contracts,
       provider,
       DataSourceType.Cache,
-      30000,
+      30000
     );
     this.dataSource = new MockCache(
-      ({} as unknown) as Contracts,
+      {} as unknown as Contracts,
       provider,
       this.currencies,
       this.ethRates,
@@ -266,7 +264,7 @@ export default class MockSystem extends System {
       this.cashGroups,
       this.nTokens,
       this.eventEmitter,
-      30000,
+      30000
     );
     this.dataSource.refreshData();
   }
@@ -277,7 +275,7 @@ export default class MockSystem extends System {
     pv: TypedBigNumber,
     totalSupply: TypedBigNumber,
     liquidityTokens: Asset[],
-    fCash: Asset[],
+    fCash: Asset[]
   ) {
     this.dataSource.nTokenCashBalance.set(currencyId, cashBalance);
     this.dataSource.nTokenLiquidityTokens.set(currencyId, liquidityTokens);
@@ -286,11 +284,7 @@ export default class MockSystem extends System {
     this.dataSource.nTokenTotalSupply.set(currencyId, totalSupply);
   }
 
-  public setSettlementRate(
-    currencyId: number,
-    maturity: number,
-    rate: BigNumber,
-  ) {
+  public setSettlementRate(currencyId: number, maturity: number, rate: BigNumber) {
     const key = `${currencyId}:${maturity}`;
     this.settlementRates.set(key, rate);
   }
@@ -299,11 +293,11 @@ export default class MockSystem extends System {
     currencyId: number,
     maturity: number,
     market: {
-      settlementDate: number,
-      totalfCash: TypedBigNumber,
-      totalAssetCash: TypedBigNumber,
-      totalLiquidity: TypedBigNumber
-    },
+      settlementDate: number;
+      totalfCash: TypedBigNumber;
+      totalAssetCash: TypedBigNumber;
+      totalLiquidity: TypedBigNumber;
+    }
   ) {
     const key = `${currencyId}:${market.settlementDate}:${maturity}`;
     this.settlementMarkets.set(key, market);
