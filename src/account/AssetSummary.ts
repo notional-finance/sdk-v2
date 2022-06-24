@@ -131,11 +131,12 @@ export default class AssetSummary {
       );
       const netfCash = TypedBigNumber.from(t.netfCash, BigNumberType.InternalUnderlying, underlyingSymbol);
 
-      const tradedInterestRate = Market.exchangeToInterestRate(
-        Market.exchangeRate(netfCash, netUnderlyingCash),
-        t.timestamp,
-        maturity.toNumber(),
-      );
+      const tradedInterestRate = t.tradeType === TradeType.Transfer ? 0
+        : Market.exchangeToInterestRate(
+          Market.exchangeRate(netfCash, netUnderlyingCash),
+          t.timestamp,
+          maturity.toNumber(),
+        );
 
       return {
         id: t.id,

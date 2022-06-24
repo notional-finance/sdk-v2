@@ -42,6 +42,7 @@ export enum TradeType {
   RemoveLiquidity = 'RemoveLiquidity',
   PurchaseNTokenResidual = 'PurchaseNTokenResidual',
   SettleCashDebt = 'SettleCashDebt',
+  Transfer = 'Transfer',
 }
 
 export enum AssetType {
