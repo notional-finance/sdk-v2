@@ -179,7 +179,7 @@ export default class Market {
    * @return formatted rate string
    */
   public static formatInterestRate(rate: number, precision = 3) {
-    if (rate === undefined || rate === 0) return '';
+    if (rate === undefined) return '';
     const rateValue = (rate / RATE_PRECISION) * 100;
     // This removes the leading (-) when we have a -0.000% rate
     const rateString = Math.abs(rateValue) < 10 ** (-precision)
