@@ -19,7 +19,7 @@ describe('Market', () => {
   it('formats interest rates', () => {
     expect(Market.formatInterestRate(RATE_PRECISION)).toBe('100.000%');
     expect(Market.formatInterestRate(0.151232e9)).toBe('15.123%');
-    expect(Market.formatInterestRate(0)).toBe('');
+    expect(Market.formatInterestRate(0)).toBe('0.000%');
   });
 
   it('calculates the max interest rate, 18%', () => {
