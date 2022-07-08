@@ -263,6 +263,7 @@ export default class System {
   constructor(
     data: SystemQueryResult,
     chainId: number,
+    skipFetchSetup: boolean,
     public graphClient: GraphClient,
     private contracts: Contracts,
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
@@ -292,7 +293,7 @@ export default class System {
         new NoteETHRateProvider(undefined, {
           notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
           eventEmitter: this.eventEmitter,
-        }),
+        }, skipFetchSetup),
       );
     } else {
       this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
@@ -323,11 +324,13 @@ export default class System {
     refreshDataSource,
     refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
     refreshConfigurationDataIntervalMs = DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
+    skipFetchSetup: boolean,
   ) {
     const data = await graphClient.queryOrThrow<SystemQueryResult>(systemConfigurationQuery);
     return new System(
       data,
       chainId,
+      skipFetchSetup,
       graphClient,
       contracts,
       batchProvider,

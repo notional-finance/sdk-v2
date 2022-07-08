@@ -1,6 +1,6 @@
 import {BigNumber} from 'ethers';
 import EventEmitter from 'eventemitter3';
-import fetch from 'cross-fetch';
+import {fetch as crossFetch} from 'cross-fetch';
 import fetchRetry from 'fetch-retry';
 import {DataSource} from '.';
 import TypedBigNumber from '../../libs/TypedBigNumber';
@@ -9,16 +9,16 @@ import CashGroup from '../CashGroup';
 import {NOTE_CURRENCY_ID} from '../../config/constants';
 import NoteETHRateProvider from '../NoteETHRateProvider';
 
-const retry = fetchRetry(fetch);
-
 export default class Cache extends DataSource {
   private cacheURL: string | null;
+  private retry: any;
 
   constructor(
     chainId: number,
     protected cashGroups: Map<number, CashGroup>,
     protected eventEmitter: EventEmitter,
     public refreshIntervalMS: number,
+    skipFetchSetup = false,
   ) {
     super(eventEmitter, refreshIntervalMS);
     switch (chainId) {
@@ -38,6 +38,12 @@ export default class Cache extends DataSource {
       default:
         throw Error('Unknown cache url');
     }
+
+    if (skipFetchSetup) {
+      this.retry = fetchRetry(fetch);
+    } else {
+      this.retry = fetchRetry(crossFetch);
+    }
   }
 
   private parseMap(_: any, value: any) {
@@ -52,7 +58,7 @@ export default class Cache extends DataSource {
 
   async getCacheData(): Promise<any> {
     if (this.cacheURL === null) return '{}';
-    const result = await retry(this.cacheURL, {
+    const result = await this.retry(this.cacheURL, {
       retries: 3,
       retryDelay: (attempt: number) => (2 ** attempt) * 1000,
     });

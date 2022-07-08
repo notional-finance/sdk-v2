@@ -1,27 +1,7 @@
-import {gql} from '@apollo/client/core';
 import {BigNumber, ethers} from 'ethers';
 import {BigNumberType, TypedBigNumber} from '..';
 import {INTERNAL_TOKEN_PRECISION} from '../config/constants';
-import GraphClient from '../GraphClient';
 import {System} from '../system';
-
-const BALANCER_GRAPH_URL = 'https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2';
-
-interface JoinExitResponse {
-  joinExits: {
-    id: string;
-    type: string;
-    timestamp: number;
-    amounts: string[];
-  };
-}
-
-interface SwapFeeResponse {
-  pool: {
-    createTime: number;
-    totalSwapFee: string;
-  };
-}
 
 /**
  * Balancer pool math adapted from this code. Although the code is incorrect in a few places:
@@ -31,31 +11,6 @@ export default class BalancerPool {
   public static readonly BPT_PRECISION = ethers.constants.WeiPerEther;
   public static readonly ETH_WEIGHT = ethers.utils.parseEther('0.2');
   public static readonly NOTE_WEIGHT = ethers.utils.parseEther('0.8');
-  public static balancerGraphClient = new GraphClient(BALANCER_GRAPH_URL, 0);
-
-  private static joinExitQuery() {
-    const treasury = System.getSystem().getTreasuryManager();
-    const {poolId} = System.getSystem().getStakedNoteParameters();
-    return gql`{
-      joinExits(where: {user: "${treasury.address}", pool: "${poolId}"}){
-        id
-        type
-        timestamp
-        amounts
-      }
-    }`;
-  }
-
-  // Returns total swap fees in USD since creation
-  private static swapFeeQuery() {
-    const {poolId} = System.getSystem().getStakedNoteParameters();
-    return gql`{
-      pool(id: "${poolId}"}){
-        createTime
-        totalSwapFee
-      }
-    }`;
-  }
 
   /**
    * Returns the amount of BPT tokens expected given the two inputs.
@@ -190,24 +145,5 @@ export default class BalancerPool {
     const ethValue = ethBalance.scale(1, balancerPoolTotalSupply);
     const noteValue = noteBalance.scale(1, balancerPoolTotalSupply);
     return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
-  }
-
-  // These three can be queried from the balancer subgraph, but we will need
-  // to get historical prices for ETH and NOTE.
-  // Use JoinExit, filter for the TreasuryManager contract
-  public static async calculatePoolReturns() {
-    const [joinExit, swapFee] = await Promise.all([
-      BalancerPool.balancerGraphClient.queryOrThrow<JoinExitResponse>(BalancerPool.joinExitQuery()),
-      BalancerPool.balancerGraphClient.queryOrThrow<SwapFeeResponse>(BalancerPool.swapFeeQuery()),
-    ]);
-    console.log(joinExit);
-    console.log(swapFee);
-    // So we have three cash flows here (use xirr)
-    // 1. incentiveReturns: joins in NOTE token (NOTE in USD / poolValueInUSD -- poolTotalLiquidity)
-    // 2. buybackReturns: joins in WETH token (WETH in USD / poolValueInUSD)
-    // 3. swapFee: use poolSnapshot object, we can calculate swapVolume and swapFees (both denominated in USD)
-    // const incentiveReturns;
-    // const buybackReturns;
-    // const swapFees = BigNumber.from(swapFee.pool.totalSwapFee);
   }
 }
