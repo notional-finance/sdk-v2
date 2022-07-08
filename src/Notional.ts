@@ -107,6 +107,7 @@ export default class Notional extends TransactionBuilder {
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
     dataSourceType = DataSourceType.Cache,
+    skipFetchSetup = false,
   ) {
     let addresses: Addresses;
     let graphEndpoint: string;
@@ -143,7 +144,7 @@ export default class Notional extends TransactionBuilder {
 
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     const contracts = Notional.getContracts(addresses, signer);
-    const graphClient = new GraphClient(graphEndpoint, pollInterval);
+    const graphClient = new GraphClient(graphEndpoint, pollInterval, skipFetchSetup);
     const governance = new Governance(addresses.governor, contracts.note, signer, provider, graphClient) as Governance;
     const system = await System.load(
       graphClient,
@@ -153,6 +154,7 @@ export default class Notional extends TransactionBuilder {
       dataSourceType,
       refreshDataInterval,
       DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
+      skipFetchSetup,
     );
 
     // await for the first data refresh before returning

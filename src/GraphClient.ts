@@ -17,7 +17,7 @@ import fetch from 'cross-fetch';
 export default class GraphClient {
   public apollo: ApolloClient<NormalizedCacheObject>;
 
-  constructor(public graphHttpEndpoint: string, public pollInterval: number) {
+  constructor(public graphHttpEndpoint: string, public pollInterval: number, skipFetchSetup) {
     const errorLink = onError(({graphQLErrors, networkError}) => {
       if (graphQLErrors) {
         graphQLErrors.forEach(({message, locations, path}) => {
@@ -27,7 +27,12 @@ export default class GraphClient {
       if (networkError) console.log(`[Network error]: ${networkError}`);
     });
     const retryLink = new RetryLink();
-    const httpLink = new HttpLink({uri: graphHttpEndpoint, fetch});
+    let httpLink: HttpLink;
+    if (skipFetchSetup) {
+      httpLink = new HttpLink({uri: graphHttpEndpoint});
+    } else {
+      httpLink = new HttpLink({uri: graphHttpEndpoint, fetch});
+    }
 
     this.apollo = new ApolloClient<NormalizedCacheObject>({
       uri: graphHttpEndpoint,

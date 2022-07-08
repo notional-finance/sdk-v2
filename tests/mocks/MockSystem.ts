@@ -250,6 +250,7 @@ export default class MockSystem extends System {
     super(
       systemQueryResult,
       9999,
+      false,
       ({} as unknown) as GraphClient,
       ({} as unknown) as Contracts,
       provider,

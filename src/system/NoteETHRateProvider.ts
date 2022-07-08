@@ -1,5 +1,5 @@
 import {BigNumber} from 'ethers';
-import fetch from 'cross-fetch';
+import {fetch as crossFetch} from 'cross-fetch';
 import EventEmitter from 'eventemitter3';
 import {IAggregator} from '../typechain/IAggregator';
 import {System} from '.';
@@ -11,6 +11,7 @@ export default class NoteETHRateProvider {
   private coinGeckoURL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
   private _noteUSDPrice: BigNumber = BigNumber.from(0);
   private noteRefreshInterval?: NodeJS.Timeout;
+  private fetch: any;
 
   get noteUSDPrice() {
     return this._noteUSDPrice;
@@ -22,6 +23,7 @@ export default class NoteETHRateProvider {
       notePriceRefreshIntervalMS: number;
       eventEmitter: EventEmitter;
     },
+    skipFetchSetup = false,
   ) {
     if (price) {
       this._noteUSDPrice = price;
@@ -38,6 +40,12 @@ export default class NoteETHRateProvider {
         eventEmitter.emit(SystemEvents.NOTE_PRICE_UPDATE);
       }, notePriceRefreshIntervalMS);
     }
+
+    if (skipFetchSetup) {
+      this.fetch = fetch;
+    } else {
+      this.fetch = crossFetch;
+    }
   }
 
   public destroy() {
@@ -46,7 +54,7 @@ export default class NoteETHRateProvider {
 
   private async fetchUSDPrice() {
     try {
-      const resp = await ((await fetch(this.coinGeckoURL)).json()) as {prices: [number, number][]};
+      const resp = await ((await this.fetch(this.coinGeckoURL)).json()) as {prices: [number, number][]};
       const sortedPrices: Array<[number, number]> = resp.prices.sort(([a], [b]) => a - b);
       let avgUSDPrice: number;
       if (sortedPrices.length === 1) {
