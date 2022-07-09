@@ -1,3 +1,4 @@
+import {expect} from 'chai';
 import Notional, { TypedBigNumber } from '../../src';
 import { ethers } from 'hardhat';
 import { getAccount, setChainState } from './utils';
@@ -35,6 +36,8 @@ describe('transactions', () => {
     populatedTxn.gasLimit = BigNumber.from(2_500_000)
     await daiWhale.sendTransaction(populatedTxn)
     const { portfolio } = await notional.system.getNotionalProxy().connect(daiWhale).getAccount(DAI_WHALE)
-    console.log(portfolio)
+    expect(portfolio.length).to.equal(1)
+    expect(portfolio[0].currencyId.toNumber()).to.equal(2)
+    expect(portfolio[0].notional.toNumber()).to.equal(10e8)
   });
 });
