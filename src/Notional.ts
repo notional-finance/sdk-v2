@@ -74,7 +74,7 @@ export default class Notional extends TransactionBuilder {
     public provider: ethers.providers.Provider,
     public contracts: Contracts,
   ) {
-    super(system.getNotionalProxy(), system);
+    super();
   }
 
   public static getContracts(addresses: Addresses, signer: Signer): Contracts {
