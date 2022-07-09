@@ -1,7 +1,5 @@
-import {
-  BigNumber, BigNumberish, constants, utils,
-} from 'ethers';
-import {TokenType} from './types';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { TokenType } from './types';
 import {
   INTERNAL_TOKEN_PRECISION,
   PERCENTAGE_BASIS,
@@ -9,7 +7,7 @@ import {
   NOTE_CURRENCY_ID,
   STAKED_NOTE_CURRENCY_ID,
 } from '../config/constants';
-import {System, NTokenValue} from '../system';
+import { System, NTokenValue } from '../system';
 
 export enum BigNumberType {
   ExternalUnderlying = 'External Underlying',
@@ -24,7 +22,8 @@ export enum BigNumberType {
 
 class TypedBigNumber {
   public currencyId: number;
-  private _isWETH: boolean = false;
+
+  private _isWETH = false;
 
   /**
    * WETH is handled as ETH for all internal calculations but we flag it here for other
@@ -36,7 +35,7 @@ class TypedBigNumber {
 
   get decimals() {
     const currency = System.getSystem().getCurrencyById(this.currencyId);
-    const decimals = this.isUnderlying() ? (currency.underlyingDecimals || currency.decimals) : currency.decimals;
+    const decimals = this.isUnderlying() ? currency.underlyingDecimals || currency.decimals : currency.decimals;
     if (!decimals) throw new Error(`Decimals not found for currency ${this.currencyId}`);
     return decimals;
   }
@@ -99,7 +98,7 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
   }
 
-  static fromObject(value: {type: string; hex: string; bigNumberType: BigNumberType; symbol: string}) {
+  static fromObject(value: { type: string; hex: string; bigNumberType: BigNumberType; symbol: string }) {
     return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
   }
 
@@ -235,11 +234,11 @@ class TypedBigNumber {
 
   isInternalPrecision(): boolean {
     return (
-      this.type === BigNumberType.InternalUnderlying
-      || this.type === BigNumberType.InternalAsset
-      || this.type === BigNumberType.LiquidityToken
-      || this.type === BigNumberType.NOTE
-      || this.type === BigNumberType.nToken
+      this.type === BigNumberType.InternalUnderlying ||
+      this.type === BigNumberType.InternalAsset ||
+      this.type === BigNumberType.LiquidityToken ||
+      this.type === BigNumberType.NOTE ||
+      this.type === BigNumberType.nToken
     );
   }
 
@@ -285,13 +284,15 @@ class TypedBigNumber {
   toAssetCash(internalPrecision: boolean = this.isInternalPrecision(), overrideRate?: BigNumber): TypedBigNumber {
     if (this.isAssetCash()) {
       return internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
-    } if (this.isNonMintable()) {
+    }
+    if (this.isNonMintable()) {
       // A non mintable token does not require currency conversion
       const matchingPrecision = internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
       const bnType = internalPrecision ? BigNumberType.InternalAsset : BigNumberType.ExternalAsset;
       return new TypedBigNumber(matchingPrecision.n, bnType, this.symbol);
-    } if (this.isUnderlying()) {
-      const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
+    }
+    if (this.isUnderlying()) {
+      const { underlyingDecimalPlaces, assetRate: fetchedRate } = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
 
@@ -315,7 +316,8 @@ class TypedBigNumber {
       const bn = new TypedBigNumber(assetValue, BigNumberType.ExternalAsset, currency.symbol);
       // Convert to internal precision if required by parameter
       return internalPrecision ? bn.toInternalPrecision() : bn;
-    } if (this.isNToken()) {
+    }
+    if (this.isNToken()) {
       // This returns the nToken balance in asset cash value (does not include redeem slippage)
       const assetValue = NTokenValue.convertNTokenToInternalAsset(this.currencyId, this, false);
       return internalPrecision ? assetValue : assetValue.toExternalPrecision();
@@ -328,15 +330,18 @@ class TypedBigNumber {
     if (this.isNOTE() || this.isStakedNOTE()) {
       // NOTE does not convert to underlying, just returns itself
       return this;
-    } if (this.isUnderlying()) {
+    }
+    if (this.isUnderlying()) {
       return internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
-    } if (this.isNonMintable()) {
+    }
+    if (this.isNonMintable()) {
       // A non mintable token does not require currency conversion
       const matchingPrecision = internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
       const bnType = internalPrecision ? BigNumberType.InternalUnderlying : BigNumberType.ExternalUnderlying;
       return new TypedBigNumber(matchingPrecision.n, bnType, this.symbol);
-    } if (this.isAssetCash()) {
-      const {underlyingDecimalPlaces, assetRate: fetchedRate} = System.getSystem().getAssetRate(this.currencyId);
+    }
+    if (this.isAssetCash()) {
+      const { underlyingDecimalPlaces, assetRate: fetchedRate } = System.getSystem().getAssetRate(this.currencyId);
       const assetRate = overrideRate || fetchedRate;
       if (!underlyingDecimalPlaces || !assetRate) throw Error(`Asset rate for ${this.currencyId} not found`);
 
@@ -361,7 +366,8 @@ class TypedBigNumber {
       const bn = new TypedBigNumber(underlying, BigNumberType.ExternalUnderlying, underlyingSymbol);
       // Convert to internal precision if required by parameter
       return internalPrecision ? bn.toInternalPrecision() : bn;
-    } if (this.isNToken()) {
+    }
+    if (this.isNToken()) {
       // This returns the nToken balance in underlying value (does not include redeem slippage)
       return NTokenValue.convertNTokenToInternalAsset(this.currencyId, this, false).toUnderlying(internalPrecision);
     }
@@ -387,10 +393,11 @@ class TypedBigNumber {
   toExternalPrecision(): TypedBigNumber {
     if (this.isExternalPrecision()) return this;
     if (
-      this.type === BigNumberType.LiquidityToken
-      || this.type === BigNumberType.NOTE
-      || this.type === BigNumberType.nToken
-    ) return this;
+      this.type === BigNumberType.LiquidityToken ||
+      this.type === BigNumberType.NOTE ||
+      this.type === BigNumberType.nToken
+    )
+      return this;
 
     let newType: BigNumberType;
     if (this.type === BigNumberType.InternalAsset) {
@@ -405,7 +412,7 @@ class TypedBigNumber {
   }
 
   toETH(useHaircut: boolean) {
-    const {ethRateConfig, ethRate} = System.getSystem().getETHRate(this.currencyId);
+    const { ethRateConfig, ethRate } = System.getSystem().getETHRate(this.currencyId);
     if (!ethRateConfig || !ethRate) throw new Error(`Eth rate data for ${this.symbol} not found`);
     if (!(this.isAssetCash() || this.isUnderlying() || this.isNOTE())) {
       throw new Error(`Cannot convert ${this.type} directly to ETH`);
@@ -428,12 +435,12 @@ class TypedBigNumber {
     return TypedBigNumber.from(eth, bnType, 'ETH');
   }
 
-  fromETH(currencyId: number, useHaircut: boolean = false) {
+  fromETH(currencyId: number, useHaircut = false) {
     // Must be internal underlying, ETH
     // eslint-disable-next-line
     const _this = this.toInternalPrecision();
     _this.check(BigNumberType.InternalUnderlying, 'ETH');
-    const {ethRateConfig, ethRate} = System.getSystem().getETHRate(currencyId);
+    const { ethRateConfig, ethRate } = System.getSystem().getETHRate(currencyId);
     // eslint-disable-next-line
     const underlyingSymbol =
       currencyId === NOTE_CURRENCY_ID ? 'NOTE' : System.getSystem().getUnderlyingSymbol(currencyId);

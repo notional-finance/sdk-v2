@@ -1,10 +1,10 @@
-import {BigNumber} from 'ethers';
-import {AssetType, TradeType} from '../../src/libs/types';
-import {AssetSummary} from '../../src/account';
-import {SECONDS_IN_DAY, SECONDS_IN_QUARTER} from '../../src/config/constants';
+import { BigNumber } from 'ethers';
+import { AssetType, TradeType } from '../../src/libs/types';
+import { AssetSummary } from '../../src/account';
+import { SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../src/config/constants';
 import MockSystem from '../mocks/MockSystem';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {System, CashGroup} from '../../src/system';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
+import { System, CashGroup } from '../../src/system';
 import MockAccountData from '../mocks/MockAccountData';
 
 describe('Asset Summary', () => {
@@ -51,7 +51,7 @@ describe('Asset Summary', () => {
           isIdiosyncratic: false,
         },
       ],
-      false,
+      false
     );
 
     const summary = AssetSummary.build(accountData, tradeHistory, currentTime);
@@ -65,7 +65,7 @@ describe('Asset Summary', () => {
   });
 
   it('produces irr for a borrow fcash asset', () => {
-    const borrowTradeHistory = {...baseTradeHistory};
+    const borrowTradeHistory = { ...baseTradeHistory };
     borrowTradeHistory.netUnderlyingCash = borrowTradeHistory.netUnderlyingCash.neg();
     borrowTradeHistory.netfCash = borrowTradeHistory.netfCash.neg();
     const accountData = new MockAccountData(
@@ -85,7 +85,7 @@ describe('Asset Summary', () => {
           isIdiosyncratic: false,
         },
       ],
-      false,
+      false
     );
 
     const tradeHistory = [borrowTradeHistory];

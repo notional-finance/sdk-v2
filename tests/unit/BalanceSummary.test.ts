@@ -1,12 +1,12 @@
-import {BigNumber} from 'ethers';
-import {BalanceHistory} from '../../src/libs/types';
-import {getNowSeconds} from '../../src/libs/utils';
-import {BalanceSummary} from '../../src/account';
-import {SECONDS_IN_DAY} from '../../src/config/constants';
+import { BigNumber } from 'ethers';
+import { BalanceHistory } from '../../src/libs/types';
+import { getNowSeconds } from '../../src/libs/utils';
+import { BalanceSummary } from '../../src/account';
+import { SECONDS_IN_DAY } from '../../src/config/constants';
 import MockSystem from '../mocks/MockSystem';
 import MockAccountData from '../mocks/MockAccountData';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {System, CashGroup} from '../../src/system';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
+import { System, CashGroup } from '../../src/system';
 
 describe('Balance Summary', () => {
   const blockTime = CashGroup.getTimeReference(getNowSeconds());
@@ -35,13 +35,9 @@ describe('Balance Summary', () => {
   };
 
   it('it returns cToken yield', () => {
-    const cTokenBalance = {...baseBalanceHistory};
+    const cTokenBalance = { ...baseBalanceHistory };
     cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      95e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(95e8, BigNumberType.InternalUnderlying, 'DAI');
     const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
     const data = new MockAccountData(
@@ -59,7 +55,7 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false,
+      false
     );
 
     const summary = BalanceSummary.build(data, tradeHistory, currentTime);
@@ -70,13 +66,9 @@ describe('Balance Summary', () => {
   });
 
   it('it returns nToken total yield', () => {
-    const nTokenBalance = {...baseBalanceHistory};
+    const nTokenBalance = { ...baseBalanceHistory };
     nTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.nToken, 'nDAI');
-    nTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(
-      9e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    nTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(9e8, BigNumberType.InternalUnderlying, 'DAI');
     nTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(459e8, BigNumberType.InternalAsset, 'cDAI');
     const tradeHistory = [nTokenBalance];
 
@@ -95,7 +87,7 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false,
+      false
     );
 
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
@@ -108,37 +100,21 @@ describe('Balance Summary', () => {
   });
 
   it('it resets values on a zero cash flow', () => {
-    const cTokenPrevious1 = {...baseBalanceHistory};
+    const cTokenPrevious1 = { ...baseBalanceHistory };
     cTokenPrevious1.blockTime = new Date((blockTime - 200 * SECONDS_IN_DAY) * 1000);
     cTokenPrevious1.assetCashBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenPrevious1.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      95e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    cTokenPrevious1.assetCashValueUnderlyingAfter = TypedBigNumber.from(95e8, BigNumberType.InternalUnderlying, 'DAI');
 
-    const cTokenPrevious2 = {...baseBalanceHistory};
+    const cTokenPrevious2 = { ...baseBalanceHistory };
     cTokenPrevious2.blockTime = new Date((blockTime - 100 * SECONDS_IN_DAY) * 1000);
     cTokenPrevious2.assetCashBalanceBefore = TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI');
     cTokenPrevious2.assetCashBalanceAfter = TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI');
-    cTokenPrevious2.assetCashValueUnderlyingBefore = TypedBigNumber.from(
-      95e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
-    cTokenPrevious2.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      0,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    cTokenPrevious2.assetCashValueUnderlyingBefore = TypedBigNumber.from(95e8, BigNumberType.InternalUnderlying, 'DAI');
+    cTokenPrevious2.assetCashValueUnderlyingAfter = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, 'DAI');
 
-    const cTokenBalance = {...baseBalanceHistory};
+    const cTokenBalance = { ...baseBalanceHistory };
     cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      95e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(95e8, BigNumberType.InternalUnderlying, 'DAI');
     const tradeHistory = [cTokenPrevious1, cTokenPrevious2, cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
     const data = new MockAccountData(
@@ -156,7 +132,7 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false,
+      false
     );
     const summary = BalanceSummary.build(data, tradeHistory, currentTime);
     expect(summary).toHaveLength(1);
@@ -181,15 +157,11 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false,
+      false
     );
-    const cTokenBalance = {...baseBalanceHistory};
+    const cTokenBalance = { ...baseBalanceHistory };
     cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      20e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(20e8, BigNumberType.InternalUnderlying, 'DAI');
     const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
@@ -214,15 +186,11 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false,
+      false
     );
-    const cTokenBalance = {...baseBalanceHistory};
+    const cTokenBalance = { ...baseBalanceHistory };
     cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(
-      -20e8,
-      BigNumberType.InternalUnderlying,
-      'DAI',
-    );
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(-20e8, BigNumberType.InternalUnderlying, 'DAI');
     cTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nDAI');
     cTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cDAI');
     cTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(50e8, BigNumberType.InternalUnderlying, 'DAI');

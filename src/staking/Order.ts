@@ -1,22 +1,30 @@
-import {
-  BigNumber, BigNumberish, constants, Signer, utils,
-} from 'ethers';
-import {BytesLike} from '@ethersproject/bytes';
-import {ExchangeV3} from '../typechain/ExchangeV3';
+import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
+import { BytesLike } from '@ethersproject/bytes';
+import { ExchangeV3 } from '../typechain/ExchangeV3';
 
 const assetProxyInterface = new utils.Interface(['function ERC20Token(address tokenAddress)']);
 
 export default class Order {
   public takerAddress: string;
+
   public feeRecipientAddress: string;
+
   public senderAddress: string;
+
   public makerFee: BigNumberish;
+
   public takerFee: BigNumberish;
+
   public salt: BigNumberish;
+
   public makerAssetData: BytesLike;
+
   public takerAssetData: BytesLike;
+
   public makerFeeAssetData: BytesLike;
+
   public takerFeeAssetData: BytesLike;
+
   public expirationTimeSeconds: BigNumberish;
 
   constructor(
@@ -27,7 +35,7 @@ export default class Order {
     makerTokenAddress: string,
     public wethAddress: string,
     public makerAssetAmount: BigNumberish,
-    public takerAssetAmount: BigNumberish,
+    public takerAssetAmount: BigNumberish
   ) {
     this.takerAddress = constants.AddressZero;
     this.feeRecipientAddress = constants.AddressZero;
@@ -51,7 +59,7 @@ export default class Order {
       assetProxyInterface.decodeFunctionData('ERC20Token', r.makerAssetData)[0],
       assetProxyInterface.decodeFunctionData('ERC20Token', r.takerAssetData)[0],
       BigNumber.from(r.makerAssetAmount),
-      BigNumber.from(r.takerAssetAmount),
+      BigNumber.from(r.takerAssetAmount)
     );
   }
 

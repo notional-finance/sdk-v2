@@ -1,8 +1,8 @@
-import {ethers} from 'ethers';
-import {DEFAULT_DATA_REFRESH_INTERVAL} from '../../src/config/constants';
-import {getNowSeconds} from '../../src/libs/utils';
+import { ethers } from 'ethers';
+import { DEFAULT_DATA_REFRESH_INTERVAL } from '../../src/config/constants';
+import { getNowSeconds } from '../../src/libs/utils';
 import Notional from '../../src/Notional';
-import {SystemEvents} from '../../src/system/System';
+import { SystemEvents } from '../../src/system/System';
 
 describe('System Integration Test', () => {
   let provider: ethers.providers.JsonRpcProvider;

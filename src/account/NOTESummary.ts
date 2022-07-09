@@ -1,10 +1,10 @@
-import {gql} from '@apollo/client/core';
-import {ReturnsBreakdown, TransactionHistory, TypedBigNumber} from '..';
-import {INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID} from '../config/constants';
+import { gql } from '@apollo/client/core';
+import { ReturnsBreakdown, TransactionHistory, TypedBigNumber } from '..';
+import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID } from '../config/constants';
 import GraphClient from '../GraphClient';
-import {getNowSeconds} from '../libs/utils';
-import {StakedNote} from '../staking';
-import {NTokenValue} from '../system';
+import { getNowSeconds } from '../libs/utils';
+import { StakedNote } from '../staking';
+import { NTokenValue } from '../system';
 import Account from './Account';
 import AccountData from './AccountData';
 
@@ -26,7 +26,7 @@ interface StakedNoteQueryResult {
       ethAmountChange: string;
       noteAmountChange: string;
     }[];
-  }
+  };
 }
 
 interface StakedNoteHistory {
@@ -43,7 +43,7 @@ interface StakedNoteHistory {
     sNOTEAmountAfter: TypedBigNumber;
     ethAmountChange: TypedBigNumber;
     noteAmountChange: TypedBigNumber;
-  }[]
+  }[];
 }
 
 export default class NOTESummary {
@@ -85,15 +85,17 @@ export default class NOTESummary {
       };
     }
 
-    const history = result.stakedNoteBalance.stakedNoteChanges.map((r) => ({
-      blockNumber: r.blockNumber,
-      transactionHash: r.transactionHash,
-      blockTime: new Date(r.timestamp * 1000),
-      sNOTEAmountBefore: TypedBigNumber.fromBalance(r.sNOTEAmountBefore, 'sNOTE', false),
-      sNOTEAmountAfter: TypedBigNumber.fromBalance(r.sNOTEAmountAfter, 'sNOTE', false),
-      ethAmountChange: TypedBigNumber.fromBalance(r.ethAmountChange, 'ETH', false),
-      noteAmountChange: TypedBigNumber.fromBalance(r.noteAmountChange, 'NOTE', false),
-    })).sort((a, b) => b.blockNumber - a.blockNumber); // sorts descending
+    const history = result.stakedNoteBalance.stakedNoteChanges
+      .map((r) => ({
+        blockNumber: r.blockNumber,
+        transactionHash: r.transactionHash,
+        blockTime: new Date(r.timestamp * 1000),
+        sNOTEAmountBefore: TypedBigNumber.fromBalance(r.sNOTEAmountBefore, 'sNOTE', false),
+        sNOTEAmountAfter: TypedBigNumber.fromBalance(r.sNOTEAmountAfter, 'sNOTE', false),
+        ethAmountChange: TypedBigNumber.fromBalance(r.ethAmountChange, 'ETH', false),
+        noteAmountChange: TypedBigNumber.fromBalance(r.noteAmountChange, 'NOTE', false),
+      }))
+      .sort((a, b) => b.blockNumber - a.blockNumber); // sorts descending
 
     return {
       transactions: history,
@@ -109,7 +111,7 @@ export default class NOTESummary {
       account.walletBalanceBySymbol('NOTE')?.balance || TypedBigNumber.fromBalance(0, 'NOTE', false),
       account.walletBalanceBySymbol('sNOTE')?.balance || TypedBigNumber.fromBalance(0, 'sNOTE', false),
       account.accountData || AccountData.emptyAccountData(),
-      await NOTESummary.fetchHistory(account.address, graphClient),
+      await NOTESummary.fetchHistory(account.address, graphClient)
     );
   }
 
@@ -117,7 +119,7 @@ export default class NOTESummary {
     private NOTEBalance: TypedBigNumber,
     private sNOTEBalance: TypedBigNumber,
     private accountData: AccountData,
-    public stakedNoteHistory: StakedNoteHistory,
+    public stakedNoteHistory: StakedNoteHistory
   ) {}
 
   /**
@@ -125,7 +127,7 @@ export default class NOTESummary {
    */
   public getStakedNoteValue(): TypedBigNumber {
     if (this.sNOTEBalance.isZero()) return TypedBigNumber.fromBalance(0, 'NOTE', false);
-    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(this.sNOTEBalance);
+    const { ethClaim, noteClaim } = StakedNote.getRedemptionValue(this.sNOTEBalance);
     return ethClaim.toInternalPrecision().fromETH(NOTE_CURRENCY_ID, false).add(noteClaim);
   }
 
@@ -133,7 +135,7 @@ export default class NOTESummary {
    * @returns Total NOTE value of sNOTE, NOTE and unclaimed NOTE.
    */
   public getTotalNoteValue(): TypedBigNumber {
-    const {unclaimedNOTE} = this.getUnclaimedNOTE();
+    const { unclaimedNOTE } = this.getUnclaimedNOTE();
     return this.getStakedNoteValue().add(this.NOTEBalance).add(unclaimedNOTE);
   }
 
@@ -141,7 +143,7 @@ export default class NOTESummary {
     const returnsBreakdown: ReturnsBreakdown[] = [];
 
     if (this.sNOTEBalance.isPositive()) {
-      const {interestEarned, realizedYield} = this.getStakedNoteReturns();
+      const { interestEarned, realizedYield } = this.getStakedNoteReturns();
       returnsBreakdown.push({
         source: 'sNOTE',
         balance: this.sNOTEBalance,
@@ -159,7 +161,7 @@ export default class NOTESummary {
       });
     }
 
-    const {unclaimedNOTE, rateOfChangePerSecond} = this.getUnclaimedNOTE();
+    const { unclaimedNOTE, rateOfChangePerSecond } = this.getUnclaimedNOTE();
     if (unclaimedNOTE.isPositive()) {
       returnsBreakdown.push({
         source: 'Unclaimed NOTE',
@@ -174,7 +176,7 @@ export default class NOTESummary {
 
   public getTransactionHistory(): TransactionHistory[] {
     return this.stakedNoteHistory.transactions.map((h) => {
-      let txnType: string = 'unknown';
+      let txnType = 'unknown';
       if (h.sNOTEAmountBefore.lt(h.sNOTEAmountAfter)) {
         txnType = 'Stake NOTE';
       } else if (h.sNOTEAmountBefore.gt(h.sNOTEAmountAfter)) {
@@ -193,12 +195,10 @@ export default class NOTESummary {
   private getStakedNoteReturns() {
     const currentStakedNoteValue = this.getStakedNoteValue();
     if (currentStakedNoteValue.isZero()) {
-      return {interestEarned: undefined, realizedYield: undefined};
+      return { interestEarned: undefined, realizedYield: undefined };
     }
 
-    const {
-      ethAmountJoined, ethAmountRedeemed, noteAmountJoined, noteAmountRedeemed,
-    } = this.stakedNoteHistory;
+    const { ethAmountJoined, ethAmountRedeemed, noteAmountJoined, noteAmountRedeemed } = this.stakedNoteHistory;
 
     const amountJoinedInNote = ethAmountJoined.fromETH(NOTE_CURRENCY_ID, false).add(noteAmountJoined);
     const amountRedeemedInNote = ethAmountRedeemed.fromETH(NOTE_CURRENCY_ID, false).add(noteAmountRedeemed);
@@ -216,17 +216,18 @@ export default class NOTESummary {
     if (interestEarned.isNegative()) {
       // It doesn't make sense for interest earned to be negative (since all the FX is done at current rates),
       // so we return undefined here
-      return {interestEarned: undefined, realizedYield: undefined};
+      return { interestEarned: undefined, realizedYield: undefined };
     }
 
     if (netCostBasis.isPositive()) {
       // The yield here is calculated as an absolute rate of return (not annualized)
-      realizedYield = ((currentStakedNoteValue.n.div(netCostBasis.n).toNumber() - INTERNAL_TOKEN_PRECISION)
-          / INTERNAL_TOKEN_PRECISION)
-        * 100;
+      realizedYield =
+        ((currentStakedNoteValue.n.div(netCostBasis.n).toNumber() - INTERNAL_TOKEN_PRECISION) /
+          INTERNAL_TOKEN_PRECISION) *
+        100;
     }
 
-    return {interestEarned, realizedYield};
+    return { interestEarned, realizedYield };
   }
 
   private getUnclaimedNOTE() {
@@ -239,8 +240,8 @@ export default class NOTESummary {
             balance.nTokenBalance,
             balance.lastClaimTime,
             balance.accountIncentiveDebt,
-            startingTime,
-          ),
+            startingTime
+          )
         );
       }
       return note;
@@ -254,8 +255,8 @@ export default class NOTESummary {
             balance.nTokenBalance,
             balance.lastClaimTime,
             balance.accountIncentiveDebt,
-            startingTime + 300,
-          ),
+            startingTime + 300
+          )
         );
       }
       return note;

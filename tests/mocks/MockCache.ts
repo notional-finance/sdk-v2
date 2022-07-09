@@ -1,7 +1,7 @@
-import {BigNumber, ethers} from 'ethers';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
-import {getNowSeconds} from '../../src/libs/utils';
-import {Market, CashGroup} from '../../src/system';
+import { BigNumber, ethers } from 'ethers';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
+import { getNowSeconds } from '../../src/libs/utils';
+import { Market, CashGroup } from '../../src/system';
 import Blockchain from '../../src/system/datasource/Blockchain';
 
 export default class MockCache extends Blockchain {
@@ -36,15 +36,11 @@ export default class MockCache extends Blockchain {
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     this.nTokens.forEach((_, k) => {
-      const {symbol} = this.currencies.get(k)!;
+      const { symbol } = this.currencies.get(k)!;
       const nTokenSymbol = this.nTokens.get(k)?.symbol;
       if (nTokenSymbol) {
         const pv = TypedBigNumber.from(ethers.constants.WeiPerEther, BigNumberType.InternalAsset, symbol);
-        const supply = TypedBigNumber.from(
-          ethers.constants.WeiPerEther.mul(2),
-          BigNumberType.nToken,
-          nTokenSymbol,
-        );
+        const supply = TypedBigNumber.from(ethers.constants.WeiPerEther.mul(2), BigNumberType.nToken, nTokenSymbol);
         this.nTokenAssetCashPV.set(k, pv);
         this.nTokenTotalSupply.set(k, supply);
         this.nTokenIncentiveFactors.set(k, {
@@ -84,7 +80,7 @@ export default class MockCache extends Blockchain {
           c.reserveFeeSharePercent,
           c.rateOracleTimeWindowSeconds,
           currency.symbol,
-          currency.underlyingSymbol || currency.symbol,
+          currency.underlyingSymbol || currency.symbol
         );
 
         market.setMarket(v);

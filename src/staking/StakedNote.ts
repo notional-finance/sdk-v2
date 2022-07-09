@@ -1,8 +1,8 @@
-import {BigNumber, ethers, Overrides} from 'ethers';
-import {BigNumberType, TypedBigNumber} from '..';
-import {RATE_PRECISION} from '../config/constants';
-import {getNowSeconds, populateTxnAndGas} from '../libs/utils';
-import {System} from '../system';
+import { BigNumber, ethers, Overrides } from 'ethers';
+import { BigNumberType, TypedBigNumber } from '..';
+import { RATE_PRECISION } from '../config/constants';
+import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
+import { System } from '../system';
 import BalancerPool from './BalancerPool';
 
 export default class StakedNote extends BalancerPool {
@@ -26,12 +26,12 @@ export default class StakedNote extends BalancerPool {
     ethAmount: TypedBigNumber,
     address: string,
     bptSlippagePercent = 0.005,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     const minBPT = StakedNote.getExpectedBPT(noteAmount, ethAmount)
       .mul((1 - bptSlippagePercent) * RATE_PRECISION)
       .div(RATE_PRECISION);
-    const ethOverrides = Object.assign(overrides, {value: ethAmount.n}) as ethers.PayableOverrides;
+    const ethOverrides = Object.assign(overrides, { value: ethAmount.n }) as ethers.PayableOverrides;
 
     return StakedNote.populateTxnAndGas(address, 'mintFromETH', [noteAmount.n, minBPT, ethOverrides]);
   }
@@ -51,7 +51,7 @@ export default class StakedNote extends BalancerPool {
     ethAmount: TypedBigNumber,
     address: string,
     bptSlippagePercent = 0.005,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
     if (!ethAmount.isWETH) throw Error('Input is not WETH');
     const minBPT = StakedNote.getExpectedBPT(noteAmount, ethAmount)
@@ -75,9 +75,9 @@ export default class StakedNote extends BalancerPool {
     redeemWETH: boolean,
     blockTime = getNowSeconds(),
     slippagePercent = 0.005,
-    overrides = {} as Overrides,
+    overrides = {} as Overrides
   ) {
-    const {ethClaim, noteClaim} = StakedNote.getRedemptionValue(sNOTEAmount);
+    const { ethClaim, noteClaim } = StakedNote.getRedemptionValue(sNOTEAmount);
     const minETH = ethClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION);
     const minNOTE = noteClaim.scale((1 - slippagePercent) * RATE_PRECISION, RATE_PRECISION);
 
@@ -93,7 +93,7 @@ export default class StakedNote extends BalancerPool {
    */
   public static getPoolTokenShare(sNOTEAmount: TypedBigNumber) {
     sNOTEAmount.checkType(BigNumberType.sNOTE);
-    const {sNOTETotalSupply, sNOTEBptBalance} = System.getSystem().getStakedNoteParameters();
+    const { sNOTETotalSupply, sNOTEBptBalance } = System.getSystem().getStakedNoteParameters();
     // All three of these factors are in 1e18 decimals
     return sNOTEBptBalance.mul(sNOTEAmount.n).div(sNOTETotalSupply.n);
   }
@@ -103,7 +103,7 @@ export default class StakedNote extends BalancerPool {
    */
   public static getRedemptionValue(sNOTEAmount: TypedBigNumber) {
     sNOTEAmount.checkType(BigNumberType.sNOTE);
-    const {ethBalance, noteBalance, balancerPoolTotalSupply} = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, noteBalance, balancerPoolTotalSupply } = System.getSystem().getStakedNoteParameters();
     const bptTokenClaim = this.getPoolTokenShare(sNOTEAmount);
     // BPTs are a ratio of the balances held in the pool:
     // https://github.com/officialnico/balancerv2cad/blob/main/src/balancerv2cad/WeightedMath.py#L194-L198
@@ -139,7 +139,7 @@ export default class StakedNote extends BalancerPool {
    * @returns redeemWindowEnd when the redeem window will end
    */
   public static async accountCoolDown(address: string, _blockTime = getNowSeconds()) {
-    const {redeemWindowSeconds} = System.getSystem().getStakedNoteParameters();
+    const { redeemWindowSeconds } = System.getSystem().getStakedNoteParameters();
     const sNOTE = System.getSystem().getStakedNote();
     const redeemWindowBegin = await sNOTE.accountRedeemWindowBegin(address);
     const redeemWindowEnd = redeemWindowBegin.add(redeemWindowSeconds);
@@ -149,7 +149,10 @@ export default class StakedNote extends BalancerPool {
     const isInRedeemWindow = redeemWindowBegin.lte(blockTime) && blockTime.lte(redeemWindowEnd);
 
     return {
-      isInCoolDown, isInRedeemWindow, redeemWindowBegin, redeemWindowEnd,
+      isInCoolDown,
+      isInRedeemWindow,
+      redeemWindowBegin,
+      redeemWindowEnd,
     };
   }
 
@@ -160,7 +163,7 @@ export default class StakedNote extends BalancerPool {
    * @returns true if the account can redeem
    */
   public static async canAccountRedeem(address: string, blockTime = getNowSeconds()) {
-    const {redeemWindowBegin, redeemWindowEnd} = await StakedNote.accountCoolDown(address, blockTime);
+    const { redeemWindowBegin, redeemWindowEnd } = await StakedNote.accountCoolDown(address, blockTime);
     return !redeemWindowBegin.isZero() && redeemWindowBegin.lte(blockTime) && redeemWindowEnd.gte(blockTime);
   }
 }

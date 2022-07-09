@@ -5,6 +5,4 @@ import AssetSummary from './AssetSummary';
 import BalanceSummary from './BalanceSummary';
 import NOTESummary from './NOTESummary';
 
-export {
-  Account, AssetSummary, BalanceSummary, AccountData, AccountGraphLoader, NOTESummary,
-};
+export { Account, AssetSummary, BalanceSummary, AccountData, AccountGraphLoader, NOTESummary };

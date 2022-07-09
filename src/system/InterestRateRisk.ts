@@ -1,59 +1,59 @@
-import {BigNumber} from 'ethers';
-import {
-  FreeCollateral, Market, System, NTokenValue,
-} from '.';
-import {AccountData} from '../account';
-import {
-  BASIS_POINT, MIN_INTEREST_RATE, PERCENTAGE_BASIS,
-} from '../config/constants';
+import { BigNumber } from 'ethers';
+import { FreeCollateral, Market, System, NTokenValue } from '.';
+import { AccountData } from '../account';
+import { BASIS_POINT, MIN_INTEREST_RATE, PERCENTAGE_BASIS } from '../config/constants';
 import TypedBigNumber from '../libs/TypedBigNumber';
-import {Asset} from '../libs/types';
-import {getNowSeconds} from '../libs/utils';
+import { Asset } from '../libs/types';
+import { getNowSeconds } from '../libs/utils';
 
 export default class InterestRateRisk {
-  public static calculateInterestRateRisk(
-    accountData: AccountData,
-    blockTime = getNowSeconds(),
-  ) {
+  public static calculateInterestRateRisk(accountData: AccountData, blockTime = getNowSeconds()) {
     const currencies = InterestRateRisk.getRiskyCurrencies(accountData);
-    const {
-      netETHDebtWithBuffer,
-      netETHCollateralWithHaircut,
-      netUnderlyingAvailable,
-    } = FreeCollateral.getFreeCollateral(accountData, blockTime);
+    const { netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable } =
+      FreeCollateral.getFreeCollateral(accountData, blockTime);
     const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
 
-    return currencies.reduce((map, id) => {
-      const currentWeightedAvgInterestRate = InterestRateRisk.getWeightedAvgInterestRate(id, blockTime);
-      const netUnderlying = netUnderlyingAvailable.get(id) || TypedBigNumber.getZeroUnderlying(id);
-      const minLocalCollateral = InterestRateRisk.getMinLocalCurrencyCollateral(
-        id,
-        aggregateFC,
-        netUnderlying,
-      );
+    return currencies.reduce(
+      (map, id) => {
+        const currentWeightedAvgInterestRate = InterestRateRisk.getWeightedAvgInterestRate(id, blockTime);
+        const netUnderlying = netUnderlyingAvailable.get(id) || TypedBigNumber.getZeroUnderlying(id);
+        const minLocalCollateral = InterestRateRisk.getMinLocalCurrencyCollateral(id, aggregateFC, netUnderlying);
 
-      const upperLiquidationInterestRate = InterestRateRisk.findLiquidationRate(
-        id, accountData, minLocalCollateral, true, blockTime,
-      );
+        const upperLiquidationInterestRate = InterestRateRisk.findLiquidationRate(
+          id,
+          accountData,
+          minLocalCollateral,
+          true,
+          blockTime
+        );
 
-      const lowerLiquidationInterestRate = InterestRateRisk.findLiquidationRate(
-        id, accountData, minLocalCollateral, false, blockTime,
-      );
+        const lowerLiquidationInterestRate = InterestRateRisk.findLiquidationRate(
+          id,
+          accountData,
+          minLocalCollateral,
+          false,
+          blockTime
+        );
 
-      if (upperLiquidationInterestRate !== null || lowerLiquidationInterestRate !== null) {
-        map.set(id, {
-          currentWeightedAvgInterestRate,
-          upperLiquidationInterestRate,
-          lowerLiquidationInterestRate,
-        });
-      }
+        if (upperLiquidationInterestRate !== null || lowerLiquidationInterestRate !== null) {
+          map.set(id, {
+            currentWeightedAvgInterestRate,
+            upperLiquidationInterestRate,
+            lowerLiquidationInterestRate,
+          });
+        }
 
-      return map;
-    }, new Map<number, {
-      currentWeightedAvgInterestRate: number | null,
-      upperLiquidationInterestRate: number | null,
-      lowerLiquidationInterestRate: number | null
-    }>());
+        return map;
+      },
+      new Map<
+        number,
+        {
+          currentWeightedAvgInterestRate: number | null;
+          upperLiquidationInterestRate: number | null;
+          lowerLiquidationInterestRate: number | null;
+        }
+      >()
+    );
   }
 
   /**
@@ -64,36 +64,32 @@ export default class InterestRateRisk {
    * @param blockTime
    * @returns current weighted average interest rate
    */
-  public static getWeightedAvgInterestRate(
-    currencyId: number,
-    blockTime = getNowSeconds(),
-  ) {
+  public static getWeightedAvgInterestRate(currencyId: number, blockTime = getNowSeconds()) {
     const cashGroup = System.getSystem().getCashGroup(currencyId);
     /* eslint-disable @typescript-eslint/no-shadow */
-    const {
-      numerator,
-      totalLiquidity,
-    } = cashGroup.markets.reduce(({numerator, totalLiquidity}, m) => {
-      const oracleRate = cashGroup.getOracleRate(m.maturity, blockTime);
-      return {
-        numerator: numerator.add(m.market.totalLiquidity.n.mul(oracleRate)),
-        totalLiquidity: totalLiquidity.add(m.market.totalLiquidity.n),
-      };
-    }, {
-      numerator: BigNumber.from(0),
-      totalLiquidity: BigNumber.from(0),
-    });
+    const { numerator, totalLiquidity } = cashGroup.markets.reduce(
+      ({ numerator, totalLiquidity }, m) => {
+        const oracleRate = cashGroup.getOracleRate(m.maturity, blockTime);
+        return {
+          numerator: numerator.add(m.market.totalLiquidity.n.mul(oracleRate)),
+          totalLiquidity: totalLiquidity.add(m.market.totalLiquidity.n),
+        };
+      },
+      {
+        numerator: BigNumber.from(0),
+        totalLiquidity: BigNumber.from(0),
+      }
+    );
     /* eslint-enable @typescript-eslint/no-shadow */
 
     return totalLiquidity.isZero() ? null : numerator.div(totalLiquidity).toNumber();
   }
 
-  public static getMaxInterestRate(
-    currencyId: number,
-    blockTime = getNowSeconds(),
-  ) {
+  public static getMaxInterestRate(currencyId: number, blockTime = getNowSeconds()) {
     return Math.max(
-      ...System.getSystem().getMarkets(currencyId).map((m) => m.maxInterestRate(blockTime)),
+      ...System.getSystem()
+        .getMarkets(currencyId)
+        .map((m) => m.maxInterestRate(blockTime))
     );
   }
 
@@ -140,13 +136,13 @@ export default class InterestRateRisk {
   public static getMinLocalCurrencyCollateral(
     currencyId: number,
     aggregateFC: TypedBigNumber,
-    netLocalUnderlying: TypedBigNumber,
+    netLocalUnderlying: TypedBigNumber
   ) {
     // This is the local currency gain or loss to get to free collateral equal to zero, we
     // use this to calculate the liquidation point. If FC is already negative than interest
     // rates may be above or below this point already. It's possible that this currency is
     // not liquidatable but some other currency has caused FC to decrease.
-    const {ethRateConfig} = System.getSystem().getETHRate(currencyId);
+    const { ethRateConfig } = System.getSystem().getETHRate(currencyId);
     if (ethRateConfig?.haircut === 0 && aggregateFC.isPositive()) {
       // If haircut is zero then we will get a divide by zero error when converting aggregateFC
       // using the haircut. Since positive netLocalUnderlying has no affect on aggregateFC, the
@@ -176,7 +172,7 @@ export default class InterestRateRisk {
     minLocalCollateral: TypedBigNumber,
     fromMaxRate: boolean,
     blockTime = getNowSeconds(),
-    precision = 10 * BASIS_POINT,
+    precision = 10 * BASIS_POINT
   ) {
     const portfolio = accountData.portfolio.filter((a) => a.currencyId === currencyId);
     const cashBalance = accountData.cashBalance(currencyId) || TypedBigNumber.getZeroUnderlying(currencyId);
@@ -196,7 +192,7 @@ export default class InterestRateRisk {
         cashBalance,
         portfolio,
         nTokenBalance,
-        blockTime,
+        blockTime
       );
 
       if (simulatedLocalCollateral.gt(minLocalCollateral) || simulatedLocalCollateral.isZero()) {
@@ -239,18 +235,13 @@ export default class InterestRateRisk {
     cashBalance: TypedBigNumber,
     portfolio: Asset[],
     nTokenBalance?: TypedBigNumber,
-    blockTime = getNowSeconds(),
+    blockTime = getNowSeconds()
   ) {
     const marketOverrides = System.getSystem()
       .getMarkets(currencyId)
       .map((m) => m.getSimulatedMarket(interestRate, blockTime));
 
-    const cashGroupPV = FreeCollateral.getCashGroupValue(
-      currencyId,
-      portfolio,
-      blockTime,
-      marketOverrides,
-    );
+    const cashGroupPV = FreeCollateral.getCashGroupValue(currencyId, portfolio, blockTime, marketOverrides);
 
     let nTokenValue: TypedBigNumber;
     if (nTokenBalance) {
@@ -260,10 +251,7 @@ export default class InterestRateRisk {
     }
 
     // Cash balance is unaffected by interest rates
-    return cashBalance
-      .toUnderlying()
-      .add(nTokenValue)
-      .add(cashGroupPV);
+    return cashBalance.toUnderlying().add(nTokenValue).add(cashGroupPV);
   }
 
   /**
@@ -278,22 +266,18 @@ export default class InterestRateRisk {
     nTokenBalance: TypedBigNumber,
     marketOverrides: Market[] | undefined,
     blockTime = getNowSeconds(),
-    haircut = true,
+    haircut = true
   ) {
     if (nTokenBalance.isZero()) return nTokenBalance.toUnderlying();
-    const {
-      cashBalance,
-      liquidityTokens,
-      fCash,
-    } = NTokenValue.getNTokenPortfolio(nTokenBalance.currencyId);
-    const {nToken, totalSupply} = NTokenValue.getNTokenFactors(nTokenBalance.currencyId);
+    const { cashBalance, liquidityTokens, fCash } = NTokenValue.getNTokenPortfolio(nTokenBalance.currencyId);
+    const { nToken, totalSupply } = NTokenValue.getNTokenFactors(nTokenBalance.currencyId);
 
     const cashGroupPV = FreeCollateral.getCashGroupValue(
       nTokenBalance.currencyId,
       [...liquidityTokens, ...fCash],
       blockTime,
       marketOverrides,
-      false, // turn off haircuts when calculating nToken value
+      false // turn off haircuts when calculating nToken value
     );
 
     const nTokenPV = cashBalance.toUnderlying().add(cashGroupPV).scale(nTokenBalance.n, totalSupply.n);

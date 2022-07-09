@@ -1,5 +1,5 @@
-import {AccountData} from '../../src/account';
-import {Balance, Asset} from '../../src/libs/types';
+import { AccountData } from '../../src/account';
+import { Balance, Asset } from '../../src/libs/types';
 
 export default class MockAccountData extends AccountData {
   // eslint-disable-next-line @typescript-eslint/no-useless-constructor
@@ -10,7 +10,7 @@ export default class MockAccountData extends AccountData {
     bitmapCurrencyId: number | undefined,
     accountBalances: Balance[],
     _portfolio: Asset[],
-    isCopy: boolean,
+    isCopy: boolean
   ) {
     super(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, accountBalances, _portfolio, isCopy);
   }

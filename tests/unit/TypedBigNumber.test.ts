@@ -1,15 +1,13 @@
-import {
-  BigNumber, constants, ethers, utils,
-} from 'ethers';
+import { BigNumber, constants, ethers, utils } from 'ethers';
 import GraphClient from '../../src/GraphClient';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
 import Notional from '../../src/Notional';
-import {NoteERC20} from '../../src/typechain/NoteERC20';
+import { NoteERC20 } from '../../src/typechain/NoteERC20';
 import Governance from '../../src/Governance';
-import {NOTE_CURRENCY_ID} from '../../src/config/constants';
+import { NOTE_CURRENCY_ID } from '../../src/config/constants';
 import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
-import {Contracts} from '../../src/libs/types';
+import { Contracts } from '../../src/libs/types';
 
 describe('Typed Big Number', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
@@ -20,7 +18,7 @@ describe('Typed Big Number', () => {
     {} as unknown as Governance,
     system,
     provider,
-    {} as unknown as Contracts,
+    {} as unknown as Contracts
   );
   afterAll(() => system.destroy());
 
@@ -251,7 +249,8 @@ describe('Typed Big Number', () => {
     expect(nonMintable?.toUnderlying(true).toExactString()).toEqual(nonMintable?.toInternalPrecision().toExactString());
 
     expect(nonMintable?.toUnderlying().toAssetCash(false).toString()).toEqual(nonMintable?.toString());
-    expect(nonMintable?.toUnderlying().toAssetCash(true).toExactString())
-      .toEqual(nonMintable?.toInternalPrecision().toExactString());
+    expect(nonMintable?.toUnderlying().toAssetCash(true).toExactString()).toEqual(
+      nonMintable?.toInternalPrecision().toExactString()
+    );
   });
 });

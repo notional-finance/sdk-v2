@@ -1,25 +1,15 @@
-import {
-  Signer,
-  Contract,
-  ethers,
-  BigNumber,
-  constants,
-} from 'ethers';
-import {gql} from '@apollo/client/core';
-import {
-  SECONDS_PER_BLOCK,
-  SECONDS_IN_DAY,
-  SECONDS_IN_HOUR,
-} from './config/constants';
-import {ProposalStateEnum} from './libs/types';
+import { Signer, Contract, ethers, BigNumber, constants } from 'ethers';
+import { gql } from '@apollo/client/core';
+import { SECONDS_PER_BLOCK, SECONDS_IN_DAY, SECONDS_IN_HOUR } from './config/constants';
+import { ProposalStateEnum } from './libs/types';
 
 /* typechain imports */
-import {Governor} from './typechain/Governor';
-import {NoteERC20} from './typechain/NoteERC20';
+import { Governor } from './typechain/Governor';
+import { NoteERC20 } from './typechain/NoteERC20';
 import GraphClient from './GraphClient';
 
 /* ABI imports */
-const GovernorABI = require('./abi/Governor.json');
+import GovernorABI from './abi/Governor.json';
 
 const statuses = {
   0: 'pending',
@@ -86,11 +76,11 @@ export interface AllProposalsQueryResult {
 
 export interface AllDelegatesQueryResult {
   delegates: Array<{
-    id: string,
-    totalVotesCount: string,
-    totalProposalsCount: string,
-    votingWeight: string
-  }>
+    id: string;
+    totalVotesCount: string;
+    totalProposalsCount: string;
+    votingWeight: string;
+  }>;
 }
 
 function allProposalsQuery() {
@@ -191,7 +181,7 @@ export default class Governance {
     private noteERC20: NoteERC20,
     private signer: Signer,
     private provider: ethers.providers.Provider,
-    private apolloClient: GraphClient,
+    private apolloClient: GraphClient
   ) {}
 
   public getContract(signer = this.signer) {
@@ -199,7 +189,7 @@ export default class Governance {
   }
 
   public async getProposalById(id: string) {
-    const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({query: proposalQuery(id)});
+    const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({ query: proposalQuery(id) });
 
     if (proposal.data?.proposal && !proposal.error) {
       return proposal.data.proposal;
@@ -208,7 +198,7 @@ export default class Governance {
   }
 
   public async getAllProposals() {
-    const proposals = await this.apolloClient.apollo.query<AllProposalsQueryResult>({query: allProposalsQuery()});
+    const proposals = await this.apolloClient.apollo.query<AllProposalsQueryResult>({ query: allProposalsQuery() });
 
     if (!proposals.error) {
       return proposals.data.proposals;
@@ -218,10 +208,10 @@ export default class Governance {
   }
 
   public async getUserVotingPower(userAddress: string, isProposalView: boolean, proposalId: string) {
-    let userVotingPowerString: string = '';
+    let userVotingPowerString = '';
 
     if (isProposalView && proposalId) {
-      const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({query: proposalQuery(proposalId)});
+      const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({ query: proposalQuery(proposalId) });
 
       if (proposal?.data?.proposal && !proposal.error) {
         const proposalStartBlock: number = proposal.data.proposal.startBlock;
@@ -262,9 +252,9 @@ export default class Governance {
         const daysUntilVotingStartsText: string = daysUntilVotingStarts === 1 ? 'day' : 'days';
 
         /* SECONDS_IN_HOUR = 3600 */
-        const hoursUntilVotingStarts: number = Math.floor(Math.abs(
-          (secondsLeftToVote % SECONDS_IN_DAY) / SECONDS_IN_HOUR,
-        ));
+        const hoursUntilVotingStarts: number = Math.floor(
+          Math.abs((secondsLeftToVote % SECONDS_IN_DAY) / SECONDS_IN_HOUR)
+        );
         const hoursUntilVotingStartsText: string = hoursUntilVotingStarts === 1 ? 'hour' : 'hours';
 
         displayString = `
@@ -278,7 +268,7 @@ export default class Governance {
         and the current block number is less than a proposal's end block,
         that means voting is in session.
       */
-      if ((currentBlockNumber >= proposal.startBlock) && (currentBlockNumber < proposal.endBlock)) {
+      if (currentBlockNumber >= proposal.startBlock && currentBlockNumber < proposal.endBlock) {
         const secondsLeftToVote: number = (proposal.endBlock - currentBlockNumber) * SECONDS_PER_BLOCK;
 
         /* SECONDS_IN_DAY = 86,000 */
@@ -307,8 +297,8 @@ export default class Governance {
   public getProposalVotePercentages(totalVotesForProposal: any) {
     let yesNumerator: BigNumber = BigNumber.from(0);
     let noNumerator: BigNumber = BigNumber.from(0);
-    let yesToProposalPercent: number = 0;
-    let noToProposalPercent: number = 0;
+    let yesToProposalPercent = 0;
+    let noToProposalPercent = 0;
     let totalVotingPower: BigNumber = BigNumber.from(0);
 
     if (totalVotesForProposal && totalVotesForProposal.length) {
@@ -343,9 +333,9 @@ export default class Governance {
   }
 
   public async getAllVotersForProposal(proposalId: string) {
-    const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({query: proposalQuery(proposalId)});
-    const yesVoters: Array<{voterAddress: string, voterVotingPower: string}> = [];
-    const noVoters: Array<{voterAddress: string, voterVotingPower: string}> = [];
+    const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({ query: proposalQuery(proposalId) });
+    const yesVoters: Array<{ voterAddress: string; voterVotingPower: string }> = [];
+    const noVoters: Array<{ voterAddress: string; voterVotingPower: string }> = [];
     let proposalVotes: any = [];
 
     if (proposal?.data?.proposal && !proposal.error) {
@@ -392,26 +382,24 @@ export default class Governance {
   }
 
   public createProposal(newProposal: any) {
-    const {
-      contractAddress,
-      contractValue,
-      callDatas,
-    } = newProposal;
+    const { contractAddress, contractValue, callDatas } = newProposal;
     const contractValueBigNumber = contractValue ? BigNumber.from(contractValue) : 0;
     const callDatasValue = callDatas || '0x';
     const contract = this.getContract();
     const populatedTransaction = contract.populateTransaction.propose(
-      [contractAddress], [contractValueBigNumber], [callDatasValue],
+      [contractAddress],
+      [contractValueBigNumber],
+      [callDatasValue]
     );
     return populatedTransaction;
   }
 
   public async getAccountVotingWeight(userAddress: string, isProposalView: boolean, proposalId: string) {
     let allUserVotes: any;
-    let userVotingWeight: number = 0;
+    let userVotingWeight = 0;
 
     if (isProposalView && proposalId) {
-      const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({query: proposalQuery(proposalId)});
+      const proposal = await this.apolloClient.apollo.query<ProposalQueryResult>({ query: proposalQuery(proposalId) });
       const proposalStartBlock: number = proposal.data.proposal.startBlock;
 
       /* Function getPriorVotes() returns an account's voting power prior to a given block */
@@ -428,7 +416,9 @@ export default class Governance {
   public async getDelegatee(walletAddress: string) {
     const delegatee = await this.noteERC20.delegates(walletAddress);
 
-    if (delegatee === constants.AddressZero) { return ''; }
+    if (delegatee === constants.AddressZero) {
+      return '';
+    }
     return delegatee;
   }
 
@@ -438,7 +428,9 @@ export default class Governance {
   }
 
   public async getAllVoters(limit: number) {
-    const allVoters = await this.apolloClient.apollo.query<AllDelegatesQueryResult>({query: allDelegatesQuery(limit)});
+    const allVoters = await this.apolloClient.apollo.query<AllDelegatesQueryResult>({
+      query: allDelegatesQuery(limit),
+    });
 
     if (allVoters.data?.delegates?.length) {
       return allVoters.data.delegates;

@@ -1,9 +1,9 @@
-import {BigNumber} from 'ethers';
-import {getNowSeconds} from '../../src/libs/utils';
-import {BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR} from '../../src/config/constants';
-import TypedBigNumber, {BigNumberType} from '../../src/libs/TypedBigNumber';
+import { BigNumber } from 'ethers';
+import { getNowSeconds } from '../../src/libs/utils';
+import { BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR } from '../../src/config/constants';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
-import {System, Market} from '../../src/system';
+import { System, Market } from '../../src/system';
 
 describe('Market', () => {
   const blockTime = getNowSeconds();
@@ -62,12 +62,12 @@ describe('Market', () => {
     const exchangeRate = Market.exchangeRate(fCash, cash);
     const annualRate = Market.exchangeToInterestRate(exchangeRate, blockTime, maturity);
 
-    const {annualizedRate: slippageRate} = Market.getSlippageRate(
+    const { annualizedRate: slippageRate } = Market.getSlippageRate(
       fCash,
       cash,
       maturity,
       annualizedSlippage,
-      blockTime,
+      blockTime
     );
     expect(annualRate).toBeCloseTo(slippageRate - annualizedSlippage, -1);
   });
@@ -79,12 +79,12 @@ describe('Market', () => {
     const exchangeRate = Market.exchangeRate(fCash, cash);
     const annualRate = Market.exchangeToInterestRate(exchangeRate, blockTime, maturity);
 
-    const {annualizedRate: slippageRate} = Market.getSlippageRate(
+    const { annualizedRate: slippageRate } = Market.getSlippageRate(
       fCash,
       cash,
       maturity,
       annualizedSlippage,
-      blockTime,
+      blockTime
     );
     expect(annualRate).toBeCloseTo(slippageRate - annualizedSlippage, -1);
   });
@@ -94,12 +94,12 @@ describe('Market', () => {
     const cash = TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI');
     const annualizedSlippage = -50 * BASIS_POINT;
 
-    const {annualizedRate: slippageRate} = Market.getSlippageRate(
+    const { annualizedRate: slippageRate } = Market.getSlippageRate(
       fCash,
       cash,
       maturity,
       annualizedSlippage,
-      blockTime,
+      blockTime
     );
     expect(slippageRate).toEqual(0);
   });
@@ -184,13 +184,13 @@ describe('Market', () => {
       oracleRate,
     });
 
-    const {netCashToAccount} = market.getCashAmountGivenfCashAmount(
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(
       TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-      blockTime,
+      blockTime
     );
     const fCashAmount = market.getfCashAmountGivenCashAmount(netCashToAccount, blockTime);
     expect(
-      fCashAmount.add(TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI')).abs().toNumber(),
+      fCashAmount.add(TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI')).abs().toNumber()
     ).toBeLessThanOrEqual(10);
   });
 
@@ -207,13 +207,13 @@ describe('Market', () => {
       oracleRate,
     });
 
-    const {netCashToAccount} = market.getCashAmountGivenfCashAmount(
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(
       TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
-      blockTime,
+      blockTime
     );
     const fCashAmount = market.getfCashAmountGivenCashAmount(netCashToAccount, blockTime);
     expect(
-      fCashAmount.sub(TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI')).abs().toNumber(),
+      fCashAmount.sub(TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI')).abs().toNumber()
     ).toBeLessThanOrEqual(10);
   });
 

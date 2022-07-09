@@ -5,6 +5,4 @@ import Market from './Market';
 import CashGroup from './CashGroup';
 import InterestRateRisk from './InterestRateRisk';
 
-export {
-  System, FreeCollateral, NTokenValue, Market, CashGroup, InterestRateRisk,
-};
+export { System, FreeCollateral, NTokenValue, Market, CashGroup, InterestRateRisk };

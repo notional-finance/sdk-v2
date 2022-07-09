@@ -1,12 +1,12 @@
-import {BigNumber, Contract, PopulatedTransaction} from 'ethers';
-import {AssetType} from './types';
+import { BigNumber, Contract, PopulatedTransaction } from 'ethers';
+import { AssetType } from './types';
 
 export async function populateTxnAndGas(
   contract: Contract,
   msgSender: string,
   methodName: string,
   methodArgs: any[],
-  gasBufferPercent = 5,
+  gasBufferPercent = 5
 ) {
   const c = contract.connect(msgSender);
   const [txn, gasLimit]: [PopulatedTransaction, BigNumber] = await Promise.all([

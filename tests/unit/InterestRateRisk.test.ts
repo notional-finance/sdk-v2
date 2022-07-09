@@ -1,11 +1,11 @@
-import {BigNumber} from 'ethers';
-import {AssetType} from '../../src/libs/types';
-import {getNowSeconds} from '../../src/libs/utils';
-import {TypedBigNumber} from '../../src';
-import {CashGroup, FreeCollateral, System} from '../../src/system';
+import { BigNumber } from 'ethers';
+import { AssetType } from '../../src/libs/types';
+import { getNowSeconds } from '../../src/libs/utils';
+import { TypedBigNumber } from '../../src';
+import { CashGroup, FreeCollateral, System } from '../../src/system';
 import MockSystem from '../mocks/MockSystem';
 import MockAccountData from '../mocks/MockAccountData';
-import {INTERNAL_TOKEN_PRECISION, SECONDS_IN_QUARTER} from '../../src/config/constants';
+import { INTERNAL_TOKEN_PRECISION, SECONDS_IN_QUARTER } from '../../src/config/constants';
 import InterestRateRisk from '../../src/system/InterestRateRisk';
 
 describe('calculates interest rate risk', () => {
@@ -40,8 +40,10 @@ describe('calculates interest rate risk', () => {
         assetType: AssetType.LiquidityToken_6Month,
         notional: TypedBigNumber.fromBalance(150_000e8, 'DAI', true),
         hasMatured: false,
-        settlementDate: CashGroup.getSettlementDate(AssetType.LiquidityToken_6Month,
-          blockTime + SECONDS_IN_QUARTER * 2),
+        settlementDate: CashGroup.getSettlementDate(
+          AssetType.LiquidityToken_6Month,
+          blockTime + SECONDS_IN_QUARTER * 2
+        ),
         isIdiosyncratic: false,
       },
     ],
@@ -64,7 +66,7 @@ describe('calculates interest rate risk', () => {
         settlementDate: blockTime + SECONDS_IN_QUARTER * 2,
         isIdiosyncratic: false,
       },
-    ],
+    ]
   );
 
   it('gets all the risky currencies', () => {
@@ -106,52 +108,44 @@ describe('calculates interest rate risk', () => {
     ];
 
     // DAI leverage on nToken
-    accountData.updateAsset(
-      {
-        currencyId: 2,
-        maturity,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100e8, 'DAI', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 2,
+      maturity,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(-100e8, 'DAI', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
     // USDC cross currency
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity: maturity + SECONDS_IN_QUARTER,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(150e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(-100e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity: maturity + SECONDS_IN_QUARTER,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(150e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
     // Tether Debt against cash
-    accountData.updateAsset(
-      {
-        currencyId: 4,
-        maturity: maturity + SECONDS_IN_QUARTER,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100e8, 'USDT', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 4,
+      maturity: maturity + SECONDS_IN_QUARTER,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(-100e8, 'USDT', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
 
     const risky = InterestRateRisk.getRiskyCurrencies(accountData);
     expect(risky).toStrictEqual([1, 2, 3, 4]);
@@ -203,7 +197,7 @@ describe('calculates interest rate risk', () => {
         hasMatured: false,
         settlementDate: maturity,
         isIdiosyncratic: false,
-      },
+      }
     );
 
     const value = InterestRateRisk.simulateLocalCurrencyValue(
@@ -212,10 +206,10 @@ describe('calculates interest rate risk', () => {
       accountData.cashBalance(2)!,
       accountData.portfolio,
       accountData.nTokenBalance(2),
-      blockTime,
+      blockTime
     );
 
-    const {netUnderlyingAvailable} = FreeCollateral.getFreeCollateral(accountData, blockTime);
+    const { netUnderlyingAvailable } = FreeCollateral.getFreeCollateral(accountData, blockTime);
     // The rough approximation is that the FC and the local currency value at the weighted average interest
     // rate should be about the same
     expect(netUnderlyingAvailable.get(2)!.sub(value).toNumber() / INTERNAL_TOKEN_PRECISION).toBeCloseTo(0, -1);
@@ -246,7 +240,7 @@ describe('calculates interest rate risk', () => {
         hasMatured: false,
         settlementDate: maturity,
         isIdiosyncratic: false,
-      },
+      }
     );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
@@ -267,28 +261,24 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity: maturity + SECONDS_IN_QUARTER,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(102.5e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(-100e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity: maturity + SECONDS_IN_QUARTER,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(102.5e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBeCloseTo(0.0534e9, -6);
@@ -308,29 +298,25 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(-100e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
 
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity: maturity + SECONDS_IN_QUARTER,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(104e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity: maturity + SECONDS_IN_QUARTER,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(104e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBeCloseTo(0.1115e9, -6);
@@ -350,17 +336,15 @@ describe('calculates interest rate risk', () => {
       },
     ];
 
-    accountData.updateAsset(
-      {
-        currencyId: 3,
-        maturity: maturity + SECONDS_IN_QUARTER,
-        assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-100.5e8, 'USDC', true),
-        hasMatured: false,
-        settlementDate: maturity,
-        isIdiosyncratic: false,
-      },
-    );
+    accountData.updateAsset({
+      currencyId: 3,
+      maturity: maturity + SECONDS_IN_QUARTER,
+      assetType: AssetType.fCash,
+      notional: TypedBigNumber.fromBalance(-100.5e8, 'USDC', true),
+      hasMatured: false,
+      settlementDate: maturity,
+      isIdiosyncratic: false,
+    });
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBe(null);

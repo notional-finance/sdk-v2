@@ -1,15 +1,17 @@
-import {BigNumber} from 'ethers';
-import {fetch as crossFetch} from 'cross-fetch';
+import { BigNumber } from 'ethers';
+import { fetch as crossFetch } from 'cross-fetch';
 import EventEmitter from 'eventemitter3';
-import {IAggregator} from '../typechain/IAggregator';
-import {System} from '.';
-import {SystemEvents} from '..';
+import { IAggregator } from '../typechain/IAggregator';
+import { System } from '.';
+import { SystemEvents } from '..';
 
 // This uses a hardcoded price for the NOTE token, in the future we will upgrade this to get the
 // price from some other price oracle
 export default class NoteETHRateProvider {
   private coinGeckoURL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
+
   private _noteUSDPrice: BigNumber = BigNumber.from(0);
+
   private noteRefreshInterval?: NodeJS.Timeout;
   private fetch: any;
 
@@ -23,7 +25,7 @@ export default class NoteETHRateProvider {
       notePriceRefreshIntervalMS: number;
       eventEmitter: EventEmitter;
     },
-    skipFetchSetup = false,
+    skipFetchSetup = false
   ) {
     if (price) {
       this._noteUSDPrice = price;
@@ -33,7 +35,7 @@ export default class NoteETHRateProvider {
         await this.fetchUSDPrice();
       });
 
-      const {notePriceRefreshIntervalMS, eventEmitter} = refreshOpts;
+      const { notePriceRefreshIntervalMS, eventEmitter } = refreshOpts;
       // Interval will update on the refresh cycle
       this.noteRefreshInterval = setInterval(async () => {
         await this.fetchUSDPrice();
@@ -54,7 +56,7 @@ export default class NoteETHRateProvider {
 
   private async fetchUSDPrice() {
     try {
-      const resp = await ((await this.fetch(this.coinGeckoURL)).json()) as {prices: [number, number][]};
+      const resp = (await (await this.fetch(this.coinGeckoURL)).json()) as { prices: [number, number][] };
       const sortedPrices: Array<[number, number]> = resp.prices.sort(([a], [b]) => a - b);
       let avgUSDPrice: number;
       if (sortedPrices.length === 1) {
@@ -64,16 +66,17 @@ export default class NoteETHRateProvider {
         const timeRange = sortedPrices[sortedPrices.length - 1][0] - sortedPrices[0][0];
 
         // Gets a weighted average of the price
-        avgUSDPrice = sortedPrices.reduce((weightedNum, [time, price], i) => {
-          // Reached end of list, don't use price
-          if (i === sortedPrices.length - 1) return weightedNum;
-          return weightedNum + (sortedPrices[i + 1][0] - time) * price;
-        }, 0) / timeRange;
+        avgUSDPrice =
+          sortedPrices.reduce((weightedNum, [time, price], i) => {
+            // Reached end of list, don't use price
+            if (i === sortedPrices.length - 1) return weightedNum;
+            return weightedNum + (sortedPrices[i + 1][0] - time) * price;
+          }, 0) / timeRange;
       }
 
       // Convert USD Price to BigNumber in 18 decimals, uses the first 8 decimals of the avgUSDPrice,
       // using 18 decimals will overflow in javascript math
-      this._noteUSDPrice = BigNumber.from(Math.floor(avgUSDPrice * (10 ** 8))).mul(10 ** 10);
+      this._noteUSDPrice = BigNumber.from(Math.floor(avgUSDPrice * 10 ** 8)).mul(10 ** 10);
     } catch (e) {
       console.error(e);
     }
@@ -84,7 +87,7 @@ export default class NoteETHRateProvider {
     // This will throw an error of system is not initialized
     const system = System.getSystem();
     // Use USD as a basis for the NOTE price
-    const {ethRateConfig: usdcRateConfig, ethRate: usdcETHRate} = system.getETHRate(USDC);
+    const { ethRateConfig: usdcRateConfig, ethRate: usdcETHRate } = system.getETHRate(USDC);
     const ethRateConfig = {
       rateOracle: null as unknown as IAggregator,
       rateDecimalPlaces: usdcRateConfig?.rateDecimalPlaces || 18,
@@ -94,7 +97,7 @@ export default class NoteETHRateProvider {
     };
 
     if (!usdcETHRate || !usdcRateConfig) {
-      return {ethRateConfig, ethRate: BigNumber.from(0)};
+      return { ethRateConfig, ethRate: BigNumber.from(0) };
     }
 
     const rateDecimals = BigNumber.from(10).pow(usdcRateConfig.rateDecimalPlaces);

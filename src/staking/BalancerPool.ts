@@ -1,7 +1,7 @@
-import {BigNumber, ethers} from 'ethers';
-import {BigNumberType, TypedBigNumber} from '..';
-import {INTERNAL_TOKEN_PRECISION} from '../config/constants';
-import {System} from '../system';
+import { BigNumber, ethers } from 'ethers';
+import { BigNumberType, TypedBigNumber } from '..';
+import { INTERNAL_TOKEN_PRECISION } from '../config/constants';
+import { System } from '../system';
 
 /**
  * Balancer pool math adapted from this code. Although the code is incorrect in a few places:
@@ -9,7 +9,9 @@ import {System} from '../system';
  */
 export default class BalancerPool {
   public static readonly BPT_PRECISION = ethers.constants.WeiPerEther;
+
   public static readonly ETH_WEIGHT = ethers.utils.parseEther('0.2');
+
   public static readonly NOTE_WEIGHT = ethers.utils.parseEther('0.8');
 
   /**
@@ -22,7 +24,10 @@ export default class BalancerPool {
    */
   public static getExpectedBPT(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
     const {
-      ethBalance, swapFee, noteBalance, balancerPoolTotalSupply: totalSupply,
+      ethBalance,
+      swapFee,
+      noteBalance,
+      balancerPoolTotalSupply: totalSupply,
     } = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
@@ -53,11 +58,11 @@ export default class BalancerPool {
       // a swap fee to the ethAmount.
       const nonTaxableAmount = ethBalance.scale(
         invariantRatioWithFees.sub(BalancerPool.BPT_PRECISION),
-        BalancerPool.BPT_PRECISION,
+        BalancerPool.BPT_PRECISION
       );
       const taxableAmount = ethAmount.sub(nonTaxableAmount);
       ethInWithoutFee = nonTaxableAmount.add(
-        taxableAmount.scale(BalancerPool.BPT_PRECISION.sub(swapFee), BalancerPool.BPT_PRECISION),
+        taxableAmount.scale(BalancerPool.BPT_PRECISION.sub(swapFee), BalancerPool.BPT_PRECISION)
       );
     } else {
       ethInWithoutFee = ethAmount;
@@ -72,11 +77,11 @@ export default class BalancerPool {
       // noteBalance * (log(invariantRatio) - 1)
       const nonTaxableAmount = noteBalance.scale(
         invariantRatioWithFees.sub(BalancerPool.BPT_PRECISION),
-        BalancerPool.BPT_PRECISION,
+        BalancerPool.BPT_PRECISION
       );
       const taxableAmount = noteAmount.sub(nonTaxableAmount);
       noteInWithoutFee = nonTaxableAmount.add(
-        taxableAmount.scale(BalancerPool.BPT_PRECISION.sub(swapFee), BalancerPool.BPT_PRECISION),
+        taxableAmount.scale(BalancerPool.BPT_PRECISION.sub(swapFee), BalancerPool.BPT_PRECISION)
       );
     } else {
       noteInWithoutFee = noteAmount;
@@ -85,7 +90,7 @@ export default class BalancerPool {
     const balanceRatioNote = noteBalance.add(noteInWithoutFee).scale(INTERNAL_TOKEN_PRECISION, noteBalance.n);
     const invariantRatioNote = ethers.utils.parseUnits(
       (parseFloat(balanceRatioNote.toExactString()) ** 0.8).toFixed(8),
-      8,
+      8
     );
     invariantRatio = invariantRatio.mul(invariantRatioNote).div(INTERNAL_TOKEN_PRECISION);
 
@@ -96,7 +101,7 @@ export default class BalancerPool {
   }
 
   public static getOptimumETHForNOTE(noteAmount: TypedBigNumber) {
-    const {ethBalance, noteBalance} = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, noteBalance } = System.getSystem().getStakedNoteParameters();
     const ethAmount = noteAmount.scale(ethBalance.n, noteBalance.n).n;
     return TypedBigNumber.fromBalance(ethAmount, 'ETH', false);
   }
@@ -104,7 +109,7 @@ export default class BalancerPool {
   public static getSpotPrice() {
     return BalancerPool.getExpectedPriceImpact(
       TypedBigNumber.fromBalance(0, 'NOTE', false),
-      TypedBigNumber.fromBalance(0, 'ETH', false),
+      TypedBigNumber.fromBalance(0, 'ETH', false)
     );
   }
 
@@ -117,7 +122,7 @@ export default class BalancerPool {
   }
 
   public static getExpectedPriceImpact(noteAmount: TypedBigNumber, ethAmount: TypedBigNumber) {
-    const {ethBalance, noteBalance} = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, noteBalance } = System.getSystem().getStakedNoteParameters();
     noteAmount.checkType(BigNumberType.NOTE);
     ethAmount.check(BigNumberType.ExternalUnderlying, 'ETH');
     // Scale NOTE token up to 1e18 for the ratio
@@ -133,17 +138,20 @@ export default class BalancerPool {
 
   public static getStakedNOTEPoolValue() {
     const {
-      ethBalance, sNOTEBptBalance, noteBalance, balancerPoolTotalSupply: totalSupply,
+      ethBalance,
+      sNOTEBptBalance,
+      noteBalance,
+      balancerPoolTotalSupply: totalSupply,
     } = System.getSystem().getStakedNoteParameters();
     const ethValue = ethBalance.scale(sNOTEBptBalance, totalSupply);
     const noteValue = noteBalance.scale(sNOTEBptBalance, totalSupply);
-    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
+    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
   }
 
   public static getBptValue() {
-    const {ethBalance, noteBalance, balancerPoolTotalSupply} = System.getSystem().getStakedNoteParameters();
+    const { ethBalance, noteBalance, balancerPoolTotalSupply } = System.getSystem().getStakedNoteParameters();
     const ethValue = ethBalance.scale(1, balancerPoolTotalSupply);
     const noteValue = noteBalance.scale(1, balancerPoolTotalSupply);
-    return {ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD())};
+    return { ethValue, noteValue, usdValue: ethValue.toUSD().add(noteValue.toUSD()) };
   }
 }
