@@ -25,7 +25,7 @@
     "fork:up": "cd ../subgraph-v2 && ./start.sh",
     "fork:down": "cd ../subgraph-v2 && docker-compose down",
     "test:unit": "yarn run build && yarn run jest --selectProjects unit --coverage",
-    "test:fork": "npx hardhat test --no-compile tests/integration/transactions.test.ts",
+    "test:fork": "npx hardhat test --no-compile tests/integration/system.test.ts",
     "test:integration": "yarn run build && yarn run testenv:up && yarn run jest --selectProjects integration && yarn run testenv:down",
     "test": "yarn run build && yarn run testenv:up && yarn run jest && yarn run testenv:down"
   },
@@ -72,6 +72,7 @@
     "eventemitter3": "^4.0.7",
     "fetch-retry": "^5.0.2",
     "graphql": "^15.3.0",
+    "protobufjs": "~7.0.0",
     "set-interval-async": "^2.0.3"
   },
   "engines": {

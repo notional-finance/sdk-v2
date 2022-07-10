@@ -1,36 +1,27 @@
-import { ethers } from 'ethers';
-import { DEFAULT_DATA_REFRESH_INTERVAL } from '../../src/config/constants';
-import { getNowSeconds } from '../../src/libs/utils';
-import Notional from '../../src/Notional';
-import { SystemEvents } from '../../src/system/System';
+import { ethers, VoidSigner } from 'ethers';
+import Notional, { Contracts } from '../../src';
+import GraphClient from '../../src/GraphClient';
+import { decode, fetchAndEncodeSystem } from '../../src/proto/EncodeProto';
+
+const mainnetAddresses = require('../../src/config/mainnet.json');
+const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2';
 
 describe('System Integration Test', () => {
-  let provider: ethers.providers.JsonRpcProvider;
+  let provider: ethers.providers.JsonRpcBatchProvider;
+  let contracts: Contracts;
 
   beforeEach(async () => {
-    provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+    provider = new ethers.providers.JsonRpcBatchProvider(
+      'https://eth-mainnet.alchemyapi.io/v2/RF_dceVNax73NKESBvWzbm_e8wGK-X88'
+    );
+    const signer = new VoidSigner(ethers.constants.AddressZero, provider);
+    contracts = Notional.getContracts(mainnetAddresses, signer);
   });
 
-  it('gets the initial configuration data', async (done) => {
-    const notional = await Notional.load(1337, provider);
-    notional.system.eventEmitter.addListener(SystemEvents.DATA_REFRESH, () => {
-      expect(notional.system.lastUpdateBlockNumber).toBeGreaterThan(1);
-      notional.system.destroy();
-      done();
-    });
-  });
+  it('returns system configuration from the graph', async () => {
+    const graphClient = new GraphClient(mainnetGraphEndpoint, 0, false);
+    const results = await fetchAndEncodeSystem(graphClient, provider, contracts);
 
-  it('refreshes data on a set interval', async (done) => {
-    const notional = await Notional.load(1337, provider);
-    let counter = 0;
-    const initialTime = getNowSeconds();
-    notional.system.eventEmitter.addListener(SystemEvents.DATA_REFRESH, () => {
-      counter += 1;
-      if (counter === 2) {
-        expect(getNowSeconds()).toBeCloseTo(initialTime + DEFAULT_DATA_REFRESH_INTERVAL / 1000);
-        notional.system.destroy();
-        done();
-      }
-    });
-  }, 20000);
+    console.log(decode(results));
+  });
 });

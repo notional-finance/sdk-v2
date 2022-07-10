@@ -1,3 +1,4 @@
 lib
 node_modules
 src/typechain/**/*
+src/proto/SystemProto.ts

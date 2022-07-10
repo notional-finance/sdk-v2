@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+service SystemCache {
+    rpc getCache (CacheRequest) returns (System) {}
+}
+
+message CacheRequest {
+    string network = 1;
+}
+
+message BigNumber {
+    bool _isBigNumber = 1;
+    string _hex = 2;
+}
+
+message TypedBigNumber {
+    bool _isTypedBigNumber = 1;
+    string hex = 2;
+    string bigNumberType = 3;
+    string symbol = 4;
+}
+
+message sNOTE {
+    string poolId = 1;
+    int32 coolDownTimeInSeconds = 2;
+    int32 redeemWindowSeconds = 3;
+    TypedBigNumber ethBalance = 4;
+    TypedBigNumber noteBalance = 5;
+    BigNumber balancerPoolTotalSupply = 6;
+    BigNumber sNOTEBptBalance = 7;
+    BigNumber swapFee = 8;
+    TypedBigNumber sNOTETotalSupply= 9;
+}
+
+message Asset {
+    int32 currencyId = 1;
+    int32 maturity = 2;
+    string assetType = 3;
+    string notional = 4;
+    bool hasMatured = 5;
+    int32 settlementDate = 6;
+    bool isIdiosyncratic = 7;
+}
+
+message ETHRate {
+  string rateOracle = 1;
+  int32 rateDecimalPlaces = 2;
+  bool mustInvert = 3;
+  int32 buffer = 4;
+  int32 haircut = 5;
+  string latestRate = 6;
+}
+
+message AssetRate {
+  string rateAdapter = 1;
+  int32 underlyingDecimalPlaces = 2;
+  string latestRate = 3;
+}
+
+message nToken {
+    // First set of fields update less frequently
+    string name = 1;
+    string symbol = 2;
+    string incentiveEmissionRate = 3;
+    int32 pvHaircutPercentage = 4;
+    repeated string depositShares = 5;
+    repeated string leverageThresholds = 6;
+    string contract = 7;
+
+    // Fields below here update more frequently than fields above
+    string assetCashPV = 8;
+    string totalSupply = 9;
+    string accumulatedNOTEPerNToken = 10;
+    string lastAccumulatedTime = 11;
+    string cashBalance = 12;
+    repeated Asset liquidityTokens = 13;
+    repeated Asset fCash = 14;
+}
+
+message Currency {
+    int32 id = 1;
+    string name = 2;
+    string symbol = 3;
+    int32 decimalPlaces = 4;
+    string contract = 5;
+    string tokenType = 6;
+    bool hasTransferFee = 7;
+    optional string underlyingName = 8;
+    optional string underlyingSymbol = 9;
+    optional string underlyingDecimalPlaces = 10;
+    optional string underlyingContract = 11;
+    optional string nTokenSymbol = 12;
+}
+
+message Market {
+    string totalfCash = 1;
+    string totalAssetCash = 2;
+    string totalLiquidity = 3;
+    string lastImpliedRate = 4;
+    string oracleRate = 5;
+    string previousTradeTime = 6;
+}
+
+message CashGroup {
+    int32 maxMarketIndex = 1;
+    int32 rateOracleTimeWindowSeconds = 2;
+    int32 totalFeeBasisPoints = 3;
+    int32 reserveFeeSharePercent = 4;
+    int32 debtBufferBasisPoints = 5;
+    int32 fCashHaircutBasisPoints = 6;
+    repeated int32 liquidityTokenHaircutsPercent = 7;
+    repeated int32 rateScalars = 8;
+    repeated Market markets = 9;
+}
+
+message System {
+    string network = 1;
+    int32 lastUpdateBlockNumber = 2;
+    int32 lastUpdateTimestamp = 3;
+
+    // key = symbol, value = exchange rate in 18 decimals as a string
+    map<string, string> USDExchangeRates = 4;
+    sNOTE StakedNoteParameters = 5;
+
+    // Everything here has a key of currency id
+    map<int32, Currency> currencies = 6;
+    map<int32, ETHRate> ethRateData = 7;
+    map<int32, AssetRate> assetRateData = 8;
+    map<int32, nToken> nTokenData = 9;
+    map<int32, CashGroup> cashGroups = 10;
+}

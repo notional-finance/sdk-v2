@@ -89,7 +89,7 @@ class TypedBigNumber {
 
   static encodeJSON(value: any, type: BigNumberType, symbol: string) {
     return {
-      type: 'TypedBigNumber',
+      _isTypedBigNumber: true,
       hex: BigNumber.from(value).toHexString(),
       bigNumberType: type,
       symbol,
@@ -107,7 +107,7 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), type, symbol);
   }
 
-  static fromObject(value: { type: string; hex: string; bigNumberType: BigNumberType; symbol: string }) {
+  static fromObject(value: { hex: string; bigNumberType: BigNumberType; symbol: string }) {
     return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
   }
 
@@ -480,7 +480,7 @@ class TypedBigNumber {
 
   toJSON(_?: string): any {
     return {
-      type: 'TypedBigNumber',
+      _isTypedBigNumber: true,
       hex: this.toHexString(),
       bigNumberType: this.type,
       symbol: this.isWETH ? 'WETH' : this.symbol,
