@@ -200,7 +200,7 @@ const perCurrencyCalls = (
         key: ConfigKeys.NTOKEN_PORTFOLIO(currency.id),
         transform: (r: Awaited<ReturnType<typeof notionalProxy.getNTokenPortfolio>>) => {
           return {
-            nTokenLiquidityTokens: r.liquidityTokens.map((l) => {
+            liquidityTokens: r.liquidityTokens.map((l) => {
               return {
                 currencyId: l.currencyId.toNumber(),
                 maturity: l.maturity.toNumber(),
@@ -209,7 +209,7 @@ const perCurrencyCalls = (
                 settlementDate: CashGroup.getSettlementDate(convertAssetType(l.assetType), l.maturity.toNumber()),
               };
             }),
-            nTokenfCash: r.netfCashAssets.map((f) => {
+            fCash: r.netfCashAssets.map((f) => {
               return {
                 currencyId: f.currencyId.toNumber(),
                 maturity: f.maturity.toNumber(),

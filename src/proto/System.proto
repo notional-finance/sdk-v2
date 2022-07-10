@@ -36,10 +36,8 @@ message Asset {
     int32 currencyId = 1;
     int32 maturity = 2;
     string assetType = 3;
-    string notional = 4;
-    bool hasMatured = 5;
-    int32 settlementDate = 6;
-    bool isIdiosyncratic = 7;
+    TypedBigNumber notional = 4;
+    int32 settlementDate = 5;
 }
 
 message ETHRate {
@@ -48,31 +46,32 @@ message ETHRate {
   bool mustInvert = 3;
   int32 buffer = 4;
   int32 haircut = 5;
-  string latestRate = 6;
+  BigNumber latestRate = 6;
 }
 
 message AssetRate {
-  string rateAdapter = 1;
+  string rateAdapterAddress = 1;
   int32 underlyingDecimalPlaces = 2;
-  string latestRate = 3;
+  BigNumber latestRate = 3;
+  BigNumber annualSupplyRate = 4;
 }
 
 message nToken {
     // First set of fields update less frequently
     string name = 1;
     string symbol = 2;
-    string incentiveEmissionRate = 3;
+    BigNumber incentiveEmissionRate = 3;
     int32 pvHaircutPercentage = 4;
     repeated string depositShares = 5;
     repeated string leverageThresholds = 6;
-    string contract = 7;
+    string tokenAddress = 7;
 
     // Fields below here update more frequently than fields above
-    string assetCashPV = 8;
-    string totalSupply = 9;
-    string accumulatedNOTEPerNToken = 10;
-    string lastAccumulatedTime = 11;
-    string cashBalance = 12;
+    TypedBigNumber assetCashPV = 8;
+    TypedBigNumber totalSupply = 9;
+    BigNumber accumulatedNOTEPerNToken = 10;
+    BigNumber lastAccumulatedTime = 11;
+    TypedBigNumber cashBalance = 12;
     repeated Asset liquidityTokens = 13;
     repeated Asset fCash = 14;
 }
@@ -87,18 +86,18 @@ message Currency {
     bool hasTransferFee = 7;
     optional string underlyingName = 8;
     optional string underlyingSymbol = 9;
-    optional string underlyingDecimalPlaces = 10;
+    optional int32 underlyingDecimalPlaces = 10;
     optional string underlyingContract = 11;
     optional string nTokenSymbol = 12;
 }
 
 message Market {
-    string totalfCash = 1;
-    string totalAssetCash = 2;
-    string totalLiquidity = 3;
-    string lastImpliedRate = 4;
-    string oracleRate = 5;
-    string previousTradeTime = 6;
+    TypedBigNumber totalfCash = 1;
+    TypedBigNumber totalAssetCash = 2;
+    TypedBigNumber totalLiquidity = 3;
+    int32 lastImpliedRate = 4;
+    int32 oracleRate = 5;
+    int32 previousTradeTime = 6;
 }
 
 message CashGroup {

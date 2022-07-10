@@ -31,11 +31,41 @@ export async function fetchAndEncodeSystem(
       swapFee: results[ConfigKeys.sNOTE.POOL_SWAP_FEE],
       sNOTETotalSupply: results[ConfigKeys.sNOTE.TOTAL_SUPPLY],
     },
-    currencies: {},
-    ethRateData: {},
-    assetRateData: {},
-    nTokenData: {},
-    cashGroups: {},
+    currencies: config.reduce((obj, c) => {
+      obj[c.currencyId] = c;
+      return obj;
+    }, {}),
+    ethRateData: config.reduce((obj, c) => {
+      obj[c.currencyId] = {
+        ...c.ethExchangeRate,
+        latestRate: results[ConfigKeys.ETH_EXCHANGE_RATE(c.currencyId)],
+      };
+      return obj;
+    }, {}),
+    assetRateData: config.reduce((obj, c) => {
+      obj[c.currencyId] = {
+        ...c.assetExchangeRate,
+        latestRate: results[ConfigKeys.ASSET_EXCHANGE_RATE(c.currencyId)],
+        annualSupplyRate: results[ConfigKeys.ASSET_ANNUAL_SUPPLY_RATE(c.currencyId)],
+      };
+      return obj;
+    }, {}),
+    nTokenData: config.reduce((obj, c) => {
+      obj[c.currencyId] = {
+        ...c.nToken,
+        ...results[ConfigKeys.NTOKEN_ACCOUNT(c.currencyId)],
+        ...results[ConfigKeys.NTOKEN_PORTFOLIO(c.currencyId)],
+        assetCashPV: results[ConfigKeys.NTOKEN_PRESENT_VALUE(c.currencyId)],
+      };
+      return obj;
+    }, {}),
+    cashGroups: config.reduce((obj, c) => {
+      obj[c.currencyId] = {
+        ...c.cashGroup,
+        markets: results[ConfigKeys.MARKETS(c.currencyId)],
+      };
+      return obj;
+    }, {}),
   };
 
   return encodeSystem(systemObject);

@@ -113,13 +113,12 @@ export interface CurrencyConfig {
   currencyId: number;
   tokenAddress: string;
   tokenType: TokenType;
-  decimals: BigNumber;
   decimalPlaces: number;
   name: string;
   symbol: string;
   underlyingName: string | null;
   underlyingSymbol: string | null;
-  underlyingDecimals: BigNumber | null;
+  underlyingDecimalPlaces: number | null;
   underlyingTokenAddress: string | null;
   hasTransferFee: boolean;
   ethExchangeRate: {
@@ -169,9 +168,7 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
         ...c,
         currencyId: Number(c.id),
         tokenType: c.tokenType as TokenType,
-        decimals: BigNumber.from(c.decimals),
         decimalPlaces: Math.log10(Number(c.decimals)),
-        underlyingDecimals: BigNumber.from(c.underlyingDecimals ?? 0),
         underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
         nToken: {
           ...c.nToken,
