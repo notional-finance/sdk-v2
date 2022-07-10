@@ -11,6 +11,7 @@ import NoteETHRateProvider from '../NoteETHRateProvider';
 
 export default class Cache extends DataSource {
   private cacheURL: string | null;
+
   private retry: any;
 
   constructor(
