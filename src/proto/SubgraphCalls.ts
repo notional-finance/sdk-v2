@@ -171,7 +171,6 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
         tokenType: c.tokenType as TokenType,
         decimals: BigNumber.from(c.decimals),
         decimalPlaces: Math.log10(Number(c.decimals)),
-        nTokenSymbol: c.nToken?.symbol,
         underlyingDecimals: BigNumber.from(c.underlyingDecimals ?? 0),
         underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
         nToken: {

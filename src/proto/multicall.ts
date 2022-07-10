@@ -1,6 +1,6 @@
 import { Contract, providers, utils } from 'ethers';
-import { Result } from 'ethers/lib/utils';
 import { Multicall2 } from '../typechain/Multicall2';
+
 const Multicall2ABI = require('../abi/Multicall2.json');
 
 const MULTICALL2 = {
@@ -21,27 +21,31 @@ export interface AggregateCall {
   // Key to lookup the result from the aggregate
   key: string;
   // Transform to apply to decoded result
-  transform?: (result: Result) => any;
+  transform?: (result: any) => any;
 }
 
 export async function aggregate(calls: AggregateCall[], provider: providers.Provider, multicall?: Multicall2) {
   if (!multicall) {
     const network = await provider.getNetwork();
     const networkName = network.name === 'homestead' ? 'mainnet' : network.name;
+    // eslint-disable-next-line no-param-reassign
     multicall = new Contract(MULTICALL2[networkName], Multicall2ABI, provider) as Multicall2;
   }
 
-  const aggregateCall = calls.map((c) => {
-    return {
-      target: c.target.address,
-      callData: c.target.interface.encodeFunctionData(c.method, c.args),
-    };
-  });
+  const aggregateCall = calls.map((c) => ({
+    target: c.target.address,
+    callData: c.target.interface.encodeFunctionData(c.method, c.args),
+  }));
 
   const { blockNumber, returnData } = await multicall.callStatic.aggregate(aggregateCall);
   const results = returnData.reduce((obj, r, i) => {
     const { key, method, target, transform } = calls[i];
-    const decoded = target.interface.decodeFunctionResult(method, r);
+    let decoded = target.interface.decodeFunctionResult(method, r);
+    // For single return values, decodeFunctionResult still returns an
+    // array which we eliminate here for simplicity
+    if (decoded.length === 1) decoded = decoded[0];
+
+    // eslint-disable-next-line no-param-reassign
     obj[key] = transform ? transform(decoded) : decoded;
     return obj;
   }, {});

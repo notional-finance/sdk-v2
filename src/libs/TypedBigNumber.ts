@@ -87,6 +87,15 @@ class TypedBigNumber {
     throw Error(`Invalid symbol ${symbol}`);
   }
 
+  static encodeJSON(value: any, type: BigNumberType, symbol: string) {
+    return {
+      type: 'TypedBigNumber',
+      hex: BigNumber.from(value).toHexString(),
+      bigNumberType: type,
+      symbol,
+    };
+  }
+
   static fromBalance(value: any, symbol: string, isInternal: boolean) {
     const bnType = TypedBigNumber.getType(symbol, isInternal);
     return new TypedBigNumber(BigNumber.from(value), bnType, symbol);
@@ -471,7 +480,7 @@ class TypedBigNumber {
 
   toJSON(_?: string): any {
     return {
-      type: 'BigNumber',
+      type: 'TypedBigNumber',
       hex: this.toHexString(),
       bigNumberType: this.type,
       symbol: this.isWETH ? 'WETH' : this.symbol,
