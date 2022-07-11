@@ -53,8 +53,8 @@ message nToken {
     string name = 1;
     SerializedBigNumber incentiveEmissionRate = 3;
     int32 pvHaircutPercentage = 4;
-    repeated string depositShares = 5;
-    repeated string leverageThresholds = 6;
+    repeated SerializedBigNumber depositShares = 5;
+    repeated SerializedBigNumber leverageThresholds = 6;
     string tokenAddress = 7;
 
     // Fields below here update more frequently than fields above

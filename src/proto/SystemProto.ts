@@ -681,8 +681,8 @@ export interface nToken {
   name?: string;
   incentiveEmissionRate?: SerializedBigNumber;
   pvHaircutPercentage?: number;
-  depositShares?: string[];
-  leverageThresholds?: string[];
+  depositShares?: SerializedBigNumber[];
+  leverageThresholds?: SerializedBigNumber[];
   tokenAddress?: string;
   assetCashPV?: SerializedTypedBigNumber;
   totalSupply?: SerializedTypedBigNumber;
@@ -728,21 +728,29 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($pvHaircutPercentage));
   }
 
-  // repeated string depositShares = 5;
+  // repeated SerializedBigNumber depositShares = 5;
   let array$depositShares = message.depositShares;
   if (array$depositShares !== undefined) {
     for (let value of array$depositShares) {
       writeVarint32(bb, 42);
-      writeString(bb, value);
+      let nested = popByteBuffer();
+      _encodeSerializedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
     }
   }
 
-  // repeated string leverageThresholds = 6;
+  // repeated SerializedBigNumber leverageThresholds = 6;
   let array$leverageThresholds = message.leverageThresholds;
   if (array$leverageThresholds !== undefined) {
     for (let value of array$leverageThresholds) {
       writeVarint32(bb, 50);
-      writeString(bb, value);
+      let nested = popByteBuffer();
+      _encodeSerializedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
     }
   }
 
@@ -898,17 +906,21 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // repeated string depositShares = 5;
+      // repeated SerializedBigNumber depositShares = 5;
       case 5: {
+        let limit = pushTemporaryLength(bb);
         let values = message.depositShares || (message.depositShares = []);
-        values.push(readString(bb, readVarint32(bb)));
+        values.push(_decodeSerializedBigNumber(bb));
+        bb.limit = limit;
         break;
       }
 
-      // repeated string leverageThresholds = 6;
+      // repeated SerializedBigNumber leverageThresholds = 6;
       case 6: {
+        let limit = pushTemporaryLength(bb);
         let values = message.leverageThresholds || (message.leverageThresholds = []);
-        values.push(readString(bb, readVarint32(bb)));
+        values.push(_decodeSerializedBigNumber(bb));
+        bb.limit = limit;
         break;
       }
 

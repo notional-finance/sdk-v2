@@ -1,6 +1,7 @@
 import { BigNumber } from 'ethers';
 import { TypedBigNumber } from '..';
 import {
+  Asset as _Asset,
   AssetRate as _AssetRate,
   CashGroup as _CashGroup,
   Currency as _Currency,
@@ -10,6 +11,9 @@ import {
   SerializedTypedBigNumber,
   sNOTE as _sNOTE,
 } from './SystemProto';
+// import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
+// import { IAggregator } from '../typechain/IAggregator';
+// import { NTokenERC20 } from '../typechain/NTokenERC20';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
   ? T extends TIgnore
@@ -45,6 +49,7 @@ export type ETHRate = Rewrite<_ETHRate>;
 export type AssetRate = Rewrite<_AssetRate>;
 export type nToken = Rewrite<_nToken>;
 export type CashGroupData = Rewrite<_CashGroup>;
+export type Asset = Rewrite<_Asset>;
 
 export interface SystemData {
   network: string;
