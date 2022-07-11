@@ -1,13 +1,5 @@
 syntax = "proto3";
 
-service SystemCache {
-    rpc getCache (CacheRequest) returns (System) {}
-}
-
-message CacheRequest {
-    string network = 1;
-}
-
 message BigNumber {
     bool _isBigNumber = 1;
     string _hex = 2;
@@ -74,6 +66,11 @@ message nToken {
     TypedBigNumber cashBalance = 12;
     repeated Asset liquidityTokens = 13;
     repeated Asset fCash = 14;
+
+    // incentive migration factors
+    BigNumber migratedEmissionRate = 15;
+    BigNumber integralTotalSupply = 16;
+    int32 migrationTime = 17;
 }
 
 message Currency {
@@ -112,7 +109,7 @@ message CashGroup {
     repeated Market markets = 9;
 }
 
-message System {
+message SystemData {
     string network = 1;
     int32 lastUpdateBlockNumber = 2;
     int32 lastUpdateTimestamp = 3;

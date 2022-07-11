@@ -1,9 +1,10 @@
 import { BigNumber, ethers } from 'ethers';
+import { SystemDataExport } from '.';
 import { Contracts, TypedBigNumber } from '..';
 import GraphClient from '../GraphClient';
 import { ConfigKeys, getBlockchainData } from './BlockchainCalls';
 import { getSystemConfig } from './SubgraphCalls';
-import { decodeSystem, encodeSystem, System } from './SystemProto';
+import { decodeSystemData, encodeSystemData, SystemData } from './SystemProto';
 
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
@@ -15,7 +16,7 @@ export async function fetchAndEncodeSystem(
   const network = await provider.getNetwork();
   const block = await provider.getBlock(blockNumber.toNumber());
 
-  const systemObject: System = {
+  const systemObject: SystemData = {
     network: network.name === 'homestead' ? 'mainnet' : network.name,
     lastUpdateBlockNumber: block.number,
     lastUpdateTimestamp: block.timestamp,
@@ -68,11 +69,22 @@ export async function fetchAndEncodeSystem(
     }, {}),
   };
 
-  return encodeSystem(systemObject);
+  return encodeSystemData(systemObject);
 }
 
-export function decode(binary: Uint8Array) {
-  return _decodeValue(decodeSystem(binary));
+export async function fetchAndDecodeSystem(cacheUrl: string) {
+  const resp = await fetch(cacheUrl);
+  const reader = resp.body?.getReader();
+  if (reader) {
+    const { value } = await reader.read();
+    if (value) return decode(value);
+  }
+
+  throw Error('Could not fetch system');
+}
+
+export function decode(binary: Uint8Array): SystemDataExport {
+  return _decodeValue(decodeSystemData(binary));
 }
 
 function _decodeValue(val: any) {

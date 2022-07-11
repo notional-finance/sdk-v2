@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client/core';
-import { BigNumber, Contract, ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import {
   Asset,
@@ -11,32 +11,19 @@ import {
   IncentiveMigration,
   nToken,
   SettlementMarket,
-  TokenType,
+  StakedNoteParameters,
 } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
-import {
-  DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
-  RATE_PRECISION,
-  NOTE_CURRENCY_ID,
-  DEFAULT_DATA_REFRESH_INTERVAL,
-} from '../config/constants';
+import { DEFAULT_DATA_REFRESH_INTERVAL } from '../config/constants';
 
-import { IAggregator } from '../typechain/IAggregator';
-import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
-import { NTokenERC20 } from '../typechain/NTokenERC20';
 import { ERC20 } from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
 import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import NoteETHRateProvider from './NoteETHRateProvider';
-import { DataSource, DataSourceType } from './datasource';
-import Blockchain from './datasource/Blockchain';
-import Cache from './datasource/Cache';
-import ERC20ABI from '../abi/ERC20.json';
-import IAggregatorABI from '../abi/IAggregator.json';
-import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
-import NTokenERC20ABI from '../abi/nTokenERC20.json';
+import { fetchAndDecodeSystem } from '../proto/EncodeProto';
+import { SystemDataExport } from '../proto/SystemProto';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -97,112 +84,6 @@ interface SettlementRateQueryResponse {
   }[];
 }
 
-const systemConfigurationQuery = gql`
-  {
-    currencies {
-      id
-      tokenAddress
-      tokenType
-      decimals
-      name
-      symbol
-      underlyingName
-      underlyingSymbol
-      underlyingDecimals
-      underlyingTokenAddress
-      hasTransferFee
-      ethExchangeRate {
-        rateOracle
-        rateDecimalPlaces
-        mustInvert
-        buffer
-        haircut
-      }
-      assetExchangeRate {
-        rateAdapterAddress
-        underlyingDecimalPlaces
-      }
-      cashGroup {
-        maxMarketIndex
-        rateOracleTimeWindowSeconds
-        totalFeeBasisPoints
-        reserveFeeSharePercent
-        debtBufferBasisPoints
-        fCashHaircutBasisPoints
-        liquidityTokenHaircutsPercent
-        rateScalars
-      }
-      nToken {
-        tokenAddress
-        name
-        symbol
-        decimals
-        depositShares
-        leverageThresholds
-        incentiveEmissionRate
-        pvHaircutPercentage
-      }
-      incentiveMigration {
-        migrationEmissionRate
-        finalIntegralTotalSupply
-        migrationTime
-      }
-    }
-  }
-`;
-
-interface SystemQueryResult {
-  currencies: {
-    id: string;
-    tokenAddress: string;
-    tokenType: string;
-    decimals: string;
-    name: string;
-    symbol: string;
-    underlyingName: string | null;
-    underlyingSymbol: string | null;
-    underlyingDecimals: string | null;
-    underlyingTokenAddress: string | null;
-    hasTransferFee: boolean;
-    ethExchangeRate: {
-      rateOracle: string;
-      rateDecimalPlaces: number;
-      mustInvert: boolean;
-      buffer: number;
-      haircut: number;
-    };
-    assetExchangeRate: {
-      rateAdapterAddress: string;
-      underlyingDecimalPlaces: number;
-    } | null;
-    cashGroup: {
-      maxMarketIndex: number;
-      rateOracleTimeWindowSeconds: number;
-      totalFeeBasisPoints: number;
-      reserveFeeSharePercent: number;
-      debtBufferBasisPoints: number;
-      fCashHaircutBasisPoints: number;
-      liquidityTokenHaircutsPercent: number[];
-      rateScalars: number[];
-    } | null;
-    nToken: {
-      tokenAddress: string;
-      name: string;
-      symbol: string;
-      decimals: string;
-      depositShares: number[] | null;
-      leverageThresholds: number[] | null;
-      incentiveEmissionRate: string | null;
-      pvHaircutPercentage: number | null;
-    } | null;
-    incentiveMigration: {
-      migrationEmissionRate: string;
-      finalIntegralTotalSupply: string;
-      migrationTime: string;
-    } | null;
-  }[];
-}
-
 interface IAssetRateProvider {
   getAssetRate(): BigNumber;
 }
@@ -225,28 +106,14 @@ export default class System {
   // eslint-disable-next-line no-use-before-define
   private static _systemInstance?: System;
 
-  protected symbolToCurrencyId = new Map<string, number>();
-
-  protected currencies = new Map<number, Currency>();
-
-  protected ethRates = new Map<number, EthRate>();
-
-  protected assetRate = new Map<number, AssetRate>();
-
-  protected cashGroups = new Map<number, CashGroup>();
-
-  protected nTokens = new Map<number, nToken>();
-
-  protected incentiveMigration = new Map<number, IncentiveMigration>();
-
-  public dataSource: DataSource;
+  private data: SystemDataExport;
 
   public get lastUpdateBlockNumber() {
-    return this.dataSource.lastUpdateBlockNumber;
+    return this.data.lastUpdateBlockNumber;
   }
 
   public get lastUpdateTimestamp() {
-    return this.dataSource.lastUpdateTimestamp;
+    return this.data.lastUpdateTimestamp;
   }
 
   public static getSystem() {
@@ -259,13 +126,13 @@ export default class System {
     this._systemInstance = system;
   }
 
+  protected symbolToCurrencyId = new Map<string, number>();
+
   protected settlementRates = new Map<string, BigNumber>();
 
   protected settlementMarkets = new Map<string, SettlementMarket>();
 
   private dataRefreshInterval?: NodeJS.Timeout;
-
-  private configurationRefreshInterval?: NodeJS.Timeout;
 
   private ethRateProviders = new Map<number, IETHRateProvider>();
 
@@ -275,213 +142,41 @@ export default class System {
 
   private marketProviders = new Map<string, IMarketProvider>();
 
+  public static async load(
+    cacheUrl: string,
+    graphClient: GraphClient,
+    contracts: Contracts,
+    batchProvider: ethers.providers.JsonRpcBatchProvider,
+    refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL
+  ) {
+    const initData = await fetchAndDecodeSystem(cacheUrl);
+    return new System(cacheUrl, graphClient, contracts, batchProvider, refreshIntervalMS, initData);
+  }
+
   constructor(
-    data: SystemQueryResult,
-    chainId: number,
-    skipFetchSetup: boolean,
+    public cacheUrl: string,
     public graphClient: GraphClient,
     private contracts: Contracts,
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
-    public dataSourceType: DataSourceType,
     public refreshIntervalMS: number,
-    public refreshConfigurationDataIntervalMs?: number
+    initData: SystemDataExport
   ) {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
-    this.parseQueryResult(data);
-    if (dataSourceType === DataSourceType.Blockchain) {
-      // Add address lookup thingy
-      this.dataSource = new Blockchain(
-        contracts,
-        batchProvider,
-        this.currencies,
-        this.ethRates,
-        this.assetRate,
-        this.cashGroups,
-        this.nTokens,
-        this.eventEmitter,
-        refreshIntervalMS
-      );
-      // This will fetch the NOTE price via CoinGecko
-      this.ethRateProviders.set(
-        NOTE_CURRENCY_ID,
-        new NoteETHRateProvider(
-          undefined,
-          {
-            notePriceRefreshIntervalMS: refreshConfigurationDataIntervalMs!,
-            eventEmitter: this.eventEmitter,
-          },
-          skipFetchSetup
-        )
-      );
-    } else {
-      this.dataSource = new Cache(chainId, this.cashGroups, this.eventEmitter, refreshIntervalMS);
-    }
-
-    this.dataRefreshInterval = this.dataSource.startRefresh();
-
-    if (refreshConfigurationDataIntervalMs) {
-      this.configurationRefreshInterval = setInterval(async () => {
-        const result = await this.graphClient.queryOrThrow<SystemQueryResult>(systemConfigurationQuery);
-        this.parseQueryResult(result);
-      }, refreshConfigurationDataIntervalMs);
-    }
+    this.data = initData;
+    // TODO: map symbol to currency id index
+    this.dataRefreshInterval = setInterval(async () => {
+      this.data = await fetchAndDecodeSystem(this.cacheUrl);
+    }, this.refreshIntervalMS);
   }
 
   public destroy() {
     if (this.dataRefreshInterval) clearInterval(this.dataRefreshInterval);
-    if (this.configurationRefreshInterval) clearInterval(this.configurationRefreshInterval);
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = undefined;
   }
 
-  public static async load(
-    graphClient: GraphClient,
-    contracts: Contracts,
-    batchProvider: ethers.providers.JsonRpcBatchProvider,
-    chainId: number,
-    refreshDataSource,
-    refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
-    refreshConfigurationDataIntervalMs = DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
-    skipFetchSetup: boolean
-  ) {
-    const data = await graphClient.queryOrThrow<SystemQueryResult>(systemConfigurationQuery);
-    return new System(
-      data,
-      chainId,
-      skipFetchSetup,
-      graphClient,
-      contracts,
-      batchProvider,
-      refreshDataSource,
-      refreshIntervalMS,
-      refreshConfigurationDataIntervalMs
-    );
-  }
-
-  private parseQueryResult(data: SystemQueryResult) {
-    data.currencies
-      .slice()
-      .sort((a, b) => Number(a.id) - Number(b.id))
-      .forEach((c) => {
-        const currencyId = Number(c.id);
-        const currency: Currency = {
-          id: currencyId,
-          name: c.name,
-          symbol: c.symbol,
-          decimals: BigNumber.from(c.decimals),
-          decimalPlaces: Math.log10(Number(c.decimals)),
-          contract: new Contract(c.tokenAddress, ERC20ABI, this.batchProvider) as ERC20,
-          tokenType: c.tokenType as TokenType,
-          nTokenSymbol: c.nToken?.symbol,
-          hasTransferFee: c.hasTransferFee,
-        };
-
-        if (c.underlyingName && c.underlyingSymbol) {
-          currency.underlyingName = c.underlyingName;
-          currency.underlyingSymbol = c.underlyingSymbol;
-          currency.underlyingDecimals = BigNumber.from(c.underlyingDecimals);
-          currency.underlyingDecimalPlaces = Math.log10(Number(c.underlyingDecimals));
-
-          if (c.underlyingTokenAddress) {
-            currency.underlyingContract = new Contract(c.underlyingTokenAddress, ERC20ABI, this.batchProvider) as ERC20;
-          }
-        }
-
-        this.currencies.set(currencyId, currency);
-        this.symbolToCurrencyId.set(c.symbol, currencyId);
-        if (c.underlyingSymbol) this.symbolToCurrencyId.set(c.underlyingSymbol, currencyId);
-
-        this.ethRates.set(currencyId, {
-          rateOracle: new Contract(c.ethExchangeRate.rateOracle, IAggregatorABI, this.batchProvider) as IAggregator,
-          rateDecimalPlaces: c.ethExchangeRate.rateDecimalPlaces,
-          mustInvert: c.ethExchangeRate.mustInvert,
-          buffer: c.ethExchangeRate.buffer,
-          haircut: c.ethExchangeRate.haircut,
-        });
-
-        if (c.assetExchangeRate) {
-          this.assetRate.set(currencyId, {
-            rateAdapter: new Contract(
-              c.assetExchangeRate.rateAdapterAddress,
-              AssetRateAggregatorABI,
-              this.batchProvider
-            ) as AssetRateAggregator,
-            underlyingDecimalPlaces: c.assetExchangeRate.underlyingDecimalPlaces,
-          });
-        }
-
-        // Initialize market array without any data
-        if (c.cashGroup) {
-          const markets = new Array<Market>();
-          for (let i = 1; i <= c.cashGroup.maxMarketIndex; i += 1) {
-            markets.push(
-              new Market(
-                currencyId,
-                i,
-                CashGroup.getMaturityForMarketIndex(i),
-                c.cashGroup!.rateScalars[i - 1] * RATE_PRECISION,
-                c.cashGroup!.totalFeeBasisPoints,
-                c.cashGroup!.reserveFeeSharePercent,
-                c.cashGroup!.rateOracleTimeWindowSeconds,
-                c.symbol,
-                c.underlyingSymbol || c.symbol
-              )
-            );
-          }
-
-          this.cashGroups.set(
-            currencyId,
-            new CashGroup(
-              c.cashGroup.maxMarketIndex,
-              c.cashGroup.rateOracleTimeWindowSeconds,
-              c.cashGroup.totalFeeBasisPoints,
-              c.cashGroup.reserveFeeSharePercent,
-              c.cashGroup.debtBufferBasisPoints,
-              c.cashGroup.fCashHaircutBasisPoints,
-              c.cashGroup.liquidityTokenHaircutsPercent,
-              c.cashGroup.rateScalars.map((s) => s * RATE_PRECISION),
-              markets
-            )
-          );
-        }
-
-        if (c.nToken) {
-          const depositShares = (c.nToken.depositShares || []).map((v) => BigNumber.from(v));
-          const leverageThresholds = (c.nToken.leverageThresholds || []).map((v) => BigNumber.from(v));
-          this.symbolToCurrencyId.set(c.nToken.symbol, currencyId);
-
-          this.nTokens.set(currencyId, {
-            name: c.nToken.name,
-            symbol: c.nToken.symbol,
-            incentiveEmissionRate: BigNumber.from(c.nToken.incentiveEmissionRate || 0),
-            pvHaircutPercentage: c.nToken.pvHaircutPercentage || 0,
-            depositShares,
-            leverageThresholds,
-            contract: new Contract(c.nToken.tokenAddress, NTokenERC20ABI, this.batchProvider) as NTokenERC20,
-          });
-        }
-
-        if (c.incentiveMigration) {
-          this.incentiveMigration.set(currencyId, {
-            emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
-            integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
-            migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
-          });
-        }
-      });
-
-    this.eventEmitter.emit(SystemEvents.CONFIGURATION_UPDATE);
-    if (this.dataSource) this.dataSource.refreshData();
-  }
-
-  public getIncentiveMigration(currencyId: number) {
-    return this.incentiveMigration.get(currencyId);
-  }
-
-  public getStakedNoteParameters() {
-    return this.dataSource.stakedNoteParameters;
-  }
+  /*** Contracts ***/
 
   public getNotionalProxy() {
     return this.contracts.notionalProxy;
@@ -511,6 +206,15 @@ export default class System {
     return this.contracts.exchangeV3;
   }
 
+  /*** Staked NOTE ***/
+
+  public getStakedNoteParameters(): StakedNoteParameters {
+    this.data.StakedNoteParameters.ethBalance;
+    this.data.network = 'asdf';
+    throw Error('Staked NOTE Parameters not loaded');
+  }
+
+  /*** Currencies ***/
   public getAllCurrencies(): Currency[] {
     return Array.from(this.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
   }
@@ -556,6 +260,8 @@ export default class System {
     return this.cashGroups.has(currencyId);
   }
 
+  /*** Cash Group and Market ***/
+
   public getCashGroup(currencyId: number): CashGroup {
     const cashGroup = this.cashGroups.get(currencyId);
     if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
@@ -572,9 +278,7 @@ export default class System {
     return cashGroup.markets.map((m) => this.marketProviders.get(m.marketKey)?.getMarket() ?? Market.copy(m));
   }
 
-  public getNToken(currencyId: number): nToken | undefined {
-    return this.nTokens.get(currencyId);
-  }
+  /*** Exchange Rate Data ***/
 
   public getAssetRate(currencyId: number) {
     const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
@@ -595,6 +299,12 @@ export default class System {
     const ethRateConfig = this.ethRates.get(currencyId);
     const ethRate = this.dataSource.ethRateData.get(currencyId);
     return { ethRateConfig, ethRate };
+  }
+
+  /*** nToken Data ***/
+
+  public getNToken(currencyId: number): nToken | undefined {
+    return this.nTokens.get(currencyId);
   }
 
   public getNTokenAssetCashPV(currencyId: number) {
@@ -619,6 +329,11 @@ export default class System {
 
   public getNTokenIncentiveFactors(currencyId: number) {
     return this.dataSource.nTokenIncentiveFactors.get(currencyId);
+  }
+
+  public getIncentiveMigration(currencyId: number): IncentiveMigration | undefined {
+    if (this.data.nTokenData && this.data.nTokenData[currencyId]) {
+    }
   }
 
   public clearMarketProviders() {

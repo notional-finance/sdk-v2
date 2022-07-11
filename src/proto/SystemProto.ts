@@ -1,51 +1,4 @@
 // @ts-nocheck
-export interface CacheRequest {
-  network?: string;
-}
-
-export function encodeCacheRequest(message: CacheRequest): Uint8Array {
-  let bb = popByteBuffer();
-  _encodeCacheRequest(message, bb);
-  return toUint8Array(bb);
-}
-
-function _encodeCacheRequest(message: CacheRequest, bb: ByteBuffer): void {
-  // optional string network = 1;
-  let $network = message.network;
-  if ($network !== undefined) {
-    writeVarint32(bb, 10);
-    writeString(bb, $network);
-  }
-}
-
-export function decodeCacheRequest(binary: Uint8Array): CacheRequest {
-  return _decodeCacheRequest(wrapByteBuffer(binary));
-}
-
-function _decodeCacheRequest(bb: ByteBuffer): CacheRequest {
-  let message: CacheRequest = {} as any;
-
-  end_of_message: while (!isAtEnd(bb)) {
-    let tag = readVarint32(bb);
-
-    switch (tag >>> 3) {
-      case 0:
-        break end_of_message;
-
-      // optional string network = 1;
-      case 1: {
-        message.network = readString(bb, readVarint32(bb));
-        break;
-      }
-
-      default:
-        skipUnknownField(bb, tag & 7);
-    }
-  }
-
-  return message;
-}
-
 export interface BigNumber {
   _isBigNumber?: boolean;
   _hex?: string;
@@ -739,6 +692,9 @@ export interface nToken {
   cashBalance?: TypedBigNumber;
   liquidityTokens?: Asset[];
   fCash?: Asset[];
+  migratedEmissionRate?: BigNumber;
+  integralTotalSupply?: BigNumber;
+  migrationTime?: number;
 }
 
 export function encodenToken(message: nToken): Uint8Array {
@@ -885,6 +841,35 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
       pushByteBuffer(nested);
     }
   }
+
+  // optional BigNumber migratedEmissionRate = 15;
+  let $migratedEmissionRate = message.migratedEmissionRate;
+  if ($migratedEmissionRate !== undefined) {
+    writeVarint32(bb, 122);
+    let nested = popByteBuffer();
+    _encodeBigNumber($migratedEmissionRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional BigNumber integralTotalSupply = 16;
+  let $integralTotalSupply = message.integralTotalSupply;
+  if ($integralTotalSupply !== undefined) {
+    writeVarint32(bb, 130);
+    let nested = popByteBuffer();
+    _encodeBigNumber($integralTotalSupply, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional int32 migrationTime = 17;
+  let $migrationTime = message.migrationTime;
+  if ($migrationTime !== undefined) {
+    writeVarint32(bb, 136);
+    writeVarint64(bb, intToLong($migrationTime));
+  }
 }
 
 export function decodenToken(binary: Uint8Array): nToken {
@@ -1002,6 +987,28 @@ function _decodenToken(bb: ByteBuffer): nToken {
         let values = message.fCash || (message.fCash = []);
         values.push(_decodeAsset(bb));
         bb.limit = limit;
+        break;
+      }
+
+      // optional BigNumber migratedEmissionRate = 15;
+      case 15: {
+        let limit = pushTemporaryLength(bb);
+        message.migratedEmissionRate = _decodeBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional BigNumber integralTotalSupply = 16;
+      case 16: {
+        let limit = pushTemporaryLength(bb);
+        message.integralTotalSupply = _decodeBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional int32 migrationTime = 17;
+      case 17: {
+        message.migrationTime = readVarint32(bb);
         break;
       }
 
@@ -1547,7 +1554,7 @@ function _decodeCashGroup(bb: ByteBuffer): CashGroup {
   return message;
 }
 
-export interface System {
+export interface SystemData {
   network?: string;
   lastUpdateBlockNumber?: number;
   lastUpdateTimestamp?: number;
@@ -1560,13 +1567,13 @@ export interface System {
   cashGroups?: { [key: number]: CashGroup };
 }
 
-export function encodeSystem(message: System): Uint8Array {
+export function encodeSystemData(message: SystemData): Uint8Array {
   let bb = popByteBuffer();
-  _encodeSystem(message, bb);
+  _encodeSystemData(message, bb);
   return toUint8Array(bb);
 }
 
-function _encodeSystem(message: System, bb: ByteBuffer): void {
+function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
   // optional string network = 1;
   let $network = message.network;
   if ($network !== undefined) {
@@ -1722,12 +1729,12 @@ function _encodeSystem(message: System, bb: ByteBuffer): void {
   }
 }
 
-export function decodeSystem(binary: Uint8Array): System {
-  return _decodeSystem(wrapByteBuffer(binary));
+export function decodeSystemData(binary: Uint8Array): SystemData {
+  return _decodeSystemData(wrapByteBuffer(binary));
 }
 
-function _decodeSystem(bb: ByteBuffer): System {
-  let message: System = {} as any;
+function _decodeSystemData(bb: ByteBuffer): SystemData {
+  let message: SystemData = {} as any;
 
   end_of_message: while (!isAtEnd(bb)) {
     let tag = readVarint32(bb);
