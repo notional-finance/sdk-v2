@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-message BigNumber {
+message SerializedBigNumber {
     bool _isBigNumber = 1;
     string _hex = 2;
 }
 
-message TypedBigNumber {
+message SerializedTypedBigNumber {
     bool _isTypedBigNumber = 1;
     string hex = 2;
     string bigNumberType = 3;
@@ -16,19 +16,19 @@ message sNOTE {
     string poolId = 1;
     int32 coolDownTimeInSeconds = 2;
     int32 redeemWindowSeconds = 3;
-    TypedBigNumber ethBalance = 4;
-    TypedBigNumber noteBalance = 5;
-    BigNumber balancerPoolTotalSupply = 6;
-    BigNumber sNOTEBptBalance = 7;
-    BigNumber swapFee = 8;
-    TypedBigNumber sNOTETotalSupply= 9;
+    SerializedTypedBigNumber ethBalance = 4;
+    SerializedTypedBigNumber noteBalance = 5;
+    SerializedBigNumber balancerPoolTotalSupply = 6;
+    SerializedBigNumber sNOTEBptBalance = 7;
+    SerializedBigNumber swapFee = 8;
+    SerializedTypedBigNumber sNOTETotalSupply= 9;
 }
 
 message Asset {
     int32 currencyId = 1;
     int32 maturity = 2;
     string assetType = 3;
-    TypedBigNumber notional = 4;
+    SerializedTypedBigNumber notional = 4;
     int32 settlementDate = 5;
 }
 
@@ -38,38 +38,37 @@ message ETHRate {
   bool mustInvert = 3;
   int32 buffer = 4;
   int32 haircut = 5;
-  BigNumber latestRate = 6;
+  SerializedBigNumber latestRate = 6;
 }
 
 message AssetRate {
   string rateAdapterAddress = 1;
   int32 underlyingDecimalPlaces = 2;
-  BigNumber latestRate = 3;
-  BigNumber annualSupplyRate = 4;
+  SerializedBigNumber latestRate = 3;
+  SerializedBigNumber annualSupplyRate = 4;
 }
 
 message nToken {
     // First set of fields update less frequently
     string name = 1;
-    string symbol = 2;
-    BigNumber incentiveEmissionRate = 3;
+    SerializedBigNumber incentiveEmissionRate = 3;
     int32 pvHaircutPercentage = 4;
     repeated string depositShares = 5;
     repeated string leverageThresholds = 6;
     string tokenAddress = 7;
 
     // Fields below here update more frequently than fields above
-    TypedBigNumber assetCashPV = 8;
-    TypedBigNumber totalSupply = 9;
-    BigNumber accumulatedNOTEPerNToken = 10;
-    BigNumber lastAccumulatedTime = 11;
-    TypedBigNumber cashBalance = 12;
+    SerializedTypedBigNumber assetCashPV = 8;
+    SerializedTypedBigNumber totalSupply = 9;
+    SerializedBigNumber accumulatedNOTEPerNToken = 10;
+    SerializedBigNumber lastAccumulatedTime = 11;
+    SerializedTypedBigNumber cashBalance = 12;
     repeated Asset liquidityTokens = 13;
     repeated Asset fCash = 14;
 
     // incentive migration factors
-    BigNumber migratedEmissionRate = 15;
-    BigNumber integralTotalSupply = 16;
+    SerializedBigNumber migratedEmissionRate = 15;
+    SerializedBigNumber integralTotalSupply = 16;
     int32 migrationTime = 17;
 }
 
@@ -78,20 +77,20 @@ message Currency {
     string name = 2;
     string symbol = 3;
     int32 decimalPlaces = 4;
-    string contract = 5;
+    string tokenAddress = 5;
     string tokenType = 6;
     bool hasTransferFee = 7;
     optional string underlyingName = 8;
     optional string underlyingSymbol = 9;
     optional int32 underlyingDecimalPlaces = 10;
-    optional string underlyingContract = 11;
+    optional string underlyingTokenAddress = 11;
     optional string nTokenSymbol = 12;
 }
 
 message Market {
-    TypedBigNumber totalfCash = 1;
-    TypedBigNumber totalAssetCash = 2;
-    TypedBigNumber totalLiquidity = 3;
+    SerializedTypedBigNumber totalfCash = 1;
+    SerializedTypedBigNumber totalAssetCash = 2;
+    SerializedTypedBigNumber totalLiquidity = 3;
     int32 lastImpliedRate = 4;
     int32 oracleRate = 5;
     int32 previousTradeTime = 6;
@@ -115,7 +114,7 @@ message SystemData {
     int32 lastUpdateTimestamp = 3;
 
     // key = symbol, value = exchange rate in 18 decimals as a string
-    map<string, string> USDExchangeRates = 4;
+    map<string, SerializedBigNumber> USDExchangeRates = 4;
     sNOTE StakedNoteParameters = 5;
 
     // Everything here has a key of currency id

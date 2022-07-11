@@ -1,16 +1,16 @@
 // @ts-nocheck
-export interface BigNumber {
+export interface SerializedBigNumber {
   _isBigNumber?: boolean;
   _hex?: string;
 }
 
-export function encodeBigNumber(message: BigNumber): Uint8Array {
+export function encodeSerializedBigNumber(message: SerializedBigNumber): Uint8Array {
   let bb = popByteBuffer();
-  _encodeBigNumber(message, bb);
+  _encodeSerializedBigNumber(message, bb);
   return toUint8Array(bb);
 }
 
-function _encodeBigNumber(message: BigNumber, bb: ByteBuffer): void {
+function _encodeSerializedBigNumber(message: SerializedBigNumber, bb: ByteBuffer): void {
   // optional bool _isBigNumber = 1;
   let $_isBigNumber = message._isBigNumber;
   if ($_isBigNumber !== undefined) {
@@ -26,12 +26,12 @@ function _encodeBigNumber(message: BigNumber, bb: ByteBuffer): void {
   }
 }
 
-export function decodeBigNumber(binary: Uint8Array): BigNumber {
-  return _decodeBigNumber(wrapByteBuffer(binary));
+export function decodeSerializedBigNumber(binary: Uint8Array): SerializedBigNumber {
+  return _decodeSerializedBigNumber(wrapByteBuffer(binary));
 }
 
-function _decodeBigNumber(bb: ByteBuffer): BigNumber {
-  let message: BigNumber = {} as any;
+function _decodeSerializedBigNumber(bb: ByteBuffer): SerializedBigNumber {
+  let message: SerializedBigNumber = {} as any;
 
   end_of_message: while (!isAtEnd(bb)) {
     let tag = readVarint32(bb);
@@ -60,20 +60,20 @@ function _decodeBigNumber(bb: ByteBuffer): BigNumber {
   return message;
 }
 
-export interface TypedBigNumber {
+export interface SerializedTypedBigNumber {
   _isTypedBigNumber?: boolean;
   hex?: string;
   bigNumberType?: string;
   symbol?: string;
 }
 
-export function encodeTypedBigNumber(message: TypedBigNumber): Uint8Array {
+export function encodeSerializedTypedBigNumber(message: SerializedTypedBigNumber): Uint8Array {
   let bb = popByteBuffer();
-  _encodeTypedBigNumber(message, bb);
+  _encodeSerializedTypedBigNumber(message, bb);
   return toUint8Array(bb);
 }
 
-function _encodeTypedBigNumber(message: TypedBigNumber, bb: ByteBuffer): void {
+function _encodeSerializedTypedBigNumber(message: SerializedTypedBigNumber, bb: ByteBuffer): void {
   // optional bool _isTypedBigNumber = 1;
   let $_isTypedBigNumber = message._isTypedBigNumber;
   if ($_isTypedBigNumber !== undefined) {
@@ -103,12 +103,12 @@ function _encodeTypedBigNumber(message: TypedBigNumber, bb: ByteBuffer): void {
   }
 }
 
-export function decodeTypedBigNumber(binary: Uint8Array): TypedBigNumber {
-  return _decodeTypedBigNumber(wrapByteBuffer(binary));
+export function decodeSerializedTypedBigNumber(binary: Uint8Array): SerializedTypedBigNumber {
+  return _decodeSerializedTypedBigNumber(wrapByteBuffer(binary));
 }
 
-function _decodeTypedBigNumber(bb: ByteBuffer): TypedBigNumber {
-  let message: TypedBigNumber = {} as any;
+function _decodeSerializedTypedBigNumber(bb: ByteBuffer): SerializedTypedBigNumber {
+  let message: SerializedTypedBigNumber = {} as any;
 
   end_of_message: while (!isAtEnd(bb)) {
     let tag = readVarint32(bb);
@@ -153,12 +153,12 @@ export interface sNOTE {
   poolId?: string;
   coolDownTimeInSeconds?: number;
   redeemWindowSeconds?: number;
-  ethBalance?: TypedBigNumber;
-  noteBalance?: TypedBigNumber;
-  balancerPoolTotalSupply?: BigNumber;
-  sNOTEBptBalance?: BigNumber;
-  swapFee?: BigNumber;
-  sNOTETotalSupply?: TypedBigNumber;
+  ethBalance?: SerializedTypedBigNumber;
+  noteBalance?: SerializedTypedBigNumber;
+  balancerPoolTotalSupply?: SerializedBigNumber;
+  sNOTEBptBalance?: SerializedBigNumber;
+  swapFee?: SerializedBigNumber;
+  sNOTETotalSupply?: SerializedTypedBigNumber;
 }
 
 export function encodesNOTE(message: sNOTE): Uint8Array {
@@ -189,67 +189,67 @@ function _encodesNOTE(message: sNOTE, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($redeemWindowSeconds));
   }
 
-  // optional TypedBigNumber ethBalance = 4;
+  // optional SerializedTypedBigNumber ethBalance = 4;
   let $ethBalance = message.ethBalance;
   if ($ethBalance !== undefined) {
     writeVarint32(bb, 34);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($ethBalance, nested);
+    _encodeSerializedTypedBigNumber($ethBalance, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional TypedBigNumber noteBalance = 5;
+  // optional SerializedTypedBigNumber noteBalance = 5;
   let $noteBalance = message.noteBalance;
   if ($noteBalance !== undefined) {
     writeVarint32(bb, 42);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($noteBalance, nested);
+    _encodeSerializedTypedBigNumber($noteBalance, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber balancerPoolTotalSupply = 6;
+  // optional SerializedBigNumber balancerPoolTotalSupply = 6;
   let $balancerPoolTotalSupply = message.balancerPoolTotalSupply;
   if ($balancerPoolTotalSupply !== undefined) {
     writeVarint32(bb, 50);
     let nested = popByteBuffer();
-    _encodeBigNumber($balancerPoolTotalSupply, nested);
+    _encodeSerializedBigNumber($balancerPoolTotalSupply, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber sNOTEBptBalance = 7;
+  // optional SerializedBigNumber sNOTEBptBalance = 7;
   let $sNOTEBptBalance = message.sNOTEBptBalance;
   if ($sNOTEBptBalance !== undefined) {
     writeVarint32(bb, 58);
     let nested = popByteBuffer();
-    _encodeBigNumber($sNOTEBptBalance, nested);
+    _encodeSerializedBigNumber($sNOTEBptBalance, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber swapFee = 8;
+  // optional SerializedBigNumber swapFee = 8;
   let $swapFee = message.swapFee;
   if ($swapFee !== undefined) {
     writeVarint32(bb, 66);
     let nested = popByteBuffer();
-    _encodeBigNumber($swapFee, nested);
+    _encodeSerializedBigNumber($swapFee, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional TypedBigNumber sNOTETotalSupply = 9;
+  // optional SerializedTypedBigNumber sNOTETotalSupply = 9;
   let $sNOTETotalSupply = message.sNOTETotalSupply;
   if ($sNOTETotalSupply !== undefined) {
     writeVarint32(bb, 74);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($sNOTETotalSupply, nested);
+    _encodeSerializedTypedBigNumber($sNOTETotalSupply, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -288,50 +288,50 @@ function _decodesNOTE(bb: ByteBuffer): sNOTE {
         break;
       }
 
-      // optional TypedBigNumber ethBalance = 4;
+      // optional SerializedTypedBigNumber ethBalance = 4;
       case 4: {
         let limit = pushTemporaryLength(bb);
-        message.ethBalance = _decodeTypedBigNumber(bb);
+        message.ethBalance = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional TypedBigNumber noteBalance = 5;
+      // optional SerializedTypedBigNumber noteBalance = 5;
       case 5: {
         let limit = pushTemporaryLength(bb);
-        message.noteBalance = _decodeTypedBigNumber(bb);
+        message.noteBalance = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber balancerPoolTotalSupply = 6;
+      // optional SerializedBigNumber balancerPoolTotalSupply = 6;
       case 6: {
         let limit = pushTemporaryLength(bb);
-        message.balancerPoolTotalSupply = _decodeBigNumber(bb);
+        message.balancerPoolTotalSupply = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber sNOTEBptBalance = 7;
+      // optional SerializedBigNumber sNOTEBptBalance = 7;
       case 7: {
         let limit = pushTemporaryLength(bb);
-        message.sNOTEBptBalance = _decodeBigNumber(bb);
+        message.sNOTEBptBalance = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber swapFee = 8;
+      // optional SerializedBigNumber swapFee = 8;
       case 8: {
         let limit = pushTemporaryLength(bb);
-        message.swapFee = _decodeBigNumber(bb);
+        message.swapFee = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional TypedBigNumber sNOTETotalSupply = 9;
+      // optional SerializedTypedBigNumber sNOTETotalSupply = 9;
       case 9: {
         let limit = pushTemporaryLength(bb);
-        message.sNOTETotalSupply = _decodeTypedBigNumber(bb);
+        message.sNOTETotalSupply = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -348,7 +348,7 @@ export interface Asset {
   currencyId?: number;
   maturity?: number;
   assetType?: string;
-  notional?: TypedBigNumber;
+  notional?: SerializedTypedBigNumber;
   settlementDate?: number;
 }
 
@@ -380,12 +380,12 @@ function _encodeAsset(message: Asset, bb: ByteBuffer): void {
     writeString(bb, $assetType);
   }
 
-  // optional TypedBigNumber notional = 4;
+  // optional SerializedTypedBigNumber notional = 4;
   let $notional = message.notional;
   if ($notional !== undefined) {
     writeVarint32(bb, 34);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($notional, nested);
+    _encodeSerializedTypedBigNumber($notional, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -431,10 +431,10 @@ function _decodeAsset(bb: ByteBuffer): Asset {
         break;
       }
 
-      // optional TypedBigNumber notional = 4;
+      // optional SerializedTypedBigNumber notional = 4;
       case 4: {
         let limit = pushTemporaryLength(bb);
-        message.notional = _decodeTypedBigNumber(bb);
+        message.notional = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -459,7 +459,7 @@ export interface ETHRate {
   mustInvert?: boolean;
   buffer?: number;
   haircut?: number;
-  latestRate?: BigNumber;
+  latestRate?: SerializedBigNumber;
 }
 
 export function encodeETHRate(message: ETHRate): Uint8Array {
@@ -504,12 +504,12 @@ function _encodeETHRate(message: ETHRate, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($haircut));
   }
 
-  // optional BigNumber latestRate = 6;
+  // optional SerializedBigNumber latestRate = 6;
   let $latestRate = message.latestRate;
   if ($latestRate !== undefined) {
     writeVarint32(bb, 50);
     let nested = popByteBuffer();
-    _encodeBigNumber($latestRate, nested);
+    _encodeSerializedBigNumber($latestRate, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -560,10 +560,10 @@ function _decodeETHRate(bb: ByteBuffer): ETHRate {
         break;
       }
 
-      // optional BigNumber latestRate = 6;
+      // optional SerializedBigNumber latestRate = 6;
       case 6: {
         let limit = pushTemporaryLength(bb);
-        message.latestRate = _decodeBigNumber(bb);
+        message.latestRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -579,8 +579,8 @@ function _decodeETHRate(bb: ByteBuffer): ETHRate {
 export interface AssetRate {
   rateAdapterAddress?: string;
   underlyingDecimalPlaces?: number;
-  latestRate?: BigNumber;
-  annualSupplyRate?: BigNumber;
+  latestRate?: SerializedBigNumber;
+  annualSupplyRate?: SerializedBigNumber;
 }
 
 export function encodeAssetRate(message: AssetRate): Uint8Array {
@@ -604,23 +604,23 @@ function _encodeAssetRate(message: AssetRate, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($underlyingDecimalPlaces));
   }
 
-  // optional BigNumber latestRate = 3;
+  // optional SerializedBigNumber latestRate = 3;
   let $latestRate = message.latestRate;
   if ($latestRate !== undefined) {
     writeVarint32(bb, 26);
     let nested = popByteBuffer();
-    _encodeBigNumber($latestRate, nested);
+    _encodeSerializedBigNumber($latestRate, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber annualSupplyRate = 4;
+  // optional SerializedBigNumber annualSupplyRate = 4;
   let $annualSupplyRate = message.annualSupplyRate;
   if ($annualSupplyRate !== undefined) {
     writeVarint32(bb, 34);
     let nested = popByteBuffer();
-    _encodeBigNumber($annualSupplyRate, nested);
+    _encodeSerializedBigNumber($annualSupplyRate, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -653,18 +653,18 @@ function _decodeAssetRate(bb: ByteBuffer): AssetRate {
         break;
       }
 
-      // optional BigNumber latestRate = 3;
+      // optional SerializedBigNumber latestRate = 3;
       case 3: {
         let limit = pushTemporaryLength(bb);
-        message.latestRate = _decodeBigNumber(bb);
+        message.latestRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber annualSupplyRate = 4;
+      // optional SerializedBigNumber annualSupplyRate = 4;
       case 4: {
         let limit = pushTemporaryLength(bb);
-        message.annualSupplyRate = _decodeBigNumber(bb);
+        message.annualSupplyRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -679,21 +679,20 @@ function _decodeAssetRate(bb: ByteBuffer): AssetRate {
 
 export interface nToken {
   name?: string;
-  symbol?: string;
-  incentiveEmissionRate?: BigNumber;
+  incentiveEmissionRate?: SerializedBigNumber;
   pvHaircutPercentage?: number;
   depositShares?: string[];
   leverageThresholds?: string[];
   tokenAddress?: string;
-  assetCashPV?: TypedBigNumber;
-  totalSupply?: TypedBigNumber;
-  accumulatedNOTEPerNToken?: BigNumber;
-  lastAccumulatedTime?: BigNumber;
-  cashBalance?: TypedBigNumber;
+  assetCashPV?: SerializedTypedBigNumber;
+  totalSupply?: SerializedTypedBigNumber;
+  accumulatedNOTEPerNToken?: SerializedBigNumber;
+  lastAccumulatedTime?: SerializedBigNumber;
+  cashBalance?: SerializedTypedBigNumber;
   liquidityTokens?: Asset[];
   fCash?: Asset[];
-  migratedEmissionRate?: BigNumber;
-  integralTotalSupply?: BigNumber;
+  migratedEmissionRate?: SerializedBigNumber;
+  integralTotalSupply?: SerializedBigNumber;
   migrationTime?: number;
 }
 
@@ -711,19 +710,12 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeString(bb, $name);
   }
 
-  // optional string symbol = 2;
-  let $symbol = message.symbol;
-  if ($symbol !== undefined) {
-    writeVarint32(bb, 18);
-    writeString(bb, $symbol);
-  }
-
-  // optional BigNumber incentiveEmissionRate = 3;
+  // optional SerializedBigNumber incentiveEmissionRate = 3;
   let $incentiveEmissionRate = message.incentiveEmissionRate;
   if ($incentiveEmissionRate !== undefined) {
     writeVarint32(bb, 26);
     let nested = popByteBuffer();
-    _encodeBigNumber($incentiveEmissionRate, nested);
+    _encodeSerializedBigNumber($incentiveEmissionRate, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -761,56 +753,56 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeString(bb, $tokenAddress);
   }
 
-  // optional TypedBigNumber assetCashPV = 8;
+  // optional SerializedTypedBigNumber assetCashPV = 8;
   let $assetCashPV = message.assetCashPV;
   if ($assetCashPV !== undefined) {
     writeVarint32(bb, 66);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($assetCashPV, nested);
+    _encodeSerializedTypedBigNumber($assetCashPV, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional TypedBigNumber totalSupply = 9;
+  // optional SerializedTypedBigNumber totalSupply = 9;
   let $totalSupply = message.totalSupply;
   if ($totalSupply !== undefined) {
     writeVarint32(bb, 74);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($totalSupply, nested);
+    _encodeSerializedTypedBigNumber($totalSupply, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber accumulatedNOTEPerNToken = 10;
+  // optional SerializedBigNumber accumulatedNOTEPerNToken = 10;
   let $accumulatedNOTEPerNToken = message.accumulatedNOTEPerNToken;
   if ($accumulatedNOTEPerNToken !== undefined) {
     writeVarint32(bb, 82);
     let nested = popByteBuffer();
-    _encodeBigNumber($accumulatedNOTEPerNToken, nested);
+    _encodeSerializedBigNumber($accumulatedNOTEPerNToken, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber lastAccumulatedTime = 11;
+  // optional SerializedBigNumber lastAccumulatedTime = 11;
   let $lastAccumulatedTime = message.lastAccumulatedTime;
   if ($lastAccumulatedTime !== undefined) {
     writeVarint32(bb, 90);
     let nested = popByteBuffer();
-    _encodeBigNumber($lastAccumulatedTime, nested);
+    _encodeSerializedBigNumber($lastAccumulatedTime, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional TypedBigNumber cashBalance = 12;
+  // optional SerializedTypedBigNumber cashBalance = 12;
   let $cashBalance = message.cashBalance;
   if ($cashBalance !== undefined) {
     writeVarint32(bb, 98);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($cashBalance, nested);
+    _encodeSerializedTypedBigNumber($cashBalance, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -842,23 +834,23 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     }
   }
 
-  // optional BigNumber migratedEmissionRate = 15;
+  // optional SerializedBigNumber migratedEmissionRate = 15;
   let $migratedEmissionRate = message.migratedEmissionRate;
   if ($migratedEmissionRate !== undefined) {
     writeVarint32(bb, 122);
     let nested = popByteBuffer();
-    _encodeBigNumber($migratedEmissionRate, nested);
+    _encodeSerializedBigNumber($migratedEmissionRate, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional BigNumber integralTotalSupply = 16;
+  // optional SerializedBigNumber integralTotalSupply = 16;
   let $integralTotalSupply = message.integralTotalSupply;
   if ($integralTotalSupply !== undefined) {
     writeVarint32(bb, 130);
     let nested = popByteBuffer();
-    _encodeBigNumber($integralTotalSupply, nested);
+    _encodeSerializedBigNumber($integralTotalSupply, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -892,16 +884,10 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // optional string symbol = 2;
-      case 2: {
-        message.symbol = readString(bb, readVarint32(bb));
-        break;
-      }
-
-      // optional BigNumber incentiveEmissionRate = 3;
+      // optional SerializedBigNumber incentiveEmissionRate = 3;
       case 3: {
         let limit = pushTemporaryLength(bb);
-        message.incentiveEmissionRate = _decodeBigNumber(bb);
+        message.incentiveEmissionRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -932,42 +918,42 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // optional TypedBigNumber assetCashPV = 8;
+      // optional SerializedTypedBigNumber assetCashPV = 8;
       case 8: {
         let limit = pushTemporaryLength(bb);
-        message.assetCashPV = _decodeTypedBigNumber(bb);
+        message.assetCashPV = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional TypedBigNumber totalSupply = 9;
+      // optional SerializedTypedBigNumber totalSupply = 9;
       case 9: {
         let limit = pushTemporaryLength(bb);
-        message.totalSupply = _decodeTypedBigNumber(bb);
+        message.totalSupply = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber accumulatedNOTEPerNToken = 10;
+      // optional SerializedBigNumber accumulatedNOTEPerNToken = 10;
       case 10: {
         let limit = pushTemporaryLength(bb);
-        message.accumulatedNOTEPerNToken = _decodeBigNumber(bb);
+        message.accumulatedNOTEPerNToken = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber lastAccumulatedTime = 11;
+      // optional SerializedBigNumber lastAccumulatedTime = 11;
       case 11: {
         let limit = pushTemporaryLength(bb);
-        message.lastAccumulatedTime = _decodeBigNumber(bb);
+        message.lastAccumulatedTime = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional TypedBigNumber cashBalance = 12;
+      // optional SerializedTypedBigNumber cashBalance = 12;
       case 12: {
         let limit = pushTemporaryLength(bb);
-        message.cashBalance = _decodeTypedBigNumber(bb);
+        message.cashBalance = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -990,18 +976,18 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // optional BigNumber migratedEmissionRate = 15;
+      // optional SerializedBigNumber migratedEmissionRate = 15;
       case 15: {
         let limit = pushTemporaryLength(bb);
-        message.migratedEmissionRate = _decodeBigNumber(bb);
+        message.migratedEmissionRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional BigNumber integralTotalSupply = 16;
+      // optional SerializedBigNumber integralTotalSupply = 16;
       case 16: {
         let limit = pushTemporaryLength(bb);
-        message.integralTotalSupply = _decodeBigNumber(bb);
+        message.integralTotalSupply = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -1025,13 +1011,13 @@ export interface Currency {
   name?: string;
   symbol?: string;
   decimalPlaces?: number;
-  contract?: string;
+  tokenAddress?: string;
   tokenType?: string;
   hasTransferFee?: boolean;
   underlyingName?: string;
   underlyingSymbol?: string;
   underlyingDecimalPlaces?: number;
-  underlyingContract?: string;
+  underlyingTokenAddress?: string;
   nTokenSymbol?: string;
 }
 
@@ -1070,11 +1056,11 @@ function _encodeCurrency(message: Currency, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($decimalPlaces));
   }
 
-  // optional string contract = 5;
-  let $contract = message.contract;
-  if ($contract !== undefined) {
+  // optional string tokenAddress = 5;
+  let $tokenAddress = message.tokenAddress;
+  if ($tokenAddress !== undefined) {
     writeVarint32(bb, 42);
-    writeString(bb, $contract);
+    writeString(bb, $tokenAddress);
   }
 
   // optional string tokenType = 6;
@@ -1112,11 +1098,11 @@ function _encodeCurrency(message: Currency, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($underlyingDecimalPlaces));
   }
 
-  // optional string underlyingContract = 11;
-  let $underlyingContract = message.underlyingContract;
-  if ($underlyingContract !== undefined) {
+  // optional string underlyingTokenAddress = 11;
+  let $underlyingTokenAddress = message.underlyingTokenAddress;
+  if ($underlyingTokenAddress !== undefined) {
     writeVarint32(bb, 90);
-    writeString(bb, $underlyingContract);
+    writeString(bb, $underlyingTokenAddress);
   }
 
   // optional string nTokenSymbol = 12;
@@ -1165,9 +1151,9 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
         break;
       }
 
-      // optional string contract = 5;
+      // optional string tokenAddress = 5;
       case 5: {
-        message.contract = readString(bb, readVarint32(bb));
+        message.tokenAddress = readString(bb, readVarint32(bb));
         break;
       }
 
@@ -1201,9 +1187,9 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
         break;
       }
 
-      // optional string underlyingContract = 11;
+      // optional string underlyingTokenAddress = 11;
       case 11: {
-        message.underlyingContract = readString(bb, readVarint32(bb));
+        message.underlyingTokenAddress = readString(bb, readVarint32(bb));
         break;
       }
 
@@ -1222,9 +1208,9 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
 }
 
 export interface Market {
-  totalfCash?: TypedBigNumber;
-  totalAssetCash?: TypedBigNumber;
-  totalLiquidity?: TypedBigNumber;
+  totalfCash?: SerializedTypedBigNumber;
+  totalAssetCash?: SerializedTypedBigNumber;
+  totalLiquidity?: SerializedTypedBigNumber;
   lastImpliedRate?: number;
   oracleRate?: number;
   previousTradeTime?: number;
@@ -1237,34 +1223,34 @@ export function encodeMarket(message: Market): Uint8Array {
 }
 
 function _encodeMarket(message: Market, bb: ByteBuffer): void {
-  // optional TypedBigNumber totalfCash = 1;
+  // optional SerializedTypedBigNumber totalfCash = 1;
   let $totalfCash = message.totalfCash;
   if ($totalfCash !== undefined) {
     writeVarint32(bb, 10);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($totalfCash, nested);
+    _encodeSerializedTypedBigNumber($totalfCash, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional TypedBigNumber totalAssetCash = 2;
+  // optional SerializedTypedBigNumber totalAssetCash = 2;
   let $totalAssetCash = message.totalAssetCash;
   if ($totalAssetCash !== undefined) {
     writeVarint32(bb, 18);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($totalAssetCash, nested);
+    _encodeSerializedTypedBigNumber($totalAssetCash, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional TypedBigNumber totalLiquidity = 3;
+  // optional SerializedTypedBigNumber totalLiquidity = 3;
   let $totalLiquidity = message.totalLiquidity;
   if ($totalLiquidity !== undefined) {
     writeVarint32(bb, 26);
     let nested = popByteBuffer();
-    _encodeTypedBigNumber($totalLiquidity, nested);
+    _encodeSerializedTypedBigNumber($totalLiquidity, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -1306,26 +1292,26 @@ function _decodeMarket(bb: ByteBuffer): Market {
       case 0:
         break end_of_message;
 
-      // optional TypedBigNumber totalfCash = 1;
+      // optional SerializedTypedBigNumber totalfCash = 1;
       case 1: {
         let limit = pushTemporaryLength(bb);
-        message.totalfCash = _decodeTypedBigNumber(bb);
+        message.totalfCash = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional TypedBigNumber totalAssetCash = 2;
+      // optional SerializedTypedBigNumber totalAssetCash = 2;
       case 2: {
         let limit = pushTemporaryLength(bb);
-        message.totalAssetCash = _decodeTypedBigNumber(bb);
+        message.totalAssetCash = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional TypedBigNumber totalLiquidity = 3;
+      // optional SerializedTypedBigNumber totalLiquidity = 3;
       case 3: {
         let limit = pushTemporaryLength(bb);
-        message.totalLiquidity = _decodeTypedBigNumber(bb);
+        message.totalLiquidity = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
@@ -1558,7 +1544,7 @@ export interface SystemData {
   network?: string;
   lastUpdateBlockNumber?: number;
   lastUpdateTimestamp?: number;
-  USDExchangeRates?: { [key: string]: string };
+  USDExchangeRates?: { [key: string]: SerializedBigNumber };
   StakedNoteParameters?: sNOTE;
   currencies?: { [key: number]: Currency };
   ethRateData?: { [key: number]: ETHRate };
@@ -1595,7 +1581,7 @@ function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($lastUpdateTimestamp));
   }
 
-  // optional map<string, string> USDExchangeRates = 4;
+  // optional map<string, SerializedBigNumber> USDExchangeRates = 4;
   let map$USDExchangeRates = message.USDExchangeRates;
   if (map$USDExchangeRates !== undefined) {
     for (let key in map$USDExchangeRates) {
@@ -1604,7 +1590,11 @@ function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
       writeVarint32(nested, 10);
       writeString(nested, key);
       writeVarint32(nested, 18);
-      writeString(nested, value);
+      let nestedValue = popByteBuffer();
+      _encodeSerializedBigNumber(value, nestedValue);
+      writeVarint32(nested, nestedValue.limit);
+      writeByteBuffer(nested, nestedValue);
+      pushByteBuffer(nestedValue);
       writeVarint32(bb, 34);
       writeVarint32(bb, nested.offset);
       writeByteBuffer(bb, nested);
@@ -1761,12 +1751,12 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
         break;
       }
 
-      // optional map<string, string> USDExchangeRates = 4;
+      // optional map<string, SerializedBigNumber> USDExchangeRates = 4;
       case 4: {
         let values = message.USDExchangeRates || (message.USDExchangeRates = {});
         let outerLimit = pushTemporaryLength(bb);
         let key: string | undefined;
-        let value: string | undefined;
+        let value: SerializedBigNumber | undefined;
         end_of_entry: while (!isAtEnd(bb)) {
           let tag = readVarint32(bb);
           switch (tag >>> 3) {
@@ -1777,7 +1767,9 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               break;
             }
             case 2: {
-              value = readString(bb, readVarint32(bb));
+              let valueLimit = pushTemporaryLength(bb);
+              value = _decodeSerializedBigNumber(bb);
+              bb.limit = valueLimit;
               break;
             }
             default:

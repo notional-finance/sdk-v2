@@ -210,7 +210,7 @@ export interface IncentiveFactors {
 }
 
 export interface IncentiveMigration {
-  emissionRate: BigNumber;
+  migratedEmissionRate: BigNumber;
   integralTotalSupply: BigNumber;
   migrationTime: number;
 }

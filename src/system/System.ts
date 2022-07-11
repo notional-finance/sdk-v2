@@ -3,7 +3,6 @@ import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import {
   Asset,
-  AssetRate,
   AssetType,
   Contracts,
   Currency,
@@ -11,7 +10,6 @@ import {
   IncentiveMigration,
   nToken,
   SettlementMarket,
-  StakedNoteParameters,
 } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import { DEFAULT_DATA_REFRESH_INTERVAL } from '../config/constants';
@@ -21,9 +19,9 @@ import GraphClient from '../GraphClient';
 import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import NoteETHRateProvider from './NoteETHRateProvider';
 import { fetchAndDecodeSystem } from '../proto/EncodeProto';
-import { SystemDataExport } from '../proto/SystemProto';
+import { SystemData } from '../proto/';
+import { ETHRate } from '../proto/SystemProto';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -147,10 +145,11 @@ export default class System {
     graphClient: GraphClient,
     contracts: Contracts,
     batchProvider: ethers.providers.JsonRpcBatchProvider,
-    refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL
+    refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
+    skipFetchSetup = false
   ) {
-    const initData = await fetchAndDecodeSystem(cacheUrl);
-    return new System(cacheUrl, graphClient, contracts, batchProvider, refreshIntervalMS, initData);
+    const initData = await fetchAndDecodeSystem(cacheUrl, skipFetchSetup);
+    return new System(cacheUrl, graphClient, contracts, batchProvider, refreshIntervalMS, initData, skipFetchSetup);
   }
 
   constructor(
@@ -159,14 +158,15 @@ export default class System {
     private contracts: Contracts,
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public refreshIntervalMS: number,
-    initData: SystemDataExport
+    initData: SystemDataExport,
+    skipFetchSetup: boolean
   ) {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
     this.data = initData;
     // TODO: map symbol to currency id index
     this.dataRefreshInterval = setInterval(async () => {
-      this.data = await fetchAndDecodeSystem(this.cacheUrl);
+      this.data = await fetchAndDecodeSystem(this.cacheUrl, skipFetchSetup);
     }, this.refreshIntervalMS);
   }
 
@@ -208,15 +208,14 @@ export default class System {
 
   /*** Staked NOTE ***/
 
-  public getStakedNoteParameters(): StakedNoteParameters {
-    this.data.StakedNoteParameters.ethBalance;
-    this.data.network = 'asdf';
-    throw Error('Staked NOTE Parameters not loaded');
+  public getStakedNoteParameters() {
+    return this.data.StakedNoteParameters;
   }
 
   /*** Currencies ***/
-  public getAllCurrencies(): Currency[] {
-    return Array.from(this.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
+  public getAllCurrencies(): Test<ETHRate> {
+    return this.data.nTokenData;
+    // return Array.from(this.data.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
   }
 
   public getTradableCurrencies(): Currency[] {

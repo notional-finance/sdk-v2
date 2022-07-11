@@ -1,7 +1,15 @@
 import { BigNumber } from 'ethers';
 import { TypedBigNumber } from '..';
-
-import { TypedBigNumber as TBN, BigNumber as BN, SystemData as SystemDataProto } from './SystemProto';
+import {
+  AssetRate,
+  CashGroup,
+  Currency,
+  ETHRate,
+  nToken,
+  SerializedBigNumber,
+  SerializedTypedBigNumber,
+  sNOTE,
+} from './SystemProto';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
   ? T extends TIgnore
@@ -21,8 +29,25 @@ type Replaced<T, TReplace, TWith, TKeep = Primitive> = T extends TReplace | TKee
       [P in keyof T]: Replaced<T[P], TReplace, TWith, TKeep>;
     };
 
-export interface SystemDataExport
-  extends DeepRequired<
-    Replaced<Replaced<SystemDataProto, TBN, TypedBigNumber>, BN, BigNumber, Primitive | TypedBigNumber>,
-    TypedBigNumber | BigNumber
-  > {}
+type Rewrite<T> = DeepRequired<
+  Replaced<
+    Replaced<T, SerializedBigNumber, BigNumber, Primitive>,
+    SerializedTypedBigNumber,
+    TypedBigNumber,
+    Primitive | BigNumber
+  >,
+  BigNumber | TypedBigNumber
+>;
+
+export interface SystemData {
+  network: string;
+  lastUpdateBlockNumber: number;
+  lastUpdateTimestamp: number;
+  USDExchangeRates: { [key: string]: BigNumber };
+  StakedNoteParameters: Rewrite<sNOTE>;
+  currencies: { [key: number]: DeepRequired<Currency, null> };
+  ethRateData: { [key: number]: Rewrite<ETHRate> };
+  assetRateData: { [key: number]: Rewrite<AssetRate> };
+  nTokenData: { [key: number]: Rewrite<nToken> };
+  cashGroups: { [key: number]: Rewrite<CashGroup> };
+}

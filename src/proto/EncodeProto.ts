@@ -3,8 +3,10 @@ import { SystemDataExport } from '.';
 import { Contracts, TypedBigNumber } from '..';
 import GraphClient from '../GraphClient';
 import { ConfigKeys, getBlockchainData } from './BlockchainCalls';
+import { getUSDPriceData } from './ExchangeRateCalls';
 import { getSystemConfig } from './SubgraphCalls';
 import { decodeSystemData, encodeSystemData, SystemData } from './SystemProto';
+import { fetch as crossFetch } from 'cross-fetch';
 
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
@@ -15,12 +17,13 @@ export async function fetchAndEncodeSystem(
   const { blockNumber, results } = await getBlockchainData(provider, contracts, config);
   const network = await provider.getNetwork();
   const block = await provider.getBlock(blockNumber.toNumber());
+  const usdExchangeRates = await getUSDPriceData();
 
   const systemObject: SystemData = {
     network: network.name === 'homestead' ? 'mainnet' : network.name,
     lastUpdateBlockNumber: block.number,
     lastUpdateTimestamp: block.timestamp,
-    USDExchangeRates: {},
+    USDExchangeRates: usdExchangeRates,
     StakedNoteParameters: {
       poolId: results[ConfigKeys.sNOTE.POOL_ID],
       coolDownTimeInSeconds: results[ConfigKeys.sNOTE.COOL_DOWN_TIME_SECS],
@@ -72,8 +75,9 @@ export async function fetchAndEncodeSystem(
   return encodeSystemData(systemObject);
 }
 
-export async function fetchAndDecodeSystem(cacheUrl: string) {
-  const resp = await fetch(cacheUrl);
+export async function fetchAndDecodeSystem(cacheUrl: string, skipFetchSetup: boolean) {
+  const _fetch = skipFetchSetup ? fetch : crossFetch;
+  const resp = await _fetch(cacheUrl);
   const reader = resp.body?.getReader();
   if (reader) {
     const { value } = await reader.read();
