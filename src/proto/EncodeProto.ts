@@ -1,12 +1,17 @@
 import { BigNumber, ethers } from 'ethers';
-import { SystemDataExport } from '.';
+import { SystemData } from '.';
 import { Contracts, TypedBigNumber } from '..';
 import GraphClient from '../GraphClient';
 import { ConfigKeys, getBlockchainData } from './BlockchainCalls';
 import { getUSDPriceData } from './ExchangeRateCalls';
 import { getSystemConfig } from './SubgraphCalls';
-import { decodeSystemData, encodeSystemData, SystemData } from './SystemProto';
+import { decodeSystemData, encodeSystemData, SystemData as _SystemData } from './SystemProto';
 import { fetch as crossFetch } from 'cross-fetch';
+
+import IAggregatorABI from '../abi/IAggregator.json';
+import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
+import ERC20ABI from '../abi/ERC20.json';
+import nTokenERC20ABI from '../abi/nTokenERC20.json';
 
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
@@ -19,7 +24,7 @@ export async function fetchAndEncodeSystem(
   const block = await provider.getBlock(blockNumber.toNumber());
   const usdExchangeRates = await getUSDPriceData();
 
-  const systemObject: SystemData = {
+  const systemObject: _SystemData = {
     network: network.name === 'homestead' ? 'mainnet' : network.name,
     lastUpdateBlockNumber: block.number,
     lastUpdateTimestamp: block.timestamp,
@@ -75,35 +80,56 @@ export async function fetchAndEncodeSystem(
   return encodeSystemData(systemObject);
 }
 
-export async function fetchAndDecodeSystem(cacheUrl: string, skipFetchSetup: boolean) {
+export async function fetchAndDecodeSystem(
+  cacheUrl: string,
+  provider: ethers.providers.Provider,
+  skipFetchSetup: boolean
+) {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
   const resp = await _fetch(cacheUrl);
   const reader = resp.body?.getReader();
   if (reader) {
     const { value } = await reader.read();
-    if (value) return decode(value);
+    if (value) return decode(value, provider);
   }
 
   throw Error('Could not fetch system');
 }
 
-export function decode(binary: Uint8Array): SystemDataExport {
-  return _decodeValue(decodeSystemData(binary));
+export function decode(binary: Uint8Array, provider: ethers.providers.Provider): SystemData {
+  return _decodeValue(decodeSystemData(binary), provider);
 }
 
-function _decodeValue(val: any) {
+function _getABI(name: string) {
+  switch (name) {
+    case 'ERC20':
+      return ERC20ABI;
+    case 'nTokenERC20':
+      return nTokenERC20ABI;
+    case 'IAggregator':
+      return IAggregatorABI;
+    case 'AssetRateAggregator':
+      return AssetRateAggregatorABI;
+    default:
+      throw Error(`Unknown abi ${name}`);
+  }
+}
+
+function _decodeValue(val: any, provider: ethers.providers.Provider) {
   if (typeof val !== 'object') {
     return val;
   } else if (val.hasOwnProperty('_isBigNumber') && val._isBigNumber) {
     return BigNumber.from(val);
   } else if (val.hasOwnProperty('_isTypedBigNumber') && val._isTypedBigNumber) {
     return TypedBigNumber.fromObject(val);
+  } else if (val.hasOwnProperty('_isSerializedContract') && val._isSerializedContract) {
+    return new ethers.Contract(val._address, _getABI(val._abiName), provider);
   } else if (Array.isArray(val)) {
-    return val.map(_decodeValue);
+    return val.map((v) => _decodeValue(v, provider));
   } else {
     // This is an object, recurse through it to decode nested properties
     for (const key in val) {
-      val[key] = _decodeValue(val[key]);
+      val[key] = _decodeValue(val[key], provider);
     }
     return val;
   }

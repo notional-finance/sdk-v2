@@ -138,7 +138,7 @@ export default class System {
     refreshIntervalMS = DEFAULT_DATA_REFRESH_INTERVAL,
     skipFetchSetup = false
   ) {
-    const initData = await fetchAndDecodeSystem(cacheUrl, skipFetchSetup);
+    const initData = await fetchAndDecodeSystem(cacheUrl, batchProvider, skipFetchSetup);
     return new System(cacheUrl, graphClient, contracts, batchProvider, refreshIntervalMS, initData, skipFetchSetup);
   }
 
@@ -156,7 +156,7 @@ export default class System {
     this.data = initData;
     // TODO: map symbol to currency id index
     this.dataRefreshInterval = setInterval(async () => {
-      this.data = await fetchAndDecodeSystem(this.cacheUrl, skipFetchSetup);
+      this.data = await fetchAndDecodeSystem(this.cacheUrl, this.batchProvider, skipFetchSetup);
     }, this.refreshIntervalMS);
   }
 

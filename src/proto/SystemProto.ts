@@ -60,6 +60,81 @@ function _decodeSerializedBigNumber(bb: ByteBuffer): SerializedBigNumber {
   return message;
 }
 
+export interface SerializedContract {
+  _isSerializedContract?: boolean;
+  _address?: string;
+  _abiName?: string;
+}
+
+export function encodeSerializedContract(message: SerializedContract): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeSerializedContract(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeSerializedContract(message: SerializedContract, bb: ByteBuffer): void {
+  // optional bool _isSerializedContract = 1;
+  let $_isSerializedContract = message._isSerializedContract;
+  if ($_isSerializedContract !== undefined) {
+    writeVarint32(bb, 8);
+    writeByte(bb, $_isSerializedContract ? 1 : 0);
+  }
+
+  // optional string _address = 2;
+  let $_address = message._address;
+  if ($_address !== undefined) {
+    writeVarint32(bb, 18);
+    writeString(bb, $_address);
+  }
+
+  // optional string _abiName = 3;
+  let $_abiName = message._abiName;
+  if ($_abiName !== undefined) {
+    writeVarint32(bb, 26);
+    writeString(bb, $_abiName);
+  }
+}
+
+export function decodeSerializedContract(binary: Uint8Array): SerializedContract {
+  return _decodeSerializedContract(wrapByteBuffer(binary));
+}
+
+function _decodeSerializedContract(bb: ByteBuffer): SerializedContract {
+  let message: SerializedContract = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional bool _isSerializedContract = 1;
+      case 1: {
+        message._isSerializedContract = !!readByte(bb);
+        break;
+      }
+
+      // optional string _address = 2;
+      case 2: {
+        message._address = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional string _abiName = 3;
+      case 3: {
+        message._abiName = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
 export interface SerializedTypedBigNumber {
   _isTypedBigNumber?: boolean;
   hex?: string;
@@ -454,7 +529,7 @@ function _decodeAsset(bb: ByteBuffer): Asset {
 }
 
 export interface ETHRate {
-  rateOracle?: string;
+  rateOracle?: SerializedContract;
   rateDecimalPlaces?: number;
   mustInvert?: boolean;
   buffer?: number;
@@ -469,11 +544,15 @@ export function encodeETHRate(message: ETHRate): Uint8Array {
 }
 
 function _encodeETHRate(message: ETHRate, bb: ByteBuffer): void {
-  // optional string rateOracle = 1;
+  // optional SerializedContract rateOracle = 1;
   let $rateOracle = message.rateOracle;
   if ($rateOracle !== undefined) {
     writeVarint32(bb, 10);
-    writeString(bb, $rateOracle);
+    let nested = popByteBuffer();
+    _encodeSerializedContract($rateOracle, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
   }
 
   // optional int32 rateDecimalPlaces = 2;
@@ -530,9 +609,11 @@ function _decodeETHRate(bb: ByteBuffer): ETHRate {
       case 0:
         break end_of_message;
 
-      // optional string rateOracle = 1;
+      // optional SerializedContract rateOracle = 1;
       case 1: {
-        message.rateOracle = readString(bb, readVarint32(bb));
+        let limit = pushTemporaryLength(bb);
+        message.rateOracle = _decodeSerializedContract(bb);
+        bb.limit = limit;
         break;
       }
 
@@ -577,7 +658,7 @@ function _decodeETHRate(bb: ByteBuffer): ETHRate {
 }
 
 export interface AssetRate {
-  rateAdapterAddress?: string;
+  rateAdapter?: SerializedContract;
   underlyingDecimalPlaces?: number;
   latestRate?: SerializedBigNumber;
   annualSupplyRate?: SerializedBigNumber;
@@ -590,11 +671,15 @@ export function encodeAssetRate(message: AssetRate): Uint8Array {
 }
 
 function _encodeAssetRate(message: AssetRate, bb: ByteBuffer): void {
-  // optional string rateAdapterAddress = 1;
-  let $rateAdapterAddress = message.rateAdapterAddress;
-  if ($rateAdapterAddress !== undefined) {
+  // optional SerializedContract rateAdapter = 1;
+  let $rateAdapter = message.rateAdapter;
+  if ($rateAdapter !== undefined) {
     writeVarint32(bb, 10);
-    writeString(bb, $rateAdapterAddress);
+    let nested = popByteBuffer();
+    _encodeSerializedContract($rateAdapter, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
   }
 
   // optional int32 underlyingDecimalPlaces = 2;
@@ -641,9 +726,11 @@ function _decodeAssetRate(bb: ByteBuffer): AssetRate {
       case 0:
         break end_of_message;
 
-      // optional string rateAdapterAddress = 1;
+      // optional SerializedContract rateAdapter = 1;
       case 1: {
-        message.rateAdapterAddress = readString(bb, readVarint32(bb));
+        let limit = pushTemporaryLength(bb);
+        message.rateAdapter = _decodeSerializedContract(bb);
+        bb.limit = limit;
         break;
       }
 
@@ -684,7 +771,7 @@ export interface nToken {
   pvHaircutPercentage?: number;
   depositShares?: number[];
   leverageThresholds?: number[];
-  tokenAddress?: string;
+  contract?: SerializedContract;
   assetCashPV?: SerializedTypedBigNumber;
   totalSupply?: SerializedTypedBigNumber;
   accumulatedNOTEPerNToken?: SerializedBigNumber;
@@ -762,11 +849,15 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     pushByteBuffer(packed);
   }
 
-  // optional string tokenAddress = 7;
-  let $tokenAddress = message.tokenAddress;
-  if ($tokenAddress !== undefined) {
+  // optional SerializedContract contract = 7;
+  let $contract = message.contract;
+  if ($contract !== undefined) {
     writeVarint32(bb, 58);
-    writeString(bb, $tokenAddress);
+    let nested = popByteBuffer();
+    _encodeSerializedContract($contract, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
   }
 
   // optional SerializedTypedBigNumber assetCashPV = 8;
@@ -950,9 +1041,11 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // optional string tokenAddress = 7;
+      // optional SerializedContract contract = 7;
       case 7: {
-        message.tokenAddress = readString(bb, readVarint32(bb));
+        let limit = pushTemporaryLength(bb);
+        message.contract = _decodeSerializedContract(bb);
+        bb.limit = limit;
         break;
       }
 
@@ -1050,14 +1143,14 @@ export interface Currency {
   symbol?: string;
   decimals?: SerializedBigNumber;
   decimalPlaces?: number;
-  tokenAddress?: string;
+  contract?: SerializedContract;
   tokenType?: string;
   hasTransferFee?: boolean;
   underlyingName?: string;
   underlyingSymbol?: string;
   underlyingDecimals?: SerializedBigNumber;
   underlyingDecimalPlaces?: number;
-  underlyingTokenAddress?: string;
+  underlyingContract?: SerializedContract;
   nTokenSymbol?: string;
 }
 
@@ -1107,11 +1200,15 @@ function _encodeCurrency(message: Currency, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($decimalPlaces));
   }
 
-  // optional string tokenAddress = 6;
-  let $tokenAddress = message.tokenAddress;
-  if ($tokenAddress !== undefined) {
+  // optional SerializedContract contract = 6;
+  let $contract = message.contract;
+  if ($contract !== undefined) {
     writeVarint32(bb, 50);
-    writeString(bb, $tokenAddress);
+    let nested = popByteBuffer();
+    _encodeSerializedContract($contract, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
   }
 
   // optional string tokenType = 7;
@@ -1160,11 +1257,15 @@ function _encodeCurrency(message: Currency, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($underlyingDecimalPlaces));
   }
 
-  // optional string underlyingTokenAddress = 13;
-  let $underlyingTokenAddress = message.underlyingTokenAddress;
-  if ($underlyingTokenAddress !== undefined) {
+  // optional SerializedContract underlyingContract = 13;
+  let $underlyingContract = message.underlyingContract;
+  if ($underlyingContract !== undefined) {
     writeVarint32(bb, 106);
-    writeString(bb, $underlyingTokenAddress);
+    let nested = popByteBuffer();
+    _encodeSerializedContract($underlyingContract, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
   }
 
   // optional string nTokenSymbol = 14;
@@ -1221,9 +1322,11 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
         break;
       }
 
-      // optional string tokenAddress = 6;
+      // optional SerializedContract contract = 6;
       case 6: {
-        message.tokenAddress = readString(bb, readVarint32(bb));
+        let limit = pushTemporaryLength(bb);
+        message.contract = _decodeSerializedContract(bb);
+        bb.limit = limit;
         break;
       }
 
@@ -1265,9 +1368,11 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
         break;
       }
 
-      // optional string underlyingTokenAddress = 13;
+      // optional SerializedContract underlyingContract = 13;
       case 13: {
-        message.underlyingTokenAddress = readString(bb, readVarint32(bb));
+        let limit = pushTemporaryLength(bb);
+        message.underlyingContract = _decodeSerializedContract(bb);
+        bb.limit = limit;
         break;
       }
 

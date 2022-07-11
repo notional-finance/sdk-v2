@@ -5,6 +5,12 @@ message SerializedBigNumber {
     string _hex = 2;
 }
 
+message SerializedContract {
+    bool _isSerializedContract = 1;
+    string _address = 2;
+    string _abiName = 3;
+}
+
 message SerializedTypedBigNumber {
     bool _isTypedBigNumber = 1;
     string hex = 2;
@@ -33,7 +39,7 @@ message Asset {
 }
 
 message ETHRate {
-  string rateOracle = 1;
+  SerializedContract rateOracle = 1;
   int32 rateDecimalPlaces = 2;
   bool mustInvert = 3;
   int32 buffer = 4;
@@ -42,7 +48,7 @@ message ETHRate {
 }
 
 message AssetRate {
-  string rateAdapterAddress = 1;
+  SerializedContract rateAdapter = 1;
   int32 underlyingDecimalPlaces = 2;
   SerializedBigNumber latestRate = 3;
   SerializedBigNumber annualSupplyRate = 4;
@@ -56,7 +62,7 @@ message nToken {
     int32 pvHaircutPercentage = 4;
     repeated int32 depositShares = 5;
     repeated int32 leverageThresholds = 6;
-    string tokenAddress = 7;
+    SerializedContract contract = 7;
 
     // Fields below here update more frequently than fields above
     SerializedTypedBigNumber assetCashPV = 8;
@@ -79,14 +85,14 @@ message Currency {
     string symbol = 3;
     SerializedBigNumber decimals = 4;
     int32 decimalPlaces = 5;
-    string tokenAddress = 6;
+    SerializedContract contract = 6;
     string tokenType = 7;
     bool hasTransferFee = 8;
     optional string underlyingName = 9;
     optional string underlyingSymbol = 10;
     optional SerializedBigNumber underlyingDecimals = 11;
     optional int32 underlyingDecimalPlaces = 12;
-    optional string underlyingTokenAddress = 13;
+    optional SerializedContract underlyingContract = 13;
     optional string nTokenSymbol = 14;
 }
 

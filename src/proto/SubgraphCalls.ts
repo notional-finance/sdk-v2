@@ -2,6 +2,7 @@ import { gql } from '@apollo/client/core';
 import { BigNumber } from 'ethers';
 import { TokenType } from '..';
 import GraphClient from '../GraphClient';
+import { SerializedContract } from './SystemProto';
 
 const systemConfigurationQuery = gql`
   {
@@ -111,7 +112,7 @@ interface SystemQueryResult {
 
 export interface CurrencyConfig {
   currencyId: number;
-  tokenAddress: string;
+  contract: SerializedContract;
   tokenType: TokenType;
   decimals: BigNumber;
   decimalPlaces: number;
@@ -120,17 +121,17 @@ export interface CurrencyConfig {
   underlyingName: string | null;
   underlyingSymbol: string | null;
   underlyingDecimalPlaces: number | null;
-  underlyingTokenAddress: string | null;
+  underlyingContract: SerializedContract | null;
   hasTransferFee: boolean;
   ethExchangeRate: {
-    rateOracle: string;
+    rateOracle: SerializedContract;
     rateDecimalPlaces: number;
     mustInvert: boolean;
     buffer: number;
     haircut: number;
   };
   assetExchangeRate: {
-    rateAdapterAddress: string;
+    rateAdapter: SerializedContract;
     underlyingDecimalPlaces: number;
   } | null;
   cashGroup: {
@@ -144,7 +145,7 @@ export interface CurrencyConfig {
     rateScalars: number[];
   } | null;
   nToken: {
-    tokenAddress: string;
+    contract: SerializedContract;
     name: string;
     nTokenSymbol: string;
     depositShares: number[] | null;
@@ -171,10 +172,27 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
         tokenType: c.tokenType as TokenType,
         decimals: BigNumber.from(c.decimals),
         decimalPlaces: Math.log10(Number(c.decimals)),
+        contract: {
+          _isSerializedContract: true,
+          _address: c.tokenAddress,
+          _abiName: 'ERC20',
+        },
         underlyingDecimals: c.underlyingDecimals ? BigNumber.from(c.underlyingDecimals) : undefined,
         underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
+        underlyingContract: c.underlyingTokenAddress
+          ? {
+              _isSerializedContract: true,
+              _address: c.underlyingTokenAddress,
+              _abiName: 'ERC20',
+            }
+          : null,
         nToken: {
           ...c.nToken,
+          contract: {
+            _isSerializedContract: true,
+            _address: c.underlyingTokenAddress,
+            _abiName: 'nTokenERC20',
+          },
           nTokenSymbol: c.nToken?.symbol,
           incentiveEmissionRate: BigNumber.from(c.nToken?.incentiveEmissionRate || 0),
         },
@@ -183,6 +201,24 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
               emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
               integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
               migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
+            }
+          : null,
+        ethExchangeRate: {
+          ...c.ethExchangeRate,
+          rateOracle: {
+            _isSerializedContract: true,
+            _address: c.ethExchangeRate.rateOracle,
+            _abiName: 'IAggregator',
+          },
+        },
+        assetExchangeRate: c.assetExchangeRate
+          ? {
+              ...c.assetExchangeRate,
+              rateAdapter: {
+                _isSerializedContract: true,
+                _address: c.assetExchangeRate?.rateAdapterAddress,
+                _abiName: 'AssetRateAggregator',
+              },
             }
           : null,
       } as CurrencyConfig;
