@@ -1,16 +1,7 @@
 import { gql } from '@apollo/client/core';
 import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
-import {
-  Asset,
-  AssetType,
-  Contracts,
-  Currency,
-  EthRate,
-  IncentiveMigration,
-  nToken,
-  SettlementMarket,
-} from '../libs/types';
+import { AssetType, Contracts, IncentiveMigration, SettlementMarket } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import { DEFAULT_DATA_REFRESH_INTERVAL } from '../config/constants';
 
@@ -20,8 +11,7 @@ import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../proto/EncodeProto';
-import { SystemData } from '../proto/';
-import { ETHRate } from '../proto/SystemProto';
+import { Asset, Currency, SystemData, nToken, ETHRate } from '../proto/';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -91,7 +81,7 @@ interface IMarketProvider {
 }
 
 interface IETHRateProvider {
-  getETHRate(): { ethRateConfig: EthRate; ethRate: BigNumber };
+  getETHRate(): ETHRate;
 }
 
 interface INTokenAssetCashPVProvider {
@@ -104,7 +94,7 @@ export default class System {
   // eslint-disable-next-line no-use-before-define
   private static _systemInstance?: System;
 
-  private data: SystemDataExport;
+  private data: SystemData;
 
   public get lastUpdateBlockNumber() {
     return this.data.lastUpdateBlockNumber;
@@ -158,7 +148,7 @@ export default class System {
     private contracts: Contracts,
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public refreshIntervalMS: number,
-    initData: SystemDataExport,
+    initData: SystemData,
     skipFetchSetup: boolean
   ) {
     // eslint-disable-next-line no-underscore-dangle
@@ -213,9 +203,8 @@ export default class System {
   }
 
   /*** Currencies ***/
-  public getAllCurrencies(): Test<ETHRate> {
-    return this.data.nTokenData;
-    // return Array.from(this.data.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
+  public getAllCurrencies(): Currency[] {
+    return Array.from(this.data.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
   }
 
   public getTradableCurrencies(): Currency[] {
@@ -245,7 +234,7 @@ export default class System {
   }
 
   public getCurrencyById(id: number): Currency {
-    const currency = this.currencies.get(id);
+    const currency = this.data.currencies.get(id);
     if (!currency) throw new Error(`Currency ${id} not found`);
     return currency;
   }
@@ -256,13 +245,13 @@ export default class System {
   }
 
   public isTradable(currencyId: number): boolean {
-    return this.cashGroups.has(currencyId);
+    return this.data.cashGroups.has(currencyId);
   }
 
   /*** Cash Group and Market ***/
 
   public getCashGroup(currencyId: number): CashGroup {
-    const cashGroup = this.cashGroups.get(currencyId);
+    const cashGroup = this.data.cashGroups.get(currencyId);
     if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
 
     const cashGroupCopy = CashGroup.copy(cashGroup);
@@ -271,19 +260,18 @@ export default class System {
   }
 
   public getMarkets(currencyId: number): Market[] {
-    const cashGroup = this.cashGroups.get(currencyId);
-    if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
-
+    const cashGroup = this.getCashGroup(currencyId);
     return cashGroup.markets.map((m) => this.marketProviders.get(m.marketKey)?.getMarket() ?? Market.copy(m));
   }
 
   /*** Exchange Rate Data ***/
 
   public getAssetRate(currencyId: number) {
-    const underlyingDecimalPlaces = this.assetRate.get(currencyId)?.underlyingDecimalPlaces;
+    const assetRateData = this.data.assetRateData.get(currencyId);
+    if (!assetRateData) throw new Error(`Asset Rate ${currencyId} not found`);
     const provider = this.assetRateProviders.get(currencyId);
-    const assetRate = provider?.getAssetRate() ?? this.dataSource.assetRateData.get(currencyId);
-    return { underlyingDecimalPlaces, assetRate };
+    const assetRate = provider?.getAssetRate() ?? assetRateData.latestRate;
+    return { underlyingDecimalPlaces: assetRateData.underlyingDecimalPlaces, assetRate };
   }
 
   public getETHProvider(currencyId: number) {
@@ -295,15 +283,13 @@ export default class System {
     if (ethRateProvider) {
       return ethRateProvider.getETHRate();
     }
-    const ethRateConfig = this.ethRates.get(currencyId);
-    const ethRate = this.dataSource.ethRateData.get(currencyId);
-    return { ethRateConfig, ethRate };
+    return this.data.ethRateData.get(currencyId);
   }
 
   /*** nToken Data ***/
 
   public getNToken(currencyId: number): nToken | undefined {
-    return this.nTokens.get(currencyId);
+    return this.data.nTokenData.get(currencyId);
   }
 
   public getNTokenAssetCashPV(currencyId: number) {
@@ -311,28 +297,28 @@ export default class System {
     if (nTokenAssetCashPVProvider) {
       return nTokenAssetCashPVProvider.getNTokenAssetCashPV();
     }
-    return this.dataSource.nTokenAssetCashPV.get(currencyId);
+    return this.data.nTokenData.get(currencyId)?.assetCashPV;
   }
 
   public getNTokenTotalSupply(currencyId: number) {
-    return this.dataSource.nTokenTotalSupply.get(currencyId);
+    return this.data.nTokenData.get(currencyId)?.totalSupply;
   }
 
   public getNTokenPortfolio(currencyId: number) {
-    const cashBalance = this.dataSource.nTokenCashBalance.get(currencyId);
-    const liquidityTokens = this.dataSource.nTokenLiquidityTokens.get(currencyId);
-    const fCash = this.dataSource.nTokenfCash.get(currencyId);
-
-    return { cashBalance, liquidityTokens, fCash };
+    const nTokenData = this.data.nTokenData.get(currencyId);
+    return {
+      cashBalance: nTokenData?.cashBalance,
+      liquidityTokens: nTokenData?.liquidityTokens,
+      fCash: nTokenData?.fCash,
+    };
   }
 
   public getNTokenIncentiveFactors(currencyId: number) {
-    return this.dataSource.nTokenIncentiveFactors.get(currencyId);
+    return this.data.nTokenData.get(currencyId);
   }
 
   public getIncentiveMigration(currencyId: number): IncentiveMigration | undefined {
-    if (this.data.nTokenData && this.data.nTokenData[currencyId]) {
-    }
+    return this.data.nTokenData.get(currencyId);
   }
 
   public clearMarketProviders() {

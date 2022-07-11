@@ -10,11 +10,9 @@ import TransactionBuilder from './TransactionBuilder';
 import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
 import {
   CACHE_DATA_REFRESH_INTERVAL,
-  DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
   INTERNAL_TOKEN_DECIMAL_PLACES,
   LOCAL_DATA_REFRESH_INTERVAL,
 } from './config/constants';
-import { DataSourceType } from './system/datasource';
 
 /* typechain imports */
 import { NoteERC20 } from './typechain/NoteERC20';
@@ -102,7 +100,6 @@ export default class Notional extends TransactionBuilder {
     chainId: number,
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
-    dataSourceType = DataSourceType.Cache,
     skipFetchSetup = false
   ) {
     let addresses: Addresses;
@@ -131,8 +128,6 @@ export default class Notional extends TransactionBuilder {
         pollInterval = Number(graphEndpoints['local:poll']);
         // eslint-disable-next-line no-param-reassign
         refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
-        // eslint-disable-next-line no-param-reassign
-        dataSourceType = DataSourceType.Blockchain;
         break;
       default:
         throw new Error(`Undefined chainId: ${chainId}`);
@@ -143,13 +138,11 @@ export default class Notional extends TransactionBuilder {
     const graphClient = new GraphClient(graphEndpoint, pollInterval, skipFetchSetup);
     const governance = new Governance(addresses.governor, contracts.note, signer, provider, graphClient) as Governance;
     const system = await System.load(
+      'url', // TODO: replace this
       graphClient,
       contracts,
       signer.provider as ethers.providers.JsonRpcBatchProvider,
-      chainId,
-      dataSourceType,
       refreshDataInterval,
-      DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
       skipFetchSetup
     );
 

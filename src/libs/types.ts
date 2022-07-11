@@ -1,13 +1,10 @@
 import { BigNumber, BigNumberish, BytesLike } from 'ethers';
 import TypedBigNumber from './TypedBigNumber';
-import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
 import { BalancerPool } from '../typechain/BalancerPool';
 import { BalancerVault } from '../typechain/BalancerVault';
 import { ERC20 } from '../typechain/ERC20';
 import { Governor } from '../typechain/Governor';
-import { IAggregator } from '../typechain/IAggregator';
 import { NoteERC20 } from '../typechain/NoteERC20';
-import { NTokenERC20 } from '../typechain/NTokenERC20';
 import { SNOTE } from '../typechain/SNOTE';
 import { TreasuryManager } from '../typechain/TreasuryManager';
 import { Notional as NotionalProxyTypechain } from '../typechain/Notional';
@@ -67,23 +64,6 @@ export interface WalletBalance {
   spender: string;
 }
 
-export interface Currency {
-  id: number;
-  name: string;
-  symbol: string;
-  decimals: BigNumber;
-  decimalPlaces: number;
-  contract: ERC20;
-  tokenType: TokenType;
-  underlyingName?: string;
-  underlyingSymbol?: string;
-  underlyingDecimals?: BigNumber;
-  underlyingDecimalPlaces?: number;
-  underlyingContract?: ERC20;
-  nTokenSymbol?: string;
-  hasTransferFee: boolean;
-}
-
 // This is a cut down version of the interface returned from typechain
 export interface Balance {
   currencyId: number;
@@ -91,16 +71,6 @@ export interface Balance {
   nTokenBalance: TypedBigNumber | undefined;
   lastClaimTime: BigNumber;
   accountIncentiveDebt: BigNumber;
-}
-
-export interface Asset {
-  currencyId: number;
-  maturity: number;
-  assetType: AssetType;
-  notional: TypedBigNumber;
-  hasMatured: boolean;
-  settlementDate: number;
-  isIdiosyncratic: boolean;
 }
 
 export enum TradeActionType {
@@ -180,30 +150,6 @@ export interface BalanceHistory {
   totalUnderlyingValueChange: TypedBigNumber;
 }
 
-export interface EthRate {
-  rateOracle: IAggregator;
-  rateDecimalPlaces: number;
-  mustInvert: boolean;
-  buffer: number;
-  haircut: number;
-}
-
-export interface AssetRate {
-  rateAdapter: AssetRateAggregator;
-  underlyingDecimalPlaces: number;
-}
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export interface nToken {
-  name: string;
-  symbol: string;
-  incentiveEmissionRate: BigNumber;
-  pvHaircutPercentage: number;
-  depositShares: BigNumber[];
-  leverageThresholds: BigNumber[];
-  contract: NTokenERC20;
-}
-
 export interface IncentiveFactors {
   accumulatedNOTEPerNToken: BigNumber;
   lastAccumulatedTime: BigNumber;
@@ -220,18 +166,6 @@ export interface SettlementMarket {
   totalfCash: TypedBigNumber;
   totalAssetCash: TypedBigNumber;
   totalLiquidity: TypedBigNumber;
-}
-
-export interface StakedNoteParameters {
-  poolId: string;
-  coolDownTimeInSeconds: number;
-  redeemWindowSeconds: number;
-  ethBalance: TypedBigNumber;
-  noteBalance: TypedBigNumber;
-  balancerPoolTotalSupply: BigNumber;
-  sNOTEBptBalance: BigNumber;
-  swapFee: BigNumber;
-  sNOTETotalSupply: TypedBigNumber;
 }
 
 export interface Contracts {

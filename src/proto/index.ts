@@ -1,14 +1,14 @@
 import { BigNumber } from 'ethers';
 import { TypedBigNumber } from '..';
 import {
-  AssetRate,
-  CashGroup,
-  Currency,
-  ETHRate,
-  nToken,
+  AssetRate as _AssetRate,
+  CashGroup as _CashGroup,
+  Currency as _Currency,
+  ETHRate as _ETHRate,
+  nToken as _nToken,
   SerializedBigNumber,
   SerializedTypedBigNumber,
-  sNOTE,
+  sNOTE as _sNOTE,
 } from './SystemProto';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
@@ -39,15 +39,22 @@ type Rewrite<T> = DeepRequired<
   BigNumber | TypedBigNumber
 >;
 
+export type StakedNoteParameters = Rewrite<_sNOTE>;
+export type Currency = DeepRequired<_Currency, null>;
+export type ETHRate = Rewrite<_ETHRate>;
+export type AssetRate = Rewrite<_AssetRate>;
+export type nToken = Rewrite<_nToken>;
+export type CashGroupData = Rewrite<_CashGroup>;
+
 export interface SystemData {
   network: string;
   lastUpdateBlockNumber: number;
   lastUpdateTimestamp: number;
-  USDExchangeRates: { [key: string]: BigNumber };
-  StakedNoteParameters: Rewrite<sNOTE>;
-  currencies: { [key: number]: DeepRequired<Currency, null> };
-  ethRateData: { [key: number]: Rewrite<ETHRate> };
-  assetRateData: { [key: number]: Rewrite<AssetRate> };
-  nTokenData: { [key: number]: Rewrite<nToken> };
-  cashGroups: { [key: number]: Rewrite<CashGroup> };
+  USDExchangeRates: Map<string, BigNumber>;
+  StakedNoteParameters: StakedNoteParameters;
+  currencies: Map<number, Currency>;
+  ethRateData: Map<number, ETHRate>;
+  assetRateData: Map<number, AssetRate>;
+  nTokenData: Map<number, nToken>;
+  cashGroups: Map<number, CashGroupData>;
 }
