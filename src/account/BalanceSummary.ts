@@ -1,19 +1,12 @@
 import { gql } from '@apollo/client/core';
-import {
-  Balance,
-  BalanceHistory,
-  Currency,
-  nToken,
-  NTokenStatus,
-  ReturnsBreakdown,
-  TransactionHistory,
-} from '../libs/types';
+import { Balance, BalanceHistory, NTokenStatus, ReturnsBreakdown, TransactionHistory } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import { xirr, CashFlow, convertBigNumber } from '../libs/xirr';
 import AccountData from './AccountData';
 import GraphClient from '../GraphClient';
 import { System, FreeCollateral, NTokenValue } from '../system';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
+import { Currency, nToken } from '../proto';
 
 interface BalanceHistoryQueryResult {
   balanceChanges: {
@@ -51,7 +44,7 @@ export default class BalanceSummary {
   }
 
   public get nTokenSymbol() {
-    return this.nToken?.symbol;
+    return this.nToken?.nTokenSymbol;
   }
 
   public get totalUnderlyingValueDisplayString() {
@@ -291,7 +284,7 @@ export default class BalanceSummary {
       const currency = system.getCurrencyById(currencyId);
       const assetSymbol = currency.symbol;
       const underlyingSymbol = currency.underlyingSymbol || currency.symbol;
-      const nTokenSymbol = system.getNToken(currencyId)?.symbol;
+      const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
       const assetCashBalanceBefore = TypedBigNumber.fromBalance(r.assetCashBalanceBefore, assetSymbol, true);
       const assetCashBalanceAfter = TypedBigNumber.fromBalance(r.assetCashBalanceAfter, assetSymbol, true);
       const nTokenBalanceBefore = nTokenSymbol
@@ -547,9 +540,8 @@ export default class BalanceSummary {
     const totalAccountAssetValue = nTokenAssetPV ? balance.cashBalance.add(nTokenAssetPV) : balance.cashBalance;
     if (!hasDebt) return totalAccountAssetValue;
 
-    const { ethRateConfig } = system.getETHRate(balance.currencyId);
-    if (!ethRateConfig) throw Error(`Cannot find ethRateConfig for currency ${balance.currencyId}`);
-    const multiplier = localNetAvailable.isPositive() ? ethRateConfig.haircut : ethRateConfig.buffer;
+    const { haircut, buffer } = system.getETHRate(balance.currencyId);
+    const multiplier = localNetAvailable.isPositive() ? haircut : buffer;
     let fcLocal: TypedBigNumber;
     if (multiplier === 0) {
       // If multiplier is zero then the user can withdraw the local net available, there is no collateral

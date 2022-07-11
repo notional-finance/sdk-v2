@@ -4,12 +4,13 @@ import { System, Market } from '../system';
 import { convertBigNumber, xirr } from '../libs/xirr';
 // prettier-ignore
 import {
-  Asset, AssetType, TradeHistory, TradeType, Currency, TransactionHistory,
+  AssetType, TradeHistory, TradeType, TransactionHistory,
 } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
 import GraphClient from '../GraphClient';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
+import { Asset, Currency } from '../proto';
 
 interface TradeHistoryQueryResult {
   trades: {
@@ -275,7 +276,7 @@ export default class AssetSummary {
     let fCashValue = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     if (liquidityToken) {
       const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
-        liquidityToken.assetType,
+        liquidityToken.assetType as AssetType,
         liquidityToken.notional,
         false
       );

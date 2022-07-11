@@ -51,7 +51,7 @@ class TypedBigNumber {
       // Mark the currency as WETH even though we treat it as ETH for calculations
       this._isWETH = true;
     } else {
-      this.currencyId = System.getSystem().getCurrencyBySymbol(symbol).id;
+      this.currencyId = 0; // System.getSystem().getCurrencyBySymbol(symbol).id;
     }
   }
 

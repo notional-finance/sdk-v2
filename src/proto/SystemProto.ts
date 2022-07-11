@@ -679,10 +679,11 @@ function _decodeAssetRate(bb: ByteBuffer): AssetRate {
 
 export interface nToken {
   name?: string;
+  nTokenSymbol?: string;
   incentiveEmissionRate?: SerializedBigNumber;
   pvHaircutPercentage?: number;
-  depositShares?: SerializedBigNumber[];
-  leverageThresholds?: SerializedBigNumber[];
+  depositShares?: number[];
+  leverageThresholds?: number[];
   tokenAddress?: string;
   assetCashPV?: SerializedTypedBigNumber;
   totalSupply?: SerializedTypedBigNumber;
@@ -710,6 +711,13 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeString(bb, $name);
   }
 
+  // optional string nTokenSymbol = 1;
+  let $nTokenSymbol = message.nTokenSymbol;
+  if ($nTokenSymbol !== undefined) {
+    writeVarint32(bb, 10);
+    writeString(bb, $nTokenSymbol);
+  }
+
   // optional SerializedBigNumber incentiveEmissionRate = 3;
   let $incentiveEmissionRate = message.incentiveEmissionRate;
   if ($incentiveEmissionRate !== undefined) {
@@ -728,30 +736,30 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($pvHaircutPercentage));
   }
 
-  // repeated SerializedBigNumber depositShares = 5;
+  // repeated int32 depositShares = 5;
   let array$depositShares = message.depositShares;
   if (array$depositShares !== undefined) {
+    let packed = popByteBuffer();
     for (let value of array$depositShares) {
-      writeVarint32(bb, 42);
-      let nested = popByteBuffer();
-      _encodeSerializedBigNumber(value, nested);
-      writeVarint32(bb, nested.limit);
-      writeByteBuffer(bb, nested);
-      pushByteBuffer(nested);
+      writeVarint64(packed, intToLong(value));
     }
+    writeVarint32(bb, 42);
+    writeVarint32(bb, packed.offset);
+    writeByteBuffer(bb, packed);
+    pushByteBuffer(packed);
   }
 
-  // repeated SerializedBigNumber leverageThresholds = 6;
+  // repeated int32 leverageThresholds = 6;
   let array$leverageThresholds = message.leverageThresholds;
   if (array$leverageThresholds !== undefined) {
+    let packed = popByteBuffer();
     for (let value of array$leverageThresholds) {
-      writeVarint32(bb, 50);
-      let nested = popByteBuffer();
-      _encodeSerializedBigNumber(value, nested);
-      writeVarint32(bb, nested.limit);
-      writeByteBuffer(bb, nested);
-      pushByteBuffer(nested);
+      writeVarint64(packed, intToLong(value));
     }
+    writeVarint32(bb, 50);
+    writeVarint32(bb, packed.offset);
+    writeByteBuffer(bb, packed);
+    pushByteBuffer(packed);
   }
 
   // optional string tokenAddress = 7;
@@ -892,6 +900,12 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
+      // optional string nTokenSymbol = 1;
+      case 1: {
+        message.nTokenSymbol = readString(bb, readVarint32(bb));
+        break;
+      }
+
       // optional SerializedBigNumber incentiveEmissionRate = 3;
       case 3: {
         let limit = pushTemporaryLength(bb);
@@ -906,21 +920,33 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // repeated SerializedBigNumber depositShares = 5;
+      // repeated int32 depositShares = 5;
       case 5: {
-        let limit = pushTemporaryLength(bb);
         let values = message.depositShares || (message.depositShares = []);
-        values.push(_decodeSerializedBigNumber(bb));
-        bb.limit = limit;
+        if ((tag & 7) === 2) {
+          let outerLimit = pushTemporaryLength(bb);
+          while (!isAtEnd(bb)) {
+            values.push(readVarint32(bb));
+          }
+          bb.limit = outerLimit;
+        } else {
+          values.push(readVarint32(bb));
+        }
         break;
       }
 
-      // repeated SerializedBigNumber leverageThresholds = 6;
+      // repeated int32 leverageThresholds = 6;
       case 6: {
-        let limit = pushTemporaryLength(bb);
         let values = message.leverageThresholds || (message.leverageThresholds = []);
-        values.push(_decodeSerializedBigNumber(bb));
-        bb.limit = limit;
+        if ((tag & 7) === 2) {
+          let outerLimit = pushTemporaryLength(bb);
+          while (!isAtEnd(bb)) {
+            values.push(readVarint32(bb));
+          }
+          bb.limit = outerLimit;
+        } else {
+          values.push(readVarint32(bb));
+        }
         break;
       }
 
@@ -1022,12 +1048,14 @@ export interface Currency {
   id?: number;
   name?: string;
   symbol?: string;
+  decimals?: SerializedBigNumber;
   decimalPlaces?: number;
   tokenAddress?: string;
   tokenType?: string;
   hasTransferFee?: boolean;
   underlyingName?: string;
   underlyingSymbol?: string;
+  underlyingDecimals?: SerializedBigNumber;
   underlyingDecimalPlaces?: number;
   underlyingTokenAddress?: string;
   nTokenSymbol?: string;
@@ -1061,66 +1089,88 @@ function _encodeCurrency(message: Currency, bb: ByteBuffer): void {
     writeString(bb, $symbol);
   }
 
-  // optional int32 decimalPlaces = 4;
+  // optional SerializedBigNumber decimals = 4;
+  let $decimals = message.decimals;
+  if ($decimals !== undefined) {
+    writeVarint32(bb, 34);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($decimals, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional int32 decimalPlaces = 5;
   let $decimalPlaces = message.decimalPlaces;
   if ($decimalPlaces !== undefined) {
-    writeVarint32(bb, 32);
+    writeVarint32(bb, 40);
     writeVarint64(bb, intToLong($decimalPlaces));
   }
 
-  // optional string tokenAddress = 5;
+  // optional string tokenAddress = 6;
   let $tokenAddress = message.tokenAddress;
   if ($tokenAddress !== undefined) {
-    writeVarint32(bb, 42);
+    writeVarint32(bb, 50);
     writeString(bb, $tokenAddress);
   }
 
-  // optional string tokenType = 6;
+  // optional string tokenType = 7;
   let $tokenType = message.tokenType;
   if ($tokenType !== undefined) {
-    writeVarint32(bb, 50);
+    writeVarint32(bb, 58);
     writeString(bb, $tokenType);
   }
 
-  // optional bool hasTransferFee = 7;
+  // optional bool hasTransferFee = 8;
   let $hasTransferFee = message.hasTransferFee;
   if ($hasTransferFee !== undefined) {
-    writeVarint32(bb, 56);
+    writeVarint32(bb, 64);
     writeByte(bb, $hasTransferFee ? 1 : 0);
   }
 
-  // optional string underlyingName = 8;
+  // optional string underlyingName = 9;
   let $underlyingName = message.underlyingName;
   if ($underlyingName !== undefined) {
-    writeVarint32(bb, 66);
+    writeVarint32(bb, 74);
     writeString(bb, $underlyingName);
   }
 
-  // optional string underlyingSymbol = 9;
+  // optional string underlyingSymbol = 10;
   let $underlyingSymbol = message.underlyingSymbol;
   if ($underlyingSymbol !== undefined) {
-    writeVarint32(bb, 74);
+    writeVarint32(bb, 82);
     writeString(bb, $underlyingSymbol);
   }
 
-  // optional int32 underlyingDecimalPlaces = 10;
+  // optional SerializedBigNumber underlyingDecimals = 11;
+  let $underlyingDecimals = message.underlyingDecimals;
+  if ($underlyingDecimals !== undefined) {
+    writeVarint32(bb, 90);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($underlyingDecimals, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional int32 underlyingDecimalPlaces = 12;
   let $underlyingDecimalPlaces = message.underlyingDecimalPlaces;
   if ($underlyingDecimalPlaces !== undefined) {
-    writeVarint32(bb, 80);
+    writeVarint32(bb, 96);
     writeVarint64(bb, intToLong($underlyingDecimalPlaces));
   }
 
-  // optional string underlyingTokenAddress = 11;
+  // optional string underlyingTokenAddress = 13;
   let $underlyingTokenAddress = message.underlyingTokenAddress;
   if ($underlyingTokenAddress !== undefined) {
-    writeVarint32(bb, 90);
+    writeVarint32(bb, 106);
     writeString(bb, $underlyingTokenAddress);
   }
 
-  // optional string nTokenSymbol = 12;
+  // optional string nTokenSymbol = 14;
   let $nTokenSymbol = message.nTokenSymbol;
   if ($nTokenSymbol !== undefined) {
-    writeVarint32(bb, 98);
+    writeVarint32(bb, 114);
     writeString(bb, $nTokenSymbol);
   }
 }
@@ -1157,56 +1207,72 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
         break;
       }
 
-      // optional int32 decimalPlaces = 4;
+      // optional SerializedBigNumber decimals = 4;
       case 4: {
+        let limit = pushTemporaryLength(bb);
+        message.decimals = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional int32 decimalPlaces = 5;
+      case 5: {
         message.decimalPlaces = readVarint32(bb);
         break;
       }
 
-      // optional string tokenAddress = 5;
-      case 5: {
+      // optional string tokenAddress = 6;
+      case 6: {
         message.tokenAddress = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional string tokenType = 6;
-      case 6: {
+      // optional string tokenType = 7;
+      case 7: {
         message.tokenType = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional bool hasTransferFee = 7;
-      case 7: {
+      // optional bool hasTransferFee = 8;
+      case 8: {
         message.hasTransferFee = !!readByte(bb);
         break;
       }
 
-      // optional string underlyingName = 8;
-      case 8: {
+      // optional string underlyingName = 9;
+      case 9: {
         message.underlyingName = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional string underlyingSymbol = 9;
-      case 9: {
+      // optional string underlyingSymbol = 10;
+      case 10: {
         message.underlyingSymbol = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional int32 underlyingDecimalPlaces = 10;
-      case 10: {
+      // optional SerializedBigNumber underlyingDecimals = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        message.underlyingDecimals = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional int32 underlyingDecimalPlaces = 12;
+      case 12: {
         message.underlyingDecimalPlaces = readVarint32(bb);
         break;
       }
 
-      // optional string underlyingTokenAddress = 11;
-      case 11: {
+      // optional string underlyingTokenAddress = 13;
+      case 13: {
         message.underlyingTokenAddress = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional string nTokenSymbol = 12;
-      case 12: {
+      // optional string nTokenSymbol = 14;
+      case 14: {
         message.nTokenSymbol = readString(bb, readVarint32(bb));
         break;
       }

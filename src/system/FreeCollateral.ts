@@ -2,9 +2,10 @@ import { System, Market } from '.';
 import { AccountData } from '../account';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
-import { Asset, AssetType } from '../libs/types';
+import { AssetType } from '../libs/types';
 import { INTERNAL_TOKEN_PRECISION, ETHER_CURRENCY_ID } from '../config/constants';
 import NTokenValue from './NTokenValue';
+import { Asset } from '../proto';
 
 const useHaircut = true;
 const noHaircut = false;
@@ -82,7 +83,7 @@ export default class FreeCollateral {
     blockTime = getNowSeconds()
   ) {
     const system = System.getSystem();
-    const nTokenSymbol = system.getNToken(currencyId)?.symbol;
+    const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
     const { symbol } = system.getCurrencyById(currencyId);
     const underlyingSymbol = system.getUnderlyingSymbol(currencyId);
 
@@ -133,7 +134,7 @@ export default class FreeCollateral {
       .forEach((lt) => {
         // eslint-disable-next-line prefer-const
         let { assetCashClaim, fCashClaim } = cashGroup.getLiquidityTokenValue(
-          lt.assetType,
+          lt.assetType as AssetType,
           lt.notional,
           haircut,
           marketOverrides
@@ -151,9 +152,7 @@ export default class FreeCollateral {
             maturity: lt.maturity,
             assetType: AssetType.fCash,
             notional: fCashClaim,
-            hasMatured: false,
             settlementDate: lt.maturity,
-            isIdiosyncratic: false,
           });
         }
       });
@@ -392,7 +391,7 @@ export default class FreeCollateral {
     // netETHDebtWithBuffer - netETHCollateral / ratio = collateralDebtPayment * buffer
     // collateralDebtPayment = [netETHDebtWithBuffer - netETHCollateral / ratio] / buffer
     const system = System.getSystem();
-    const collateralBuffer = system.getETHRate(collateralCurrencyId).ethRateConfig!.buffer;
+    const { buffer: collateralBuffer } = system.getETHRate(collateralCurrencyId);
     const collateralDebtPayment = netETHDebtWithBuffer
       .sub(netETHCollateralWithHaircut.scale(100, bufferedRatio))
       .scale(100, collateralBuffer);
@@ -415,7 +414,7 @@ export default class FreeCollateral {
     // additionalCollateral = [ratio * [netETHDebtWithBuffer - collateralDebtETHBuffer]
     //                            - netETHCollateralWithHaircut]/ haircut
     const postDebt = netETHDebtWithBuffer.sub(collateralDebtETHBuffer).scale(bufferedRatio, 100);
-    const collateralHaircut = system.getETHRate(collateralCurrencyId).ethRateConfig!.haircut;
+    const collateralHaircut = system.getETHRate(collateralCurrencyId)?.haircut;
     const additionalCollateralETH = postDebt.sub(netETHCollateralWithHaircut).scale(100, collateralHaircut);
     const totalCollateralETH = additionalCollateralETH.add(collateralDebtETH);
 

@@ -9,7 +9,8 @@ import {
   RATE_PRECISION,
   INCENTIVE_ACCUMULATION_PRECISION,
 } from '../config/constants';
-import { Asset, NTokenStatus } from '../libs/types';
+import { AssetType, NTokenStatus } from '../libs/types';
+import { Asset } from '../proto';
 
 export default class NTokenValue {
   public static getNTokenFactors(currencyId: number) {
@@ -59,7 +60,7 @@ export default class NTokenValue {
     const { nToken, totalSupply, nTokenPV, assetSymbol } = NTokenValue.getNTokenFactors(currencyId);
 
     if (totalSupply.isZero()) return TypedBigNumber.from(0, BigNumberType.InternalAsset, assetSymbol);
-    nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
+    nTokenBalance.check(BigNumberType.nToken, nToken.nTokenSymbol);
     const nTokenHaircut = useHaircut ? nToken.pvHaircutPercentage : PERCENTAGE_BASIS;
 
     // Balance * PV * Haircut / (totalSupply * BASIS)
@@ -82,7 +83,7 @@ export default class NTokenValue {
       ? assetCashAmountInternal.n
       : assetCashAmountInternal.n.mul(totalSupply.n).div(nTokenPV.n);
 
-    return TypedBigNumber.from(nTokenAmount, BigNumberType.nToken, nToken.symbol);
+    return TypedBigNumber.from(nTokenAmount, BigNumberType.nToken, nToken.nTokenSymbol);
   }
 
   /**
@@ -95,7 +96,7 @@ export default class NTokenValue {
   public static getAssetRequiredToMintNToken(currencyId: number, nTokenBalance: TypedBigNumber) {
     const { nToken, totalSupply, nTokenPV, assetSymbol } = NTokenValue.getNTokenFactors(currencyId);
 
-    nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
+    nTokenBalance.check(BigNumberType.nToken, nToken.nTokenSymbol);
     const assetCash = nTokenPV.isZero() ? nTokenBalance.n : nTokenBalance.scale(nTokenPV.n, totalSupply.n);
 
     return TypedBigNumber.from(assetCash, BigNumberType.InternalAsset, assetSymbol);
@@ -176,7 +177,7 @@ export default class NTokenValue {
   ) {
     const { nToken, totalSupply } = NTokenValue.getNTokenFactors(currencyId);
     const { cashBalance, liquidityTokens, fCash, cashGroup } = NTokenValue.getNTokenPortfolio(currencyId);
-    nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
+    nTokenBalance.check(BigNumberType.nToken, nToken.nTokenSymbol);
 
     const status = NTokenValue.getNTokenStatus(currencyId);
     if (status === NTokenStatus.MarketsNotInitialized) throw Error(status);
@@ -196,7 +197,11 @@ export default class NTokenValue {
     return liquidityTokensToWithdraw.reduce((totalAssetCash, lt) => {
       // Inside this reduce we simulate what the redeemer will receive for withdrawing the specified
       // amount of liquidity tokens
-      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
+      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
+        lt.assetType as AssetType,
+        lt.notional,
+        false
+      );
       // This is the redeemer's share of the fCash position
       const fCashPosition = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0);
 
@@ -232,8 +237,8 @@ export default class NTokenValue {
     status: NTokenStatus,
     nTokenBalance: TypedBigNumber,
     cashGroup: CashGroup,
-    liquidityTokens: Asset[],
-    fCash: Asset[],
+    liquidityTokens: readonly Asset[],
+    fCash: readonly Asset[],
     totalSupply: TypedBigNumber
   ): Asset[] {
     const currency = System.getSystem().getCurrencyById(currencyId);
@@ -243,7 +248,11 @@ export default class NTokenValue {
       return liquidityTokens.map((lt) => ({ ...lt, notional: lt.notional.scale(nTokenBalance.n, totalSupply.n) }));
     }
     const totalAssetValueInMarkets = liquidityTokens.reduce((total, lt) => {
-      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
+      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
+        lt.assetType as AssetType,
+        lt.notional,
+        false
+      );
       const fCashPosition = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0);
       const netfCash = fCashPosition.add(fCashClaim);
       return total
@@ -288,8 +297,8 @@ export default class NTokenValue {
   protected static calculateNTokenBlendedYieldAtBlock(
     currencyId: number,
     cashBalance: TypedBigNumber,
-    liquidityTokens: Asset[],
-    fCash: Asset[],
+    liquidityTokens: readonly Asset[],
+    fCash: readonly Asset[],
     cashGroup: CashGroup,
     blockTime = getNowSeconds(),
     marketOverrides?: Market[],
@@ -309,7 +318,11 @@ export default class NTokenValue {
         .forEach((lt, index) => {
           if (index > 0) throw Error('Found multiple liquidity tokens for single maturity');
 
-          const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
+          const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
+            lt.assetType as AssetType,
+            lt.notional,
+            false
+          );
           totalAssetCash = totalAssetCash.add(assetCashClaim);
           fCashNotional = fCashNotional.add(fCashClaim);
         });
@@ -376,7 +389,7 @@ export default class NTokenValue {
     const { nToken, totalSupply } = NTokenValue.getNTokenFactors(currencyId);
     const incentiveFactors = System.getSystem().getNTokenIncentiveFactors(currencyId);
     if (!incentiveFactors) throw new Error('Incentive emission factors not found');
-    nTokenBalance.check(BigNumberType.nToken, nToken.symbol);
+    nTokenBalance.check(BigNumberType.nToken, nToken.nTokenSymbol);
     let incentives = BigNumber.from(0);
     const migrationFactors = System.getSystem().getIncentiveMigration(currencyId);
     const lastClaimTime = _lastClaimTime.toNumber();
@@ -386,7 +399,7 @@ export default class NTokenValue {
       const timeSinceMigration = migrationFactors.migrationTime - lastClaimTime;
 
       if (timeSinceMigration > 0) {
-        const incentiveRate = migrationFactors.emissionRate
+        const incentiveRate = migrationFactors.migratedEmissionRate
           .mul(INTERNAL_TOKEN_PRECISION)
           .mul(timeSinceMigration)
           .div(SECONDS_IN_YEAR);

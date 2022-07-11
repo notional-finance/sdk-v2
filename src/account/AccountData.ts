@@ -7,8 +7,9 @@ import {
   MAX_PORTFOLIO_ASSETS,
 } from '../config/constants';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { Asset, AssetType, Balance } from '../libs/types';
+import { AssetType, Balance } from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds } from '../libs/utils';
+import { Asset } from '../proto';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
 
 interface AssetResult {
@@ -155,7 +156,7 @@ export default class AccountData {
       .filter((v) => v.currencyId !== 0)
       .map((v) => {
         const { symbol } = system.getCurrencyById(v.currencyId);
-        const nTokenSymbol = system.getNToken(v.currencyId)?.symbol;
+        const nTokenSymbol = system.getNToken(v.currencyId)?.nTokenSymbol;
         return {
           currencyId: v.currencyId,
           cashBalance: TypedBigNumber.from(v.cashBalance, BigNumberType.InternalAsset, symbol),

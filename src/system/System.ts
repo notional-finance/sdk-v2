@@ -283,7 +283,9 @@ export default class System {
     if (ethRateProvider) {
       return ethRateProvider.getETHRate();
     }
-    return this.data.ethRateData.get(currencyId);
+    const ethRate = this.data.ethRateData.get(currencyId);
+    if (!ethRate) throw new Error(`ETH Rate ${currencyId} not found`);
+    return ethRate;
   }
 
   /*** nToken Data ***/

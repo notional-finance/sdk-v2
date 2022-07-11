@@ -113,6 +113,7 @@ export interface CurrencyConfig {
   currencyId: number;
   tokenAddress: string;
   tokenType: TokenType;
+  decimals: BigNumber;
   decimalPlaces: number;
   name: string;
   symbol: string;
@@ -145,7 +146,7 @@ export interface CurrencyConfig {
   nToken: {
     tokenAddress: string;
     name: string;
-    symbol: string;
+    nTokenSymbol: string;
     depositShares: number[] | null;
     leverageThresholds: number[] | null;
     incentiveEmissionRate: BigNumber | null;
@@ -168,10 +169,13 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
         ...c,
         currencyId: Number(c.id),
         tokenType: c.tokenType as TokenType,
+        decimals: BigNumber.from(c.decimals),
         decimalPlaces: Math.log10(Number(c.decimals)),
+        underlyingDecimals: c.underlyingDecimals ? BigNumber.from(c.underlyingDecimals) : undefined,
         underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
         nToken: {
           ...c.nToken,
+          nTokenSymbol: c.nToken?.symbol,
           incentiveEmissionRate: BigNumber.from(c.nToken?.incentiveEmissionRate || 0),
         },
         incentiveMigration: c.incentiveMigration

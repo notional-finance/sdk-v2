@@ -3,8 +3,8 @@ import { FreeCollateral, Market, System, NTokenValue } from '.';
 import { AccountData } from '../account';
 import { BASIS_POINT, MIN_INTEREST_RATE, PERCENTAGE_BASIS } from '../config/constants';
 import TypedBigNumber from '../libs/TypedBigNumber';
-import { Asset } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
+import { Asset } from '../proto';
 
 export default class InterestRateRisk {
   public static calculateInterestRateRisk(accountData: AccountData, blockTime = getNowSeconds()) {
@@ -142,8 +142,8 @@ export default class InterestRateRisk {
     // use this to calculate the liquidation point. If FC is already negative than interest
     // rates may be above or below this point already. It's possible that this currency is
     // not liquidatable but some other currency has caused FC to decrease.
-    const { ethRateConfig } = System.getSystem().getETHRate(currencyId);
-    if (ethRateConfig?.haircut === 0 && aggregateFC.isPositive()) {
+    const { haircut } = System.getSystem().getETHRate(currencyId);
+    if (haircut === 0 && aggregateFC.isPositive()) {
       // If haircut is zero then we will get a divide by zero error when converting aggregateFC
       // using the haircut. Since positive netLocalUnderlying has no affect on aggregateFC, the
       // account will become under collateralized when it accrues enough local currency debt to

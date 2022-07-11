@@ -51,10 +51,11 @@ message AssetRate {
 message nToken {
     // First set of fields update less frequently
     string name = 1;
+    string nTokenSymbol = 1;
     SerializedBigNumber incentiveEmissionRate = 3;
     int32 pvHaircutPercentage = 4;
-    repeated SerializedBigNumber depositShares = 5;
-    repeated SerializedBigNumber leverageThresholds = 6;
+    repeated int32 depositShares = 5;
+    repeated int32 leverageThresholds = 6;
     string tokenAddress = 7;
 
     // Fields below here update more frequently than fields above
@@ -76,15 +77,17 @@ message Currency {
     int32 id = 1;
     string name = 2;
     string symbol = 3;
-    int32 decimalPlaces = 4;
-    string tokenAddress = 5;
-    string tokenType = 6;
-    bool hasTransferFee = 7;
-    optional string underlyingName = 8;
-    optional string underlyingSymbol = 9;
-    optional int32 underlyingDecimalPlaces = 10;
-    optional string underlyingTokenAddress = 11;
-    optional string nTokenSymbol = 12;
+    SerializedBigNumber decimals = 4;
+    int32 decimalPlaces = 5;
+    string tokenAddress = 6;
+    string tokenType = 7;
+    bool hasTransferFee = 8;
+    optional string underlyingName = 9;
+    optional string underlyingSymbol = 10;
+    optional SerializedBigNumber underlyingDecimals = 11;
+    optional int32 underlyingDecimalPlaces = 12;
+    optional string underlyingTokenAddress = 13;
+    optional string nTokenSymbol = 14;
 }
 
 message Market {

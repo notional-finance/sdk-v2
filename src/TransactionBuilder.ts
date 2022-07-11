@@ -1,14 +1,8 @@
 import { Overrides, ethers, BigNumber, BytesLike } from 'ethers';
 import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
-import {
-  DepositActionType,
-  TokenType,
-  BatchBalanceAndTradeAction,
-  TradeActionType,
-  Asset,
-  Currency,
-} from './libs/types';
+import { DepositActionType, TokenType, BatchBalanceAndTradeAction, TradeActionType } from './libs/types';
 import { getNowSeconds, populateTxnAndGas } from './libs/utils';
+import { Asset, Currency } from './proto';
 import { System, Market, CashGroup } from './system';
 
 export default class TransactionBuilder {
@@ -163,7 +157,7 @@ export default class TransactionBuilder {
   ) {
     const currency = System.getSystem().getCurrencyById(currencyId);
     const nToken = System.getSystem().getNToken(currency.id);
-    amount.check(BigNumberType.nToken, nToken?.symbol);
+    amount.check(BigNumberType.nToken, nToken?.nTokenSymbol);
     withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.symbol);
 
     return this.populateTxnAndGas(address, 'batchBalanceAction', [
