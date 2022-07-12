@@ -50,7 +50,7 @@ export async function fetchAndEncodeSystem(
       const ret = obj;
       ret[c.id] = {
         ...c.ethExchangeRate,
-        latestRate: results[ConfigKeys.ETH_EXCHANGE_RATE(c.id)],
+        latestRate: c.id === 1 ? ethers.constants.WeiPerEther.toJSON() : results[ConfigKeys.ETH_EXCHANGE_RATE(c.id)],
       };
       return ret;
     }, {}),

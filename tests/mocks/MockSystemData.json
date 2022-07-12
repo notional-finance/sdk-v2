@@ -3,7 +3,7 @@
   "lastUpdateBlockNumber": 15128123,
   "lastUpdateTimestamp": 1657633153,
   "USDExchangeRates": {
-    "NOTE": { "_isBigNumber": true, "_hex": "0x03cbc37768092000" },
+    "NOTE": { "_isBigNumber": true, "_hex": "0xDE0B6B3A7640000" },
     "EUR": { "_isBigNumber": true, "_hex": "0x0dc6117dd3934000" },
     "JPY": { "_isBigNumber": true, "_hex": "0x076fc364e2d2f38000" },
     "CNY": { "_isBigNumber": true, "_hex": "0x5d284d15a7c3c000" }
@@ -125,8 +125,8 @@
     },
     "5": {
       "id": 5,
-      "assetName": "Asset TEST",
-      "assetSymbol": "cTEST",
+      "assetName": "Asset NOMINT",
+      "assetSymbol": "NOMINT",
       "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
       "assetDecimalPlaces": 8,
       "assetContract": {
@@ -134,17 +134,8 @@
         "_address": "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
         "_abiName": "ERC20"
       },
-      "tokenType": "cToken",
-      "hasTransferFee": false,
-      "underlyingName": "Underlying TEST",
-      "underlyingSymbol": "TEST",
-      "underlyingDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
-      "underlyingDecimalPlaces": 8,
-      "underlyingContract": {
-        "_isSerializedContract": true,
-        "_address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
-        "_abiName": "ERC20"
-      }
+      "tokenType": "NonMintable",
+      "hasTransferFee": false
     }
   },
   "ethRateData": {
@@ -157,7 +148,8 @@
       "rateDecimalPlaces": 18,
       "mustInvert": false,
       "buffer": 129,
-      "haircut": 78
+      "haircut": 78,
+      "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
     },
     "2": {
       "rateOracle": {
@@ -169,7 +161,7 @@
       "mustInvert": false,
       "buffer": 109,
       "haircut": 92,
-      "latestRate": { "_isBigNumber": true, "_hex": "0x0351ad6750874f" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0x2386F26FC10000" }
     },
     "3": {
       "rateOracle": {
@@ -181,7 +173,7 @@
       "mustInvert": false,
       "buffer": 109,
       "haircut": 92,
-      "latestRate": { "_isBigNumber": true, "_hex": "0x035161a71b0bf0" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0x2386F26FC10000" }
     },
     "4": {
       "rateOracle": {
@@ -214,7 +206,7 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 18,
-      "latestRate": { "_isBigNumber": true, "_hex": "0xb647b3c56b0a062a04a69f" },
+      "latestRate": { "_isBigNumber": true, "_hex": "0xA56FA5B99019A5C8000000" },
       "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x50e620" }
     },
     "3": {

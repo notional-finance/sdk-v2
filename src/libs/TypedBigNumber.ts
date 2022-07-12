@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, ethers, utils } from 'ethers';
 import { TokenType } from './types';
 import {
   INTERNAL_TOKEN_PRECISION,
@@ -18,6 +18,7 @@ export enum BigNumberType {
   nToken = 'nToken',
   NOTE = 'NOTE',
   sNOTE = 'Staked NOTE',
+  Currency = 'Currency',
 }
 
 class TypedBigNumber {
@@ -252,7 +253,8 @@ class TypedBigNumber {
       this.type === BigNumberType.InternalAsset ||
       this.type === BigNumberType.LiquidityToken ||
       this.type === BigNumberType.NOTE ||
-      this.type === BigNumberType.nToken
+      this.type === BigNumberType.nToken ||
+      this.type === BigNumberType.Currency
     );
   }
 
@@ -475,8 +477,19 @@ class TypedBigNumber {
 
   toUSD() {
     // Converts value to USD using the USDC conversion rate
-    const USDC = 3;
-    return this.toETH(false).fromETH(USDC, false);
+    const internalUnderlying = this.toUnderlying(true);
+    const usdRate = System.getSystem().getUSDRate(this.symbol);
+    return new TypedBigNumber(
+      internalUnderlying.scale(ethers.constants.WeiPerEther, usdRate).n,
+      BigNumberType.Currency,
+      'USD'
+    );
+  }
+
+  toCUR(symbol: string) {
+    const usdValue = this.toUSD();
+    const usdRate = System.getSystem().getUSDRate(symbol);
+    return new TypedBigNumber(usdValue.scale(usdRate, ethers.constants.WeiPerEther).n, BigNumberType.Currency, symbol);
   }
 
   toJSON(_?: string): any {

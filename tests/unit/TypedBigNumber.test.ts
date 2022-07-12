@@ -1,4 +1,5 @@
 import { BigNumber, constants, ethers, utils } from 'ethers';
+import { System } from '../../src/system';
 import GraphClient from '../../src/GraphClient';
 import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
@@ -6,12 +7,13 @@ import Notional from '../../src/Notional';
 import { NoteERC20 } from '../../src/typechain/NoteERC20';
 import Governance from '../../src/Governance';
 import { NOTE_CURRENCY_ID } from '../../src/config/constants';
-import NoteETHRateProvider from '../../src/system/NoteETHRateProvider';
 import { Contracts } from '../../src/libs/types';
 
 describe('Typed Big Number', () => {
   const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
   const system = new MockSystem();
+  System.overrideSystem(system);
+  MockSystem.overrideSystem(system);
   const notional = new Notional(
     {} as unknown as NoteERC20,
     {} as unknown as GraphClient,
@@ -20,7 +22,10 @@ describe('Typed Big Number', () => {
     provider,
     {} as unknown as Contracts
   );
-  afterAll(() => system.destroy());
+  afterAll(() => {
+    system.destroy();
+    expect(() => System.getSystem()).toThrowError('System not initialized');
+  });
 
   it('does not allow arithmetic of two different types', () => {
     const t1 = TypedBigNumber.from(100, BigNumberType.ExternalAsset, 'DAI');
@@ -161,48 +166,29 @@ describe('Typed Big Number', () => {
   });
 
   it('converts to eth values with haircuts', () => {
-    const usdtValue = TypedBigNumber.from(1e8, BigNumberType.InternalUnderlying, 'USDT').toETH(true);
-    expect(usdtValue.toString()).toEqual(BigNumber.from(0).toString());
-
     const daiValue = TypedBigNumber.from(1e8, BigNumberType.InternalUnderlying, 'DAI').toETH(true);
-    expect(daiValue.toString()).toEqual(BigNumber.from(0.0095e8).toString());
+    expect(daiValue.toString()).toEqual(BigNumber.from(0.0092e8).toString());
 
     const cDaiValue = TypedBigNumber.from(50e8, BigNumberType.InternalAsset, 'cDAI').toETH(true);
-    expect(cDaiValue.toString()).toEqual(BigNumber.from(0.0095e8).toString());
+    expect(cDaiValue.toString()).toEqual(BigNumber.from(0.0092e8).toString());
   });
 
   it('converts to eth values with buffers', () => {
-    const ethValue = TypedBigNumber.from(-1e8, BigNumberType.InternalUnderlying, 'USDT').toETH(true);
-    expect(ethValue.toString()).toEqual(BigNumber.from(-0.0105e8).toString());
+    const ethValue = TypedBigNumber.from(-1e8, BigNumberType.InternalUnderlying, 'DAI').toETH(true);
+    expect(ethValue.toString()).toEqual(BigNumber.from(-0.0109e8).toString());
   });
 
-  it('converts to NOTE to other currencies', (done) => {
+  it('converts to NOTE to other currencies', () => {
     const noteTokens = TypedBigNumber.fromBalance(1e8, 'NOTE', true);
-    let noteUSDPrice = BigNumber.from(175).mul(ethers.constants.WeiPerEther).div(100);
-    system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
-    expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0175e8).toString());
-    expect(noteTokens.toETH(false).fromETH(3).toString()).toEqual(BigNumber.from(1.75e8).toString());
-
-    noteUSDPrice = BigNumber.from(275).mul(ethers.constants.WeiPerEther).div(100);
-    system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
-    expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.0275e8).toString());
-
-    setTimeout(() => {
-      done();
-    }, 500);
+    expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.01e8).toString());
+    expect(noteTokens.toETH(false).fromETH(3).toString()).toEqual(BigNumber.from(1e8).toString());
   });
 
-  it('converts to ETH to NOTE balances', (done) => {
+  it('converts to ETH to NOTE balances', () => {
     const ethTokens = TypedBigNumber.fromBalance(0.01e8, 'ETH', true).toExternalPrecision();
-    const noteUSDPrice = ethers.constants.WeiPerEther;
-    system.setETHRateProvider(NOTE_CURRENCY_ID, new NoteETHRateProvider(noteUSDPrice));
     // ETH is set to $100, so we should get 100 NOTE here at a 1-1 price
     expect(ethTokens.fromETH(NOTE_CURRENCY_ID, false).toString()).toEqual(BigNumber.from(1e8).toString());
     expect(ethTokens.fromETH(NOTE_CURRENCY_ID, false).type).toEqual(BigNumberType.NOTE);
-
-    setTimeout(() => {
-      done();
-    }, 500);
   });
 
   it('can build sNOTE balances', () => {
@@ -252,5 +238,27 @@ describe('Typed Big Number', () => {
     expect(nonMintable?.toUnderlying().toAssetCash(true).toExactString()).toEqual(
       nonMintable?.toInternalPrecision().toExactString()
     );
+  });
+
+  it('converts values to USD and other foreign currencies', () => {
+    const eth = notional.parseInput('1', 'ETH', false);
+    let usdValue = eth?.toUSD();
+    expect(usdValue?.toExactString()).toBe('100.0');
+    expect(usdValue?.symbol).toBe('USD');
+    expect(usdValue?.type).toBe(BigNumberType.Currency);
+
+    const dai = notional.parseInput('1', 'DAI', false);
+    usdValue = dai?.toUSD();
+    expect(usdValue?.toExactString()).toBe('1.0');
+    expect(usdValue?.symbol).toBe('USD');
+    expect(usdValue?.type).toBe(BigNumberType.Currency);
+  });
+
+  it('converts values to USD and other foreign currencies', () => {
+    const eth = notional.parseInput('1', 'ETH', false);
+    const jpyValue = eth?.toCUR('JPY');
+    expect(jpyValue?.toExactString()).toBe('13718.06');
+    expect(jpyValue?.symbol).toBe('JPY');
+    expect(jpyValue?.type).toBe(BigNumberType.Currency);
   });
 });

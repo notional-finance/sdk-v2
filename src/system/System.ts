@@ -3,7 +3,7 @@ import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import { AssetType, Contracts, IncentiveMigration, SettlementMarket } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
-import { DEFAULT_DATA_REFRESH_INTERVAL } from '../config/constants';
+import { DEFAULT_DATA_REFRESH_INTERVAL, NOTE_CURRENCY_ID } from '../config/constants';
 
 import { ERC20 } from '../typechain/ERC20';
 import GraphClient from '../GraphClient';
@@ -12,6 +12,7 @@ import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../proto/EncodeProto';
 import { Asset, Currency, SystemData, nToken, ETHRate } from '../proto';
+import { IAggregator } from '../typechain';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -273,11 +274,60 @@ export default class System {
     return this.ethRateProviders.get(currencyId);
   }
 
-  public getETHRate(currencyId: number) {
+  private _getUSDCRate() {
+    const USDC = this.getCurrencyBySymbol('USDC');
+    const usdcETHRate = this.data.ethRateData.get(USDC.id);
+    if (!usdcETHRate) throw new Error(`USDC/ETH Rate not found`);
+    const rateDecimals = BigNumber.from(10).pow(usdcETHRate.rateDecimalPlaces);
+    return {
+      rateDecimals,
+      usdcRate: usdcETHRate.latestRate,
+    };
+  }
+
+  public getUSDRate(symbol: string) {
+    // If in USDExchangeRates then return
+    const usdRate = this.data.USDExchangeRates.get(symbol);
+    if (!usdRate) {
+      // USD Rate = DAI/ETH => ETH/DAI * USDC/ETH == USDC/DAI
+      const currency = this.getCurrencyBySymbol(symbol);
+      const { rateDecimals, usdcRate } = this._getUSDCRate();
+      const { latestRate, rateDecimalPlaces } = this.getETHRate(currency.id);
+      console.log(latestRate);
+
+      // Invert the ETH Rate
+      const ethRateDecimals = BigNumber.from(10).pow(rateDecimalPlaces);
+      const invertRate = ethRateDecimals.mul(ethRateDecimals).div(latestRate);
+      // inverted rate * 1e18 * usdcRate / (invertedRateDecimals * usdcRateDecimals)
+      // returns USDC/symbol in 18 decimals
+      return invertRate.mul(ethers.constants.WeiPerEther).mul(usdcRate).div(ethRateDecimals).div(rateDecimals);
+    }
+
+    return usdRate;
+  }
+
+  public getETHRate(currencyId: number): ETHRate {
+    // If in ETH Rate then return
+    // If in USDExchangeRates then use USDC as a proxy
     const ethRateProvider = this.ethRateProviders.get(currencyId);
     if (ethRateProvider) {
       return ethRateProvider.getETHRate();
     }
+
+    if (currencyId === NOTE_CURRENCY_ID) {
+      const noteUSDRate = this.getUSDRate('NOTE');
+      const { usdcRate, rateDecimals } = this._getUSDCRate();
+      return {
+        rateOracle: null as unknown as IAggregator,
+        // NOTE/USD Rate is always in 18 decimal places
+        rateDecimalPlaces: 18,
+        mustInvert: false,
+        buffer: 100,
+        haircut: 100,
+        latestRate: BigNumber.from(usdcRate).mul(noteUSDRate).div(rateDecimals),
+      };
+    }
+
     const ethRate = this.data.ethRateData.get(currencyId);
     if (!ethRate) throw new Error(`ETH Rate ${currencyId} not found`);
     return ethRate;
