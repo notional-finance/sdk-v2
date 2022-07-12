@@ -2,10 +2,11 @@ import { BigNumber, ethers } from 'ethers';
 import { AccountData } from '../../src/account';
 import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import { AssetType } from '../../src/libs/types';
-import MockSystem from '../mocks/MockSystem';
+import MockSystem, { MutableForTesting } from '../mocks/MockSystem';
 import { FreeCollateral, System } from '../../src/system';
 import { getNowSeconds } from '../../src/libs/utils';
 import MockAccountData from '../mocks/MockAccountData';
+import { ETHRate } from '../../src/proto';
 
 describe('Account Data', () => {
   const system = new MockSystem();
@@ -42,12 +43,10 @@ describe('Account Data', () => {
       [
         {
           currencyId: 2,
-          maturity: 100,
+          maturity: getNowSeconds() + 1000,
           assetType: AssetType.fCash,
           notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
-          hasMatured: false,
-          settlementDate: 100,
-          isIdiosyncratic: false,
+          settlementDate: getNowSeconds() + 1000,
         },
       ],
       false
@@ -71,9 +70,7 @@ describe('Account Data', () => {
         maturity: 100,
         assetType: AssetType.fCash,
         notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: 100,
-        isIdiosyncratic: false,
       })
     ).toThrowError();
   });
@@ -89,7 +86,9 @@ describe('Account Data', () => {
   it('fails to update when balances dont match types', () => {
     const accountDataCopy = AccountData.copyAccountData(accountData);
     // eslint-disable-next-line
-    expect(() => accountDataCopy.updateBalance(1, TypedBigNumber.from(-100e8, BigNumberType.ExternalAsset, 'cDAI'))).toThrowError();
+    expect(() =>
+      accountDataCopy.updateBalance(1, TypedBigNumber.from(-100e8, BigNumberType.ExternalAsset, 'cDAI'))
+    ).toThrowError();
 
     expect(() =>
       accountDataCopy.updateBalance(
@@ -150,21 +149,17 @@ describe('Account Data', () => {
     const accountDataCopy = AccountData.copyAccountData(accountData);
     const asset1 = {
       currencyId: 1,
-      maturity: 100,
+      maturity: getNowSeconds() + 1000,
       assetType: AssetType.fCash,
       notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'ETH'),
-      hasMatured: false,
-      settlementDate: 100,
-      isIdiosyncratic: false,
+      settlementDate: getNowSeconds() + 1000,
     };
     const asset2 = {
       currencyId: 1,
-      maturity: 100,
+      maturity: getNowSeconds() + 1000,
       assetType: AssetType.LiquidityToken_3Month,
       notional: TypedBigNumber.from(100e8, BigNumberType.LiquidityToken, 'cETH'),
-      hasMatured: false,
-      settlementDate: 100,
-      isIdiosyncratic: false,
+      settlementDate: getNowSeconds() + 1000,
     };
     accountDataCopy.updateAsset(asset2);
     accountDataCopy.updateAsset(asset1);
@@ -239,7 +234,7 @@ describe('Account Data', () => {
       );
 
       const { totalETHDebts, totalETHValue, loanToValue } = accountData2.loanToValueRatio();
-      expect(totalETHValue.toNumber()).toBe(150e8);
+      expect(totalETHValue.toNumber()).toBe(200e8);
       expect(totalETHDebts.isZero()).toBeTruthy();
       expect(loanToValue).toBe(0);
     });
@@ -252,16 +247,16 @@ describe('Account Data', () => {
         undefined,
         [
           {
-            currencyId: 1,
-            cashBalance: TypedBigNumber.from(52.5e8, BigNumberType.InternalAsset, 'cETH'),
-            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(-3500e8 * 0.92, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
             lastClaimTime: BigNumber.from(0),
             accountIncentiveDebt: BigNumber.from(0),
           },
           {
-            currencyId: 2,
-            cashBalance: TypedBigNumber.from(-3500e8, BigNumberType.InternalAsset, 'cDAI'),
-            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            currencyId: 3,
+            cashBalance: TypedBigNumber.from(3500e8 * 1.09, BigNumberType.InternalAsset, 'cUSDC'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
             accountIncentiveDebt: BigNumber.from(0),
           },
@@ -290,7 +285,7 @@ describe('Account Data', () => {
         [
           {
             currencyId: 1,
-            cashBalance: TypedBigNumber.from(100e8, BigNumberType.InternalAsset, 'cETH'),
+            cashBalance: TypedBigNumber.from(50e8 * 1.09, BigNumberType.InternalAsset, 'cETH'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
             lastClaimTime: BigNumber.from(0),
             accountIncentiveDebt: BigNumber.from(0),
@@ -308,27 +303,21 @@ describe('Account Data', () => {
             currencyId: 2,
             maturity: getNowSeconds() + 1000,
             assetType: AssetType.fCash,
-            notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-            hasMatured: false,
+            notional: TypedBigNumber.from(-100e8 * 0.78, BigNumberType.InternalUnderlying, 'DAI'),
             settlementDate: getNowSeconds() + 1000,
-            isIdiosyncratic: true,
           },
         ],
         false
       );
 
-      let ethRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
-      const ethRateConfig = system.getETHRate(2)!.ethRateConfig!;
-      const rateProvider = {
-        getETHRate: () => ({ ethRateConfig, ethRate }),
-      };
-
+      let ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
+      ethRateData.latestRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
+      const rateProvider = { getETHRate: () => ethRateData };
       system.setETHRateProvider(2, rateProvider);
 
       const liquidationPrice = account.getLiquidationPrice(1, 2);
       expect(liquidationPrice?.symbol).toBe('DAI');
 
-      ethRate = ethers.utils.parseUnits('1').mul(1e8).div(liquidationPrice!.n);
       const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = account.getFreeCollateral();
       const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
       expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
@@ -350,7 +339,7 @@ describe('Account Data', () => {
           },
           {
             currencyId: 2,
-            cashBalance: TypedBigNumber.from(100000e8, BigNumberType.InternalAsset, 'cDAI'),
+            cashBalance: TypedBigNumber.from(500000e8, BigNumberType.InternalAsset, 'cDAI'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
             lastClaimTime: BigNumber.from(0),
             accountIncentiveDebt: BigNumber.from(0),
@@ -361,10 +350,8 @@ describe('Account Data', () => {
             currencyId: 1,
             maturity: getNowSeconds() + 1000,
             assetType: AssetType.fCash,
-            notional: TypedBigNumber.from(-1e8, BigNumberType.InternalUnderlying, 'ETH'),
-            hasMatured: false,
+            notional: TypedBigNumber.from(-0.75e8, BigNumberType.InternalUnderlying, 'ETH'),
             settlementDate: getNowSeconds() + 1000,
-            isIdiosyncratic: true,
           },
         ],
         false
@@ -389,7 +376,7 @@ describe('Account Data', () => {
           },
           {
             currencyId: 3,
-            cashBalance: TypedBigNumber.from(6000e8, BigNumberType.InternalAsset, 'cUSDC'),
+            cashBalance: TypedBigNumber.from(Math.floor(5000e8 * 2.18), BigNumberType.InternalAsset, 'cUSDC'),
             nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
             lastClaimTime: BigNumber.from(0),
             accountIncentiveDebt: BigNumber.from(0),
@@ -400,29 +387,23 @@ describe('Account Data', () => {
             currencyId: 2,
             maturity: getNowSeconds() + 1000,
             assetType: AssetType.fCash,
-            notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-            hasMatured: false,
+            notional: TypedBigNumber.from(-100e8 * 0.92, BigNumberType.InternalUnderlying, 'DAI'),
             settlementDate: getNowSeconds() + 1000,
-            isIdiosyncratic: true,
           },
         ],
         false
       );
-      let ethRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
-      const ethRateConfig = system.getETHRate(2)!.ethRateConfig!;
+      let ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
+      ethRateData.latestRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
       const rateProvider = {
-        getETHRate: () => ({ ethRateConfig, ethRate }),
+        getETHRate: () => ethRateData,
       };
       system.setETHRateProvider(2, rateProvider);
 
       const liquidationPrice = account.getLiquidationPrice(3, 2);
       expect(liquidationPrice?.symbol).toBe('DAI');
-      expect(liquidationPrice?.toNumber()).toBeCloseTo(0.921e8, -6);
-
-      ethRate = ethers.utils.parseUnits('1').mul(1e8).div(liquidationPrice!.n.mul(100));
-      const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = account.getFreeCollateral();
-      const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
-      expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
+      // 2x collateral in stables, liquidation price is $0.50
+      expect(liquidationPrice?.toNumber()).toBeCloseTo(0.5e8, -6);
     });
   });
 });
