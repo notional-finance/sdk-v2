@@ -57,7 +57,7 @@ message AssetRate {
 message nToken {
     // First set of fields update less frequently
     string name = 1;
-    string nTokenSymbol = 1;
+    string nTokenSymbol = 2;
     SerializedBigNumber incentiveEmissionRate = 3;
     int32 pvHaircutPercentage = 4;
     repeated int32 depositShares = 5;

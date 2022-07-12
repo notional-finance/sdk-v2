@@ -123,6 +123,7 @@ export interface CurrencyConfig {
   underlyingDecimalPlaces: number | null;
   underlyingContract: SerializedContract | null;
   hasTransferFee: boolean;
+  nTokenSymbol: string | null;
   ethExchangeRate: {
     rateOracle: SerializedContract;
     rateDecimalPlaces: number;
@@ -191,6 +192,7 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
             : {
                 _isSerializedContract: false,
               },
+          nTokenSymbol: c.nToken?.symbol,
           nToken: {
             ...c.nToken,
             contract: {

@@ -212,7 +212,9 @@ export default class System {
   }
 
   public getCurrencyBySymbol(symbol: string): Currency {
-    const currency = this.getAllCurrencies().find((c) => c.assetSymbol === symbol || c.underlyingSymbol === symbol);
+    const currency = this.getAllCurrencies().find(
+      (c) => c.assetSymbol === symbol || c.underlyingSymbol === symbol || c.nTokenSymbol === symbol
+    );
     if (!currency) throw Error(`Currency ${symbol} not found`);
     return currency;
   }

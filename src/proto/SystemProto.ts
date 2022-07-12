@@ -798,10 +798,10 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeString(bb, $name);
   }
 
-  // optional string nTokenSymbol = 1;
+  // optional string nTokenSymbol = 2;
   let $nTokenSymbol = message.nTokenSymbol;
   if ($nTokenSymbol !== undefined) {
-    writeVarint32(bb, 10);
+    writeVarint32(bb, 18);
     writeString(bb, $nTokenSymbol);
   }
 
@@ -991,8 +991,8 @@ function _decodenToken(bb: ByteBuffer): nToken {
         break;
       }
 
-      // optional string nTokenSymbol = 1;
-      case 1: {
+      // optional string nTokenSymbol = 2;
+      case 2: {
         message.nTokenSymbol = readString(bb, readVarint32(bb));
         break;
       }

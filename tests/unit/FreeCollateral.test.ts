@@ -25,7 +25,7 @@ describe('calculates free collateral', () => {
       accountData.accountBalances = [
         {
           currencyId: 5,
-          cashBalance: TypedBigNumber.from(50e8, BigNumberType.InternalAsset, 'cWBTC'),
+          cashBalance: TypedBigNumber.from(1e8, BigNumberType.InternalAsset, 'NOMINT'),
           nTokenBalance: undefined,
           lastClaimTime: BigNumber.from(0),
           accountIncentiveDebt: BigNumber.from(0),
@@ -42,7 +42,7 @@ describe('calculates free collateral', () => {
 
       expect(netETHDebt.isZero()).toBeTruthy();
       expect(netETHDebtWithBuffer.isZero()).toBeTruthy();
-      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThanOrEqual(7e8);
+      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThanOrEqual(0.78e8);
       expect(netUnderlyingAvailable.get(5)?.isPositive()).toBeTruthy();
     });
 
@@ -62,9 +62,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
       // prettier-ignore
       const {
@@ -77,9 +75,9 @@ describe('calculates free collateral', () => {
       expect(netETHDebt.isZero()).toBeTruthy();
       expect(netETHDebtWithBuffer.isZero()).toBeTruthy();
       // 100 fDAI with a 95% haircut to pv should be a little more than 95% of the notional
-      expect(netETHCollateralWithHaircut.n.sub(BigNumber.from(0.95e8)).abs().toNumber()).toBeLessThanOrEqual(0.03e8);
+      expect(netETHCollateralWithHaircut.n.sub(BigNumber.from(0.95e8)).abs().toNumber()).toBeLessThanOrEqual(0.051e8);
       expect(netUnderlyingAvailable.get(2)!.scale(1, 100).toNumber()).toBeCloseTo(
-        netETHCollateralWithHaircut.scale(100, 95).toNumber(),
+        netETHCollateralWithHaircut.scale(100, 92).toNumber(),
         -1
       );
     });
@@ -101,17 +99,15 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { netETHDebt, netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable } =
         FreeCollateral.getFreeCollateral(accountData, blockTime);
 
       expect(netETHDebt.n.sub(BigNumber.from(1e8)).abs().toNumber()).toBeLessThanOrEqual(0.03e8);
-      // Should be buffered by 105
-      expect(Math.abs(netETHDebtWithBuffer.scale(100, netETHDebt.n).toNumber() - 105)).toBeLessThanOrEqual(1);
+      // Should be buffered by 109
+      expect(Math.abs(netETHDebtWithBuffer.scale(100, netETHDebt.n).toNumber() - 109)).toBeLessThanOrEqual(1);
       expect(netETHCollateralWithHaircut.isZero()).toBeTruthy();
       expect(netUnderlyingAvailable.get(2)!.scale(1, 100).toString()).toBe(netETHDebt.neg().toString());
     });
@@ -133,9 +129,7 @@ describe('calculates free collateral', () => {
         maturity: ltMaturity,
         assetType: AssetType.LiquidityToken_6Month,
         notional: TypedBigNumber.from(5000e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: CashGroup.getSettlementDate(AssetType.LiquidityToken_6Month, ltMaturity),
-        isIdiosyncratic: false,
       });
 
       accountData.updateAsset({
@@ -143,9 +137,7 @@ describe('calculates free collateral', () => {
         maturity: ltMaturity,
         assetType: AssetType.fCash,
         notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { netETHDebt, netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable } =
@@ -153,8 +145,8 @@ describe('calculates free collateral', () => {
 
       expect(netETHDebt.isZero()).toBeTruthy();
       expect(netETHDebtWithBuffer.isZero()).toBeTruthy();
-      expect(netETHCollateralWithHaircut.toNumber()).toEqual(Math.trunc(96083219 * 0.95));
-      expect(netUnderlyingAvailable.get(2)!.toNumber()).toBe(9608321907);
+      expect(netETHCollateralWithHaircut.toNumber()).toEqual(Math.trunc((29624839724 / 100) * 0.92));
+      expect(netUnderlyingAvailable.get(2)!.toNumber()).toBe(29624839724);
     });
 
     it('for cash balances and ntokens with fcash', () => {
@@ -173,9 +165,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { netETHDebt, netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable } =
@@ -183,8 +173,8 @@ describe('calculates free collateral', () => {
 
       expect(netETHDebt.isZero()).toBeTruthy();
       expect(netETHDebtWithBuffer.isZero()).toBeTruthy();
-      expect(netETHCollateralWithHaircut.toNumber()).toBeGreaterThan(1.98e8 * 0.95);
-      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThan(2.0e8 * 0.95);
+      expect(netETHCollateralWithHaircut.toNumber()).toBeGreaterThan(1.98e8 * 0.92);
+      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThan(2.0e8 * 0.92);
       expect(netUnderlyingAvailable.get(2)!.toNumber()).toBeGreaterThan(198e8);
       expect(netUnderlyingAvailable.get(2)!.toNumber()).toBeLessThan(200e8);
     });
@@ -205,9 +195,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { netETHDebt, netETHDebtWithBuffer, netETHCollateralWithHaircut, netUnderlyingAvailable } =
@@ -215,10 +203,10 @@ describe('calculates free collateral', () => {
 
       expect(netETHDebt.isZero()).toBeTruthy();
       expect(netETHDebtWithBuffer.isZero()).toBeTruthy();
-      expect(netETHCollateralWithHaircut.toNumber()).toBeGreaterThan(0.1e8 * 0.95);
-      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThan(0.13e8 * 0.95);
-      expect(netUnderlyingAvailable.get(2)!.toNumber()).toBeGreaterThan(10e8);
-      expect(netUnderlyingAvailable.get(2)!.toNumber()).toBeLessThan(13e8);
+      expect(netETHCollateralWithHaircut.toNumber()).toBeGreaterThan(0.15e8 * 0.92);
+      expect(netETHCollateralWithHaircut.toNumber()).toBeLessThan(0.17e8 * 0.92);
+      expect(netUnderlyingAvailable.get(2)!.toNumber()).toBeGreaterThan(15e8);
+      expect(netUnderlyingAvailable.get(2)!.toNumber()).toBeLessThan(17e8);
     });
   });
 
@@ -248,16 +236,14 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { minCollateralRatio, minBufferedRatio, targetCollateralRatio, targetBufferedRatio } =
         FreeCollateral.calculateBorrowRequirement(5, 200, accountData, false, blockTime);
 
-      expect(minCollateralRatio).toBeCloseTo(150, -1);
-      expect(targetCollateralRatio).toBeCloseTo(300, -1);
+      expect(minCollateralRatio).toBeCloseTo(129 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
     });
@@ -269,9 +255,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -283,14 +267,15 @@ describe('calculates free collateral', () => {
         targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(collateralCurrencyId, 200, accountData, false, blockTime);
 
-      const usdcCollateral = (borrowAmountHaircutPV * -1.05) / 0.95;
-      const usdcTargetCollateral = (borrowAmountHaircutPV * -2.1) / 0.95;
-      expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
-      expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(110, -1);
-      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minCollateralRatio).toBeCloseTo(109 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
+
+      const usdcCollateral = (borrowAmountHaircutPV * -1.09) / 0.92;
+      const usdcTargetCollateral = (borrowAmountHaircutPV * -2.18) / 0.92;
+      expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
+      expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
     });
 
     it('calculates borrowing requirements for stable / crypto with no account data', () => {
@@ -300,9 +285,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -314,14 +297,15 @@ describe('calculates free collateral', () => {
         targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(1, 200, accountData, false, blockTime);
 
-      const ethCollateral = (borrowAmountHaircutPV * -1.05) / 100 / 0.7;
-      const ethTargetCollateral = (borrowAmountHaircutPV * -2.1) / 100 / 0.7;
-      expect(minCollateral.toNumber()).toBeCloseTo(ethCollateral, -3);
-      expect(targetCollateral.toNumber()).toBeCloseTo(ethTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(150, -1);
-      expect(targetCollateralRatio).toBeCloseTo(300, -1);
+      expect(minCollateralRatio).toBeCloseTo(129 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
+
+      const ethCollateral = (-borrowAmountHaircutPV * minCollateralRatio!) / (100 * 100);
+      const ethTargetCollateral = (-borrowAmountHaircutPV * targetCollateralRatio!) / (100 * 100);
+      expect(minCollateral.toNumber()).toBeCloseTo(ethCollateral, -3);
+      expect(targetCollateral.toNumber()).toBeCloseTo(ethTargetCollateral, -3);
     });
 
     it('calculates borrowing requirements for stable / crypto with nTokens', () => {
@@ -331,9 +315,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -345,14 +327,15 @@ describe('calculates free collateral', () => {
         targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(1, 200, accountData, true, blockTime);
 
-      const ethCollateral = (borrowAmountHaircutPV * -1.05) / 0.7 / 0.85;
-      const ethTargetCollateral = (borrowAmountHaircutPV * -2.1) / 0.7 / 0.85;
-      expect(minCollateral.toNumber()).toBeCloseTo(ethCollateral, -3);
-      expect(targetCollateral.toNumber()).toBeCloseTo(ethTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(150, -1);
-      expect(targetCollateralRatio).toBeCloseTo(300, -1);
+      expect(minCollateralRatio).toBeCloseTo(129 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
+
+      const ethCollateral = (-borrowAmountHaircutPV * minCollateralRatio! * 50) / (100 * 100 * 0.9);
+      const ethTargetCollateral = (-borrowAmountHaircutPV * targetCollateralRatio! * 50) / (100 * 100 * 0.9);
+      expect(minCollateral.toNumber()).toBeCloseTo(ethCollateral, -3);
+      expect(targetCollateral.toNumber()).toBeCloseTo(ethTargetCollateral, -3);
     });
 
     it('calculates borrowing requirements when local collateral can net off', () => {
@@ -378,9 +361,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -423,9 +404,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -437,14 +416,15 @@ describe('calculates free collateral', () => {
         targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(collateralCurrencyId, 200, accountData, false, blockTime);
 
-      const usdcCollateral = ((borrowAmountHaircutPV + 50e8) * -1.05) / 0.95;
-      const usdcTargetCollateral = ((borrowAmountHaircutPV + 50e8) * -2.1) / 0.95;
-      expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
-      expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(110, -1);
-      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minCollateralRatio).toBeCloseTo(109 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
+
+      const usdcCollateral = ((borrowAmountHaircutPV + 50e8) * -1.09) / 0.92;
+      const usdcTargetCollateral = ((borrowAmountHaircutPV + 50e8) * -2.18) / 0.92;
+      expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
+      expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
     });
 
     it('calculates borrowing requirements when local collateral is in debt', () => {
@@ -470,9 +450,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -484,12 +462,12 @@ describe('calculates free collateral', () => {
         targetBufferedRatio,
       } = FreeCollateral.calculateBorrowRequirement(collateralCurrencyId, 200, accountData, false, blockTime);
 
-      const usdcCollateral = ((borrowAmountHaircutPV - 50e8) * -1.05) / 0.95;
-      const usdcTargetCollateral = ((borrowAmountHaircutPV - 50e8) * -2.1) / 0.95;
+      const usdcCollateral = ((borrowAmountHaircutPV - 50e8) * -1.09) / 0.92;
+      const usdcTargetCollateral = ((borrowAmountHaircutPV - 50e8) * -2.18) / 0.92;
       expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(110, -1);
-      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minCollateralRatio).toBeCloseTo(109 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
     });
@@ -517,9 +495,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const {
@@ -533,12 +509,12 @@ describe('calculates free collateral', () => {
 
       // We don't haircut the usdc cash balance here since we have converted collateral figures
       // into required USDC amounts already by dividing by 0.95
-      const usdcCollateral = (borrowAmountHaircutPV * -1.05) / 0.95 - 10e8;
-      const usdcTargetCollateral = (borrowAmountHaircutPV * -2.1) / 0.95 - 10e8;
+      const usdcCollateral = (borrowAmountHaircutPV * -1.09) / 0.92 - 10e8;
+      const usdcTargetCollateral = (borrowAmountHaircutPV * -2.18) / 0.92 - 10e8;
       expect(minCollateral.toNumber()).toBeCloseTo(usdcCollateral, -3);
       expect(targetCollateral.toNumber()).toBeCloseTo(usdcTargetCollateral, -3);
-      expect(minCollateralRatio).toBeCloseTo(110, -1);
-      expect(targetCollateralRatio).toBeCloseTo(221, -1);
+      expect(minCollateralRatio).toBeCloseTo(109 / 0.92, -1);
+      expect(targetCollateralRatio).toBeCloseTo(minCollateralRatio! * 2, -1);
       expect(minBufferedRatio).toBeCloseTo(100);
       expect(targetBufferedRatio).toBeCloseTo(200);
     });
@@ -566,9 +542,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
       const { netETHCollateral, netETHCollateralWithHaircut, netETHDebt, netETHDebtWithBuffer } =
         FreeCollateral.getFreeCollateral(accountData);
@@ -618,9 +592,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { netETHCollateral, netETHCollateralWithHaircut, netETHDebt, netETHDebtWithBuffer } =
@@ -669,9 +641,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { targetCollateral } = FreeCollateral.calculateBorrowRequirement(
@@ -718,9 +688,7 @@ describe('calculates free collateral', () => {
             assetType: AssetType.fCash,
             notional: borrowfCashAmount.neg(),
             maturity,
-            hasMatured: false,
             settlementDate: maturity,
-            isIdiosyncratic: false,
           },
         ],
         true
@@ -730,9 +698,7 @@ describe('calculates free collateral', () => {
         maturity,
         assetType: AssetType.fCash,
         notional: borrowfCashAmount,
-        hasMatured: false,
         settlementDate: maturity,
-        isIdiosyncratic: false,
       });
 
       const { targetCollateral, minCollateral } = FreeCollateral.calculateBorrowRequirement(
@@ -766,18 +732,16 @@ describe('calculates free collateral', () => {
         true
       );
 
-      expect(FreeCollateral.getFreeCollateral(accountData).netETHDebtWithBuffer.toString()).toEqual('105000000');
+      expect(FreeCollateral.getFreeCollateral(accountData).netETHDebtWithBuffer.toString()).toEqual('109000000');
 
       system.setETHRateProvider(collateralCurrencyId, {
         getETHRate: () => ({
-          ethRateConfig: {
-            rateOracle: null as unknown as IAggregator,
-            haircut: 96,
-            buffer: 105,
-            mustInvert: false,
-            rateDecimalPlaces: 18,
-          },
-          ethRate: BigNumber.from('100000000000000'),
+          rateOracle: null as unknown as IAggregator,
+          haircut: 96,
+          buffer: 105,
+          mustInvert: false,
+          rateDecimalPlaces: 18,
+          latestRate: BigNumber.from('100000000000000'),
         }),
       });
 
@@ -790,7 +754,7 @@ describe('calculates free collateral', () => {
         TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nUSDC')
       );
 
-      expect(val.toString()).toEqual('250000000000');
+      expect(val.toString()).toEqual('495832892946');
 
       system.setNTokenAssetCashPVProvider(collateralCurrencyId, {
         getNTokenAssetCashPV: () => TypedBigNumber.from(5000000e8, BigNumberType.InternalAsset, 'cUSDC'),
@@ -801,7 +765,7 @@ describe('calculates free collateral', () => {
         TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nUSDC')
       );
 
-      expect(val.toString()).toEqual('125000000');
+      expect(val.toString()).toEqual('1885674641');
     });
   });
 });

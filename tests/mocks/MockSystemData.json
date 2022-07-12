@@ -52,7 +52,8 @@
       "underlyingSymbol": "ETH",
       "underlyingDecimals": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" },
       "underlyingDecimalPlaces": 18,
-      "underlyingContract": { "_isSerializedContract": false }
+      "underlyingContract": { "_isSerializedContract": false },
+      "nTokenSymbol": "nETH"
     },
     "2": {
       "id": 2,
@@ -75,7 +76,8 @@
         "_isSerializedContract": true,
         "_address": "0x6b175474e89094c44da98b954eedeac495271d0f",
         "_abiName": "ERC20"
-      }
+      },
+      "nTokenSymbol": "nDAI"
     },
     "3": {
       "id": 3,
@@ -98,7 +100,8 @@
         "_isSerializedContract": true,
         "_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         "_abiName": "ERC20"
-      }
+      },
+      "nTokenSymbol": "nUSDC"
     },
     "4": {
       "id": 4,
@@ -121,7 +124,8 @@
         "_isSerializedContract": true,
         "_address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
         "_abiName": "ERC20"
-      }
+      },
+      "nTokenSymbol": "nWBTC"
     },
     "5": {
       "id": 5,
@@ -186,6 +190,18 @@
       "buffer": 129,
       "haircut": 78,
       "latestRate": { "_isBigNumber": true, "_hex": "0x0101563ecbc2a43df1" }
+    },
+    "5": {
+      "rateOracle": {
+        "_isSerializedContract": true,
+        "_address": "0x10aae34011c256a9e63ab5ac50154c2539c0f51d",
+        "_abiName": "IAggregator"
+      },
+      "rateDecimalPlaces": 18,
+      "mustInvert": false,
+      "buffer": 129,
+      "haircut": 78,
+      "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
     }
   },
   "assetRateData": {
@@ -196,7 +212,7 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 18,
-      "latestRate": { "_isBigNumber": true, "_hex": "0xa5fa01a65579b46f04ad2c" },
+      "latestRate": { "_isBigNumber": true, "_hex": "0xA56FA5B99019A5C8000000" },
       "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x0b1aa6" }
     },
     "2": {
@@ -216,7 +232,7 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 6,
-      "latestRate": { "_isBigNumber": true, "_hex": "0xcdbc0e701a3e" },
+      "latestRate": { "_isBigNumber": true, "_hex": "0xB5E620F48000" },
       "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x40d0cc" }
     },
     "4": {
@@ -233,6 +249,7 @@
   "nTokenData": {
     "1": {
       "name": "nETH",
+      "nTokenSymbol": "nETH",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x44364c5bb000" },
       "pvHaircutPercentage": 90,
       "depositShares": [50000000, 50000000],
@@ -244,7 +261,7 @@
       },
       "assetCashPV": {
         "_isTypedBigNumber": true,
-        "hex": "0x13ff4b8f827a",
+        "hex": "0x13fb76d446d4",
         "bigNumberType": "Internal Asset",
         "symbol": "cETH"
       },
@@ -312,6 +329,7 @@
     },
     "2": {
       "name": "nDAI",
+      "nTokenSymbol": "nDAI",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x02386f26fc1000" },
       "pvHaircutPercentage": 85,
       "depositShares": [45000000, 40000000, 15000000],
@@ -432,6 +450,7 @@
     },
     "3": {
       "name": "nUSDC",
+      "nTokenSymbol": "nUSDC",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x0265e8af393000" },
       "pvHaircutPercentage": 85,
       "depositShares": [45000000, 40000000, 15000000],
@@ -552,6 +571,7 @@
     },
     "4": {
       "name": "nWBTC",
+      "nTokenSymbol": "nWBTC",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x3faa25226000" },
       "pvHaircutPercentage": 90,
       "depositShares": [50000000, 50000000],
