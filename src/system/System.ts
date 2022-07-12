@@ -247,10 +247,10 @@ export default class System {
   /*** Cash Group and Market ***/
 
   public getCashGroup(currencyId: number): CashGroup {
-    const cashGroup = this.data.cashGroups.get(currencyId);
-    if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
-
-    return new CashGroup(...cashGroup);
+    const cashGroupData = this.data.cashGroups.get(currencyId);
+    const currency = this.data.currencies.get(currencyId);
+    if (!cashGroupData || !currency) throw new Error(`Cash group ${currencyId} not found`);
+    return new CashGroup(currency, cashGroupData);
   }
 
   public getMarkets(currencyId: number): Market[] {

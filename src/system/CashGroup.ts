@@ -3,9 +3,19 @@ import { AssetType } from '../libs/types';
 import { PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR } from '../config/constants';
 import { Market } from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
+import { CashGroupData, Currency } from '../proto';
 
 export default class CashGroup {
   private _blockSupplyRate?: number;
+  public readonly maxMarketIndex: number;
+  public readonly rateOracleTimeWindowSeconds: number;
+  public readonly totalFeeBasisPoints: number;
+  public readonly reserveFeeSharePercent: number;
+  public readonly debtBufferBasisPoints: number;
+  public readonly fCashHaircutBasisPoints: number;
+  public readonly liquidityTokenHaircutsPercent: number[];
+  public readonly rateScalars: number[];
+  public readonly markets: Market[];
 
   public get blockSupplyRate() {
     return this._blockSupplyRate;
@@ -15,43 +25,31 @@ export default class CashGroup {
     return this.markets[marketIndex - 1];
   }
 
-  public setBlockSupplyRate(rate: number | undefined) {
-    this._blockSupplyRate = rate;
-  }
-
-  constructor(
-    public maxMarketIndex: number,
-    public rateOracleTimeWindowSeconds: number,
-    public totalFeeBasisPoints: number,
-    public reserveFeeSharePercent: number,
-    public debtBufferBasisPoints: number,
-    public fCashHaircutBasisPoints: number,
-    public liquidityTokenHaircutsPercent: number[],
-    public rateScalars: number[],
-    public markets: Market[]
-  ) {}
-
-  /**
-   * Copies a cash group object for simulation
-   * @param cashGroup
-   * @returns a cash group object that is mutable
-   */
-  public static copy(cashGroup: CashGroup) {
-    const copy = new CashGroup(
-      cashGroup.maxMarketIndex,
-      cashGroup.rateOracleTimeWindowSeconds,
-      cashGroup.totalFeeBasisPoints,
-      cashGroup.reserveFeeSharePercent,
-      cashGroup.debtBufferBasisPoints,
-      cashGroup.fCashHaircutBasisPoints,
-      [...cashGroup.liquidityTokenHaircutsPercent],
-      [...cashGroup.rateScalars],
-      cashGroup.markets.map(Market.copy)
-    );
-    // This causes some race conditions if blockSupplyRate is undefined
-    copy.setBlockSupplyRate(cashGroup.blockSupplyRate);
-
-    return copy;
+  constructor(currency: Currency, cashGroupData: CashGroupData) {
+    this.maxMarketIndex = cashGroupData.maxMarketIndex;
+    this.rateOracleTimeWindowSeconds = cashGroupData.rateOracleTimeWindowSeconds;
+    this.totalFeeBasisPoints = cashGroupData.totalFeeBasisPoints;
+    this.reserveFeeSharePercent = cashGroupData.reserveFeeSharePercent;
+    this.debtBufferBasisPoints = cashGroupData.debtBufferBasisPoints;
+    this.fCashHaircutBasisPoints = cashGroupData.fCashHaircutBasisPoints;
+    this.liquidityTokenHaircutsPercent = cashGroupData.liquidityTokenHaircutsPercent.map((l) => l);
+    this.rateScalars = cashGroupData.rateScalars.map((r) => r);
+    this.markets = cashGroupData.markets.map((data, i) => {
+      const marketIndex = i + 1;
+      const m = new Market(
+        currency.id,
+        marketIndex,
+        CashGroup.getMaturityForMarketIndex(marketIndex),
+        cashGroupData.rateScalars[i - 1] * RATE_PRECISION,
+        cashGroupData.totalFeeBasisPoints,
+        cashGroupData.reserveFeeSharePercent,
+        cashGroupData.rateOracleTimeWindowSeconds,
+        currency.assetSymbol,
+        currency.underlyingSymbol || currency.assetSymbol
+      );
+      m.setMarket(data);
+      return m;
+    });
   }
 
   public static getTimeReference(timestamp = getNowSeconds()) {

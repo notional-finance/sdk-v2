@@ -87,37 +87,8 @@ export default class Market {
     }
   }
 
-  public setMarket(m: {
-    totalfCash: BigNumber;
-    totalAssetCash: BigNumber;
-    totalLiquidity: BigNumber;
-    lastImpliedRate: BigNumber;
-    oracleRate: BigNumber;
-    previousTradeTime: BigNumber;
-  }) {
-    let hasChanged: boolean;
-    if (!this._market) {
-      hasChanged = true;
-    } else {
-      // prettier-ignore
-      hasChanged = !this._market.totalfCash.n.eq(m.totalfCash)
-        || !this._market.totalAssetCash.n.eq(m.totalAssetCash)
-        || !this._market.totalLiquidity.n.eq(m.totalLiquidity)
-        || this._market.lastImpliedRate !== m.lastImpliedRate.toNumber()
-        || this._market.oracleRate !== m.oracleRate.toNumber()
-        || this._market.previousTradeTime !== m.previousTradeTime.toNumber();
-    }
-
-    this._market = {
-      totalfCash: TypedBigNumber.from(m.totalfCash, BigNumberType.InternalUnderlying, this.underlyingSymbol),
-      totalAssetCash: TypedBigNumber.from(m.totalAssetCash, BigNumberType.InternalAsset, this.assetSymbol),
-      totalLiquidity: TypedBigNumber.from(m.totalLiquidity, BigNumberType.LiquidityToken, this.assetSymbol),
-      lastImpliedRate: m.lastImpliedRate.toNumber(),
-      oracleRate: m.oracleRate.toNumber(),
-      previousTradeTime: m.previousTradeTime.toNumber(),
-    };
-
-    return hasChanged;
+  public setMarket(m: MarketData) {
+    this._market = m;
   }
 
   constructor(
@@ -152,12 +123,12 @@ export default class Market {
 
     const originalMarketData = market.market;
     copy.setMarket({
-      totalfCash: BigNumber.from(originalMarketData.totalfCash.n),
-      totalAssetCash: BigNumber.from(originalMarketData.totalAssetCash.n),
-      totalLiquidity: BigNumber.from(originalMarketData.totalLiquidity.n),
-      lastImpliedRate: BigNumber.from(originalMarketData.lastImpliedRate),
-      oracleRate: BigNumber.from(originalMarketData.oracleRate),
-      previousTradeTime: BigNumber.from(originalMarketData.previousTradeTime),
+      totalfCash: originalMarketData.totalfCash.copy(),
+      totalAssetCash: originalMarketData.totalAssetCash.copy(),
+      totalLiquidity: originalMarketData.totalLiquidity.copy(),
+      lastImpliedRate: originalMarketData.lastImpliedRate,
+      oracleRate: originalMarketData.oracleRate,
+      previousTradeTime: originalMarketData.previousTradeTime,
     });
     return copy;
   }
@@ -413,12 +384,12 @@ export default class Market {
     );
 
     newMarket.setMarket({
-      totalfCash: totalfCash.n,
-      totalAssetCash: totalAssetCash.n,
-      totalLiquidity: this._market.totalLiquidity.n,
-      lastImpliedRate: BigNumber.from(interestRate),
-      oracleRate: BigNumber.from(interestRate),
-      previousTradeTime: BigNumber.from(blockTime),
+      totalfCash: totalfCash.copy(),
+      totalAssetCash: totalAssetCash.copy(),
+      totalLiquidity: this._market.totalLiquidity.copy(),
+      lastImpliedRate: interestRate,
+      oracleRate: interestRate,
+      previousTradeTime: blockTime,
     });
 
     return newMarket;
