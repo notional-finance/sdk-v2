@@ -1,4 +1,3 @@
-import { BigNumber } from 'ethers';
 import { getNowSeconds } from '../../src/libs/utils';
 import { BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR } from '../../src/config/constants';
 import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
@@ -10,8 +9,10 @@ describe('Market', () => {
   const maturity = blockTime + SECONDS_IN_YEAR;
   const system = new MockSystem();
   System.overrideSystem(system);
+  MockSystem.overrideSystem(system);
   afterAll(() => {
     system.destroy();
+    expect(() => System.getSystem()).toThrowError('System not initialized');
   });
 
   const getMarket = () => new Market(2, 1, maturity, 30000000000, 30 * BASIS_POINT, 50, 60 * 10, 'cDAI', 'DAI');
@@ -25,13 +26,13 @@ describe('Market', () => {
   it('calculates the max interest rate, 18%', () => {
     const market = getMarket();
     market.rateScalar = 20 * RATE_PRECISION;
-    const lastImpliedRate = BigNumber.from(0.04e9);
-    const oracleRate = BigNumber.from(0.04e9);
+    const lastImpliedRate = 0.04e9;
+    const oracleRate = 0.04e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -106,45 +107,45 @@ describe('Market', () => {
 
   it('calculates market oracle rates in the past', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.01e9);
-    const oracleRate = BigNumber.from(0.09e9);
+    const lastImpliedRate = 0.01e9;
+    const oracleRate = 0.09e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(0),
-      totalLiquidity: BigNumber.from(0),
-      totalfCash: BigNumber.from(0),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 15),
+      totalAssetCash: TypedBigNumber.fromBalance(0, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(0, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(0, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 15,
       lastImpliedRate,
       oracleRate,
     });
 
-    expect(market.marketOracleRate(blockTime - 60 * 2000)).toEqual(lastImpliedRate.toNumber());
+    expect(market.marketOracleRate(blockTime - 60 * 2000)).toEqual(lastImpliedRate);
   });
 
   it('calculates market oracle rates past timeout', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.01e9);
-    const oracleRate = BigNumber.from(0.09e9);
+    const lastImpliedRate = 0.01e9;
+    const oracleRate = 0.09e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(0),
-      totalLiquidity: BigNumber.from(0),
-      totalfCash: BigNumber.from(0),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 15),
+      totalAssetCash: TypedBigNumber.fromBalance(0, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(0, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(0, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 15,
       lastImpliedRate,
       oracleRate,
     });
 
-    expect(market.marketOracleRate(blockTime)).toEqual(lastImpliedRate.toNumber());
+    expect(market.marketOracleRate(blockTime)).toEqual(lastImpliedRate);
   });
 
   it('calculates market oracle rates with weighted average', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.09e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.09e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(0),
-      totalLiquidity: BigNumber.from(0),
-      totalfCash: BigNumber.from(0),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(0, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(0, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(0, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -154,13 +155,13 @@ describe('Market', () => {
 
   it('gets market interest rates', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.1e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.1e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -173,13 +174,13 @@ describe('Market', () => {
 
   it('calculates fcash to cash for borrowing', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.1e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.1e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -196,13 +197,13 @@ describe('Market', () => {
 
   it('calculates fcash to cash for lending', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.1e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.1e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -219,13 +220,13 @@ describe('Market', () => {
 
   it('fails when non internal underlying values are used', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.1e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.1e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -254,13 +255,13 @@ describe('Market', () => {
 
   it('returns a simulated market at 18% interest', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.1e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.1e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });
@@ -272,13 +273,13 @@ describe('Market', () => {
 
   it('returns a simulated market at 0% interest', () => {
     const market = getMarket();
-    const lastImpliedRate = BigNumber.from(0.1e9);
-    const oracleRate = BigNumber.from(0.1e9);
+    const lastImpliedRate = 0.1e9;
+    const oracleRate = 0.1e9;
     market.setMarket({
-      totalAssetCash: BigNumber.from(50000e8),
-      totalLiquidity: BigNumber.from(50000e8),
-      totalfCash: BigNumber.from(1000e8),
-      previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      totalAssetCash: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalLiquidity: TypedBigNumber.fromBalance(50000e8, 'cDAI', true),
+      totalfCash: TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      previousTradeTime: blockTime - 60 * 5,
       lastImpliedRate,
       oracleRate,
     });

@@ -18,56 +18,44 @@ describe('Cash Group', () => {
   const debtBufferBasisPoints = 60 * BASIS_POINT;
   const system = new MockSystem();
   System.overrideSystem(system);
+  MockSystem.overrideSystem(system);
   afterAll(() => {
     system.destroy();
+    expect(() => System.getSystem()).toThrowError('System not initialized');
   });
-
   let cashGroup: CashGroup;
 
   beforeAll(() => {
-    const rateOracleTimeWindow = 60 * 10;
+    const rateOracleTimeWindowSeconds = 60 * 10;
     const totalFeeBasisPoints = 30 * BASIS_POINT;
     const reserveFeeSharePercent = 50;
-    const markets = new Array<Market>();
+    const markets = new Array<any>();
     for (let i = 1; i <= 7; i += 1) {
-      const market = new Market(
-        1,
-        i,
-        CashGroup.getMaturityForMarketIndex(i, blockTime),
-        10,
-        totalFeeBasisPoints,
-        reserveFeeSharePercent,
-        rateOracleTimeWindow,
-        'cETH',
-        'ETH'
-      );
+      const lastImpliedRate = (i * RATE_PRECISION) / 10;
+      const oracleRate = (i * RATE_PRECISION) / 10 - 50 * BASIS_POINT;
 
-      const lastImpliedRate = BigNumber.from((i * RATE_PRECISION) / 10);
-      const oracleRate = BigNumber.from((i * RATE_PRECISION) / 10 - 50 * BASIS_POINT);
-
-      market.setMarket({
-        totalAssetCash: BigNumber.from(ethers.constants.WeiPerEther).mul(2),
-        totalLiquidity: BigNumber.from(ethers.constants.WeiPerEther),
-        totalfCash: BigNumber.from(ethers.constants.WeiPerEther),
-        previousTradeTime: BigNumber.from(blockTime - 60 * 5),
+      markets.push({
+        totalAssetCash: TypedBigNumber.fromBalance(ethers.constants.WeiPerEther.mul(2), 'cETH', true),
+        totalLiquidity: TypedBigNumber.fromBalance(ethers.constants.WeiPerEther, 'cETH', true),
+        totalfCash: TypedBigNumber.fromBalance(ethers.constants.WeiPerEther, 'ETH', true),
+        previousTradeTime: blockTime - 60 * 5,
         lastImpliedRate,
         oracleRate,
       });
-
-      markets.push(market);
     }
 
-    cashGroup = new CashGroup(
-      7,
-      rateOracleTimeWindow,
+    const eth = system.getCurrencyBySymbol('ETH');
+    cashGroup = new CashGroup(eth, {
+      maxMarketIndex: 7,
+      rateOracleTimeWindowSeconds,
       totalFeeBasisPoints,
       reserveFeeSharePercent,
       debtBufferBasisPoints,
       fCashHaircutBasisPoints,
-      Array(7).fill(90),
-      Array(7).fill(10),
-      markets
-    );
+      liquidityTokenHaircutsPercent: Array(7).fill(90),
+      rateScalars: Array(7).fill(10),
+      markets,
+    });
     System.overrideSystem(system as unknown as System);
   });
 
@@ -114,9 +102,9 @@ describe('Cash Group', () => {
     const shortMaturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
     const rate = cashGroup.markets[0].marketOracleRate();
     const maturity = Math.trunc((shortMaturity - blockTime) / 2) + blockTime;
-    cashGroup.setBlockSupplyRate(0.1e9);
+    const supplyRate = cashGroup.blockSupplyRate;
 
-    const expectedRate = Math.trunc((rate + 0.1e9) / 2);
+    const expectedRate = Math.trunc((supplyRate + rate) / 2);
     expect(cashGroup.getOracleRate(maturity, blockTime)).toBeCloseTo(expectedRate, -5);
   });
 

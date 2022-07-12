@@ -1,8 +1,9 @@
 import { BigNumber, ethers } from 'ethers';
 import { fetch as crossFetch } from 'cross-fetch';
 import { SystemData } from '.';
-import { Contracts, TypedBigNumber } from '..';
+import TypedBigNumber from '../libs/TypedBigNumber';
 import GraphClient from '../GraphClient';
+import { Contracts } from '../libs/types';
 import { ConfigKeys, getBlockchainData } from './BlockchainCalls';
 import getUSDPriceData from './ExchangeRateCalls';
 import { getSystemConfig } from './SubgraphCalls';

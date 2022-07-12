@@ -1,12 +1,12 @@
 import { assetTypeNum, getNowSeconds } from '../libs/utils';
 import { AssetType } from '../libs/types';
 import { PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR } from '../config/constants';
-import { Market } from '.';
+import { Market, System } from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
 import { CashGroupData, Currency } from '../proto';
 
 export default class CashGroup {
-  private _blockSupplyRate?: number;
+  public readonly currencyId: number;
 
   public readonly maxMarketIndex: number;
 
@@ -27,7 +27,7 @@ export default class CashGroup {
   public readonly markets: Market[];
 
   public get blockSupplyRate() {
-    return this._blockSupplyRate;
+    return System.getSystem().getAnnualizedSupplyRate(this.currencyId).toNumber();
   }
 
   public getMarket(marketIndex: number): Market {
@@ -35,6 +35,7 @@ export default class CashGroup {
   }
 
   constructor(currency: Currency, cashGroupData: CashGroupData) {
+    this.currencyId = currency.id;
     this.maxMarketIndex = cashGroupData.maxMarketIndex;
     this.rateOracleTimeWindowSeconds = cashGroupData.rateOracleTimeWindowSeconds;
     this.totalFeeBasisPoints = cashGroupData.totalFeeBasisPoints;

@@ -270,6 +270,12 @@ export default class System {
     return { underlyingDecimalPlaces: assetRateData.underlyingDecimalPlaces, assetRate };
   }
 
+  public getAnnualizedSupplyRate(currencyId: number) {
+    const assetRateData = this.data.assetRateData.get(currencyId);
+    if (!assetRateData) throw new Error(`Asset Rate ${currencyId} not found`);
+    return assetRateData.annualSupplyRate;
+  }
+
   public getETHProvider(currencyId: number) {
     return this.ethRateProviders.get(currencyId);
   }
