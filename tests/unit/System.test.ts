@@ -26,7 +26,7 @@ describe('System tests', () => {
   });
 
   it('gets all currencies', () => {
-    expect(system.getAllCurrencies()).toHaveLength(6);
+    expect(system.getAllCurrencies()).toHaveLength(5);
     expect(system.getTradableCurrencies()).toHaveLength(4);
   });
 
@@ -52,9 +52,7 @@ describe('System tests', () => {
           maturity,
           assetType: AssetType.fCash,
           notional,
-          hasMatured: false,
           settlementDate: maturity,
-          isIdiosyncratic: CashGroup.isIdiosyncratic(maturity, getNowSeconds()),
         },
         maturity
       )
@@ -69,15 +67,15 @@ describe('System tests', () => {
     const tRef = CashGroup.getTimeReference(getNowSeconds());
     const maturity = tRef + SECONDS_IN_QUARTER;
     const assetRate = BigNumber.from('195000000000000000000000000');
-    const { symbol } = system.getCurrencyById(2);
+    const { assetSymbol } = system.getCurrencyById(2);
     (system as MockSystem).setSettlementRate(2, maturity, assetRate);
     (system as MockSystem).setSettlementMarket(2, maturity, {
       settlementDate: maturity,
-      totalAssetCash: TypedBigNumber.from(5_000_000e8, BigNumberType.InternalAsset, symbol),
-      totalLiquidity: TypedBigNumber.from(100_000e8, BigNumberType.LiquidityToken, symbol),
-      totalfCash: TypedBigNumber.from(100_000e8, BigNumberType.InternalUnderlying, symbol),
+      totalAssetCash: TypedBigNumber.from(5_000_000e8, BigNumberType.InternalAsset, assetSymbol),
+      totalLiquidity: TypedBigNumber.from(100_000e8, BigNumberType.LiquidityToken, assetSymbol),
+      totalfCash: TypedBigNumber.from(100_000e8, BigNumberType.InternalUnderlying, assetSymbol),
     });
-    const notional = TypedBigNumber.from(1000e8, BigNumberType.LiquidityToken, symbol);
+    const notional = TypedBigNumber.from(1000e8, BigNumberType.LiquidityToken, assetSymbol);
 
     system
       .settlePortfolioAsset(
@@ -86,9 +84,7 @@ describe('System tests', () => {
           maturity,
           assetType: AssetType.LiquidityToken_3Month,
           notional,
-          hasMatured: false,
           settlementDate: maturity,
-          isIdiosyncratic: false,
         },
         maturity
       )
@@ -104,15 +100,15 @@ describe('System tests', () => {
     const maturity = tRef + SECONDS_IN_QUARTER * 2;
     const settlementDate = tRef + SECONDS_IN_QUARTER;
     const assetRate = BigNumber.from('195000000000000000000000000');
-    const { symbol } = system.getCurrencyById(2);
+    const { assetSymbol } = system.getCurrencyById(2);
     (system as MockSystem).setSettlementRate(2, maturity, assetRate);
     (system as MockSystem).setSettlementMarket(2, maturity, {
       settlementDate,
-      totalAssetCash: TypedBigNumber.from(5_000_000e8, BigNumberType.InternalAsset, symbol),
-      totalLiquidity: TypedBigNumber.from(100_000e8, BigNumberType.LiquidityToken, symbol),
-      totalfCash: TypedBigNumber.from(100_000e8, BigNumberType.InternalUnderlying, symbol),
+      totalAssetCash: TypedBigNumber.from(5_000_000e8, BigNumberType.InternalAsset, assetSymbol),
+      totalLiquidity: TypedBigNumber.from(100_000e8, BigNumberType.LiquidityToken, assetSymbol),
+      totalfCash: TypedBigNumber.from(100_000e8, BigNumberType.InternalUnderlying, assetSymbol),
     });
-    const notional = TypedBigNumber.from(1000e8, BigNumberType.LiquidityToken, symbol);
+    const notional = TypedBigNumber.from(1000e8, BigNumberType.LiquidityToken, assetSymbol);
 
     system
       .settlePortfolioAsset(
@@ -121,9 +117,7 @@ describe('System tests', () => {
           maturity,
           assetType: AssetType.LiquidityToken_6Month,
           notional,
-          hasMatured: false,
           settlementDate,
-          isIdiosyncratic: false,
         },
         settlementDate
       )

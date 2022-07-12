@@ -256,8 +256,8 @@ export async function getBlockchainData(provider: providers.Provider, contracts:
 
     return perCurrencyCalls(
       {
-        id: c.currencyId,
-        assetSymbol: c.symbol,
+        id: c.id,
+        assetSymbol: c.assetSymbol,
         underlyingSymbol: c.underlyingSymbol,
         nTokenSymbol: c.nToken?.nTokenSymbol || null,
         nTokenAddress: c.nToken?.contract._address || null,

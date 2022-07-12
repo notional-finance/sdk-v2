@@ -21,7 +21,17 @@ export enum BigNumberType {
 }
 
 class TypedBigNumber {
-  public currencyId: number;
+  get currencyId() {
+    if (this.symbol === 'NOTE') {
+      return NOTE_CURRENCY_ID;
+    } else if (this.symbol === 'sNOTE') {
+      return STAKED_NOTE_CURRENCY_ID;
+    } else if (this.symbol === 'WETH') {
+      return 1;
+    } else {
+      return System.getSystem().getCurrencyBySymbol(this.symbol).id;
+    }
+  }
 
   private _isWETH = false;
 
@@ -43,17 +53,10 @@ class TypedBigNumber {
   }
 
   private constructor(public n: BigNumber, public type: BigNumberType, public symbol: string) {
-    if (symbol === 'NOTE') {
-      this.currencyId = NOTE_CURRENCY_ID;
-    } else if (symbol === 'sNOTE') {
-      this.currencyId = STAKED_NOTE_CURRENCY_ID;
-    } else if (symbol === 'WETH') {
-      this.currencyId = 1;
+    if (symbol === 'WETH') {
       this.symbol = 'ETH';
       // Mark the currency as WETH even though we treat it as ETH for calculations
       this._isWETH = true;
-    } else {
-      this.currencyId = 0; // System.getSystem().getCurrencyBySymbol(symbol).id;
     }
   }
 

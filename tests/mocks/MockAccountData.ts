@@ -1,5 +1,6 @@
 import { AccountData } from '../../src/account';
-import { Balance, Asset } from '../../src/libs/types';
+import { Balance } from '../../src/libs/types';
+import { Asset } from '../../src/proto';
 
 export default class MockAccountData extends AccountData {
   // eslint-disable-next-line @typescript-eslint/no-useless-constructor

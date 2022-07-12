@@ -111,13 +111,13 @@ interface SystemQueryResult {
 }
 
 export interface CurrencyConfig {
-  currencyId: number;
-  contract: SerializedContract;
+  id: number;
+  assetName: string;
+  assetSymbol: string;
+  assetContract: SerializedContract;
+  assetDecimals: BigNumber;
+  assetDecimalPlaces: number;
   tokenType: TokenType;
-  decimals: BigNumber;
-  decimalPlaces: number;
-  name: string;
-  symbol: string;
   underlyingName: string | null;
   underlyingSymbol: string | null;
   underlyingDecimalPlaces: number | null;
@@ -169,15 +169,17 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
       (c) =>
         ({
           ...c,
-          currencyId: Number(c.id),
-          tokenType: c.tokenType as TokenType,
-          decimals: BigNumber.from(c.decimals),
-          decimalPlaces: Math.log10(Number(c.decimals)),
-          contract: {
+          id: Number(c.id),
+          assetName: c.name,
+          assetSymbol: c.symbol,
+          assetDecimals: BigNumber.from(c.decimals),
+          assetDecimalPlaces: Math.log10(Number(c.decimals)),
+          assetContract: {
             _isSerializedContract: true,
             _address: c.tokenAddress,
             _abiName: 'ERC20',
           },
+          tokenType: c.tokenType as TokenType,
           underlyingDecimals: c.underlyingDecimals ? BigNumber.from(c.underlyingDecimals) : undefined,
           underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
           underlyingContract: c.underlyingTokenAddress

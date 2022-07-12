@@ -43,41 +43,41 @@ export async function fetchAndEncodeSystem(
     },
     currencies: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.currencyId] = c;
+      ret[c.id] = c;
       return ret;
     }, {}),
     ethRateData: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.currencyId] = {
+      ret[c.id] = {
         ...c.ethExchangeRate,
-        latestRate: results[ConfigKeys.ETH_EXCHANGE_RATE(c.currencyId)],
+        latestRate: results[ConfigKeys.ETH_EXCHANGE_RATE(c.id)],
       };
       return ret;
     }, {}),
     assetRateData: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.currencyId] = {
+      ret[c.id] = {
         ...c.assetExchangeRate,
-        latestRate: results[ConfigKeys.ASSET_EXCHANGE_RATE(c.currencyId)],
-        annualSupplyRate: results[ConfigKeys.ASSET_ANNUAL_SUPPLY_RATE(c.currencyId)],
+        latestRate: results[ConfigKeys.ASSET_EXCHANGE_RATE(c.id)],
+        annualSupplyRate: results[ConfigKeys.ASSET_ANNUAL_SUPPLY_RATE(c.id)],
       };
       return ret;
     }, {}),
     nTokenData: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.currencyId] = {
+      ret[c.id] = {
         ...c.nToken,
-        ...results[ConfigKeys.NTOKEN_ACCOUNT(c.currencyId)],
-        ...results[ConfigKeys.NTOKEN_PORTFOLIO(c.currencyId)],
-        assetCashPV: results[ConfigKeys.NTOKEN_PRESENT_VALUE(c.currencyId)],
+        ...results[ConfigKeys.NTOKEN_ACCOUNT(c.id)],
+        ...results[ConfigKeys.NTOKEN_PORTFOLIO(c.id)],
+        assetCashPV: results[ConfigKeys.NTOKEN_PRESENT_VALUE(c.id)],
       };
       return ret;
     }, {}),
     cashGroups: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.currencyId] = {
+      ret[c.id] = {
         ...c.cashGroup,
-        markets: results[ConfigKeys.MARKETS(c.currencyId)],
+        markets: results[ConfigKeys.MARKETS(c.id)],
       };
       return ret;
     }, {}),
@@ -128,12 +128,24 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
   return newVal;
 }
 
+function _encodeMap(decoded: any) {
+  // Coverts records to maps so that we can use .get on them and get type checking
+  let mapped = decoded;
+  mapped.USDExchangeRates = new Map(Object.entries(decoded.USDExchangeRates));
+  mapped.currencies = new Map(Object.entries(decoded.currencies).map(([k, v]) => [Number(k), v]));
+  mapped.ethRateData = new Map(Object.entries(decoded.ethRateData).map(([k, v]) => [Number(k), v]));
+  mapped.assetRateData = new Map(Object.entries(decoded.assetRateData).map(([k, v]) => [Number(k), v]));
+  mapped.nTokenData = new Map(Object.entries(decoded.nTokenData).map(([k, v]) => [Number(k), v]));
+  mapped.cashGroups = new Map(Object.entries(decoded.cashGroups).map(([k, v]) => [Number(k), v]));
+  return mapped;
+}
+
 export function decodeJSON(json: any, provider: ethers.providers.Provider): SystemData {
-  return _decodeValue(json, provider);
+  return _encodeMap(_decodeValue(json, provider));
 }
 
 export function decodeBinary(binary: Uint8Array, provider: ethers.providers.Provider): SystemData {
-  return _decodeValue(decodeSystemData(binary), provider);
+  return decodeJSON(decodeSystemData(binary), provider);
 }
 
 export async function fetchAndDecodeSystem(

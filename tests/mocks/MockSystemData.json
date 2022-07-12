@@ -1,9 +1,9 @@
 {
   "network": "mainnet",
-  "lastUpdateBlockNumber": 15127965,
-  "lastUpdateTimestamp": 1657631020,
+  "lastUpdateBlockNumber": 15128123,
+  "lastUpdateTimestamp": 1657633153,
   "USDExchangeRates": {
-    "NOTE": { "_isBigNumber": true, "_hex": "0x03cda794d4673400" },
+    "NOTE": { "_isBigNumber": true, "_hex": "0x03cbc37768092000" },
     "EUR": { "_isBigNumber": true, "_hex": "0x0dc6117dd3934000" },
     "JPY": { "_isBigNumber": true, "_hex": "0x076fc364e2d2f38000" },
     "CNY": { "_isBigNumber": true, "_hex": "0x5d284d15a7c3c000" }
@@ -14,13 +14,13 @@
     "redeemWindowSeconds": 259200,
     "ethBalance": {
       "_isTypedBigNumber": true,
-      "hex": "0x16a43d3c69d26af2f5",
+      "hex": "0x169ebc949203e7e795",
       "bigNumberType": "External Underlying",
       "symbol": "ETH"
     },
     "noteBalance": {
       "_isTypedBigNumber": true,
-      "hex": "0x0267c50cd9cc6b",
+      "hex": "0x0267eaac4c4f97",
       "bigNumberType": "External Underlying",
       "symbol": "NOTE"
     },
@@ -37,6 +37,15 @@
   "currencies": {
     "1": {
       "id": 1,
+      "assetName": "Compound Ether",
+      "assetSymbol": "cETH",
+      "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "assetDecimalPlaces": 8,
+      "assetContract": {
+        "_isSerializedContract": true,
+        "_address": "0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5",
+        "_abiName": "ERC20"
+      },
       "tokenType": "cETH",
       "hasTransferFee": false,
       "underlyingName": "Ether",
@@ -47,6 +56,15 @@
     },
     "2": {
       "id": 2,
+      "assetName": "Compound Dai",
+      "assetSymbol": "cDAI",
+      "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "assetDecimalPlaces": 8,
+      "assetContract": {
+        "_isSerializedContract": true,
+        "_address": "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
+        "_abiName": "ERC20"
+      },
       "tokenType": "cToken",
       "hasTransferFee": false,
       "underlyingName": "Dai Stablecoin",
@@ -61,6 +79,15 @@
     },
     "3": {
       "id": 3,
+      "assetName": "Compound USD Coin",
+      "assetSymbol": "cUSDC",
+      "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "assetDecimalPlaces": 8,
+      "assetContract": {
+        "_isSerializedContract": true,
+        "_address": "0x39aa39c021dfbae8fac545936693ac917d5e7563",
+        "_abiName": "ERC20"
+      },
       "tokenType": "cToken",
       "hasTransferFee": false,
       "underlyingName": "USD Coin",
@@ -75,10 +102,42 @@
     },
     "4": {
       "id": 4,
+      "assetName": "Compound Wrapped BTC",
+      "assetSymbol": "cWBTC",
+      "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "assetDecimalPlaces": 8,
+      "assetContract": {
+        "_isSerializedContract": true,
+        "_address": "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
+        "_abiName": "ERC20"
+      },
       "tokenType": "cToken",
       "hasTransferFee": false,
       "underlyingName": "Wrapped BTC",
       "underlyingSymbol": "WBTC",
+      "underlyingDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "underlyingDecimalPlaces": 8,
+      "underlyingContract": {
+        "_isSerializedContract": true,
+        "_address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+        "_abiName": "ERC20"
+      }
+    },
+    "5": {
+      "id": 5,
+      "assetName": "Asset TEST",
+      "assetSymbol": "cTEST",
+      "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "assetDecimalPlaces": 8,
+      "assetContract": {
+        "_isSerializedContract": true,
+        "_address": "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
+        "_abiName": "ERC20"
+      },
+      "tokenType": "cToken",
+      "hasTransferFee": false,
+      "underlyingName": "Underlying TEST",
+      "underlyingSymbol": "TEST",
       "underlyingDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
       "underlyingDecimalPlaces": 8,
       "underlyingContract": {
@@ -110,7 +169,7 @@
       "mustInvert": false,
       "buffer": 109,
       "haircut": 92,
-      "latestRate": { "_isBigNumber": true, "_hex": "0x0350d41a7cf296" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0x0351ad6750874f" }
     },
     "3": {
       "rateOracle": {
@@ -145,8 +204,8 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 18,
-      "latestRate": { "_isBigNumber": true, "_hex": "0xa5fa010e0c4ce7cc7c5e3e" },
-      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x0b1a0a" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0xa5fa01a65579b46f04ad2c" },
+      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x0b1aa6" }
     },
     "2": {
       "rateAdapter": {
@@ -155,8 +214,8 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 18,
-      "latestRate": { "_isBigNumber": true, "_hex": "0xb647af02f80240a81c9a0b" },
-      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x50e354" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0xb647b3c56b0a062a04a69f" },
+      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x50e620" }
     },
     "3": {
       "rateAdapter": {
@@ -165,8 +224,8 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 6,
-      "latestRate": { "_isBigNumber": true, "_hex": "0xcdbc0a223ee0" },
-      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x40cf95" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0xcdbc0e701a3e" },
+      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x40d0cc" }
     },
     "4": {
       "rateAdapter": {
@@ -175,8 +234,8 @@
         "_abiName": "AssetRateAggregator"
       },
       "underlyingDecimalPlaces": 8,
-      "latestRate": { "_isBigNumber": true, "_hex": "0x474a87d4493223" },
-      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x079580" }
+      "latestRate": { "_isBigNumber": true, "_hex": "0x474a8800f6209f" },
+      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x079581" }
     }
   },
   "nTokenData": {
@@ -193,7 +252,7 @@
       },
       "assetCashPV": {
         "_isTypedBigNumber": true,
-        "hex": "0x13ff4b65cf5f",
+        "hex": "0x13ff4b8f827a",
         "bigNumberType": "Internal Asset",
         "symbol": "cETH"
       },
@@ -272,7 +331,7 @@
       },
       "assetCashPV": {
         "_isTypedBigNumber": true,
-        "hex": "0x020589683850f8a8",
+        "hex": "0x0205895009ed4696",
         "bigNumberType": "Internal Asset",
         "symbol": "cDAI"
       },
@@ -392,7 +451,7 @@
       },
       "assetCashPV": {
         "_isTypedBigNumber": true,
-        "hex": "0x01d31693fed77727",
+        "hex": "0x01d3168c801a8e9f",
         "bigNumberType": "Internal Asset",
         "symbol": "cUSDC"
       },
@@ -512,7 +571,7 @@
       },
       "assetCashPV": {
         "_isTypedBigNumber": true,
-        "hex": "0xb0d474857e",
+        "hex": "0xb0d47420f5",
         "bigNumberType": "Internal Asset",
         "symbol": "cWBTC"
       },

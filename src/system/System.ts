@@ -94,7 +94,7 @@ export default class System {
   // eslint-disable-next-line no-use-before-define
   private static _systemInstance?: System;
 
-  private data: SystemData;
+  protected data: SystemData;
 
   public get lastUpdateBlockNumber() {
     return this.data.lastUpdateBlockNumber;
@@ -152,9 +152,11 @@ export default class System {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
     this.data = initData;
-    this.dataRefreshInterval = setInterval(async () => {
-      this.data = await fetchAndDecodeSystem(this.cacheUrl, this.batchProvider, skipFetchSetup);
-    }, this.refreshIntervalMS);
+    if (refreshIntervalMS > 0) {
+      this.dataRefreshInterval = setInterval(async () => {
+        this.data = await fetchAndDecodeSystem(this.cacheUrl, this.batchProvider, skipFetchSetup);
+      }, this.refreshIntervalMS);
+    }
   }
 
   public destroy() {
