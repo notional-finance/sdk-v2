@@ -21,8 +21,8 @@ describe('System Integration Test', () => {
 
   it('returns system configuration from the graph', async () => {
     const graphClient = new GraphClient(mainnetGraphEndpoint, 0, false);
-    const results = await fetchAndEncodeSystem(graphClient, provider, contracts);
+    const results = await fetchAndEncodeSystem(graphClient, provider, contracts, false);
 
-    console.log(decode(results));
+    console.log(decode(results, provider));
   });
 });

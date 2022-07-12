@@ -16,13 +16,14 @@ import nTokenERC20ABI from '../abi/nTokenERC20.json';
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
   provider: ethers.providers.JsonRpcBatchProvider,
-  contracts: Contracts
+  contracts: Contracts,
+  skipFetchSetup: boolean
 ) {
   const config = await getSystemConfig(graphClient);
   const { blockNumber, results } = await getBlockchainData(provider, contracts, config);
   const network = await provider.getNetwork();
   const block = await provider.getBlock(blockNumber.toNumber());
-  const usdExchangeRates = await getUSDPriceData();
+  const usdExchangeRates = await getUSDPriceData(skipFetchSetup);
 
   const systemObject: _SystemData = {
     network: network.name === 'homestead' ? 'mainnet' : network.name,

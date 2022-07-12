@@ -186,12 +186,14 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
                 _address: c.underlyingTokenAddress,
                 _abiName: 'ERC20',
               }
-            : null,
+            : {
+                _isSerializedContract: false,
+              },
           nToken: {
             ...c.nToken,
             contract: {
               _isSerializedContract: true,
-              _address: c.underlyingTokenAddress,
+              _address: c.nToken?.tokenAddress,
               _abiName: 'nTokenERC20',
             },
             nTokenSymbol: c.nToken?.symbol,

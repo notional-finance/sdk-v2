@@ -1,4 +1,5 @@
 import { BigNumber, ethers } from 'ethers';
+import { fetch as crossFetch } from 'cross-fetch';
 
 const NOTE_PRICE_URL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
 const EXCHANGE_RATE_API = 'https://v6.exchangerate-api.com/v6/a68cdd30d4083fe1be69a4d4/latest/USD';
@@ -13,8 +14,8 @@ function convertToWei(val: number) {
     .div(10 ** 8);
 }
 
-async function getExchangeRateData(symbols: string[]) {
-  const resp = await (await fetch(EXCHANGE_RATE_API)).json();
+async function getExchangeRateData(symbols: string[], _fetch: any) {
+  const resp = await (await _fetch(EXCHANGE_RATE_API)).json();
   return symbols.reduce((obj, s) => {
     const ret = obj;
     if (resp.conversion_rates[s]) {
@@ -25,8 +26,8 @@ async function getExchangeRateData(symbols: string[]) {
 }
 
 // Returns the 24 hour avg of the USD price
-async function getCoingeckoUSDPrice(url: string) {
-  const resp = (await (await fetch(url)).json()) as { prices: [number, number][] };
+async function getCoingeckoUSDPrice(url: string, _fetch: any) {
+  const resp = (await (await _fetch(url)).json()) as { prices: [number, number][] };
   const sortedPrices: Array<[number, number]> = resp.prices.sort(([a], [b]) => a - b);
   let avgUSDPrice: number;
   if (sortedPrices.length === 1) {
@@ -47,9 +48,10 @@ async function getCoingeckoUSDPrice(url: string) {
   return convertToWei(avgUSDPrice);
 }
 
-export default async function getUSDPriceData(): Promise<Record<string, BigNumber>> {
-  const NOTE = await getCoingeckoUSDPrice(NOTE_PRICE_URL);
-  const EX_RATES = await getExchangeRateData(SUPPORTED_RATES);
+export default async function getUSDPriceData(skipFetchSetup: boolean): Promise<Record<string, BigNumber>> {
+  const _fetch = skipFetchSetup ? fetch : crossFetch;
+  const NOTE = await getCoingeckoUSDPrice(NOTE_PRICE_URL, _fetch);
+  const EX_RATES = await getExchangeRateData(SUPPORTED_RATES, _fetch);
   return {
     NOTE,
     ...EX_RATES,
