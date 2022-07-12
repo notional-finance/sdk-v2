@@ -88,23 +88,19 @@ export default class NoteETHRateProvider {
     // This will throw an error of system is not initialized
     const system = System.getSystem();
     // Use USD as a basis for the NOTE price
-    const { ethRateConfig: usdcRateConfig, ethRate: usdcETHRate } = system.getETHRate(USDC);
+    const { rateDecimalPlaces, latestRate } = system.getETHRate(USDC);
     const ethRateConfig = {
       rateOracle: null as unknown as IAggregator,
-      rateDecimalPlaces: usdcRateConfig?.rateDecimalPlaces || 18,
+      rateDecimalPlaces: rateDecimalPlaces || 18,
       mustInvert: false,
       buffer: 100,
       haircut: 100,
     };
 
-    if (!usdcETHRate || !usdcRateConfig) {
-      return { ethRateConfig, ethRate: BigNumber.from(0) };
-    }
-
-    const rateDecimals = BigNumber.from(10).pow(usdcRateConfig.rateDecimalPlaces);
+    const rateDecimals = BigNumber.from(10).pow(rateDecimalPlaces);
     return {
       ethRateConfig,
-      ethRate: BigNumber.from(usdcETHRate.mul(this.noteUSDPrice).div(rateDecimals)),
+      ethRate: BigNumber.from(latestRate.mul(this.noteUSDPrice).div(rateDecimals)),
     };
   }
 }

@@ -1,7 +1,6 @@
 import { BigNumber, Contract } from 'ethers';
 import { AssetType, TypedBigNumber } from '..';
-import { IAggregator } from '../../lib/typechain';
-import { AssetRateAggregator, ERC20, NTokenERC20 } from '../typechain';
+import { AssetRateAggregator, ERC20, NTokenERC20, IAggregator } from '../typechain';
 import {
   Asset as _Asset,
   AssetRate as _AssetRate,
@@ -14,9 +13,6 @@ import {
   SerializedTypedBigNumber,
   sNOTE as _sNOTE,
 } from './SystemProto';
-// import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
-// import { IAggregator } from '../typechain/IAggregator';
-// import { NTokenERC20 } from '../typechain/NTokenERC20';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
   ? T extends TIgnore

@@ -8,7 +8,7 @@ import {
 } from '../config/constants';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { AssetType, Balance } from '../libs/types';
-import { assetTypeNum, convertAssetType, getNowSeconds } from '../libs/utils';
+import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
 import { Asset } from '../proto';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
 
@@ -78,7 +78,7 @@ export default class AccountData {
   }
 
   public get portfolio() {
-    return this._portfolio.filter((a) => !a.hasMatured);
+    return this._portfolio.filter((a) => !hasMatured(a));
   }
 
   public get portfolioWithMaturedAssets() {
@@ -198,7 +198,7 @@ export default class AccountData {
     const system = System.getSystem();
 
     // Settles matured assets here to cash and fCash assets
-    const maturedAssets = portfolio.filter((a) => a.hasMatured);
+    const maturedAssets = portfolio.filter((a) => hasMatured(a));
 
     // eslint-disable-next-line no-restricted-syntax
     for (const asset of maturedAssets) {
@@ -241,7 +241,7 @@ export default class AccountData {
    */
   public updateAsset(asset: Asset) {
     if (!this.isCopy) throw Error('Cannot update assets on non copy');
-    if (asset.hasMatured) throw Error('Cannot add matured asset to account copy');
+    if (hasMatured(asset)) throw Error('Cannot add matured asset to account copy');
 
     // eslint-disable-next-line no-underscore-dangle
     this._portfolio = AccountData._updateAsset(this._portfolio, asset, this.bitmapCurrencyId);
@@ -497,6 +497,7 @@ export default class AccountData {
   }
 
   private static _updateAsset(portfolio: Asset[], asset: Asset, bitmapCurrencyId?: number) {
+    // TODO: this should create a copy
     const existingAsset = portfolio.find(
       (a) => a.currencyId === asset.currencyId && a.assetType === asset.assetType && a.maturity === asset.maturity
     );

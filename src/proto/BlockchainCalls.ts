@@ -1,5 +1,5 @@
 import { BigNumber, Contract, ethers, providers } from 'ethers';
-import { Contracts } from '../../lib';
+import { Contracts } from '..';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { aggregate, AggregateCall } from './multicall';
 import { CurrencyConfig } from './SubgraphCalls';
@@ -265,7 +265,7 @@ export async function getBlockchainData(provider: providers.Provider, contracts:
   const sNOTECalls = firstSNOTECalls(contracts.balancerPool, contracts.sNOTE);
   const currencyCalls = config.flatMap((c) => {
     const rateAdapter = new Contract(
-      c.assetExchangeRate?.rateAdapterAddress || ethers.constants.AddressZero,
+      c.assetExchangeRate?.rateAdapter._address || ethers.constants.AddressZero,
       AssetRateAggregatorABI,
       provider
     ) as AssetRateAggregator;
@@ -275,11 +275,11 @@ export async function getBlockchainData(provider: providers.Provider, contracts:
         id: c.currencyId,
         assetSymbol: c.symbol,
         underlyingSymbol: c.underlyingSymbol,
-        nTokenSymbol: c.nToken?.symbol || null,
-        nTokenAddress: c.nToken?.tokenAddress || null,
+        nTokenSymbol: c.nToken?.nTokenSymbol || null,
+        nTokenAddress: c.nToken?.contract._address || null,
       },
       {
-        oracle: new Contract(c.ethExchangeRate.rateOracle, IAggregatorABI, provider) as IAggregator,
+        oracle: new Contract(c.ethExchangeRate.rateOracle._address!, IAggregatorABI, provider) as IAggregator,
         mustInvert: c.ethExchangeRate.mustInvert,
         rateDecimalPlaces: c.ethExchangeRate.rateDecimalPlaces,
       },

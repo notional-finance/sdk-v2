@@ -81,7 +81,7 @@ export default class TransactionBuilder {
   ) {
     const currency = System.getSystem().getCurrencyBySymbol(symbol);
     const withdrawAmount = amountExternal.toAssetCash().toInternalPrecision();
-    withdrawAmount.check(BigNumberType.InternalAsset, currency.symbol);
+    withdrawAmount.check(BigNumberType.InternalAsset, currency.assetSymbol);
 
     return this.populateTxnAndGas(address, 'withdraw', [currency.id, withdrawAmount.n, redeemToUnderlying, overrides]);
   }
@@ -108,7 +108,7 @@ export default class TransactionBuilder {
     let actionType: DepositActionType;
     let overrides = _overrides;
     if (convertCash) {
-      amount.check(BigNumberType.InternalAsset, currency.symbol);
+      amount.check(BigNumberType.InternalAsset, currency.assetSymbol);
       actionType = DepositActionType.ConvertCashToNToken;
     } else if (isUnderlying && currency.tokenType === TokenType.cETH) {
       amount.check(BigNumberType.ExternalUnderlying, currency.underlyingSymbol);
@@ -118,7 +118,7 @@ export default class TransactionBuilder {
       amount.check(BigNumberType.ExternalUnderlying, currency.underlyingSymbol);
       actionType = DepositActionType.DepositUnderlyingAndMintNToken;
     } else {
-      amount.check(BigNumberType.ExternalAsset, currency.symbol);
+      amount.check(BigNumberType.ExternalAsset, currency.assetSymbol);
       actionType = DepositActionType.DepositAssetAndMintNToken;
     }
 
@@ -158,7 +158,7 @@ export default class TransactionBuilder {
     const currency = System.getSystem().getCurrencyById(currencyId);
     const nToken = System.getSystem().getNToken(currency.id);
     amount.check(BigNumberType.nToken, nToken?.nTokenSymbol);
-    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.symbol);
+    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.assetSymbol);
 
     return this.populateTxnAndGas(address, 'batchBalanceAction', [
       address,
@@ -220,8 +220,11 @@ export default class TransactionBuilder {
     const actions: BatchBalanceAndTradeAction[] = [];
     const borrowCurrency = System.getSystem().getCurrencyBySymbol(borrowCurrencySymbol);
     let borrowOverrides = overrides;
-    borrowfCashAmount.check(BigNumberType.InternalUnderlying, borrowCurrency.underlyingSymbol || borrowCurrency.symbol);
-    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, borrowCurrency.symbol);
+    borrowfCashAmount.check(
+      BigNumberType.InternalUnderlying,
+      borrowCurrency.underlyingSymbol || borrowCurrency.assetSymbol
+    );
+    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, borrowCurrency.assetSymbol);
 
     collateral
       .filter((c) => !c.amount.isZero())
@@ -291,8 +294,8 @@ export default class TransactionBuilder {
     overrides = {} as Overrides
   ) {
     const currency = System.getSystem().getCurrencyBySymbol(lendCurrencySymbol);
-    lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.symbol);
-    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.symbol);
+    lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
+    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.assetSymbol);
 
     const { actionType, overrides: lendOverrides } = this.getDepositAction(
       lendCurrencySymbol,
@@ -336,7 +339,7 @@ export default class TransactionBuilder {
   ) {
     if (lendCurrencySymbol === 'ETH') throw Error('ETH cannot be used in batchLend');
     const currency = System.getSystem().getCurrencyBySymbol(lendCurrencySymbol);
-    lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.symbol);
+    lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
 
     const batchLendAction = {
       currencyId: currency.id,
@@ -600,7 +603,7 @@ export default class TransactionBuilder {
     if (asset.notional.isNegative() || asset.maturity < getNowSeconds()) throw new Error('Cannot repay lend asset');
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
     const currency = System.getSystem().getCurrencyById(asset.currencyId);
-    withdrawNotionalAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.symbol);
+    withdrawNotionalAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
 
     const withdrawLendAction = {
       actionType: DepositActionType.None,
@@ -635,14 +638,14 @@ export default class TransactionBuilder {
     }
 
     if (isUnderlying) {
-      amount.check(BigNumberType.ExternalUnderlying, currency.underlyingSymbol || currency.symbol);
+      amount.check(BigNumberType.ExternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
       return {
         actionType: mintNToken ? DepositActionType.DepositUnderlyingAndMintNToken : DepositActionType.DepositUnderlying,
         overrides,
       };
     }
 
-    amount.check(BigNumberType.ExternalAsset, currency.symbol);
+    amount.check(BigNumberType.ExternalAsset, currency.assetSymbol);
     return {
       actionType: mintNToken ? DepositActionType.DepositAssetAndMintNToken : DepositActionType.DepositAsset,
       overrides,

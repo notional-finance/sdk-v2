@@ -1,4 +1,5 @@
 import { BigNumber, Contract, PopulatedTransaction } from 'ethers';
+import { Asset } from '../proto';
 import { AssetType } from './types';
 
 export async function populateTxnAndGas(
@@ -64,4 +65,8 @@ export function assetTypeNum(assetType: AssetType) {
     default:
       throw Error('Unknown asset type');
   }
+}
+
+export function hasMatured(asset: Asset) {
+  return asset.maturity <= getNowSeconds();
 }

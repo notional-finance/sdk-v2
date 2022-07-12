@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers';
 import { System, Market, CashGroup } from '.';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { getNowSeconds } from '../libs/utils';
+import { getNowSeconds, hasMatured } from '../libs/utils';
 import {
   INTERNAL_TOKEN_PRECISION,
   PERCENTAGE_BASIS,
@@ -153,7 +153,7 @@ export default class NTokenValue {
 
     // If there are no liquidity tokens then the markets have not been initialized for the first time,
     // but mint and redeem are still possible.
-    if (liquidityTokens.length > 0 && liquidityTokens[0].hasMatured) return NTokenStatus.MarketsNotInitialized;
+    if (liquidityTokens.length > 0 && hasMatured(liquidityTokens[0])) return NTokenStatus.MarketsNotInitialized;
     if (fCash.filter((f) => !liquidityTokens.find((lt) => lt.maturity === f.maturity)).length) {
       // If residual fCash is in the nToken account this calculation will not work. nTokens can still
       // be redeemed but will have residual fCash assets.
@@ -253,7 +253,7 @@ export default class NTokenValue {
     }, TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.assetSymbol));
 
     const ifCashRiskAdjustedValue = fCash
-      .filter((f) => f.isIdiosyncratic)
+      .filter((f) => CashGroup.isIdiosyncratic(f.maturity))
       .reduce(
         (total, f) =>
           total.add(cashGroup.getfCashPresentValueUnderlyingInternal(f.maturity, f.notional, true).toAssetCash()),

@@ -250,9 +250,7 @@ export default class System {
     const cashGroup = this.data.cashGroups.get(currencyId);
     if (!cashGroup) throw new Error(`Cash group ${currencyId} not found`);
 
-    const cashGroupCopy = CashGroup.copy(cashGroup);
-    cashGroupCopy.markets = this.getMarkets(currencyId);
-    return cashGroupCopy;
+    return new CashGroup(...cashGroup);
   }
 
   public getMarkets(currencyId: number): Market[] {

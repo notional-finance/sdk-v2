@@ -193,8 +193,8 @@ export default class Notional extends TransactionBuilder {
       const currency = this.system.getCurrencyBySymbol(symbol);
       decimalPlaces =
         bnType === BigNumberType.ExternalAsset
-          ? currency.decimalPlaces
-          : currency.underlyingDecimalPlaces || currency.decimalPlaces;
+          ? currency.assetDecimalPlaces
+          : currency.underlyingDecimalPlaces || currency.assetDecimalPlaces;
     }
 
     try {
