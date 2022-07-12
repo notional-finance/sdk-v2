@@ -135,7 +135,7 @@ export default class AccountData {
       const notional =
         assetType === AssetType.fCash
           ? TypedBigNumber.from(v.notional, BigNumberType.InternalUnderlying, underlyingSymbol)
-          : TypedBigNumber.from(v.notional, BigNumberType.LiquidityToken, currency.symbol);
+          : TypedBigNumber.from(v.notional, BigNumberType.LiquidityToken, currency.assetSymbol);
       const settlementDate = CashGroup.getSettlementDate(assetType, maturity);
 
       return {
@@ -155,11 +155,11 @@ export default class AccountData {
     return accountBalances
       .filter((v) => v.currencyId !== 0)
       .map((v) => {
-        const { symbol } = system.getCurrencyById(v.currencyId);
+        const { assetSymbol } = system.getCurrencyById(v.currencyId);
         const nTokenSymbol = system.getNToken(v.currencyId)?.nTokenSymbol;
         return {
           currencyId: v.currencyId,
-          cashBalance: TypedBigNumber.from(v.cashBalance, BigNumberType.InternalAsset, symbol),
+          cashBalance: TypedBigNumber.from(v.cashBalance, BigNumberType.InternalAsset, assetSymbol),
           nTokenBalance: nTokenSymbol
             ? TypedBigNumber.from(v.nTokenBalance, BigNumberType.nToken, nTokenSymbol)
             : undefined,
@@ -245,10 +245,10 @@ export default class AccountData {
 
     // eslint-disable-next-line no-underscore-dangle
     this._portfolio = AccountData._updateAsset(this._portfolio, asset, this.bitmapCurrencyId);
-    const { symbol } = System.getSystem().getCurrencyById(asset.currencyId);
+    const { assetSymbol } = System.getSystem().getCurrencyById(asset.currencyId);
 
     // Do this to ensure that there is a balance slot set for the asset
-    this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, symbol));
+    this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, assetSymbol));
   }
 
   /**

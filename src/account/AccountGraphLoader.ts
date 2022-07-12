@@ -136,7 +136,7 @@ export default class AccountGraphLoader {
       throw Error(`Currency ${currencyId} does not have a nToken.`);
     }
 
-    const cashBalance = TypedBigNumber.fromBalance(balance.assetCashBalance, currency.symbol, true);
+    const cashBalance = TypedBigNumber.fromBalance(balance.assetCashBalance, currency.assetSymbol, true);
     const nTokenBalance = TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, true);
     const lastClaimTime = BigNumber.from(balance.lastClaimTime);
     const accountIncentiveDebt = balance.didMigrateIncentives
@@ -165,7 +165,7 @@ export default class AccountGraphLoader {
     const notional =
       assetType === AssetType.fCash
         ? TypedBigNumber.from(asset.notional, BigNumberType.InternalUnderlying, currency.underlyingSymbol)
-        : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.symbol);
+        : TypedBigNumber.from(asset.notional, BigNumberType.LiquidityToken, currency.assetSymbol);
 
     const hasMatured = maturity < getNowSeconds();
     const settlementDate = Number(asset.settlementDate);

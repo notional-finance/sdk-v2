@@ -177,18 +177,18 @@ export default abstract class AccountRefresh {
                   .getBalance(this.address)
                   .then((b) => this.updateWalletBalance('ETH', AddressZero, block, b, MaxUint256)),
                 // This is for cETH
-                this.fetchBalanceAndAllowance(c.symbol, c.contract, spender, block),
+                this.fetchBalanceAndAllowance(c.assetSymbol, c.assetContract, spender, block),
               ];
             }
             if (c.underlyingContract) {
               // Fetch both underlying and asset token
               return [
                 this.fetchBalanceAndAllowance(c.underlyingSymbol!, c.underlyingContract, spender, block),
-                this.fetchBalanceAndAllowance(c.symbol, c.contract, spender, block),
+                this.fetchBalanceAndAllowance(c.assetSymbol, c.assetContract, spender, block),
               ];
             }
             // Fetch just asset token
-            return this.fetchBalanceAndAllowance(c.symbol, c.contract, spender, block);
+            return this.fetchBalanceAndAllowance(c.assetSymbol, c.assetContract, spender, block);
           })
           // Fetch balances specific to staking
           .concat(

@@ -84,10 +84,10 @@ export default class FreeCollateral {
   ) {
     const system = System.getSystem();
     const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
-    const { symbol } = system.getCurrencyById(currencyId);
+    const { assetSymbol } = system.getCurrencyById(currencyId);
     const underlyingSymbol = system.getUnderlyingSymbol(currencyId);
 
-    assetCashBalanceInternal.check(BigNumberType.InternalAsset, symbol);
+    assetCashBalanceInternal.check(BigNumberType.InternalAsset, assetSymbol);
     nTokenBalance?.check(BigNumberType.nToken, nTokenSymbol);
     const cashGroupPV = system.isTradable(currencyId)
       ? FreeCollateral.getCashGroupValue(currencyId, portfolio, blockTime)
@@ -134,7 +134,7 @@ export default class FreeCollateral {
       .forEach((lt) => {
         // eslint-disable-next-line prefer-const
         let { assetCashClaim, fCashClaim } = cashGroup.getLiquidityTokenValue(
-          lt.assetType as AssetType,
+          lt.assetType,
           lt.notional,
           haircut,
           marketOverrides

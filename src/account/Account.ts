@@ -95,7 +95,7 @@ export default class Account extends AccountRefresh {
     const isUnderlying = currency.underlyingSymbol === symbol;
     const cashBalance =
       this.accountData?.cashBalance(currency.id) ||
-      TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.symbol);
+      TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.assetSymbol);
     const assetCashRequired = netCashRequiredInternal.toAssetCash(true);
 
     if (netCashRequiredInternal.isNegative()) throw new Error('Net cash required must be positive');

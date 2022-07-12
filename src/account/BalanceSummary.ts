@@ -36,11 +36,11 @@ export default class BalanceSummary {
   private nToken?: nToken;
 
   public get underlyingSymbol() {
-    return this.currency.underlyingSymbol || this.currency.symbol;
+    return this.currency.underlyingSymbol || this.currency.assetSymbol;
   }
 
   public get symbol() {
-    return this.currency.symbol;
+    return this.currency.assetSymbol;
   }
 
   public get nTokenSymbol() {
@@ -126,7 +126,7 @@ export default class BalanceSummary {
 
   // Returns cash balance and nToken withdraw amounts
   public getWithdrawAmounts(withdrawAmountInternalAsset: TypedBigNumber, preferCash: boolean) {
-    withdrawAmountInternalAsset.check(BigNumberType.InternalAsset, this.currency.symbol);
+    withdrawAmountInternalAsset.check(BigNumberType.InternalAsset, this.currency.assetSymbol);
     const nTokenStatus = NTokenValue.getNTokenStatus(withdrawAmountInternalAsset.currencyId);
     const canWithdrawNToken = nTokenStatus === NTokenStatus.Ok || nTokenStatus === NTokenStatus.nTokenHasResidual;
 
@@ -282,8 +282,8 @@ export default class BalanceSummary {
     return queryResult.balanceChanges.map((r) => {
       const currencyId = Number(r.currency.id);
       const currency = system.getCurrencyById(currencyId);
-      const assetSymbol = currency.symbol;
-      const underlyingSymbol = currency.underlyingSymbol || currency.symbol;
+      const assetSymbol = currency.assetSymbol;
+      const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
       const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
       const assetCashBalanceBefore = TypedBigNumber.fromBalance(r.assetCashBalanceBefore, assetSymbol, true);
       const assetCashBalanceAfter = TypedBigNumber.fromBalance(r.assetCashBalanceAfter, assetSymbol, true);
@@ -396,7 +396,7 @@ export default class BalanceSummary {
             : TypedBigNumber.fromBalance(0, 'NOTE', true);
 
           const currency = system.getCurrencyById(v.currencyId);
-          const underlyingSymbol = currency.underlyingSymbol || currency.symbol;
+          const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
           const localNetAvailable =
             netUnderlyingAvailable.get(v.currencyId) ||
             TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);

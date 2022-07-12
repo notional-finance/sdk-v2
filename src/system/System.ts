@@ -114,8 +114,6 @@ export default class System {
     this._systemInstance = system;
   }
 
-  protected symbolToCurrencyId = new Map<string, number>();
-
   protected settlementRates = new Map<string, BigNumber>();
 
   protected settlementMarkets = new Map<string, SettlementMarket>();
@@ -204,7 +202,7 @@ export default class System {
 
   /*** Currencies ***/
   public getAllCurrencies(): Currency[] {
-    return Array.from(this.data.currencies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
+    return Array.from(this.data.currencies.values()).sort((a, b) => a.assetSymbol.localeCompare(b.assetSymbol));
   }
 
   public getTradableCurrencies(): Currency[] {
@@ -212,9 +210,9 @@ export default class System {
   }
 
   public getCurrencyBySymbol(symbol: string): Currency {
-    const currencyId = this.symbolToCurrencyId.get(symbol);
-    if (!currencyId) throw new Error(`Currency ${symbol} not found`);
-    return this.getCurrencyById(currencyId);
+    const currency = this.getAllCurrencies().find((c) => c.assetSymbol === symbol || c.underlyingSymbol === symbol);
+    if (!currency) throw Error(`Currency ${symbol} not found`);
+    return currency;
   }
 
   public getTokenBySymbol(symbol: string): ERC20 {
@@ -227,10 +225,8 @@ export default class System {
     if (symbol === 'WETH') {
       return this.getWETH() as ERC20;
     }
-    const currencyId = this.symbolToCurrencyId.get(symbol);
-    if (!currencyId) throw new Error(`Currency ${symbol} not found`);
-    const currency = this.getCurrencyById(currencyId);
-    return currency.symbol === symbol ? currency.contract : currency.underlyingContract!;
+    const currency = this.getCurrencyBySymbol(symbol);
+    return currency.assetSymbol === symbol ? currency.assetContract : currency.underlyingContract!;
   }
 
   public getCurrencyById(id: number): Currency {
@@ -241,7 +237,7 @@ export default class System {
 
   public getUnderlyingSymbol(id: number): string {
     const currency = this.getCurrencyById(id);
-    return currency.underlyingSymbol || currency.symbol;
+    return currency.underlyingSymbol || currency.assetSymbol;
   }
 
   public isTradable(currencyId: number): boolean {
@@ -310,8 +306,8 @@ export default class System {
     const nTokenData = this.data.nTokenData.get(currencyId);
     return {
       cashBalance: nTokenData?.cashBalance,
-      liquidityTokens: nTokenData?.liquidityTokens,
-      fCash: nTokenData?.fCash,
+      liquidityTokens: nTokenData?.liquidityTokens as Asset[] | undefined,
+      fCash: nTokenData?.fCash as Asset[] | undefined,
     };
   }
 
@@ -453,8 +449,8 @@ export default class System {
       this.settlementMarkets.set(k, {
         settlementDate,
         totalfCash: TypedBigNumber.from(m.totalfCash, BigNumberType.InternalUnderlying, underlyingSymbol),
-        totalAssetCash: TypedBigNumber.from(m.totalAssetCash, BigNumberType.InternalAsset, currency.symbol),
-        totalLiquidity: TypedBigNumber.from(m.totalLiquidity, BigNumberType.LiquidityToken, currency.symbol),
+        totalAssetCash: TypedBigNumber.from(m.totalAssetCash, BigNumberType.InternalAsset, currency.assetSymbol),
+        totalLiquidity: TypedBigNumber.from(m.totalLiquidity, BigNumberType.LiquidityToken, currency.assetSymbol),
       });
     });
 

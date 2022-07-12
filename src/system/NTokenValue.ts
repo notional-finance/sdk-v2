@@ -9,7 +9,7 @@ import {
   RATE_PRECISION,
   INCENTIVE_ACCUMULATION_PRECISION,
 } from '../config/constants';
-import { AssetType, NTokenStatus } from '../libs/types';
+import { NTokenStatus } from '../libs/types';
 import { Asset } from '../proto';
 
 export default class NTokenValue {
@@ -18,7 +18,7 @@ export default class NTokenValue {
     const nToken = system.getNToken(currencyId);
     const totalSupply = system.getNTokenTotalSupply(currencyId);
     const nTokenPV = system.getNTokenAssetCashPV(currencyId);
-    const { symbol: assetSymbol } = system.getCurrencyById(currencyId);
+    const { assetSymbol } = system.getCurrencyById(currencyId);
 
     if (!nToken) throw new Error(`nToken ${currencyId} not found`);
     if (!totalSupply) throw new Error(`Total nToken supply for ${currencyId} not found`);
@@ -197,11 +197,7 @@ export default class NTokenValue {
     return liquidityTokensToWithdraw.reduce((totalAssetCash, lt) => {
       // Inside this reduce we simulate what the redeemer will receive for withdrawing the specified
       // amount of liquidity tokens
-      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
-        lt.assetType as AssetType,
-        lt.notional,
-        false
-      );
+      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
       // This is the redeemer's share of the fCash position
       const fCashPosition = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0);
 
@@ -248,24 +244,20 @@ export default class NTokenValue {
       return liquidityTokens.map((lt) => ({ ...lt, notional: lt.notional.scale(nTokenBalance.n, totalSupply.n) }));
     }
     const totalAssetValueInMarkets = liquidityTokens.reduce((total, lt) => {
-      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
-        lt.assetType as AssetType,
-        lt.notional,
-        false
-      );
+      const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
       const fCashPosition = fCash.find((f) => f.maturity === lt.maturity)?.notional || fCashClaim.copy(0);
       const netfCash = fCashPosition.add(fCashClaim);
       return total
         .add(assetCashClaim)
         .add(cashGroup.getfCashPresentValueUnderlyingInternal(lt.maturity, netfCash, false).toAssetCash());
-    }, TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.symbol));
+    }, TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.assetSymbol));
 
     const ifCashRiskAdjustedValue = fCash
       .filter((f) => f.isIdiosyncratic)
       .reduce(
         (total, f) =>
           total.add(cashGroup.getfCashPresentValueUnderlyingInternal(f.maturity, f.notional, true).toAssetCash()),
-        TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.symbol)
+        TypedBigNumber.from(0, BigNumberType.InternalAsset, currency.assetSymbol)
       );
 
     const totalPortfolioValue = totalAssetValueInMarkets.add(ifCashRiskAdjustedValue);
@@ -318,11 +310,7 @@ export default class NTokenValue {
         .forEach((lt, index) => {
           if (index > 0) throw Error('Found multiple liquidity tokens for single maturity');
 
-          const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
-            lt.assetType as AssetType,
-            lt.notional,
-            false
-          );
+          const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(lt.assetType, lt.notional, false);
           totalAssetCash = totalAssetCash.add(assetCashClaim);
           fCashNotional = fCashNotional.add(fCashClaim);
         });

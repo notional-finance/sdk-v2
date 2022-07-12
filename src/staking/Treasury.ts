@@ -84,15 +84,15 @@ export default class Treasury {
         const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
         const reserveBuffer = TypedBigNumber.fromBalance(
           r.reserveBuffer || 0,
-          currency.symbol,
+          currency.assetSymbol,
           true
         ).toExternalPrecision();
         const reserveBalance = TypedBigNumber.fromBalance(
           r.reserveBalance,
-          currency.symbol,
+          currency.assetSymbol,
           true
         ).toExternalPrecision();
-        const b = await (currency.underlyingContract || currency.contract).balanceOf(treasuryManager.address);
+        const b = await (currency.underlyingContract || currency.assetContract).balanceOf(treasuryManager.address);
         const treasuryBalance = TypedBigNumber.fromBalance(b, underlyingSymbol, false);
 
         return {
@@ -160,7 +160,7 @@ export default class Treasury {
   public static async harvestCOMPFromNotional(currencyIds: number[]) {
     const system = System.getSystem();
     const manager = await Treasury.getManager();
-    const cTokens = currencyIds.map((c) => system.getCurrencyById(c).contract.address);
+    const cTokens = currencyIds.map((c) => system.getCurrencyById(c).assetContract.address);
     return Treasury.populateTxnAndGas(manager, 'harvestCOMPFromNotional', [cTokens]);
   }
 

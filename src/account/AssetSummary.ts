@@ -52,7 +52,7 @@ export default class AssetSummary {
   }
 
   public get symbol() {
-    return this.currency.symbol;
+    return this.currency.assetSymbol;
   }
 
   public internalRateOfReturnString(locale = 'en-US', precision = 3) {
@@ -122,8 +122,8 @@ export default class AssetSummary {
       const currencyId = Number(t.currency.id);
       const maturity = BigNumber.from(t.maturity);
       const currency = System.getSystem().getCurrencyById(currencyId);
-      const underlyingSymbol = currency.underlyingSymbol || currency.symbol;
-      const assetSymbol = currency.symbol;
+      const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
+      const assetSymbol = currency.assetSymbol;
       const netUnderlyingCash = TypedBigNumber.from(
         t.netUnderlyingCash,
         BigNumberType.InternalUnderlying,
@@ -276,7 +276,7 @@ export default class AssetSummary {
     let fCashValue = TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol);
     if (liquidityToken) {
       const { fCashClaim, assetCashClaim } = cashGroup.getLiquidityTokenValue(
-        liquidityToken.assetType as AssetType,
+        liquidityToken.assetType,
         liquidityToken.notional,
         false
       );

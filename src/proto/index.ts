@@ -1,5 +1,7 @@
-import { BigNumber } from 'ethers';
-import { TypedBigNumber } from '..';
+import { BigNumber, Contract } from 'ethers';
+import { AssetType, TypedBigNumber } from '..';
+import { IAggregator } from '../../lib/typechain';
+import { AssetRateAggregator, ERC20, NTokenERC20 } from '../typechain';
 import {
   Asset as _Asset,
   AssetRate as _AssetRate,
@@ -8,6 +10,7 @@ import {
   ETHRate as _ETHRate,
   nToken as _nToken,
   SerializedBigNumber,
+  SerializedContract,
   SerializedTypedBigNumber,
   sNOTE as _sNOTE,
 } from './SystemProto';
@@ -35,21 +38,29 @@ type Replaced<T, TReplace, TWith, TKeep = Primitive> = T extends TReplace | TKee
 
 type Rewrite<T> = DeepRequired<
   Replaced<
-    Replaced<T, SerializedBigNumber, BigNumber, Primitive>,
-    SerializedTypedBigNumber,
-    TypedBigNumber,
-    Primitive | BigNumber
+    Replaced<
+      Replaced<T, SerializedBigNumber, BigNumber, Primitive>,
+      SerializedTypedBigNumber,
+      TypedBigNumber,
+      Primitive | BigNumber
+    >,
+    SerializedContract,
+    Contract,
+    Primitive | BigNumber | TypedBigNumber
   >,
-  BigNumber | TypedBigNumber
+  BigNumber | TypedBigNumber | Contract
 >;
 
 export type StakedNoteParameters = Rewrite<_sNOTE>;
-export type Currency = DeepRequired<_Currency, null>;
-export type ETHRate = Rewrite<_ETHRate>;
-export type AssetRate = Rewrite<_AssetRate>;
-export type nToken = Rewrite<_nToken>;
+export type Currency = Omit<Omit<Rewrite<_Currency>, 'assetContract'>, 'underlyingContract'> & {
+  assetContract: ERC20;
+  underlyingContract: ERC20;
+};
+export type ETHRate = Omit<Rewrite<_ETHRate>, 'rateOracle'> & { rateOracle: IAggregator };
+export type AssetRate = Omit<Rewrite<_AssetRate>, 'rateAdapter'> & { rateAdapter: AssetRateAggregator };
+export type nToken = Omit<Rewrite<_nToken>, 'contract'> & { contract: NTokenERC20 };
 export type CashGroupData = Rewrite<_CashGroup>;
-export type Asset = Rewrite<_Asset>;
+export type Asset = Omit<Rewrite<_Asset>, 'assetType'> & { assetType: AssetType };
 
 export interface SystemData {
   network: string;

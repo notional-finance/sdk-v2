@@ -81,11 +81,11 @@ message nToken {
 
 message Currency {
     int32 id = 1;
-    string name = 2;
-    string symbol = 3;
-    SerializedBigNumber decimals = 4;
-    int32 decimalPlaces = 5;
-    SerializedContract contract = 6;
+    string assetName = 2;
+    string assetSymbol = 3;
+    SerializedBigNumber assetDecimals = 4;
+    int32 assetDecimalPlaces = 5;
+    SerializedContract assetContract = 6;
     string tokenType = 7;
     bool hasTransferFee = 8;
     optional string underlyingName = 9;

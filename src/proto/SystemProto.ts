@@ -1139,11 +1139,11 @@ function _decodenToken(bb: ByteBuffer): nToken {
 
 export interface Currency {
   id?: number;
-  name?: string;
-  symbol?: string;
-  decimals?: SerializedBigNumber;
-  decimalPlaces?: number;
-  contract?: SerializedContract;
+  assetName?: string;
+  assetSymbol?: string;
+  assetDecimals?: SerializedBigNumber;
+  assetDecimalPlaces?: number;
+  assetContract?: SerializedContract;
   tokenType?: string;
   hasTransferFee?: boolean;
   underlyingName?: string;
@@ -1168,44 +1168,44 @@ function _encodeCurrency(message: Currency, bb: ByteBuffer): void {
     writeVarint64(bb, intToLong($id));
   }
 
-  // optional string name = 2;
-  let $name = message.name;
-  if ($name !== undefined) {
+  // optional string assetName = 2;
+  let $assetName = message.assetName;
+  if ($assetName !== undefined) {
     writeVarint32(bb, 18);
-    writeString(bb, $name);
+    writeString(bb, $assetName);
   }
 
-  // optional string symbol = 3;
-  let $symbol = message.symbol;
-  if ($symbol !== undefined) {
+  // optional string assetSymbol = 3;
+  let $assetSymbol = message.assetSymbol;
+  if ($assetSymbol !== undefined) {
     writeVarint32(bb, 26);
-    writeString(bb, $symbol);
+    writeString(bb, $assetSymbol);
   }
 
-  // optional SerializedBigNumber decimals = 4;
-  let $decimals = message.decimals;
-  if ($decimals !== undefined) {
+  // optional SerializedBigNumber assetDecimals = 4;
+  let $assetDecimals = message.assetDecimals;
+  if ($assetDecimals !== undefined) {
     writeVarint32(bb, 34);
     let nested = popByteBuffer();
-    _encodeSerializedBigNumber($decimals, nested);
+    _encodeSerializedBigNumber($assetDecimals, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional int32 decimalPlaces = 5;
-  let $decimalPlaces = message.decimalPlaces;
-  if ($decimalPlaces !== undefined) {
+  // optional int32 assetDecimalPlaces = 5;
+  let $assetDecimalPlaces = message.assetDecimalPlaces;
+  if ($assetDecimalPlaces !== undefined) {
     writeVarint32(bb, 40);
-    writeVarint64(bb, intToLong($decimalPlaces));
+    writeVarint64(bb, intToLong($assetDecimalPlaces));
   }
 
-  // optional SerializedContract contract = 6;
-  let $contract = message.contract;
-  if ($contract !== undefined) {
+  // optional SerializedContract assetContract = 6;
+  let $assetContract = message.assetContract;
+  if ($assetContract !== undefined) {
     writeVarint32(bb, 50);
     let nested = popByteBuffer();
-    _encodeSerializedContract($contract, nested);
+    _encodeSerializedContract($assetContract, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -1296,36 +1296,36 @@ function _decodeCurrency(bb: ByteBuffer): Currency {
         break;
       }
 
-      // optional string name = 2;
+      // optional string assetName = 2;
       case 2: {
-        message.name = readString(bb, readVarint32(bb));
+        message.assetName = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional string symbol = 3;
+      // optional string assetSymbol = 3;
       case 3: {
-        message.symbol = readString(bb, readVarint32(bb));
+        message.assetSymbol = readString(bb, readVarint32(bb));
         break;
       }
 
-      // optional SerializedBigNumber decimals = 4;
+      // optional SerializedBigNumber assetDecimals = 4;
       case 4: {
         let limit = pushTemporaryLength(bb);
-        message.decimals = _decodeSerializedBigNumber(bb);
+        message.assetDecimals = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional int32 decimalPlaces = 5;
+      // optional int32 assetDecimalPlaces = 5;
       case 5: {
-        message.decimalPlaces = readVarint32(bb);
+        message.assetDecimalPlaces = readVarint32(bb);
         break;
       }
 
-      // optional SerializedContract contract = 6;
+      // optional SerializedContract assetContract = 6;
       case 6: {
         let limit = pushTemporaryLength(bb);
-        message.contract = _decodeSerializedContract(bb);
+        message.assetContract = _decodeSerializedContract(bb);
         bb.limit = limit;
         break;
       }
