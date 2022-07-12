@@ -282,7 +282,7 @@ export default class BalanceSummary {
     return queryResult.balanceChanges.map((r) => {
       const currencyId = Number(r.currency.id);
       const currency = system.getCurrencyById(currencyId);
-      const assetSymbol = currency.assetSymbol;
+      const { assetSymbol } = currency;
       const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
       const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
       const assetCashBalanceBefore = TypedBigNumber.fromBalance(r.assetCashBalanceBefore, assetSymbol, true);

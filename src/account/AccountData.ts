@@ -497,21 +497,27 @@ export default class AccountData {
   }
 
   private static _updateAsset(portfolio: Asset[], asset: Asset, bitmapCurrencyId?: number) {
-    // TODO: this should create a copy
-    const existingAsset = portfolio.find(
-      (a) => a.currencyId === asset.currencyId && a.assetType === asset.assetType && a.maturity === asset.maturity
-    );
+    let wasFound = false;
+    const newPortfolio = portfolio.map((a) => {
+      if (a.currencyId === asset.currencyId && a.assetType === asset.assetType && a.maturity === asset.maturity) {
+        wasFound = true;
+        // Is an existing asset
+        return {
+          ...a,
+          notional: a.notional.add(asset.notional),
+        };
+      }
+      return a;
+    });
 
-    if (existingAsset) {
-      existingAsset.notional = existingAsset.notional.add(asset.notional);
-    } else {
+    if (!wasFound) {
       if (bitmapCurrencyId && bitmapCurrencyId !== asset.currencyId) throw Error('Asset is not bitmap currency');
       if (bitmapCurrencyId && portfolio.length === MAX_BITMAP_ASSETS) throw Error('Max bitmap assets');
       if (!bitmapCurrencyId && portfolio.length === MAX_PORTFOLIO_ASSETS) throw Error('Max portfolio assets');
-      portfolio.push(asset);
+      newPortfolio.push(asset);
 
       // Sorting is done in place
-      portfolio.sort(
+      newPortfolio.sort(
         (a, b) =>
           a.currencyId - b.currencyId ||
           assetTypeNum(a.assetType) - assetTypeNum(b.assetType) ||
@@ -519,6 +525,6 @@ export default class AccountData {
       );
     }
 
-    return portfolio;
+    return newPortfolio;
   }
 }

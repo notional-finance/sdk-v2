@@ -123,7 +123,7 @@ export default class AssetSummary {
       const maturity = BigNumber.from(t.maturity);
       const currency = System.getSystem().getCurrencyById(currencyId);
       const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
-      const assetSymbol = currency.assetSymbol;
+      const { assetSymbol } = currency;
       const netUnderlyingCash = TypedBigNumber.from(
         t.netUnderlyingCash,
         BigNumberType.InternalUnderlying,

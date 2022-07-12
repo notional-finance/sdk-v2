@@ -4,6 +4,7 @@ import GraphClient from '../../src/GraphClient';
 import { decode, fetchAndEncodeSystem } from '../../src/proto/EncodeProto';
 
 const mainnetAddresses = require('../../src/config/mainnet.json');
+
 const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2';
 
 describe('System Integration Test', () => {

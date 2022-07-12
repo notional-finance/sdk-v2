@@ -11,7 +11,7 @@ import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../proto/EncodeProto';
-import { Asset, Currency, SystemData, nToken, ETHRate } from '../proto/';
+import { Asset, Currency, SystemData, nToken, ETHRate } from '../proto';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -164,7 +164,7 @@ export default class System {
     System._systemInstance = undefined;
   }
 
-  /*** Contracts ***/
+  /** * Contracts ** */
 
   public getNotionalProxy() {
     return this.contracts.notionalProxy;
@@ -194,13 +194,13 @@ export default class System {
     return this.contracts.exchangeV3;
   }
 
-  /*** Staked NOTE ***/
+  /** * Staked NOTE ** */
 
   public getStakedNoteParameters() {
     return this.data.StakedNoteParameters;
   }
 
-  /*** Currencies ***/
+  /** * Currencies ** */
   public getAllCurrencies(): Currency[] {
     return Array.from(this.data.currencies.values()).sort((a, b) => a.assetSymbol.localeCompare(b.assetSymbol));
   }
@@ -244,7 +244,7 @@ export default class System {
     return this.data.cashGroups.has(currencyId);
   }
 
-  /*** Cash Group and Market ***/
+  /** * Cash Group and Market ** */
 
   public getCashGroup(currencyId: number): CashGroup {
     const cashGroupData = this.data.cashGroups.get(currencyId);
@@ -258,7 +258,7 @@ export default class System {
     return cashGroup.markets.map((m) => this.marketProviders.get(m.marketKey)?.getMarket() ?? Market.copy(m));
   }
 
-  /*** Exchange Rate Data ***/
+  /** * Exchange Rate Data ** */
 
   public getAssetRate(currencyId: number) {
     const assetRateData = this.data.assetRateData.get(currencyId);
@@ -282,7 +282,7 @@ export default class System {
     return ethRate;
   }
 
-  /*** nToken Data ***/
+  /** * nToken Data ** */
 
   public getNToken(currencyId: number): nToken | undefined {
     return this.data.nTokenData.get(currencyId);

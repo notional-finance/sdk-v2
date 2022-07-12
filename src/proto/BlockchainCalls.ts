@@ -38,54 +38,52 @@ export const ConfigKeys = {
   MARKETS: keyAppendId('MARKETS'),
 };
 
-const firstSNOTECalls = (balancerPool: BalancerPool, sNOTE: SNOTE): AggregateCall[] => {
-  return [
-    {
-      target: balancerPool,
-      method: 'getPoolId',
-      args: [],
-      key: ConfigKeys.sNOTE.POOL_ID,
-    },
-    {
-      target: balancerPool,
-      method: 'totalSupply',
-      args: [],
-      key: ConfigKeys.sNOTE.POOL_TOTAL_SUPPLY,
-    },
-    {
-      target: balancerPool,
-      method: 'getSwapFeePercentage',
-      args: [],
-      key: ConfigKeys.sNOTE.POOL_SWAP_FEE,
-    },
-    {
-      target: sNOTE,
-      method: 'coolDownTimeInSeconds',
-      args: [],
-      key: ConfigKeys.sNOTE.COOL_DOWN_TIME_SECS,
-    },
-    {
-      target: sNOTE,
-      method: 'REDEEM_WINDOW_SECONDS',
-      args: [],
-      key: ConfigKeys.sNOTE.REDEEM_WINDOW_SECONDS,
-    },
-    {
-      target: sNOTE,
-      method: 'NOTE_INDEX',
-      args: [],
-      key: ConfigKeys.sNOTE.NOTE_INDEX,
-    },
-    {
-      target: sNOTE,
-      method: 'totalSupply',
-      args: [],
-      key: ConfigKeys.sNOTE.TOTAL_SUPPLY,
-      transform: (r: Awaited<ReturnType<typeof sNOTE.totalSupply>>) =>
-        TypedBigNumber.encodeJSON(r, BigNumberType.sNOTE, 'sNOTE'),
-    },
-  ];
-};
+const firstSNOTECalls = (balancerPool: BalancerPool, sNOTE: SNOTE): AggregateCall[] => [
+  {
+    target: balancerPool,
+    method: 'getPoolId',
+    args: [],
+    key: ConfigKeys.sNOTE.POOL_ID,
+  },
+  {
+    target: balancerPool,
+    method: 'totalSupply',
+    args: [],
+    key: ConfigKeys.sNOTE.POOL_TOTAL_SUPPLY,
+  },
+  {
+    target: balancerPool,
+    method: 'getSwapFeePercentage',
+    args: [],
+    key: ConfigKeys.sNOTE.POOL_SWAP_FEE,
+  },
+  {
+    target: sNOTE,
+    method: 'coolDownTimeInSeconds',
+    args: [],
+    key: ConfigKeys.sNOTE.COOL_DOWN_TIME_SECS,
+  },
+  {
+    target: sNOTE,
+    method: 'REDEEM_WINDOW_SECONDS',
+    args: [],
+    key: ConfigKeys.sNOTE.REDEEM_WINDOW_SECONDS,
+  },
+  {
+    target: sNOTE,
+    method: 'NOTE_INDEX',
+    args: [],
+    key: ConfigKeys.sNOTE.NOTE_INDEX,
+  },
+  {
+    target: sNOTE,
+    method: 'totalSupply',
+    args: [],
+    key: ConfigKeys.sNOTE.TOTAL_SUPPLY,
+    transform: (r: Awaited<ReturnType<typeof sNOTE.totalSupply>>) =>
+      TypedBigNumber.encodeJSON(r, BigNumberType.sNOTE, 'sNOTE'),
+  },
+];
 
 const secondSNOTECalls = (
   balancerVault: BalancerVault,
@@ -93,29 +91,27 @@ const secondSNOTECalls = (
   sNOTETotalSupply: BigNumber,
   poolId: string,
   noteIndex: number
-): AggregateCall[] => {
-  return [
-    {
-      target: sNOTE,
-      method: 'getPoolTokenShare',
-      args: [sNOTETotalSupply],
-      key: ConfigKeys.sNOTE.POOL_TOKEN_SHARE,
+): AggregateCall[] => [
+  {
+    target: sNOTE,
+    method: 'getPoolTokenShare',
+    args: [sNOTETotalSupply],
+    key: ConfigKeys.sNOTE.POOL_TOKEN_SHARE,
+  },
+  {
+    target: balancerVault,
+    method: 'getPoolTokens',
+    args: [poolId],
+    key: ConfigKeys.sNOTE.POOL_TOKEN_BALANCES,
+    transform: (r: Awaited<ReturnType<typeof balancerVault.getPoolTokens>>) => {
+      const ethIndex = 1 - noteIndex;
+      return {
+        ethBalance: TypedBigNumber.encodeJSON(r.balances[ethIndex], BigNumberType.ExternalUnderlying, 'ETH'),
+        noteBalance: TypedBigNumber.encodeJSON(r.balances[noteIndex], BigNumberType.ExternalUnderlying, 'NOTE'),
+      };
     },
-    {
-      target: balancerVault,
-      method: 'getPoolTokens',
-      args: [poolId],
-      key: ConfigKeys.sNOTE.POOL_TOKEN_BALANCES,
-      transform: (r: Awaited<ReturnType<typeof balancerVault.getPoolTokens>>) => {
-        const ethIndex = 1 - noteIndex;
-        return {
-          ethBalance: TypedBigNumber.encodeJSON(r.balances[ethIndex], BigNumberType.ExternalUnderlying, 'ETH'),
-          noteBalance: TypedBigNumber.encodeJSON(r.balances[noteIndex], BigNumberType.ExternalUnderlying, 'NOTE'),
-        };
-      },
-    },
-  ];
-};
+  },
+];
 
 const perCurrencyCalls = (
   currency: {
@@ -134,7 +130,7 @@ const perCurrencyCalls = (
   notionalProxy: Notional,
   hasMarkets: boolean
 ): AggregateCall[] => {
-  let calls: AggregateCall[] = [];
+  const calls: AggregateCall[] = [];
   if (ethRate.oracle.address !== ethers.constants.AddressZero) {
     calls.push({
       target: ethRate.oracle,
@@ -145,9 +141,8 @@ const perCurrencyCalls = (
         if (ethRate.mustInvert) {
           const rateDecimals = BigNumber.from(10).pow(ethRate.rateDecimalPlaces);
           return rateDecimals.mul(rateDecimals).div(r);
-        } else {
-          return r;
         }
+        return r;
       },
     });
   }
@@ -184,76 +179,65 @@ const perCurrencyCalls = (
         method: 'getNTokenAccount',
         args: [currency.nTokenAddress],
         key: ConfigKeys.NTOKEN_ACCOUNT(currency.id),
-        transform: (r: Awaited<ReturnType<typeof notionalProxy.getNTokenAccount>>) => {
-          return {
-            totalSupply: TypedBigNumber.encodeJSON(r.totalSupply, BigNumberType.nToken, currency.nTokenSymbol!),
-            cashBalance: TypedBigNumber.encodeJSON(r.cashBalance, BigNumberType.InternalAsset, currency.assetSymbol),
-            accumulatedNOTEPerNToken: r.accumulatedNOTEPerNToken,
-            lastAccumulatedTime: r.lastAccumulatedTime,
-          };
-        },
+        transform: (r: Awaited<ReturnType<typeof notionalProxy.getNTokenAccount>>) => ({
+          totalSupply: TypedBigNumber.encodeJSON(r.totalSupply, BigNumberType.nToken, currency.nTokenSymbol!),
+          cashBalance: TypedBigNumber.encodeJSON(r.cashBalance, BigNumberType.InternalAsset, currency.assetSymbol),
+          accumulatedNOTEPerNToken: r.accumulatedNOTEPerNToken,
+          lastAccumulatedTime: r.lastAccumulatedTime,
+        }),
       },
       {
         target: notionalProxy,
         method: 'getNTokenPortfolio',
         args: [currency.nTokenAddress],
         key: ConfigKeys.NTOKEN_PORTFOLIO(currency.id),
-        transform: (r: Awaited<ReturnType<typeof notionalProxy.getNTokenPortfolio>>) => {
-          return {
-            liquidityTokens: r.liquidityTokens.map((l) => {
-              return {
-                currencyId: l.currencyId.toNumber(),
-                maturity: l.maturity.toNumber(),
-                assetType: convertAssetType(l.assetType),
-                notional: TypedBigNumber.encodeJSON(l.notional, BigNumberType.LiquidityToken, currency.assetSymbol),
-                settlementDate: CashGroup.getSettlementDate(convertAssetType(l.assetType), l.maturity.toNumber()),
-              };
-            }),
-            fCash: r.netfCashAssets.map((f) => {
-              return {
-                currencyId: f.currencyId.toNumber(),
-                maturity: f.maturity.toNumber(),
-                assetType: convertAssetType(f.assetType),
-                notional: TypedBigNumber.encodeJSON(
-                  f.notional,
-                  BigNumberType.InternalUnderlying,
-                  currency.underlyingSymbol!
-                ),
-                settlementDate: CashGroup.getSettlementDate(convertAssetType(f.assetType), f.maturity.toNumber()),
-              };
-            }),
-          };
-        },
+        transform: (r: Awaited<ReturnType<typeof notionalProxy.getNTokenPortfolio>>) => ({
+          liquidityTokens: r.liquidityTokens.map((l) => ({
+            currencyId: l.currencyId.toNumber(),
+            maturity: l.maturity.toNumber(),
+            assetType: convertAssetType(l.assetType),
+            notional: TypedBigNumber.encodeJSON(l.notional, BigNumberType.LiquidityToken, currency.assetSymbol),
+            settlementDate: CashGroup.getSettlementDate(convertAssetType(l.assetType), l.maturity.toNumber()),
+          })),
+          fCash: r.netfCashAssets.map((f) => ({
+            currencyId: f.currencyId.toNumber(),
+            maturity: f.maturity.toNumber(),
+            assetType: convertAssetType(f.assetType),
+            notional: TypedBigNumber.encodeJSON(
+              f.notional,
+              BigNumberType.InternalUnderlying,
+              currency.underlyingSymbol!
+            ),
+            settlementDate: CashGroup.getSettlementDate(convertAssetType(f.assetType), f.maturity.toNumber()),
+          })),
+        }),
       },
       {
         target: notionalProxy,
         method: 'getActiveMarkets',
         args: [currency.id],
         key: ConfigKeys.MARKETS(currency.id),
-        transform: (r: Awaited<ReturnType<typeof notionalProxy.getActiveMarkets>>) => {
-          return r.map((m) => {
-            return {
-              totalfCash: TypedBigNumber.encodeJSON(
-                m.totalfCash.toHexString(),
-                BigNumberType.InternalUnderlying,
-                currency.underlyingSymbol!
-              ),
-              totalAssetCash: TypedBigNumber.encodeJSON(
-                m.totalAssetCash.toHexString(),
-                BigNumberType.InternalAsset,
-                currency.assetSymbol
-              ),
-              totalLiquidity: TypedBigNumber.encodeJSON(
-                m.totalLiquidity.toHexString(),
-                BigNumberType.LiquidityToken,
-                currency.assetSymbol
-              ),
-              lastImpliedRate: m.lastImpliedRate.toNumber(),
-              oracleRate: m.oracleRate.toNumber(),
-              previousTradeTime: m.previousTradeTime.toNumber(),
-            };
-          });
-        },
+        transform: (r: Awaited<ReturnType<typeof notionalProxy.getActiveMarkets>>) =>
+          r.map((m) => ({
+            totalfCash: TypedBigNumber.encodeJSON(
+              m.totalfCash.toHexString(),
+              BigNumberType.InternalUnderlying,
+              currency.underlyingSymbol!
+            ),
+            totalAssetCash: TypedBigNumber.encodeJSON(
+              m.totalAssetCash.toHexString(),
+              BigNumberType.InternalAsset,
+              currency.assetSymbol
+            ),
+            totalLiquidity: TypedBigNumber.encodeJSON(
+              m.totalLiquidity.toHexString(),
+              BigNumberType.LiquidityToken,
+              currency.assetSymbol
+            ),
+            lastImpliedRate: m.lastImpliedRate.toNumber(),
+            oracleRate: m.oracleRate.toNumber(),
+            previousTradeTime: m.previousTradeTime.toNumber(),
+          })),
       }
     );
   }

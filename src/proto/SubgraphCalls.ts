@@ -165,62 +165,63 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
   return data.currencies
     .slice()
     .sort((a, b) => Number(a.id) - Number(b.id))
-    .map((c) => {
-      return {
-        ...c,
-        currencyId: Number(c.id),
-        tokenType: c.tokenType as TokenType,
-        decimals: BigNumber.from(c.decimals),
-        decimalPlaces: Math.log10(Number(c.decimals)),
-        contract: {
-          _isSerializedContract: true,
-          _address: c.tokenAddress,
-          _abiName: 'ERC20',
-        },
-        underlyingDecimals: c.underlyingDecimals ? BigNumber.from(c.underlyingDecimals) : undefined,
-        underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
-        underlyingContract: c.underlyingTokenAddress
-          ? {
-              _isSerializedContract: true,
-              _address: c.underlyingTokenAddress,
-              _abiName: 'ERC20',
-            }
-          : null,
-        nToken: {
-          ...c.nToken,
+    .map(
+      (c) =>
+        ({
+          ...c,
+          currencyId: Number(c.id),
+          tokenType: c.tokenType as TokenType,
+          decimals: BigNumber.from(c.decimals),
+          decimalPlaces: Math.log10(Number(c.decimals)),
           contract: {
             _isSerializedContract: true,
-            _address: c.underlyingTokenAddress,
-            _abiName: 'nTokenERC20',
+            _address: c.tokenAddress,
+            _abiName: 'ERC20',
           },
-          nTokenSymbol: c.nToken?.symbol,
-          incentiveEmissionRate: BigNumber.from(c.nToken?.incentiveEmissionRate || 0),
-        },
-        incentiveMigration: c.incentiveMigration
-          ? {
-              emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
-              integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
-              migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
-            }
-          : null,
-        ethExchangeRate: {
-          ...c.ethExchangeRate,
-          rateOracle: {
-            _isSerializedContract: true,
-            _address: c.ethExchangeRate.rateOracle,
-            _abiName: 'IAggregator',
-          },
-        },
-        assetExchangeRate: c.assetExchangeRate
-          ? {
-              ...c.assetExchangeRate,
-              rateAdapter: {
+          underlyingDecimals: c.underlyingDecimals ? BigNumber.from(c.underlyingDecimals) : undefined,
+          underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
+          underlyingContract: c.underlyingTokenAddress
+            ? {
                 _isSerializedContract: true,
-                _address: c.assetExchangeRate?.rateAdapterAddress,
-                _abiName: 'AssetRateAggregator',
-              },
-            }
-          : null,
-      } as CurrencyConfig;
-    });
+                _address: c.underlyingTokenAddress,
+                _abiName: 'ERC20',
+              }
+            : null,
+          nToken: {
+            ...c.nToken,
+            contract: {
+              _isSerializedContract: true,
+              _address: c.underlyingTokenAddress,
+              _abiName: 'nTokenERC20',
+            },
+            nTokenSymbol: c.nToken?.symbol,
+            incentiveEmissionRate: BigNumber.from(c.nToken?.incentiveEmissionRate || 0),
+          },
+          incentiveMigration: c.incentiveMigration
+            ? {
+                emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
+                integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
+                migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
+              }
+            : null,
+          ethExchangeRate: {
+            ...c.ethExchangeRate,
+            rateOracle: {
+              _isSerializedContract: true,
+              _address: c.ethExchangeRate.rateOracle,
+              _abiName: 'IAggregator',
+            },
+          },
+          assetExchangeRate: c.assetExchangeRate
+            ? {
+                ...c.assetExchangeRate,
+                rateAdapter: {
+                  _isSerializedContract: true,
+                  _address: c.assetExchangeRate?.rateAdapterAddress,
+                  _abiName: 'AssetRateAggregator',
+                },
+              }
+            : null,
+        } as CurrencyConfig)
+    );
 }

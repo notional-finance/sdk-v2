@@ -7,14 +7,23 @@ import { CashGroupData, Currency } from '../proto';
 
 export default class CashGroup {
   private _blockSupplyRate?: number;
+
   public readonly maxMarketIndex: number;
+
   public readonly rateOracleTimeWindowSeconds: number;
+
   public readonly totalFeeBasisPoints: number;
+
   public readonly reserveFeeSharePercent: number;
+
   public readonly debtBufferBasisPoints: number;
+
   public readonly fCashHaircutBasisPoints: number;
+
   public readonly liquidityTokenHaircutsPercent: number[];
+
   public readonly rateScalars: number[];
+
   public readonly markets: Market[];
 
   public get blockSupplyRate() {

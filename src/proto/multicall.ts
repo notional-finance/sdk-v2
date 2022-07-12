@@ -43,7 +43,7 @@ export async function aggregate(calls: AggregateCall[], provider: providers.Prov
     let decoded = target.interface.decodeFunctionResult(method, r);
     // For single return values, decodeFunctionResult still returns an
     // array which we eliminate here for simplicity
-    if (decoded.length === 1) decoded = decoded[0];
+    if (decoded.length === 1) [decoded] = decoded;
 
     // eslint-disable-next-line no-param-reassign
     obj[key] = transform ? transform(decoded) : decoded;
