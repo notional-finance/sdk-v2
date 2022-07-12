@@ -83,7 +83,9 @@ export async function fetchAndEncodeSystem(
     }, {}),
   };
 
-  return encodeSystemData(systemObject);
+  const binary = encodeSystemData(systemObject);
+  const json = JSON.stringify(decodeSystemData(binary));
+  return { binary, json };
 }
 
 function _getABI(name: string) {
@@ -126,7 +128,11 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
   return newVal;
 }
 
-export function decode(binary: Uint8Array, provider: ethers.providers.Provider): SystemData {
+export function decodeJSON(json: any, provider: ethers.providers.Provider): SystemData {
+  return _decodeValue(json, provider);
+}
+
+export function decodeBinary(binary: Uint8Array, provider: ethers.providers.Provider): SystemData {
   return _decodeValue(decodeSystemData(binary), provider);
 }
 
@@ -140,7 +146,7 @@ export async function fetchAndDecodeSystem(
   const reader = resp.body?.getReader();
   if (reader) {
     const { value } = await reader.read();
-    if (value) return decode(value, provider);
+    if (value) return decodeBinary(value, provider);
   }
 
   throw Error('Could not fetch system');

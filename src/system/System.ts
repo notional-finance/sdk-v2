@@ -152,7 +152,6 @@ export default class System {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
     this.data = initData;
-    // TODO: map symbol to currency id index
     this.dataRefreshInterval = setInterval(async () => {
       this.data = await fetchAndDecodeSystem(this.cacheUrl, this.batchProvider, skipFetchSetup);
     }, this.refreshIntervalMS);

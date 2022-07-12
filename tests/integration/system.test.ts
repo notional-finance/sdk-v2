@@ -1,7 +1,7 @@
 import { ethers, VoidSigner } from 'ethers';
 import Notional, { Contracts } from '../../src';
 import GraphClient from '../../src/GraphClient';
-import { decode, fetchAndEncodeSystem } from '../../src/proto/EncodeProto';
+import { decodeBinary, fetchAndEncodeSystem } from '../../src/proto/EncodeProto';
 
 const mainnetAddresses = require('../../src/config/mainnet.json');
 
@@ -21,8 +21,9 @@ describe('System Integration Test', () => {
 
   it('returns system configuration from the graph', async () => {
     const graphClient = new GraphClient(mainnetGraphEndpoint, 0, false);
-    const results = await fetchAndEncodeSystem(graphClient, provider, contracts, false);
+    const { binary, json } = await fetchAndEncodeSystem(graphClient, provider, contracts, false);
 
-    console.log(decode(results, provider));
+    decodeBinary(binary, provider);
+    console.log(json);
   });
 });
