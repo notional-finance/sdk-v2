@@ -15,11 +15,15 @@ function convertToWei(val: number) {
 }
 
 async function getExchangeRateData(symbols: string[], _fetch: any) {
-  const resp = await (await _fetch(EXCHANGE_RATE_API)).json();
+  const resp: Response = await _fetch(EXCHANGE_RATE_API);
+  if (!resp.ok) {
+    throw Error(`Exchange rate api failed: ${resp.status}, ${resp.statusText}`);
+  }
+  const data = await resp.json();
   return symbols.reduce((obj, s) => {
     const ret = obj;
-    if (resp.conversion_rates[s]) {
-      ret[s] = convertToWei(resp.conversion_rates[s]);
+    if (data.conversion_rates[s]) {
+      ret[s] = convertToWei(data.conversion_rates[s]);
     }
     return ret;
   }, {});
@@ -27,8 +31,13 @@ async function getExchangeRateData(symbols: string[], _fetch: any) {
 
 // Returns the 24 hour avg of the USD price
 async function getCoingeckoUSDPrice(url: string, _fetch: any) {
-  const resp = (await (await _fetch(url)).json()) as { prices: [number, number][] };
-  const sortedPrices: Array<[number, number]> = resp.prices.sort(([a], [b]) => a - b);
+  const resp = await _fetch(url);
+  if (!resp.ok) {
+    throw Error(`CoinGecko api failed: ${resp.status}, ${resp.statusText}`);
+  }
+
+  const data = (await resp.json()) as { prices: [number, number][] };
+  const sortedPrices: Array<[number, number]> = data.prices.sort(([a], [b]) => a - b);
   let avgUSDPrice: number;
   if (sortedPrices.length === 1) {
     // eslint-disable-next-line prefer-destructuring
