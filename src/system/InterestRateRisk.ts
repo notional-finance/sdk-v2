@@ -66,10 +66,11 @@ export default class InterestRateRisk {
    */
   public static getWeightedAvgInterestRate(currencyId: number, blockTime = getNowSeconds()) {
     const cashGroup = System.getSystem().getCashGroup(currencyId);
+    const markets = System.getSystem().getMarkets(currencyId);
     /* eslint-disable @typescript-eslint/no-shadow */
-    const { numerator, totalLiquidity } = cashGroup.markets.reduce(
+    const { numerator, totalLiquidity } = markets.reduce(
       ({ numerator, totalLiquidity }, m) => {
-        const oracleRate = cashGroup.getOracleRate(m.maturity, blockTime);
+        const oracleRate = cashGroup.getOracleRate(m.maturity, blockTime, markets);
         return {
           numerator: numerator.add(m.market.totalLiquidity.n.mul(oracleRate)),
           totalLiquidity: totalLiquidity.add(m.market.totalLiquidity.n),

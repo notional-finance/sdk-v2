@@ -140,6 +140,30 @@
       },
       "tokenType": "NonMintable",
       "hasTransferFee": false
+    },
+    "6": {
+      "id": 6,
+      "assetName": "Compound Tether",
+      "assetSymbol": "cUSDT",
+      "assetDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "assetDecimalPlaces": 8,
+      "assetContract": {
+        "_isSerializedContract": true,
+        "_address": "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
+        "_abiName": "ERC20"
+      },
+      "tokenType": "cToken",
+      "hasTransferFee": false,
+      "underlyingName": "Tether",
+      "underlyingSymbol": "USDT",
+      "underlyingDecimals": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+      "underlyingDecimalPlaces": 8,
+      "underlyingContract": {
+        "_isSerializedContract": true,
+        "_address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+        "_abiName": "ERC20"
+      },
+      "nTokenSymbol": "nUSDT"
     }
   },
   "ethRateData": {
@@ -202,6 +226,18 @@
       "buffer": 129,
       "haircut": 78,
       "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
+    },
+    "6": {
+      "rateOracle": {
+        "_isSerializedContract": true,
+        "_address": "0x10aae34011c256a9e63ab5ac50154c2539c0f51d",
+        "_abiName": "IAggregator"
+      },
+      "rateDecimalPlaces": 18,
+      "mustInvert": false,
+      "buffer": 129,
+      "haircut": 0,
+      "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
     }
   },
   "assetRateData": {
@@ -236,6 +272,16 @@
       "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x40d0cc" }
     },
     "4": {
+      "rateAdapter": {
+        "_isSerializedContract": true,
+        "_address": "0x39d9590721331b13c8e9a42941a2b961b513e69d",
+        "_abiName": "AssetRateAggregator"
+      },
+      "underlyingDecimalPlaces": 8,
+      "latestRate": { "_isBigNumber": true, "_hex": "0x474a8800f6209f" },
+      "annualSupplyRate": { "_isBigNumber": true, "_hex": "0x079581" }
+    },
+    "6": {
       "rateAdapter": {
         "_isSerializedContract": true,
         "_address": "0x39d9590721331b13c8e9a42941a2b961b513e69d",
@@ -917,6 +963,64 @@
             "hex": "0x67b2775a73",
             "bigNumberType": "Liquidity Token",
             "symbol": "cWBTC"
+          },
+          "lastImpliedRate": 5243259,
+          "oracleRate": 5243259,
+          "previousTradeTime": 1656906678
+        }
+      ]
+    },
+    "6": {
+      "maxMarketIndex": 2,
+      "rateOracleTimeWindowSeconds": 21600,
+      "totalFeeBasisPoints": 3000000,
+      "reserveFeeSharePercent": 80,
+      "debtBufferBasisPoints": 55000000,
+      "fCashHaircutBasisPoints": 55000000,
+      "liquidityTokenHaircutsPercent": [95, 90],
+      "rateScalars": [46, 46],
+      "markets": [
+        {
+          "totalfCash": {
+            "_isTypedBigNumber": true,
+            "hex": "0x027fb57d22",
+            "bigNumberType": "Internal Underlying",
+            "symbol": "USDT"
+          },
+          "totalAssetCash": {
+            "_isTypedBigNumber": true,
+            "hex": "0x4f7b551a89",
+            "bigNumberType": "Internal Asset",
+            "symbol": "cUSDT"
+          },
+          "totalLiquidity": {
+            "_isTypedBigNumber": true,
+            "hex": "0x67b2775a73",
+            "bigNumberType": "Liquidity Token",
+            "symbol": "cUSDT"
+          },
+          "lastImpliedRate": 14737226,
+          "oracleRate": 14737226,
+          "previousTradeTime": 1656906678
+        },
+        {
+          "totalfCash": {
+            "_isTypedBigNumber": true,
+            "hex": "0x0217ae82dd",
+            "bigNumberType": "Internal Underlying",
+            "symbol": "USDT"
+          },
+          "totalAssetCash": {
+            "_isTypedBigNumber": true,
+            "hex": "0x671dc60c76",
+            "bigNumberType": "Internal Asset",
+            "symbol": "cUSDT"
+          },
+          "totalLiquidity": {
+            "_isTypedBigNumber": true,
+            "hex": "0x67b2775a73",
+            "bigNumberType": "Liquidity Token",
+            "symbol": "cUSDT"
           },
           "lastImpliedRate": 5243259,
           "oracleRate": 5243259,
