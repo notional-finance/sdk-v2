@@ -6,9 +6,10 @@ import MockSystem from '../mocks/MockSystem';
 import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import { System, CashGroup } from '../../src/system';
 import MockAccountData from '../mocks/MockAccountData';
+import { getNowSeconds } from '../../src/libs/utils';
 
 describe('Asset Summary', () => {
-  const blockTime = CashGroup.getTimeReference(1621857396);
+  const blockTime = CashGroup.getTimeReference(getNowSeconds());
   const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);
   const system = new MockSystem();
   System.overrideSystem(system);
@@ -46,9 +47,7 @@ describe('Asset Summary', () => {
           maturity,
           assetType: AssetType.fCash,
           notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'DAI'),
-          hasMatured: false,
           settlementDate: maturity,
-          isIdiosyncratic: false,
         },
       ],
       false
@@ -80,9 +79,7 @@ describe('Asset Summary', () => {
           maturity,
           assetType: AssetType.fCash,
           notional: TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'),
-          hasMatured: false,
           settlementDate: maturity,
-          isIdiosyncratic: false,
         },
       ],
       false

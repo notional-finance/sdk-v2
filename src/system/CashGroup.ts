@@ -50,7 +50,7 @@ export default class CashGroup {
         currency.id,
         marketIndex,
         CashGroup.getMaturityForMarketIndex(marketIndex),
-        cashGroupData.rateScalars[i - 1] * RATE_PRECISION,
+        cashGroupData.rateScalars[i] * RATE_PRECISION,
         cashGroupData.totalFeeBasisPoints,
         cashGroupData.reserveFeeSharePercent,
         cashGroupData.rateOracleTimeWindowSeconds,

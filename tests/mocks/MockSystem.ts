@@ -17,6 +17,18 @@ export default class MockSystem extends System {
     super('none', {} as unknown as GraphClient, {} as unknown as Contracts, provider, 0, initData, false);
   }
 
+  public setNTokenSupply(currencyId: number, totalSupply: TypedBigNumber) {
+    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    nToken.totalSupply = totalSupply;
+    this.data.nTokenData.set(currencyId, nToken);
+  }
+
+  public setNTokenEmission(currencyId: number, emissionRate: BigNumber) {
+    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    nToken.incentiveEmissionRate = emissionRate;
+    this.data.nTokenData.set(currencyId, nToken);
+  }
+
   public setNTokenPortfolio(
     currencyId: number,
     cashBalance: TypedBigNumber,
