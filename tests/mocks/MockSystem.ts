@@ -5,7 +5,9 @@ import { Contracts, IncentiveFactors, IncentiveMigration } from '../../src/libs/
 import GraphClient from '../../src/GraphClient';
 import { decodeJSON } from '../../src/proto/EncodeProto';
 import { Asset, CashGroupData, nToken, StakedNoteParameters } from '../../src/proto';
+
 const MockSystemData = require('./MockSystemData.json');
+
 export type MutableForTesting<T> = {
   -readonly [K in keyof T]: T[K];
 };
@@ -18,13 +20,13 @@ export default class MockSystem extends System {
   }
 
   public setNTokenSupply(currencyId: number, totalSupply: TypedBigNumber) {
-    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    const nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
     nToken.totalSupply = totalSupply;
     this.data.nTokenData.set(currencyId, nToken);
   }
 
   public setNTokenEmission(currencyId: number, emissionRate: BigNumber) {
-    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    const nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
     nToken.incentiveEmissionRate = emissionRate;
     this.data.nTokenData.set(currencyId, nToken);
   }
@@ -37,7 +39,7 @@ export default class MockSystem extends System {
     liquidityTokens: Asset[],
     fCash: Asset[]
   ) {
-    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    const nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
     nToken.cashBalance = cashBalance;
     nToken.assetCashPV = pv;
     nToken.totalSupply = totalSupply;
@@ -70,7 +72,7 @@ export default class MockSystem extends System {
   }
 
   public setIncentiveMigration(currencyId: number, params: IncentiveMigration) {
-    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    const nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
     nToken.integralTotalSupply = params.integralTotalSupply;
     nToken.migratedEmissionRate = params.migratedEmissionRate;
     nToken.migrationTime = params.migrationTime;
@@ -78,7 +80,7 @@ export default class MockSystem extends System {
   }
 
   public setIncentiveFactors(currencyId: number, params: IncentiveFactors) {
-    let nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
+    const nToken: MutableForTesting<nToken> = this.data.nTokenData.get(currencyId)!;
     nToken.accumulatedNOTEPerNToken = params.accumulatedNOTEPerNToken;
     nToken.lastAccumulatedTime = params.lastAccumulatedTime;
     this.data.nTokenData.set(currencyId, nToken);

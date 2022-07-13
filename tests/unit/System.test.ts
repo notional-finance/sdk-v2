@@ -26,8 +26,8 @@ describe('System tests', () => {
   });
 
   it('gets all currencies', () => {
-    expect(system.getAllCurrencies()).toHaveLength(5);
-    expect(system.getTradableCurrencies()).toHaveLength(4);
+    expect(system.getAllCurrencies()).toHaveLength(6);
+    expect(system.getTradableCurrencies()).toHaveLength(5);
   });
 
   it('converts asset types', () => {

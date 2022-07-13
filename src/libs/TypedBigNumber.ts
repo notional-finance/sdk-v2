@@ -25,13 +25,14 @@ class TypedBigNumber {
   get currencyId() {
     if (this.symbol === 'NOTE') {
       return NOTE_CURRENCY_ID;
-    } else if (this.symbol === 'sNOTE') {
-      return STAKED_NOTE_CURRENCY_ID;
-    } else if (this.symbol === 'WETH') {
-      return 1;
-    } else {
-      return System.getSystem().getCurrencyBySymbol(this.symbol).id;
     }
+    if (this.symbol === 'sNOTE') {
+      return STAKED_NOTE_CURRENCY_ID;
+    }
+    if (this.symbol === 'WETH') {
+      return 1;
+    }
+    return System.getSystem().getCurrencyBySymbol(this.symbol).id;
   }
 
   private _isWETH = false;

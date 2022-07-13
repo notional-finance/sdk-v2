@@ -94,9 +94,9 @@ describe('Balance Summary', () => {
     const summary = BalanceSummary.build(data, tradeHistory, currentTime);
     expect(summary).toHaveLength(1);
     expect(summary[0].nTokenBalance!.toString()).toEqual(BigNumber.from(1000e8).toString());
-    expect(summary[0].nTokenValueUnderlying!.toString()).toEqual(BigNumber.from(10e8).toString());
-    expect(summary[0].nTokenYield).toBeCloseTo(0.41);
-    expect(summary[0].nTokenTotalYield).toBeCloseTo(0.53);
+    expect(summary[0].nTokenValueUnderlying!.toNumber()).toEqual(1989503177);
+    expect(summary[0].nTokenYield).toBeCloseTo(22.02, -2);
+    expect(summary[0].nTokenTotalYield).toBeCloseTo(22.95, -2);
   });
 
   it('it resets values on a zero cash flow', () => {
@@ -178,9 +178,9 @@ describe('Balance Summary', () => {
       0,
       [
         {
-          currencyId: 2,
-          cashBalance: TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cDAI'),
-          nTokenBalance: TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nDAI'),
+          currencyId: 1,
+          cashBalance: TypedBigNumber.from(-2500e8, BigNumberType.InternalAsset, 'cETH'),
+          nTokenBalance: TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nETH'),
           lastClaimTime: BigNumber.from(0),
           accountIncentiveDebt: BigNumber.from(0),
         },
@@ -189,17 +189,17 @@ describe('Balance Summary', () => {
       false
     );
     const cTokenBalance = { ...baseBalanceHistory };
-    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(-20e8, BigNumberType.InternalUnderlying, 'DAI');
-    cTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nDAI');
-    cTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(50e8, BigNumberType.InternalUnderlying, 'DAI');
+    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cETH');
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(-20e8, BigNumberType.InternalUnderlying, 'ETH');
+    cTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nETH');
+    cTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cETH');
+    cTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(50e8, BigNumberType.InternalUnderlying, 'ETH');
     const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
     const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0];
     expect(summary.isWithdrawable).toBeTruthy();
-    // ntoken value == 2500, haircut value is: 2250, net asset value is 1250
-    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual('1250.0');
+    // ntoken pv == 5000, haircut value is: 4500, free collateral is 2000 <= this is what can be withdrawn
+    expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual('2000.0');
   });
 });

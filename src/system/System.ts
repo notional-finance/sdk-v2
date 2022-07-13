@@ -301,7 +301,6 @@ export default class System {
       const currency = this.getCurrencyBySymbol(symbol);
       const { rateDecimals, usdcRate } = this._getUSDCRate();
       const { latestRate, rateDecimalPlaces } = this.getETHRate(currency.id);
-      console.log(latestRate);
 
       // Invert the ETH Rate
       const ethRateDecimals = BigNumber.from(10).pow(rateDecimalPlaces);

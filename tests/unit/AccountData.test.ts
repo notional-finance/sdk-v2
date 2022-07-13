@@ -310,7 +310,7 @@ describe('Account Data', () => {
         false
       );
 
-      let ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
+      const ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
       ethRateData.latestRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
       const rateProvider = { getETHRate: () => ethRateData };
       system.setETHRateProvider(2, rateProvider);
@@ -393,7 +393,7 @@ describe('Account Data', () => {
         ],
         false
       );
-      let ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
+      const ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
       ethRateData.latestRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
       const rateProvider = {
         getETHRate: () => ethRateData,
