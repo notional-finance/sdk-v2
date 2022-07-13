@@ -5,7 +5,6 @@ import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
 import Notional from '../../src/Notional';
 import { NoteERC20 } from '../../src/typechain/NoteERC20';
-import Governance from '../../src/Governance';
 import { NOTE_CURRENCY_ID } from '../../src/config/constants';
 import { Contracts } from '../../src/libs/types';
 
@@ -17,7 +16,6 @@ describe('Typed Big Number', () => {
   const notional = new Notional(
     {} as unknown as NoteERC20,
     {} as unknown as GraphClient,
-    {} as unknown as Governance,
     system,
     provider,
     {} as unknown as Contracts

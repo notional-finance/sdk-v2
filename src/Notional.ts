@@ -1,6 +1,5 @@
 import { Signer, Contract, ethers, VoidSigner, utils, BigNumber } from 'ethers';
 import { System } from './system';
-import Governance from './Governance';
 import GraphClient from './GraphClient';
 import { Account, AccountData, AccountGraphLoader } from './account';
 
@@ -65,7 +64,6 @@ export default class Notional extends TransactionBuilder {
     // Core Contracts
     public note: NoteERC20,
     public graphClient: GraphClient,
-    public governance: Governance,
     public system: System,
     public provider: ethers.providers.Provider,
     public contracts: Contracts
@@ -136,7 +134,6 @@ export default class Notional extends TransactionBuilder {
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     const contracts = Notional.getContracts(addresses, signer);
     const graphClient = new GraphClient(graphEndpoint, pollInterval, skipFetchSetup);
-    const governance = new Governance(addresses.governor, contracts.note, signer, provider, graphClient) as Governance;
     const system = await System.load(
       'url', // TODO: replace this
       graphClient,
@@ -154,7 +151,7 @@ export default class Notional extends TransactionBuilder {
       });
     });
 
-    return new Notional(contracts.note, graphClient, governance, system, provider, contracts);
+    return new Notional(contracts.note, graphClient, system, provider, contracts);
   }
 
   public destroy() {
@@ -207,9 +204,9 @@ export default class Notional extends TransactionBuilder {
 
   public isNotionalContract(counterparty: string) {
     return (
-      counterparty === this.system.getNotionalProxy().address ||
-      counterparty === this.governance.getContract().address ||
-      counterparty === this.note.address
+      counterparty === this.contracts.notionalProxy.address ||
+      counterparty === this.note.address ||
+      counterparty === this.contracts.sNOTE.address
     );
   }
 }
