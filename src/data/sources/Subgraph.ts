@@ -118,10 +118,10 @@ export interface CurrencyConfig {
   assetDecimals: BigNumber;
   assetDecimalPlaces: number;
   tokenType: TokenType;
-  underlyingName: string | null;
-  underlyingSymbol: string | null;
-  underlyingDecimalPlaces: number | null;
-  underlyingContract: SerializedContract | null;
+  underlyingName: string | undefined;
+  underlyingSymbol: string | undefined;
+  underlyingDecimalPlaces: number | undefined;
+  underlyingContract: SerializedContract | undefined;
   hasTransferFee: boolean;
   nTokenSymbol: string | null;
   ethExchangeRate: {
@@ -149,15 +149,15 @@ export interface CurrencyConfig {
     contract: SerializedContract;
     name: string;
     nTokenSymbol: string;
-    depositShares: number[] | null;
-    leverageThresholds: number[] | null;
-    incentiveEmissionRate: BigNumber | null;
-    pvHaircutPercentage: number | null;
+    depositShares: number[] | undefined;
+    leverageThresholds: number[] | undefined;
+    incentiveEmissionRate: BigNumber | undefined;
+    pvHaircutPercentage: number | undefined;
   } | null;
   incentiveMigration: {
-    migrationEmissionRate: BigNumber;
-    finalIntegralTotalSupply: BigNumber;
-    migrationTime: BigNumber;
+    migratedEmissionRate: BigNumber;
+    integralTotalSupply: BigNumber;
+    migrationTime: number;
   } | null;
 }
 
@@ -181,6 +181,8 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
             _abiName: 'ERC20',
           },
           tokenType: c.tokenType as TokenType,
+          underlyingName: c.underlyingName ?? undefined,
+          underlyingSymbol: c.underlyingSymbol ?? undefined,
           underlyingDecimals: c.underlyingDecimals ? BigNumber.from(c.underlyingDecimals) : undefined,
           underlyingDecimalPlaces: Math.log10(Number(c.underlyingDecimals ?? 1)),
           underlyingContract: c.underlyingTokenAddress
@@ -192,24 +194,26 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
             : {
                 _isSerializedContract: false,
               },
-          nTokenSymbol: c.nToken?.symbol,
-          nToken: {
-            ...c.nToken,
-            contract: {
-              _isSerializedContract: true,
-              _address: c.nToken?.tokenAddress,
-              _abiName: 'nTokenERC20',
-            },
-            nTokenSymbol: c.nToken?.symbol,
-            incentiveEmissionRate: BigNumber.from(c.nToken?.incentiveEmissionRate || 0),
-          },
+          nTokenSymbol: c.nToken?.symbol ?? undefined,
+          nToken: c.nToken?.symbol
+            ? {
+                ...c.nToken,
+                contract: {
+                  _isSerializedContract: true,
+                  _address: c.nToken?.tokenAddress,
+                  _abiName: 'nTokenERC20',
+                },
+                nTokenSymbol: c.nToken?.symbol,
+                incentiveEmissionRate: BigNumber.from(c.nToken?.incentiveEmissionRate || 0),
+              }
+            : undefined,
           incentiveMigration: c.incentiveMigration
             ? {
-                emissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
+                migratedEmissionRate: BigNumber.from(c.incentiveMigration.migrationEmissionRate),
                 integralTotalSupply: BigNumber.from(c.incentiveMigration.finalIntegralTotalSupply),
                 migrationTime: BigNumber.from(c.incentiveMigration.migrationTime).toNumber(),
               }
-            : null,
+            : undefined,
           ethExchangeRate: {
             ...c.ethExchangeRate,
             rateOracle: {
@@ -227,7 +231,7 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
                   _abiName: 'AssetRateAggregator',
                 },
               }
-            : null,
+            : undefined,
         } as CurrencyConfig)
     );
 }

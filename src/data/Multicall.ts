@@ -7,7 +7,7 @@ const MULTICALL2 = {
   mainnet: '0x5ba1e12693dc8f9c48aad8770482f4739beed696',
   kovan: '0x5ba1e12693dc8f9c48aad8770482f4739beed696',
   rinkeby: '0x5ba1e12693dc8f9c48aad8770482f4739beed696',
-  gorli: '0x5ba1e12693dc8f9c48aad8770482f4739beed696',
+  goerli: '0x5ba1e12693dc8f9c48aad8770482f4739beed696',
   ropsten: '0x5ba1e12693dc8f9c48aad8770482f4739beed696',
 };
 

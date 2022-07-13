@@ -58,29 +58,35 @@ export async function fetchAndEncodeSystem(
     }, {}),
     assetRateData: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.id] = {
-        ...c.assetExchangeRate,
-        latestRate: results[ConfigKeys.ASSET_EXCHANGE_RATE(c.id)],
-        annualSupplyRate: results[ConfigKeys.ASSET_ANNUAL_SUPPLY_RATE(c.id)],
-      };
+      if (c.assetExchangeRate) {
+        ret[c.id] = {
+          ...c.assetExchangeRate,
+          latestRate: results[ConfigKeys.ASSET_EXCHANGE_RATE(c.id)],
+          annualSupplyRate: results[ConfigKeys.ASSET_ANNUAL_SUPPLY_RATE(c.id)],
+        };
+      }
       return ret;
     }, {}),
     nTokenData: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.id] = {
-        ...c.nToken,
-        ...results[ConfigKeys.NTOKEN_ACCOUNT(c.id)],
-        ...results[ConfigKeys.NTOKEN_PORTFOLIO(c.id)],
-        assetCashPV: results[ConfigKeys.NTOKEN_PRESENT_VALUE(c.id)],
-      };
+      if (c.nToken) {
+        ret[c.id] = {
+          ...c.nToken,
+          ...results[ConfigKeys.NTOKEN_ACCOUNT(c.id)],
+          ...results[ConfigKeys.NTOKEN_PORTFOLIO(c.id)],
+          assetCashPV: results[ConfigKeys.NTOKEN_PRESENT_VALUE(c.id)],
+        };
+      }
       return ret;
     }, {}),
     cashGroups: config.reduce((obj, c) => {
       const ret = obj;
-      ret[c.id] = {
-        ...c.cashGroup,
-        markets: results[ConfigKeys.MARKETS(c.id)],
-      };
+      if (c.cashGroup) {
+        ret[c.id] = {
+          ...c.cashGroup,
+          markets: results[ConfigKeys.MARKETS(c.id)],
+        };
+      }
       return ret;
     }, {}),
   };

@@ -1,6 +1,6 @@
 {
   "name": "@notional-finance/sdk-v2",
-  "version": "0.6.0-beta.3",
+  "version": "0.6.0-beta.4",
   "description": "Notional Finance SDK V2",
   "author": "Jeff Wu <jeff@notional.finance>",
   "homepage": "https://notional.finance",
@@ -54,7 +54,8 @@
     "ts-jest": "^28.0.4",
     "ts-node": "^10.8.1",
     "typechain": "^8.1.0",
-    "typescript": "^4.7.3"
+    "typescript": "^4.7.3",
+    "ethers": "5.6.9"
   },
   "peerDependencies": {
     "ethers": "5.6.9",

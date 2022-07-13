@@ -112,9 +112,9 @@ const perCurrencyCalls = (
   currency: {
     id: number;
     assetSymbol: string;
-    underlyingSymbol: string | null;
-    nTokenSymbol: string | null;
-    nTokenAddress: string | null;
+    underlyingSymbol?: string;
+    nTokenSymbol?: string;
+    nTokenAddress?: string;
   },
   ethRate: {
     oracle: IAggregator;
@@ -254,8 +254,8 @@ export async function getBlockchainData(provider: providers.Provider, contracts:
         id: c.id,
         assetSymbol: c.assetSymbol,
         underlyingSymbol: c.underlyingSymbol,
-        nTokenSymbol: c.nToken?.nTokenSymbol || null,
-        nTokenAddress: c.nToken?.contract._address || null,
+        nTokenSymbol: c.nToken?.nTokenSymbol,
+        nTokenAddress: c.nToken?.contract._address,
       },
       {
         oracle: new Contract(c.ethExchangeRate.rateOracle._address!, IAggregatorABI, provider) as IAggregator,
