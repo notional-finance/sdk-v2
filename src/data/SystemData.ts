@@ -19,13 +19,15 @@ export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
   provider: ethers.providers.JsonRpcBatchProvider,
   contracts: Contracts,
-  skipFetchSetup: boolean
+  skipFetchSetup: boolean,
+  _usdExchangeRates?: Record<string, BigNumber>
 ) {
   const config = await getSystemConfig(graphClient);
   const { blockNumber, results } = await getBlockchainData(provider, contracts, config);
   const network = await provider.getNetwork();
   const block = await provider.getBlock(blockNumber.toNumber());
-  const usdExchangeRates = await getUSDPriceData(skipFetchSetup);
+  // Only refresh exchange rates if a value is not provided
+  const usdExchangeRates = _usdExchangeRates ?? (await getUSDPriceData(skipFetchSetup));
 
   const systemObject: _SystemData = {
     network: network.name === 'homestead' ? 'mainnet' : network.name,
@@ -114,7 +116,8 @@ function _getABI(name: string) {
 export async function fetchSystem(
   chainId: number,
   provider: ethers.providers.JsonRpcBatchProvider,
-  skipFetchSetup: boolean
+  skipFetchSetup: boolean,
+  _usdExchangeRates: Record<string, BigNumber>
 ) {
   const { addresses, graphEndpoint } = Notional.getChainConfig(chainId);
 
@@ -122,7 +125,7 @@ export async function fetchSystem(
   const contracts = Notional.getContracts(addresses, signer);
   const graphClient = new GraphClient(graphEndpoint, 0, skipFetchSetup);
 
-  const result = await fetchAndEncodeSystem(graphClient, provider, contracts, skipFetchSetup);
+  const result = await fetchAndEncodeSystem(graphClient, provider, contracts, skipFetchSetup, _usdExchangeRates);
   return result;
 }
 
