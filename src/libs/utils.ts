@@ -1,5 +1,5 @@
 import { BigNumber, Contract, PopulatedTransaction } from 'ethers';
-import { Asset } from '../proto';
+import { Asset } from '../data';
 import { AssetType } from './types';
 
 export async function populateTxnAndGas(

@@ -12,7 +12,7 @@ import {
   SerializedContract,
   SerializedTypedBigNumber,
   sNOTE as _sNOTE,
-} from './SystemProto';
+} from './encoding/SystemProto';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
   ? T extends TIgnore

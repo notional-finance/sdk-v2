@@ -1,4 +1,4 @@
 lib
 node_modules
 src/typechain/**/*
-src/proto/SystemProto.ts
+src/data/encoding/SystemProto.ts

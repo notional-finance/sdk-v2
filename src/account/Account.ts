@@ -2,7 +2,7 @@ import { BigNumber, ethers, Overrides, Signer } from 'ethers';
 import { System } from '../system';
 import { Notional as NotionalTypechain } from '../typechain/Notional';
 import AccountRefresh from './AccountRefresh';
-import GraphClient from '../GraphClient';
+import GraphClient from '../data/GraphClient';
 import { ERC20 } from '../typechain/ERC20';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';

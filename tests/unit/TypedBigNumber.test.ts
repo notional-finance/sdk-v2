@@ -1,6 +1,6 @@
 import { BigNumber, constants, ethers, utils } from 'ethers';
 import { System } from '../../src/system';
-import GraphClient from '../../src/GraphClient';
+import GraphClient from '../../src/data/GraphClient';
 import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
 import MockSystem from '../mocks/MockSystem';
 import Notional from '../../src/Notional';

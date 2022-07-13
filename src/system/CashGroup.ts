@@ -3,7 +3,7 @@ import { AssetType } from '../libs/types';
 import { PERCENTAGE_BASIS, RATE_PRECISION, SECONDS_IN_QUARTER, SECONDS_IN_YEAR } from '../config/constants';
 import { Market, System } from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
-import { CashGroupData, Currency } from '../proto';
+import { CashGroupData, Currency } from '../data';
 
 export default class CashGroup {
   public readonly currencyId: number;

@@ -6,12 +6,12 @@ import { getNowSeconds } from '../libs/utils';
 import { DEFAULT_DATA_REFRESH_INTERVAL, NOTE_CURRENCY_ID } from '../config/constants';
 
 import { ERC20 } from '../typechain/ERC20';
-import GraphClient from '../GraphClient';
+import GraphClient from '../data/GraphClient';
 import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { fetchAndDecodeSystem } from '../proto/EncodeProto';
-import { Asset, Currency, SystemData, nToken, ETHRate } from '../proto';
+import { fetchAndDecodeSystem } from '../data/SystemData';
+import { Asset, Currency, SystemData, nToken, ETHRate } from '../data';
 import { IAggregator } from '../typechain';
 
 export enum SystemEvents {

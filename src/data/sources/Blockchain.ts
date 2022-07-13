@@ -1,19 +1,14 @@
 import { BigNumber, Contract, ethers, providers } from 'ethers';
-import { Contracts } from '..';
-import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { aggregate, AggregateCall } from './multicall';
-import { CurrencyConfig } from './SubgraphCalls';
-import { convertAssetType } from '../libs/utils';
-import { CashGroup } from '../system';
-import { AssetRateAggregator } from '../typechain/AssetRateAggregator';
-import { BalancerPool } from '../typechain/BalancerPool';
-import { BalancerVault } from '../typechain/BalancerVault';
-import { IAggregator } from '../typechain/IAggregator';
-import { Notional } from '../typechain/Notional';
-import { SNOTE } from '../typechain/SNOTE';
+import { Contracts } from '../../libs/types';
+import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
+import { aggregate, AggregateCall } from '../Multicall';
+import { CurrencyConfig } from './Subgraph';
+import { convertAssetType } from '../../libs/utils';
+import { CashGroup } from '../../system';
+import { AssetRateAggregator, BalancerPool, BalancerVault, IAggregator, Notional, SNOTE } from '../../typechain';
 
-import IAggregatorABI from '../abi/IAggregator.json';
-import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
+import IAggregatorABI from '../../abi/IAggregator.json';
+import AssetRateAggregatorABI from '../../abi/AssetRateAggregator.json';
 
 const keyAppendId = (key: string) => (id: number | string) => `${key}_${id}`;
 

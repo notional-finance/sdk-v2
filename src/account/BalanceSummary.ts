@@ -3,10 +3,10 @@ import { Balance, BalanceHistory, NTokenStatus, ReturnsBreakdown, TransactionHis
 import { getNowSeconds } from '../libs/utils';
 import { xirr, CashFlow, convertBigNumber } from '../libs/xirr';
 import AccountData from './AccountData';
-import GraphClient from '../GraphClient';
+import GraphClient from '../data/GraphClient';
 import { System, FreeCollateral, NTokenValue } from '../system';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { Currency, nToken } from '../proto';
+import { Currency, nToken } from '../data';
 
 interface BalanceHistoryQueryResult {
   balanceChanges: {

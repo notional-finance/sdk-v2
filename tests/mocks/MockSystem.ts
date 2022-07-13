@@ -2,9 +2,9 @@ import { BigNumber, ethers } from 'ethers';
 import { System } from '../../src/system';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
 import { Contracts, IncentiveFactors, IncentiveMigration } from '../../src/libs/types';
-import GraphClient from '../../src/GraphClient';
-import { decodeJSON } from '../../src/proto/EncodeProto';
-import { Asset, CashGroupData, nToken, StakedNoteParameters } from '../../src/proto';
+import GraphClient from '../../src/data/GraphClient';
+import { decodeJSON } from '../../src/data/SystemData';
+import { Asset, CashGroupData, nToken, StakedNoteParameters } from '../../src/data';
 
 const MockSystemData = require('./MockSystemData.json');
 

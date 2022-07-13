@@ -1,6 +1,6 @@
 import { Signer, Contract, ethers, VoidSigner, utils, BigNumber } from 'ethers';
 import { System } from './system';
-import GraphClient from './GraphClient';
+import GraphClient from './data/GraphClient';
 import { Account, AccountData, AccountGraphLoader } from './account';
 
 import { SystemEvents } from './system/System';
@@ -14,15 +14,17 @@ import {
 } from './config/constants';
 
 /* typechain imports */
-import { NoteERC20 } from './typechain/NoteERC20';
-import { ERC20 } from './typechain/ERC20';
-import { Notional as NotionalProxyTypechain } from './typechain/Notional';
-import { SNOTE } from './typechain/SNOTE';
-import { Governor } from './typechain/Governor';
-import { TreasuryManager } from './typechain/TreasuryManager';
-import { BalancerPool } from './typechain/BalancerPool';
-import { BalancerVault } from './typechain/BalancerVault';
-import { ExchangeV3 } from './typechain/ExchangeV3';
+import {
+  NoteERC20,
+  ERC20,
+  Notional as NotionalProxyTypechain,
+  SNOTE,
+  Governor,
+  TreasuryManager,
+  BalancerPool,
+  BalancerVault,
+  ExchangeV3,
+} from './typechain';
 import { Contracts } from '.';
 
 interface Addresses {

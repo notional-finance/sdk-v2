@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client/core';
 import { BigNumber } from 'ethers';
-import { TokenType } from '..';
+import { TokenType } from '../../libs/types';
 import GraphClient from '../GraphClient';
-import { SerializedContract } from './SystemProto';
+import { SerializedContract } from '../encoding/SystemProto';
 
 const systemConfigurationQuery = gql`
   {

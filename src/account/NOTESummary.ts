@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client/core';
 import { ReturnsBreakdown, TransactionHistory, TypedBigNumber } from '..';
 import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID } from '../config/constants';
-import GraphClient from '../GraphClient';
+import GraphClient from '../data/GraphClient';
 import { getNowSeconds } from '../libs/utils';
 import { StakedNote } from '../staking';
 import { NTokenValue } from '../system';

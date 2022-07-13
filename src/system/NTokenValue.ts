@@ -10,7 +10,7 @@ import {
   INCENTIVE_ACCUMULATION_PRECISION,
 } from '../config/constants';
 import { NTokenStatus } from '../libs/types';
-import { Asset } from '../proto';
+import { Asset } from '../data';
 
 export default class NTokenValue {
   public static getNTokenFactors(currencyId: number) {

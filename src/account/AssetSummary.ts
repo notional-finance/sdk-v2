@@ -8,9 +8,9 @@ import {
 } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
-import GraphClient from '../GraphClient';
+import GraphClient from '../data/GraphClient';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { Asset, Currency } from '../proto';
+import { Asset, Currency } from '../data';
 
 interface TradeHistoryQueryResult {
   trades: {

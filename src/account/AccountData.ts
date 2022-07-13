@@ -9,7 +9,7 @@ import {
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { AssetType, Balance } from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
-import { Asset } from '../proto';
+import { Asset } from '../data';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
 
 interface AssetResult {

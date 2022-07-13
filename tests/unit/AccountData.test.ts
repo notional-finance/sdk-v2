@@ -6,7 +6,7 @@ import MockSystem, { MutableForTesting } from '../mocks/MockSystem';
 import { FreeCollateral, System } from '../../src/system';
 import { getNowSeconds } from '../../src/libs/utils';
 import MockAccountData from '../mocks/MockAccountData';
-import { ETHRate } from '../../src/proto';
+import { ETHRate } from '../../src/data';
 
 describe('Account Data', () => {
   const system = new MockSystem();

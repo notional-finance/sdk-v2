@@ -5,7 +5,7 @@ import {
 import { gql } from '@apollo/client/core';
 
 import { CashGroup, System } from '../system';
-import GraphClient from '../GraphClient';
+import GraphClient from '../data/GraphClient';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';

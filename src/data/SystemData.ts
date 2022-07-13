@@ -2,12 +2,12 @@ import { BigNumber, ethers } from 'ethers';
 import { fetch as crossFetch } from 'cross-fetch';
 import { SystemData } from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
-import GraphClient from '../GraphClient';
+import GraphClient from './GraphClient';
 import { Contracts } from '../libs/types';
-import { ConfigKeys, getBlockchainData } from './BlockchainCalls';
-import getUSDPriceData from './ExchangeRateCalls';
-import { getSystemConfig } from './SubgraphCalls';
-import { decodeSystemData, encodeSystemData, SystemData as _SystemData } from './SystemProto';
+import { ConfigKeys, getBlockchainData } from './sources/Blockchain';
+import getUSDPriceData from './sources/ExchangeRate';
+import { getSystemConfig } from './sources/Subgraph';
+import { decodeSystemData, encodeSystemData, SystemData as _SystemData } from './encoding/SystemProto';
 
 import IAggregatorABI from '../abi/IAggregator.json';
 import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';

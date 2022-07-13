@@ -2,7 +2,7 @@ import { Overrides, ethers, BigNumber, BytesLike } from 'ethers';
 import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
 import { DepositActionType, TokenType, BatchBalanceAndTradeAction, TradeActionType } from './libs/types';
 import { getNowSeconds, populateTxnAndGas } from './libs/utils';
-import { Asset, Currency } from './proto';
+import { Asset, Currency } from './data';
 import { System, Market, CashGroup } from './system';
 
 export default class TransactionBuilder {

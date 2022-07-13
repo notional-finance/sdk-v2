@@ -4,7 +4,7 @@ import { AccountData } from '../account';
 import { BASIS_POINT, MIN_INTEREST_RATE, PERCENTAGE_BASIS } from '../config/constants';
 import TypedBigNumber from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
-import { Asset } from '../proto';
+import { Asset } from '../data';
 
 export default class InterestRateRisk {
   public static calculateInterestRateRisk(accountData: AccountData, blockTime = getNowSeconds()) {

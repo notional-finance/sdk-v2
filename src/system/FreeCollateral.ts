@@ -5,7 +5,7 @@ import { getNowSeconds } from '../libs/utils';
 import { AssetType } from '../libs/types';
 import { INTERNAL_TOKEN_PRECISION, ETHER_CURRENCY_ID } from '../config/constants';
 import NTokenValue from './NTokenValue';
-import { Asset } from '../proto';
+import { Asset } from '../data';
 
 const useHaircut = true;
 const noHaircut = false;
