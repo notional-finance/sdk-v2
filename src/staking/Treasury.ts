@@ -1,6 +1,6 @@
 import { BigNumber, BigNumberish, Contract, Signer } from 'ethers';
-import axios from 'axios';
 import { gql } from '@apollo/client/core';
+import { fetch as crossFetch } from 'cross-fetch';
 import { BigNumberType, TypedBigNumber } from '..';
 import { System } from '../system';
 import { populateTxnAndGas } from '../libs/utils';
@@ -215,13 +215,14 @@ export default class Treasury {
     return { priceFloor, spotPrice: answer };
   }
 
-  public static async getOpenLimitOrders() {
+  public static async getOpenLimitOrders(skipFetchSetup = false) {
+    const _fetch = skipFetchSetup ? fetch : crossFetch;
     const system = System.getSystem();
     const treasuryManager = system.getTreasuryManager();
     const ordersURL = `https://api.0x.org/sra/v3/orders?makerAddress=${treasuryManager.address}`;
-    const response = await axios.get(ordersURL);
+    const response = await (await _fetch(ordersURL)).json();
 
-    return response.data.records.map((r) => Order.fromAPIResponse(r.order));
+    return response.data.records.map((r: any) => Order.fromAPIResponse(r.order));
   }
 
   public static async cancelOrder(order: Order) {
@@ -234,8 +235,10 @@ export default class Treasury {
     signer: Signer,
     symbol: string,
     makerAmount: BigNumberish,
-    takerAmount: TypedBigNumber
+    takerAmount: TypedBigNumber,
+    skipFetchSetup = false
   ) {
+    const _fetch = skipFetchSetup ? fetch : crossFetch;
     // takerTokenAddress is hardcoded to WETH
     if (!takerAmount.isWETH) throw Error('Taker amount is not WETH');
     // if (makerAmount.type !== BigNumberType.ExternalUnderlying) {
@@ -261,26 +264,29 @@ export default class Treasury {
       takerAmount.n
     );
     const signature = await order.sign(exchange, signer);
-    return axios.post(ORDER_URL, [
-      {
-        signature,
-        senderAddress: order.senderAddress,
-        makerAddress: order.makerAddress,
-        takerAddress: order.takerAddress,
-        makerFee: order.makerFee.toString(),
-        takerFee: order.takerFee.toString(),
-        makerAssetAmount: order.makerAssetAmount.toString(),
-        takerAssetAmount: order.takerAssetAmount.toString(),
-        makerAssetData: order.makerAssetData,
-        takerAssetData: order.takerAssetData,
-        salt: order.salt.toString(),
-        exchangeAddress: exchange.address,
-        feeRecipientAddress: order.feeRecipientAddress,
-        expirationTimeSeconds: order.expirationTimeSeconds.toString(),
-        makerFeeAssetData: order.makerFeeAssetData,
-        chainId,
-        takerFeeAssetData: order.takerFeeAssetData,
-      },
-    ]);
+    return _fetch(ORDER_URL, {
+      method: 'POST',
+      body: JSON.stringify([
+        {
+          signature,
+          senderAddress: order.senderAddress,
+          makerAddress: order.makerAddress,
+          takerAddress: order.takerAddress,
+          makerFee: order.makerFee.toString(),
+          takerFee: order.takerFee.toString(),
+          makerAssetAmount: order.makerAssetAmount.toString(),
+          takerAssetAmount: order.takerAssetAmount.toString(),
+          makerAssetData: order.makerAssetData,
+          takerAssetData: order.takerAssetData,
+          salt: order.salt.toString(),
+          exchangeAddress: exchange.address,
+          feeRecipientAddress: order.feeRecipientAddress,
+          expirationTimeSeconds: order.expirationTimeSeconds.toString(),
+          makerFeeAssetData: order.makerFeeAssetData,
+          chainId,
+          takerFeeAssetData: order.takerFeeAssetData,
+        },
+      ]),
+    });
   }
 }
