@@ -1,0 +1,5 @@
+{
+  "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2",
+  "goerli:http": "https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2",
+  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2"
+}

@@ -7,11 +7,7 @@ import { SystemEvents } from './system/System';
 // eslint-disable import/no-named-as-default import/no-named-as-default-member
 import TransactionBuilder from './TransactionBuilder';
 import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
-import {
-  CACHE_DATA_REFRESH_INTERVAL,
-  INTERNAL_TOKEN_DECIMAL_PLACES,
-  LOCAL_DATA_REFRESH_INTERVAL,
-} from './config/constants';
+import { CACHE_DATA_REFRESH_INTERVAL, INTERNAL_TOKEN_DECIMAL_PLACES } from './config/constants';
 
 /* typechain imports */
 import {
@@ -57,6 +53,7 @@ const kovanAddresses = require('./config/kovan.json');
 const goerliAddresses = require('./config/goerli.json');
 const mainnetAddresses = require('./config/mainnet.json');
 const graphEndpoints = require('./config/graph.json');
+const cacheEndpoint = require('./config/cache.json');
 
 /**
  * Provides an abstraction layer for interacting with Notional contracts.
@@ -90,6 +87,41 @@ export default class Notional extends TransactionBuilder {
     };
   }
 
+  public static getChainConfig(chainId: number) {
+    switch (chainId) {
+      case 1:
+        return {
+          addresses: mainnetAddresses,
+          graphEndpoint: graphEndpoints['mainnet:http'],
+          pollInterval: Number(graphEndpoints['mainnet:poll']),
+          cacheUrl: cacheEndpoint['mainnet:http'],
+        };
+      case 5:
+        return {
+          addresses: goerliAddresses,
+          graphEndpoint: graphEndpoints['goerli:http'],
+          pollInterval: Number(graphEndpoints['goerli:poll']),
+          cacheUrl: cacheEndpoint['goerli:http'],
+        };
+      case 42:
+        return {
+          addresses: kovanAddresses,
+          graphEndpoint: graphEndpoints['kovan:http'],
+          pollInterval: Number(graphEndpoints['kovan:poll']),
+          cacheUrl: cacheEndpoint['kovan:http'],
+        };
+      case 1337:
+        return {
+          addresses: mainnetAddresses,
+          graphEndpoint: graphEndpoints['mainnet:http'],
+          pollInterval: Number(graphEndpoints['local:poll']),
+          cacheUrl: cacheEndpoint['mainnet:http'],
+        };
+      default:
+        throw new Error(`Undefined chainId: ${chainId}`);
+    }
+  }
+
   /**
    * Creates a new instance of the Notional SDK.
    *
@@ -102,42 +134,13 @@ export default class Notional extends TransactionBuilder {
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
     skipFetchSetup = false
   ) {
-    let addresses: Addresses;
-    let graphEndpoint: string;
-    let pollInterval: number;
-
-    switch (chainId) {
-      case 1:
-        addresses = mainnetAddresses;
-        graphEndpoint = graphEndpoints['mainnet:http'];
-        pollInterval = Number(graphEndpoints['mainnet:poll']);
-        break;
-      case 5:
-        addresses = goerliAddresses;
-        graphEndpoint = graphEndpoints['goerli:http'];
-        pollInterval = Number(graphEndpoints['goerli:poll']);
-        break;
-      case 42:
-        addresses = kovanAddresses;
-        graphEndpoint = graphEndpoints['kovan:http'];
-        pollInterval = Number(graphEndpoints['kovan:poll']);
-        break;
-      case 1337:
-        addresses = mainnetAddresses;
-        graphEndpoint = graphEndpoints['mainnet:http'];
-        pollInterval = Number(graphEndpoints['local:poll']);
-        // eslint-disable-next-line no-param-reassign
-        refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
-        break;
-      default:
-        throw new Error(`Undefined chainId: ${chainId}`);
-    }
+    const { addresses, graphEndpoint, pollInterval, cacheUrl } = this.getChainConfig(chainId);
 
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     const contracts = Notional.getContracts(addresses, signer);
     const graphClient = new GraphClient(graphEndpoint, pollInterval, skipFetchSetup);
     const system = await System.load(
-      'url', // TODO: replace this
+      cacheUrl,
       graphClient,
       contracts,
       signer.provider as ethers.providers.JsonRpcBatchProvider,

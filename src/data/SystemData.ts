@@ -1,4 +1,4 @@
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, ethers, VoidSigner } from 'ethers';
 import { fetch as crossFetch } from 'cross-fetch';
 import { SystemData } from '.';
 import TypedBigNumber from '../libs/TypedBigNumber';
@@ -13,6 +13,7 @@ import IAggregatorABI from '../abi/IAggregator.json';
 import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
 import ERC20ABI from '../abi/ERC20.json';
 import nTokenERC20ABI from '../abi/nTokenERC20.json';
+import Notional from '..';
 
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
@@ -102,6 +103,21 @@ function _getABI(name: string) {
     default:
       throw Error(`Unknown abi ${name}`);
   }
+}
+
+export async function fetchSystem(
+  chainId: number,
+  provider: ethers.providers.JsonRpcBatchProvider,
+  skipFetchSetup: boolean
+) {
+  const { addresses, graphEndpoint } = Notional.getChainConfig(chainId);
+
+  const signer = new VoidSigner(ethers.constants.AddressZero, provider);
+  const contracts = Notional.getContracts(addresses, signer);
+  const graphClient = new GraphClient(graphEndpoint, 0, skipFetchSetup);
+
+  const result = await fetchAndEncodeSystem(graphClient, provider, contracts, skipFetchSetup);
+  return result;
 }
 
 function _decodeValue(val: any, provider: ethers.providers.Provider) {
