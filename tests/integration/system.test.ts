@@ -12,9 +12,7 @@ describe('System Integration Test', () => {
   let contracts: Contracts;
 
   beforeEach(async () => {
-    provider = new ethers.providers.JsonRpcBatchProvider(
-      'https://eth-mainnet.alchemyapi.io/v2/RF_dceVNax73NKESBvWzbm_e8wGK-X88'
-    );
+    provider = new ethers.providers.JsonRpcBatchProvider('https://eth-mainnet.alchemyapi.io/v2/');
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     contracts = Notional.getContracts(mainnetAddresses, signer);
   });
