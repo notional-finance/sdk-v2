@@ -23,6 +23,7 @@ export const ConfigKeys = {
     NOTE_INDEX: 'sNOTE_NOTE_INDEX',
     POOL_TOKEN_SHARE: 'sNOTE_POOL_TOKEN_SHARE',
     POOL_TOKEN_BALANCES: 'sNOTE_POOL_TOKEN_BALANCES',
+    NOTE_ETH_ORACLE_PRICE: 'sNOTE_ETH_ORACLE_PRICE',
   },
   ETH_EXCHANGE_RATE: keyAppendId('ETH_EXCHANGE_RATE'),
   ASSET_EXCHANGE_RATE: keyAppendId('ASSET_EXCHANGE_RATE'),
@@ -83,6 +84,7 @@ const firstSNOTECalls = (balancerPool: BalancerPool, sNOTE: SNOTE): AggregateCal
 const secondSNOTECalls = (
   balancerVault: BalancerVault,
   sNOTE: SNOTE,
+  poolToken: BalancerPool,
   sNOTETotalSupply: BigNumber,
   poolId: string,
   noteIndex: number
@@ -104,6 +106,15 @@ const secondSNOTECalls = (
         ethBalance: TypedBigNumber.encodeJSON(r.balances[ethIndex], BigNumberType.ExternalUnderlying, 'ETH'),
         noteBalance: TypedBigNumber.encodeJSON(r.balances[noteIndex], BigNumberType.ExternalUnderlying, 'NOTE'),
       };
+    },
+  },
+  {
+    target: poolToken,
+    method: 'getTimeWeightedAverage',
+    args: [[[0, 86400, 0]]], // Get average pair price from 1800 seconds ago
+    key: ConfigKeys.sNOTE.NOTE_ETH_ORACLE_PRICE,
+    transform: (r: Awaited<ReturnType<typeof poolToken.getTimeWeightedAverage>>) => {
+      return r[0];
     },
   },
 ];
@@ -273,12 +284,12 @@ export async function getBlockchainData(provider: providers.Provider, contracts:
     secondSNOTECalls(
       contracts.balancerVault,
       contracts.sNOTE,
+      contracts.balancerPool,
       BigNumber.from(results[ConfigKeys.sNOTE.TOTAL_SUPPLY].hex),
       results[ConfigKeys.sNOTE.POOL_ID],
       results[ConfigKeys.sNOTE.NOTE_INDEX].toNumber()
     ),
     provider
   );
-
   return { blockNumber, results: { ...results, ...results2 } };
 }

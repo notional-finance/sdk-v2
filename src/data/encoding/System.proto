@@ -28,6 +28,7 @@ message sNOTE {
     SerializedBigNumber sNOTEBptBalance = 7;
     SerializedBigNumber swapFee = 8;
     SerializedTypedBigNumber sNOTETotalSupply= 9;
+    SerializedBigNumber noteETHOraclePrice = 10;
 }
 
 message Asset {

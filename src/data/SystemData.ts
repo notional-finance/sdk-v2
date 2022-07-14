@@ -45,6 +45,7 @@ export async function fetchAndEncodeSystem(
       sNOTEBptBalance: results[ConfigKeys.sNOTE.POOL_TOKEN_SHARE],
       swapFee: results[ConfigKeys.sNOTE.POOL_SWAP_FEE],
       sNOTETotalSupply: results[ConfigKeys.sNOTE.TOTAL_SUPPLY],
+      noteETHOraclePrice: results[ConfigKeys.sNOTE.NOTE_ETH_ORACLE_PRICE],
     },
     currencies: config.reduce((obj, c) => {
       const ret = obj;

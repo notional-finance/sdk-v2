@@ -1,7 +1,6 @@
 import { BigNumber, ethers } from 'ethers';
 import { fetch as crossFetch } from 'cross-fetch';
 
-const NOTE_PRICE_URL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
 const EXCHANGE_RATE_API = (KEY: string) => `https://v6.exchangerate-api.com/v6/${KEY}/latest/USD`;
 const SUPPORTED_RATES = ['EUR', 'JPY', 'CNY', 'AUD', 'GBP', 'CAD', 'CHF'];
 
@@ -30,6 +29,7 @@ async function getExchangeRateData(symbols: string[], key: string, _fetch: any) 
 }
 
 // Returns the 24 hour avg of the USD price
+// @ts-ignore currently this function is unused, may enable it again in the future
 async function getCoingeckoUSDPrice(url: string, _fetch: any) {
   const resp = await _fetch(url);
   if (!resp.ok) {
@@ -62,10 +62,6 @@ export default async function getUSDPriceData(
   skipFetchSetup: boolean
 ): Promise<Record<string, BigNumber>> {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
-  const NOTE = await getCoingeckoUSDPrice(NOTE_PRICE_URL, _fetch);
   const EX_RATES = await getExchangeRateData(SUPPORTED_RATES, apiKey, _fetch);
-  return {
-    NOTE,
-    ...EX_RATES,
-  };
+  return { ...EX_RATES };
 }
