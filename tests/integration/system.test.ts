@@ -2,6 +2,7 @@ import { ethers, VoidSigner } from 'ethers';
 import Notional, { Contracts } from '../../src';
 import GraphClient from '../../src/data/GraphClient';
 import { decodeBinary, fetchAndEncodeSystem } from '../../src/data/SystemData';
+
 require('dotenv').config();
 
 const mainnetAddresses = require('../../src/config/mainnet.json');
