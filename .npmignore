@@ -5,3 +5,4 @@ coverage
 .prettierrc.js
 .eslintrc.json
 cache
+.env
