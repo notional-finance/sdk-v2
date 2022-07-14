@@ -2,8 +2,8 @@ import { BigNumber, ethers } from 'ethers';
 import { fetch as crossFetch } from 'cross-fetch';
 
 const NOTE_PRICE_URL = 'https://api.coingecko.com/api/v3/coins/notional-finance/market_chart?vs_currency=usd&days=1';
-const EXCHANGE_RATE_API = 'https://v6.exchangerate-api.com/v6/a68cdd30d4083fe1be69a4d4/latest/USD';
-const SUPPORTED_RATES = ['EUR', 'JPY', 'CNY'];
+const EXCHANGE_RATE_API = (KEY: string) => `https://v6.exchangerate-api.com/v6/${KEY}/latest/USD`;
+const SUPPORTED_RATES = ['EUR', 'JPY', 'CNY', 'AUD', 'GBP', 'CAD', 'CHF'];
 
 // Converts a decimal value to Wei BigNumber
 function convertToWei(val: number) {
@@ -14,8 +14,8 @@ function convertToWei(val: number) {
     .div(10 ** 8);
 }
 
-async function getExchangeRateData(symbols: string[], _fetch: any) {
-  const resp: Response = await _fetch(EXCHANGE_RATE_API);
+async function getExchangeRateData(symbols: string[], key: string, _fetch: any) {
+  const resp: Response = await _fetch(EXCHANGE_RATE_API(key));
   if (!resp.ok) {
     throw Error(`Exchange rate api failed: ${resp.status}, ${resp.statusText}`);
   }
@@ -57,10 +57,13 @@ async function getCoingeckoUSDPrice(url: string, _fetch: any) {
   return convertToWei(avgUSDPrice);
 }
 
-export default async function getUSDPriceData(skipFetchSetup: boolean): Promise<Record<string, BigNumber>> {
+export default async function getUSDPriceData(
+  apiKey: string,
+  skipFetchSetup: boolean
+): Promise<Record<string, BigNumber>> {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
   const NOTE = await getCoingeckoUSDPrice(NOTE_PRICE_URL, _fetch);
-  const EX_RATES = await getExchangeRateData(SUPPORTED_RATES, _fetch);
+  const EX_RATES = await getExchangeRateData(SUPPORTED_RATES, apiKey, _fetch);
   return {
     NOTE,
     ...EX_RATES,
