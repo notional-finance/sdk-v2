@@ -322,8 +322,7 @@ export default class System {
     }
 
     if (currencyId === NOTE_CURRENCY_ID) {
-      const noteUSDRate = this.getUSDRate('NOTE');
-      const { usdcRate, rateDecimals } = this._getUSDCRate();
+      // Special case, we use the Balancer pool's oracle price here instead
       return {
         rateOracle: null as unknown as IAggregator,
         // NOTE/USD Rate is always in 18 decimal places
@@ -331,7 +330,7 @@ export default class System {
         mustInvert: false,
         buffer: 100,
         haircut: 100,
-        latestRate: BigNumber.from(usdcRate).mul(noteUSDRate).div(rateDecimals),
+        latestRate: this.data.StakedNoteParameters.noteETHOraclePrice,
       };
     }
 

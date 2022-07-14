@@ -113,9 +113,7 @@ const secondSNOTECalls = (
     method: 'getTimeWeightedAverage',
     args: [[[0, 86400, 0]]], // Get average pair price from 1800 seconds ago
     key: ConfigKeys.sNOTE.NOTE_ETH_ORACLE_PRICE,
-    transform: (r: Awaited<ReturnType<typeof poolToken.getTimeWeightedAverage>>) => {
-      return r[0];
-    },
+    transform: (r: Awaited<ReturnType<typeof poolToken.getTimeWeightedAverage>>) => r[0],
   },
 ];
 

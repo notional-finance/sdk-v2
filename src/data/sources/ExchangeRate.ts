@@ -28,8 +28,9 @@ async function getExchangeRateData(symbols: string[], key: string, _fetch: any) 
   }, {});
 }
 
+/**
 // Returns the 24 hour avg of the USD price
-// @ts-ignore currently this function is unused, may enable it again in the future
+// Currently this function is unused, may enable it again in the future
 async function getCoingeckoUSDPrice(url: string, _fetch: any) {
   const resp = await _fetch(url);
   if (!resp.ok) {
@@ -56,6 +57,7 @@ async function getCoingeckoUSDPrice(url: string, _fetch: any) {
 
   return convertToWei(avgUSDPrice);
 }
+*/
 
 export default async function getUSDPriceData(
   apiKey: string,

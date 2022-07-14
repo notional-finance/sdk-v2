@@ -3,7 +3,6 @@
   "lastUpdateBlockNumber": 15128123,
   "lastUpdateTimestamp": 1657633153,
   "USDExchangeRates": {
-    "NOTE": { "_isBigNumber": true, "_hex": "0xDE0B6B3A7640000" },
     "EUR": { "_isBigNumber": true, "_hex": "0x0dc6117dd3934000" },
     "JPY": { "_isBigNumber": true, "_hex": "0x076fc364e2d2f38000" },
     "CNY": { "_isBigNumber": true, "_hex": "0x5d284d15a7c3c000" }
@@ -32,7 +31,8 @@
       "hex": "0x4075b4c9be58b2ec0529",
       "bigNumberType": "Staked NOTE",
       "symbol": "sNOTE"
-    }
+    },
+    "noteETHOraclePrice": { "_isBigNumber": true, "_hex": "0x2386F26FC10000" }
   },
   "currencies": {
     "1": {
