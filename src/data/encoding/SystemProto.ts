@@ -1858,7 +1858,7 @@ export interface VaultState {
   totalStrategyTokens?: SerializedTypedBigNumber;
   historicalValue?: VaultHistoricalValue[];
   settlementStrategyTokenValue?: SerializedTypedBigNumber;
-  settlementRate?: SerializedTypedBigNumber;
+  settlementRate?: SerializedBigNumber;
   remainingSettledAssetCash?: SerializedTypedBigNumber;
   remainingSettledStrategyTokens?: SerializedTypedBigNumber;
   shortfall?: SerializedTypedBigNumber;
@@ -1957,12 +1957,12 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedTypedBigNumber settlementRate = 8;
+  // optional SerializedBigNumber settlementRate = 8;
   let $settlementRate = message.settlementRate;
   if ($settlementRate !== undefined) {
     writeVarint32(bb, 66);
     let nested = popByteBuffer();
-    _encodeSerializedTypedBigNumber($settlementRate, nested);
+    _encodeSerializedBigNumber($settlementRate, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -2127,10 +2127,10 @@ function _decodeVaultState(bb: ByteBuffer): VaultState {
         break;
       }
 
-      // optional SerializedTypedBigNumber settlementRate = 8;
+      // optional SerializedBigNumber settlementRate = 8;
       case 8: {
         let limit = pushTemporaryLength(bb);
-        message.settlementRate = _decodeSerializedTypedBigNumber(bb);
+        message.settlementRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }

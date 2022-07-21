@@ -61,6 +61,7 @@ export type AssetRate = Omit<RewriteRequired<_AssetRate>, 'rateAdapter'> & {
 export type nToken = Omit<RewriteRequired<_nToken>, 'contract'> & { readonly contract: NTokenERC20 };
 export type CashGroupData = RewriteRequired<_CashGroup>;
 export type Asset = Omit<RewriteRequired<_Asset>, 'assetType'> & { readonly assetType: AssetType };
+export type SecondaryBorrowArray = [TypedBigNumber?, TypedBigNumber?] | undefined;
 export type VaultHistoricalValue = RewriteRequired<_VaultHistoricalValue>;
 export type VaultState = Omit<
   Rewrite<_VaultState>,
@@ -71,6 +72,9 @@ export type VaultState = Omit<
   | 'totalVaultShares'
   | 'totalStrategyTokens'
   | 'historicalValue'
+  | 'totalSecondaryfCashBorrowed'
+  | 'totalSecondaryDebtShares'
+  | 'settlementSecondaryBorrowfCashSnapshot'
 > & {
   readonly maturity: number;
   readonly isSettled: boolean;
@@ -79,6 +83,9 @@ export type VaultState = Omit<
   readonly totalVaultShares: TypedBigNumber;
   readonly totalStrategyTokens: TypedBigNumber;
   readonly historicalValue: VaultHistoricalValue;
+  readonly totalSecondaryfCashBorrowed?: SecondaryBorrowArray;
+  readonly totalSecondaryDebtShares?: SecondaryBorrowArray;
+  readonly settlementSecondaryBorrowfCashSnapshot?: SecondaryBorrowArray;
 };
 
 export type VaultConfig = Omit<
@@ -86,8 +93,8 @@ export type VaultConfig = Omit<
   'secondaryBorrowCurrencies' | 'maxSecondaryBorrowCapacity' | 'totalUsedSecondaryBorrowCapacity' | 'vaultStates'
 > & {
   readonly secondaryBorrowCurrencies?: number[];
-  readonly maxSecondaryBorrowCapacity?: TypedBigNumber[];
-  readonly totalUsedSecondaryBorrowCapacity?: TypedBigNumber[];
+  readonly maxSecondaryBorrowCapacity?: SecondaryBorrowArray;
+  readonly totalUsedSecondaryBorrowCapacity?: SecondaryBorrowArray;
   readonly vaultStates: VaultState[];
 };
 

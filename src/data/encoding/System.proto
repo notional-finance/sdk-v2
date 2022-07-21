@@ -135,7 +135,7 @@ message VaultState {
     repeated VaultHistoricalValue historicalValue = 11;
     // These are optional or nullable
     SerializedTypedBigNumber settlementStrategyTokenValue = 7;
-    SerializedTypedBigNumber settlementRate = 8;
+    SerializedBigNumber settlementRate = 8;
     SerializedTypedBigNumber remainingSettledAssetCash = 9;
     SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
     SerializedTypedBigNumber shortfall = 11;
