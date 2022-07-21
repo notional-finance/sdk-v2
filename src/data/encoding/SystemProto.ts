@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface SerializedBigNumber {
   _isBigNumber?: boolean;
   _hex?: string;
@@ -1743,6 +1742,895 @@ function _decodeCashGroup(bb: ByteBuffer): CashGroup {
   return message;
 }
 
+export interface VaultHistoricalValue {
+  timestamp?: number;
+  underlyingValueOfStrategyToken?: SerializedTypedBigNumber;
+  ethExchangeRate?: SerializedBigNumber;
+  assetExchangeRate?: SerializedBigNumber;
+}
+
+export function encodeVaultHistoricalValue(message: VaultHistoricalValue): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeVaultHistoricalValue(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeVaultHistoricalValue(message: VaultHistoricalValue, bb: ByteBuffer): void {
+  // optional int32 timestamp = 1;
+  let $timestamp = message.timestamp;
+  if ($timestamp !== undefined) {
+    writeVarint32(bb, 8);
+    writeVarint64(bb, intToLong($timestamp));
+  }
+
+  // optional SerializedTypedBigNumber underlyingValueOfStrategyToken = 2;
+  let $underlyingValueOfStrategyToken = message.underlyingValueOfStrategyToken;
+  if ($underlyingValueOfStrategyToken !== undefined) {
+    writeVarint32(bb, 18);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($underlyingValueOfStrategyToken, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber ethExchangeRate = 3;
+  let $ethExchangeRate = message.ethExchangeRate;
+  if ($ethExchangeRate !== undefined) {
+    writeVarint32(bb, 26);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($ethExchangeRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber assetExchangeRate = 4;
+  let $assetExchangeRate = message.assetExchangeRate;
+  if ($assetExchangeRate !== undefined) {
+    writeVarint32(bb, 34);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($assetExchangeRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+}
+
+export function decodeVaultHistoricalValue(binary: Uint8Array): VaultHistoricalValue {
+  return _decodeVaultHistoricalValue(wrapByteBuffer(binary));
+}
+
+function _decodeVaultHistoricalValue(bb: ByteBuffer): VaultHistoricalValue {
+  let message: VaultHistoricalValue = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional int32 timestamp = 1;
+      case 1: {
+        message.timestamp = readVarint32(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber underlyingValueOfStrategyToken = 2;
+      case 2: {
+        let limit = pushTemporaryLength(bb);
+        message.underlyingValueOfStrategyToken = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber ethExchangeRate = 3;
+      case 3: {
+        let limit = pushTemporaryLength(bb);
+        message.ethExchangeRate = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber assetExchangeRate = 4;
+      case 4: {
+        let limit = pushTemporaryLength(bb);
+        message.assetExchangeRate = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
+export interface VaultState {
+  maturity?: number;
+  isSettled?: boolean;
+  totalPrimaryfCashBorrowed?: SerializedTypedBigNumber;
+  totalAssetCash?: SerializedTypedBigNumber;
+  totalVaultShares?: SerializedTypedBigNumber;
+  totalStrategyTokens?: SerializedTypedBigNumber;
+  historicalValue?: VaultHistoricalValue[];
+  settlementStrategyTokenValue?: SerializedTypedBigNumber;
+  settlementRate?: SerializedTypedBigNumber;
+  remainingSettledAssetCash?: SerializedTypedBigNumber;
+  remainingSettledStrategyTokens?: SerializedTypedBigNumber;
+  shortfall?: SerializedTypedBigNumber;
+  insolvency?: SerializedTypedBigNumber;
+  totalSecondaryfCashBorrowed?: SerializedTypedBigNumber[];
+  totalSecondaryDebtShares?: SerializedTypedBigNumber[];
+  settlementSecondaryBorrowfCashSnapshot?: SerializedTypedBigNumber[];
+}
+
+export function encodeVaultState(message: VaultState): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeVaultState(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
+  // optional int32 maturity = 1;
+  let $maturity = message.maturity;
+  if ($maturity !== undefined) {
+    writeVarint32(bb, 8);
+    writeVarint64(bb, intToLong($maturity));
+  }
+
+  // optional bool isSettled = 2;
+  let $isSettled = message.isSettled;
+  if ($isSettled !== undefined) {
+    writeVarint32(bb, 16);
+    writeByte(bb, $isSettled ? 1 : 0);
+  }
+
+  // optional SerializedTypedBigNumber totalPrimaryfCashBorrowed = 3;
+  let $totalPrimaryfCashBorrowed = message.totalPrimaryfCashBorrowed;
+  if ($totalPrimaryfCashBorrowed !== undefined) {
+    writeVarint32(bb, 26);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalPrimaryfCashBorrowed, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalAssetCash = 4;
+  let $totalAssetCash = message.totalAssetCash;
+  if ($totalAssetCash !== undefined) {
+    writeVarint32(bb, 34);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalAssetCash, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalVaultShares = 5;
+  let $totalVaultShares = message.totalVaultShares;
+  if ($totalVaultShares !== undefined) {
+    writeVarint32(bb, 42);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalVaultShares, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalStrategyTokens = 6;
+  let $totalStrategyTokens = message.totalStrategyTokens;
+  if ($totalStrategyTokens !== undefined) {
+    writeVarint32(bb, 50);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalStrategyTokens, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // repeated VaultHistoricalValue historicalValue = 11;
+  let array$historicalValue = message.historicalValue;
+  if (array$historicalValue !== undefined) {
+    for (let value of array$historicalValue) {
+      writeVarint32(bb, 90);
+      let nested = popByteBuffer();
+      _encodeVaultHistoricalValue(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // optional SerializedTypedBigNumber settlementStrategyTokenValue = 7;
+  let $settlementStrategyTokenValue = message.settlementStrategyTokenValue;
+  if ($settlementStrategyTokenValue !== undefined) {
+    writeVarint32(bb, 58);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($settlementStrategyTokenValue, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber settlementRate = 8;
+  let $settlementRate = message.settlementRate;
+  if ($settlementRate !== undefined) {
+    writeVarint32(bb, 66);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($settlementRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber remainingSettledAssetCash = 9;
+  let $remainingSettledAssetCash = message.remainingSettledAssetCash;
+  if ($remainingSettledAssetCash !== undefined) {
+    writeVarint32(bb, 74);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($remainingSettledAssetCash, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
+  let $remainingSettledStrategyTokens = message.remainingSettledStrategyTokens;
+  if ($remainingSettledStrategyTokens !== undefined) {
+    writeVarint32(bb, 82);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($remainingSettledStrategyTokens, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber shortfall = 11;
+  let $shortfall = message.shortfall;
+  if ($shortfall !== undefined) {
+    writeVarint32(bb, 90);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($shortfall, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber insolvency = 12;
+  let $insolvency = message.insolvency;
+  if ($insolvency !== undefined) {
+    writeVarint32(bb, 98);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($insolvency, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
+  let array$totalSecondaryfCashBorrowed = message.totalSecondaryfCashBorrowed;
+  if (array$totalSecondaryfCashBorrowed !== undefined) {
+    for (let value of array$totalSecondaryfCashBorrowed) {
+      writeVarint32(bb, 106);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
+  let array$totalSecondaryDebtShares = message.totalSecondaryDebtShares;
+  if (array$totalSecondaryDebtShares !== undefined) {
+    for (let value of array$totalSecondaryDebtShares) {
+      writeVarint32(bb, 114);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+  let array$settlementSecondaryBorrowfCashSnapshot = message.settlementSecondaryBorrowfCashSnapshot;
+  if (array$settlementSecondaryBorrowfCashSnapshot !== undefined) {
+    for (let value of array$settlementSecondaryBorrowfCashSnapshot) {
+      writeVarint32(bb, 122);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+}
+
+export function decodeVaultState(binary: Uint8Array): VaultState {
+  return _decodeVaultState(wrapByteBuffer(binary));
+}
+
+function _decodeVaultState(bb: ByteBuffer): VaultState {
+  let message: VaultState = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional int32 maturity = 1;
+      case 1: {
+        message.maturity = readVarint32(bb);
+        break;
+      }
+
+      // optional bool isSettled = 2;
+      case 2: {
+        message.isSettled = !!readByte(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalPrimaryfCashBorrowed = 3;
+      case 3: {
+        let limit = pushTemporaryLength(bb);
+        message.totalPrimaryfCashBorrowed = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalAssetCash = 4;
+      case 4: {
+        let limit = pushTemporaryLength(bb);
+        message.totalAssetCash = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalVaultShares = 5;
+      case 5: {
+        let limit = pushTemporaryLength(bb);
+        message.totalVaultShares = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalStrategyTokens = 6;
+      case 6: {
+        let limit = pushTemporaryLength(bb);
+        message.totalStrategyTokens = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated VaultHistoricalValue historicalValue = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.historicalValue || (message.historicalValue = []);
+        values.push(_decodeVaultHistoricalValue(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber settlementStrategyTokenValue = 7;
+      case 7: {
+        let limit = pushTemporaryLength(bb);
+        message.settlementStrategyTokenValue = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber settlementRate = 8;
+      case 8: {
+        let limit = pushTemporaryLength(bb);
+        message.settlementRate = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber remainingSettledAssetCash = 9;
+      case 9: {
+        let limit = pushTemporaryLength(bb);
+        message.remainingSettledAssetCash = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
+      case 10: {
+        let limit = pushTemporaryLength(bb);
+        message.remainingSettledStrategyTokens = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber shortfall = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        message.shortfall = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber insolvency = 12;
+      case 12: {
+        let limit = pushTemporaryLength(bb);
+        message.insolvency = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
+      case 13: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.totalSecondaryfCashBorrowed || (message.totalSecondaryfCashBorrowed = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
+      case 14: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.totalSecondaryDebtShares || (message.totalSecondaryDebtShares = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+      case 15: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.settlementSecondaryBorrowfCashSnapshot || (message.settlementSecondaryBorrowfCashSnapshot = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
+export interface VaultConfig {
+  vaultAddress?: string;
+  strategy?: string;
+  name?: string;
+  primaryBorrowCurrency?: number;
+  minAccountBorrowSize?: SerializedTypedBigNumber;
+  minCollateralRatioBasisPoints?: number;
+  maxDeleverageCollateralRatioBasisPoints?: number;
+  feeRateBasisPoints?: number;
+  liquidationRatePercent?: number;
+  maxBorrowMarketIndex?: number;
+  maxPrimaryBorrowCapacity?: SerializedTypedBigNumber;
+  totalUsedPrimaryBorrowCapacity?: SerializedTypedBigNumber;
+  enabled?: boolean;
+  allowRollPosition?: boolean;
+  onlyVaultEntry?: boolean;
+  onlyVaultExit?: boolean;
+  onlyVaultRoll?: boolean;
+  onlyVaultDeleverage?: boolean;
+  onlyVaultSettle?: boolean;
+  allowsReentrancy?: boolean;
+  activeVaultStates?: VaultState[];
+  secondaryBorrowCurrencies?: number[];
+  maxSecondaryBorrowCapacity?: SerializedTypedBigNumber[];
+  totalUsedSecondaryBorrowCapacity?: SerializedTypedBigNumber[];
+}
+
+export function encodeVaultConfig(message: VaultConfig): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeVaultConfig(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeVaultConfig(message: VaultConfig, bb: ByteBuffer): void {
+  // optional string vaultAddress = 1;
+  let $vaultAddress = message.vaultAddress;
+  if ($vaultAddress !== undefined) {
+    writeVarint32(bb, 10);
+    writeString(bb, $vaultAddress);
+  }
+
+  // optional string strategy = 2;
+  let $strategy = message.strategy;
+  if ($strategy !== undefined) {
+    writeVarint32(bb, 18);
+    writeString(bb, $strategy);
+  }
+
+  // optional string name = 3;
+  let $name = message.name;
+  if ($name !== undefined) {
+    writeVarint32(bb, 26);
+    writeString(bb, $name);
+  }
+
+  // optional int32 primaryBorrowCurrency = 4;
+  let $primaryBorrowCurrency = message.primaryBorrowCurrency;
+  if ($primaryBorrowCurrency !== undefined) {
+    writeVarint32(bb, 32);
+    writeVarint64(bb, intToLong($primaryBorrowCurrency));
+  }
+
+  // optional SerializedTypedBigNumber minAccountBorrowSize = 5;
+  let $minAccountBorrowSize = message.minAccountBorrowSize;
+  if ($minAccountBorrowSize !== undefined) {
+    writeVarint32(bb, 42);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($minAccountBorrowSize, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional int32 minCollateralRatioBasisPoints = 6;
+  let $minCollateralRatioBasisPoints = message.minCollateralRatioBasisPoints;
+  if ($minCollateralRatioBasisPoints !== undefined) {
+    writeVarint32(bb, 48);
+    writeVarint64(bb, intToLong($minCollateralRatioBasisPoints));
+  }
+
+  // optional int32 maxDeleverageCollateralRatioBasisPoints = 7;
+  let $maxDeleverageCollateralRatioBasisPoints = message.maxDeleverageCollateralRatioBasisPoints;
+  if ($maxDeleverageCollateralRatioBasisPoints !== undefined) {
+    writeVarint32(bb, 56);
+    writeVarint64(bb, intToLong($maxDeleverageCollateralRatioBasisPoints));
+  }
+
+  // optional int32 feeRateBasisPoints = 8;
+  let $feeRateBasisPoints = message.feeRateBasisPoints;
+  if ($feeRateBasisPoints !== undefined) {
+    writeVarint32(bb, 64);
+    writeVarint64(bb, intToLong($feeRateBasisPoints));
+  }
+
+  // optional int32 liquidationRatePercent = 9;
+  let $liquidationRatePercent = message.liquidationRatePercent;
+  if ($liquidationRatePercent !== undefined) {
+    writeVarint32(bb, 72);
+    writeVarint64(bb, intToLong($liquidationRatePercent));
+  }
+
+  // optional int32 maxBorrowMarketIndex = 10;
+  let $maxBorrowMarketIndex = message.maxBorrowMarketIndex;
+  if ($maxBorrowMarketIndex !== undefined) {
+    writeVarint32(bb, 80);
+    writeVarint64(bb, intToLong($maxBorrowMarketIndex));
+  }
+
+  // optional SerializedTypedBigNumber maxPrimaryBorrowCapacity = 11;
+  let $maxPrimaryBorrowCapacity = message.maxPrimaryBorrowCapacity;
+  if ($maxPrimaryBorrowCapacity !== undefined) {
+    writeVarint32(bb, 90);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($maxPrimaryBorrowCapacity, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalUsedPrimaryBorrowCapacity = 12;
+  let $totalUsedPrimaryBorrowCapacity = message.totalUsedPrimaryBorrowCapacity;
+  if ($totalUsedPrimaryBorrowCapacity !== undefined) {
+    writeVarint32(bb, 98);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalUsedPrimaryBorrowCapacity, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional bool enabled = 13;
+  let $enabled = message.enabled;
+  if ($enabled !== undefined) {
+    writeVarint32(bb, 104);
+    writeByte(bb, $enabled ? 1 : 0);
+  }
+
+  // optional bool allowRollPosition = 14;
+  let $allowRollPosition = message.allowRollPosition;
+  if ($allowRollPosition !== undefined) {
+    writeVarint32(bb, 112);
+    writeByte(bb, $allowRollPosition ? 1 : 0);
+  }
+
+  // optional bool onlyVaultEntry = 15;
+  let $onlyVaultEntry = message.onlyVaultEntry;
+  if ($onlyVaultEntry !== undefined) {
+    writeVarint32(bb, 120);
+    writeByte(bb, $onlyVaultEntry ? 1 : 0);
+  }
+
+  // optional bool onlyVaultExit = 16;
+  let $onlyVaultExit = message.onlyVaultExit;
+  if ($onlyVaultExit !== undefined) {
+    writeVarint32(bb, 128);
+    writeByte(bb, $onlyVaultExit ? 1 : 0);
+  }
+
+  // optional bool onlyVaultRoll = 17;
+  let $onlyVaultRoll = message.onlyVaultRoll;
+  if ($onlyVaultRoll !== undefined) {
+    writeVarint32(bb, 136);
+    writeByte(bb, $onlyVaultRoll ? 1 : 0);
+  }
+
+  // optional bool onlyVaultDeleverage = 18;
+  let $onlyVaultDeleverage = message.onlyVaultDeleverage;
+  if ($onlyVaultDeleverage !== undefined) {
+    writeVarint32(bb, 144);
+    writeByte(bb, $onlyVaultDeleverage ? 1 : 0);
+  }
+
+  // optional bool onlyVaultSettle = 19;
+  let $onlyVaultSettle = message.onlyVaultSettle;
+  if ($onlyVaultSettle !== undefined) {
+    writeVarint32(bb, 152);
+    writeByte(bb, $onlyVaultSettle ? 1 : 0);
+  }
+
+  // optional bool allowsReentrancy = 20;
+  let $allowsReentrancy = message.allowsReentrancy;
+  if ($allowsReentrancy !== undefined) {
+    writeVarint32(bb, 160);
+    writeByte(bb, $allowsReentrancy ? 1 : 0);
+  }
+
+  // repeated VaultState activeVaultStates = 21;
+  let array$activeVaultStates = message.activeVaultStates;
+  if (array$activeVaultStates !== undefined) {
+    for (let value of array$activeVaultStates) {
+      writeVarint32(bb, 170);
+      let nested = popByteBuffer();
+      _encodeVaultState(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated int32 secondaryBorrowCurrencies = 22;
+  let array$secondaryBorrowCurrencies = message.secondaryBorrowCurrencies;
+  if (array$secondaryBorrowCurrencies !== undefined) {
+    let packed = popByteBuffer();
+    for (let value of array$secondaryBorrowCurrencies) {
+      writeVarint64(packed, intToLong(value));
+    }
+    writeVarint32(bb, 178);
+    writeVarint32(bb, packed.offset);
+    writeByteBuffer(bb, packed);
+    pushByteBuffer(packed);
+  }
+
+  // repeated SerializedTypedBigNumber maxSecondaryBorrowCapacity = 23;
+  let array$maxSecondaryBorrowCapacity = message.maxSecondaryBorrowCapacity;
+  if (array$maxSecondaryBorrowCapacity !== undefined) {
+    for (let value of array$maxSecondaryBorrowCapacity) {
+      writeVarint32(bb, 186);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber totalUsedSecondaryBorrowCapacity = 24;
+  let array$totalUsedSecondaryBorrowCapacity = message.totalUsedSecondaryBorrowCapacity;
+  if (array$totalUsedSecondaryBorrowCapacity !== undefined) {
+    for (let value of array$totalUsedSecondaryBorrowCapacity) {
+      writeVarint32(bb, 194);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+}
+
+export function decodeVaultConfig(binary: Uint8Array): VaultConfig {
+  return _decodeVaultConfig(wrapByteBuffer(binary));
+}
+
+function _decodeVaultConfig(bb: ByteBuffer): VaultConfig {
+  let message: VaultConfig = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional string vaultAddress = 1;
+      case 1: {
+        message.vaultAddress = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional string strategy = 2;
+      case 2: {
+        message.strategy = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional string name = 3;
+      case 3: {
+        message.name = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional int32 primaryBorrowCurrency = 4;
+      case 4: {
+        message.primaryBorrowCurrency = readVarint32(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber minAccountBorrowSize = 5;
+      case 5: {
+        let limit = pushTemporaryLength(bb);
+        message.minAccountBorrowSize = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional int32 minCollateralRatioBasisPoints = 6;
+      case 6: {
+        message.minCollateralRatioBasisPoints = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 maxDeleverageCollateralRatioBasisPoints = 7;
+      case 7: {
+        message.maxDeleverageCollateralRatioBasisPoints = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 feeRateBasisPoints = 8;
+      case 8: {
+        message.feeRateBasisPoints = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 liquidationRatePercent = 9;
+      case 9: {
+        message.liquidationRatePercent = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 maxBorrowMarketIndex = 10;
+      case 10: {
+        message.maxBorrowMarketIndex = readVarint32(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber maxPrimaryBorrowCapacity = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        message.maxPrimaryBorrowCapacity = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalUsedPrimaryBorrowCapacity = 12;
+      case 12: {
+        let limit = pushTemporaryLength(bb);
+        message.totalUsedPrimaryBorrowCapacity = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional bool enabled = 13;
+      case 13: {
+        message.enabled = !!readByte(bb);
+        break;
+      }
+
+      // optional bool allowRollPosition = 14;
+      case 14: {
+        message.allowRollPosition = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultEntry = 15;
+      case 15: {
+        message.onlyVaultEntry = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultExit = 16;
+      case 16: {
+        message.onlyVaultExit = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultRoll = 17;
+      case 17: {
+        message.onlyVaultRoll = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultDeleverage = 18;
+      case 18: {
+        message.onlyVaultDeleverage = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultSettle = 19;
+      case 19: {
+        message.onlyVaultSettle = !!readByte(bb);
+        break;
+      }
+
+      // optional bool allowsReentrancy = 20;
+      case 20: {
+        message.allowsReentrancy = !!readByte(bb);
+        break;
+      }
+
+      // repeated VaultState activeVaultStates = 21;
+      case 21: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.activeVaultStates || (message.activeVaultStates = []);
+        values.push(_decodeVaultState(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated int32 secondaryBorrowCurrencies = 22;
+      case 22: {
+        let values = message.secondaryBorrowCurrencies || (message.secondaryBorrowCurrencies = []);
+        if ((tag & 7) === 2) {
+          let outerLimit = pushTemporaryLength(bb);
+          while (!isAtEnd(bb)) {
+            values.push(readVarint32(bb));
+          }
+          bb.limit = outerLimit;
+        } else {
+          values.push(readVarint32(bb));
+        }
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber maxSecondaryBorrowCapacity = 23;
+      case 23: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.maxSecondaryBorrowCapacity || (message.maxSecondaryBorrowCapacity = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber totalUsedSecondaryBorrowCapacity = 24;
+      case 24: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.totalUsedSecondaryBorrowCapacity || (message.totalUsedSecondaryBorrowCapacity = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
 export interface SystemData {
   network?: string;
   lastUpdateBlockNumber?: number;
@@ -1754,6 +2642,7 @@ export interface SystemData {
   assetRateData?: { [key: number]: AssetRate };
   nTokenData?: { [key: number]: nToken };
   cashGroups?: { [key: number]: CashGroup };
+  vaultConfig?: { [key: string]: VaultConfig };
 }
 
 export function encodeSystemData(message: SystemData): Uint8Array {
@@ -1915,6 +2804,27 @@ function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
       writeByteBuffer(nested, nestedValue);
       pushByteBuffer(nestedValue);
       writeVarint32(bb, 82);
+      writeVarint32(bb, nested.offset);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // optional map<string, VaultConfig> vaultConfig = 11;
+  let map$vaultConfig = message.vaultConfig;
+  if (map$vaultConfig !== undefined) {
+    for (let key in map$vaultConfig) {
+      let nested = popByteBuffer();
+      let value = map$vaultConfig[key];
+      writeVarint32(nested, 10);
+      writeString(nested, key);
+      writeVarint32(nested, 18);
+      let nestedValue = popByteBuffer();
+      _encodeVaultConfig(value, nestedValue);
+      writeVarint32(nested, nestedValue.limit);
+      writeByteBuffer(nested, nestedValue);
+      pushByteBuffer(nestedValue);
+      writeVarint32(bb, 90);
       writeVarint32(bb, nested.offset);
       writeByteBuffer(bb, nested);
       pushByteBuffer(nested);
@@ -2149,6 +3059,38 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
         }
         if (key === undefined || value === undefined)
           throw new Error("Invalid data for map: cashGroups");
+        values[key] = value;
+        bb.limit = outerLimit;
+        break;
+      }
+
+      // optional map<string, VaultConfig> vaultConfig = 11;
+      case 11: {
+        let values = message.vaultConfig || (message.vaultConfig = {});
+        let outerLimit = pushTemporaryLength(bb);
+        let key: string | undefined;
+        let value: VaultConfig | undefined;
+        end_of_entry: while (!isAtEnd(bb)) {
+          let tag = readVarint32(bb);
+          switch (tag >>> 3) {
+            case 0:
+              break end_of_entry;
+            case 1: {
+              key = readString(bb, readVarint32(bb));
+              break;
+            }
+            case 2: {
+              let valueLimit = pushTemporaryLength(bb);
+              value = _decodeVaultConfig(bb);
+              bb.limit = valueLimit;
+              break;
+            }
+            default:
+              skipUnknownField(bb, tag & 7);
+          }
+        }
+        if (key === undefined || value === undefined)
+          throw new Error("Invalid data for map: vaultConfig");
         values[key] = value;
         bb.limit = outerLimit;
         break;
