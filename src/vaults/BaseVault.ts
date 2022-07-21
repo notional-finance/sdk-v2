@@ -6,6 +6,7 @@ import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
 
 export interface VaultImplementation<D, R> {
+  loadImplementationParameters: (vault: VaultConfig) => Promise<void>;
   getLiquidationPrices: (
     vault: VaultConfig,
     vaultState: VaultState,
@@ -13,10 +14,30 @@ export interface VaultImplementation<D, R> {
   ) => Record<string, TypedBigNumber>;
   getStrategyTokenValue: (vault: VaultConfig, vaultState: VaultState, vaultAccount: VaultAccount) => TypedBigNumber;
 
-  getDepositParameters: (vault: VaultConfig, vaultState: VaultState, totalSlippage: number) => D;
-  getSlippageFromDepositParameters: (vault: VaultConfig, vaultState: VaultState, params: D) => number;
-  getRedeemParameters: (vault: VaultConfig, vaultState: VaultState, totalSlippage: number) => R;
-  getSlippageFromRedeemParameters: (vault: VaultConfig, vaultState: VaultState, params: R) => number;
+  getDepositParameters: (
+    vault: VaultConfig,
+    vaultState: VaultState,
+    depositAmount: TypedBigNumber,
+    slippageBuffer: number
+  ) => D;
+  getSlippageFromDepositParameters: (
+    vault: VaultConfig,
+    vaultState: VaultState,
+    depositAmount: TypedBigNumber,
+    params: D
+  ) => number;
+  getRedeemParameters: (
+    vault: VaultConfig,
+    vaultState: VaultState,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number
+  ) => R;
+  getSlippageFromRedeemParameters: (
+    vault: VaultConfig,
+    vaultState: VaultState,
+    strategyTokens: TypedBigNumber,
+    params: R
+  ) => number;
 
   getDepositGivenStrategyTokens: (
     vault: VaultConfig,
@@ -24,7 +45,6 @@ export interface VaultImplementation<D, R> {
     vaultAccount: VaultAccount,
     strategyTokens: TypedBigNumber,
     totalSlippage: number,
-    params?: D,
     blockTime?: number
   ) => {
     requiredDeposit: TypedBigNumber;
@@ -37,7 +57,6 @@ export interface VaultImplementation<D, R> {
     vaultAccount: VaultAccount,
     depositAmount: TypedBigNumber,
     totalSlippage: number,
-    params?: D,
     blockTime?: number
   ) => {
     strategyTokens: TypedBigNumber;
@@ -51,7 +70,6 @@ export interface VaultImplementation<D, R> {
     vaultAccount: VaultAccount,
     strategyTokens: TypedBigNumber,
     totalSlippage: number,
-    params?: R,
     blockTime?: number
   ) => {
     amountRedeemed: TypedBigNumber;
@@ -65,7 +83,6 @@ export interface VaultImplementation<D, R> {
     vaultAccount: VaultAccount,
     redeemAmount: TypedBigNumber,
     totalSlippage: number,
-    params?: R,
     blockTime?: number
   ) => {
     strategyTokens: TypedBigNumber;
@@ -173,7 +190,6 @@ export default abstract class BaseVault<D, R> {
     cashToBorrow: TypedBigNumber,
     depositAmount: TypedBigNumber,
     totalSlippage: number,
-    params?: D,
     blockTime = getNowSeconds()
   ) {
     const vault = this.getVault();
@@ -201,7 +217,6 @@ export default abstract class BaseVault<D, R> {
       newVaultAccount,
       totalCashDeposit,
       totalSlippage,
-      params,
       blockTime
     );
     if (!this.checkBorrowCapacity(fCashToBorrow.neg())) throw Error('Exceeds max primary borrow capacity');
@@ -225,12 +240,7 @@ export default abstract class BaseVault<D, R> {
     };
   }
 
-  public simulateExitPostMaturity(
-    vaultAccount: VaultAccount,
-    totalSlippage: number,
-    params?: R,
-    blockTime = getNowSeconds()
-  ) {
+  public simulateExitPostMaturity(vaultAccount: VaultAccount, totalSlippage: number, blockTime = getNowSeconds()) {
     const vault = this.getVault();
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (!vaultState.isSettled) throw Error('Cannot exit, not settled');
@@ -243,7 +253,6 @@ export default abstract class BaseVault<D, R> {
       newVaultAccount,
       strategyTokens,
       totalSlippage,
-      params,
       blockTime
     );
 
@@ -257,7 +266,6 @@ export default abstract class BaseVault<D, R> {
     vaultAccount: VaultAccount,
     fCashToLend: TypedBigNumber,
     totalSlippage: number,
-    params?: R,
     blockTime = getNowSeconds()
   ) {
     const vault = this.getVault();
@@ -274,7 +282,6 @@ export default abstract class BaseVault<D, R> {
       newVaultAccount,
       costToLend,
       totalSlippage,
-      params,
       blockTime
     );
 
@@ -296,7 +303,6 @@ export default abstract class BaseVault<D, R> {
     newMaturity: number,
     totalSlippage: number,
     additionalCashToBorrow: TypedBigNumber,
-    params?: D,
     blockTime = getNowSeconds()
   ) {
     const vault = this.getVault();
@@ -321,7 +327,7 @@ export default abstract class BaseVault<D, R> {
     // TODO: switch this to assess on the cash amount...because it is included in cost to lend
     let assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
     // TODO: need to have some default set of values here...
-    let depositParams = this.implementation.getDepositParameters(vault, vaultState, totalSlippage);
+    let depositParams = this.implementation.getDepositParameters(vault, vaultState, 0, totalSlippage);
 
     if (additionalCashToBorrow.isPositive()) {
       totalfCashToBorrow = totalfCashToBorrow.add(
@@ -338,7 +344,6 @@ export default abstract class BaseVault<D, R> {
         newVaultAccount,
         additionalCashToBorrow,
         totalSlippage,
-        params,
         blockTime
       );
 

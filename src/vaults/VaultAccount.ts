@@ -178,6 +178,21 @@ export default class VaultAccount {
     return undefined;
   }
 
+  public getPoolShare() {
+    const vaultState = this.getVaultState();
+    if (vaultState.totalVaultShares.isZero()) {
+      return {
+        assetCash: vaultState.totalAssetCash.copy(0),
+        strategyTokens: vaultState.totalStrategyTokens.copy(0),
+      };
+    }
+
+    return {
+      assetCash: vaultState.totalAssetCash.scale(this.vaultShares, vaultState.totalVaultShares),
+      strategyTokens: vaultState.totalStrategyTokens.scale(this.vaultShares, vaultState.totalVaultShares),
+    };
+  }
+
   public settleVaultAccount() {
     if (!this.canSettle()) throw Error('Vault not settled');
     const vaultState = this.getVaultState();
