@@ -1,4 +1,4 @@
-import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
+import { RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
 import { SecondaryBorrowArray, VaultConfig, VaultState } from '../data';
 import TypedBigNumber from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
@@ -107,51 +107,6 @@ export default abstract class BaseVault<D, R> {
     };
   }
 
-  public getSecondaryDebtOwed(vaultAccount: VaultAccount) {
-    if (vaultAccount.secondaryBorrowDebtShares) {
-      const vault = this.getVault();
-      const vaultState = this.getVaultState(vaultAccount.maturity);
-      const value0 = this._getSecondaryDebtOwed(vault, vaultState, vaultAccount, 0);
-      const value1 = this._getSecondaryDebtOwed(vault, vaultState, vaultAccount, 1);
-      return [value0?.totalBorrowed, value1?.totalBorrowed];
-    }
-
-    return [undefined, undefined];
-  }
-
-  private _getSecondaryDebtOwed(vault: VaultConfig, vaultState: VaultState, vaultAccount: VaultAccount, index: 0 | 1) {
-    if (!vault.secondaryBorrowCurrencies) return undefined;
-    if (!vaultAccount.secondaryBorrowDebtShares) return undefined;
-
-    if (vault.secondaryBorrowCurrencies[index] !== 0) {
-      const symbol = System.getSystem().getUnderlyingSymbol(vault.secondaryBorrowCurrencies[index]);
-      const totalBorrowed = vaultAccount.secondaryBorrowDebtShares[index]?.isPositive()
-        ? vaultState.totalSecondaryfCashBorrowed![index]!.scale(
-            vaultAccount.secondaryBorrowDebtShares[index]!,
-            vaultState.totalSecondaryDebtShares![index]!
-          )
-        : TypedBigNumber.getZeroUnderlying(vault.secondaryBorrowCurrencies![index]);
-      return { symbol, totalBorrowed };
-    }
-
-    return undefined;
-  }
-
-  public getAccountPoolShare(vaultAccount: VaultAccount) {
-    return this.getPoolShare(vaultAccount.maturity, vaultAccount.vaultShares);
-  }
-
-  public getCashValueOfShares(vaultAccount: VaultAccount) {
-    const { assetCash } = this.getAccountPoolShare(vaultAccount);
-    const underlyingStrategyTokenValue = this.implementation.getStrategyTokenValue(
-      this.getVault(),
-      this.getVaultState(vaultAccount.maturity),
-      vaultAccount
-    );
-
-    return assetCash.add(underlyingStrategyTokenValue.toAssetCash());
-  }
-
   // Account Descriptive Factors
   public getCollateralRatio(vaultAccount: VaultAccount) {
     if (vaultAccount.primaryBorrowfCash.isZero()) return null;
@@ -169,53 +124,19 @@ export default abstract class BaseVault<D, R> {
     return debtOutstanding.scale(RATE_PRECISION, netAssetValue.n).toNumber();
   }
 
-  public settleVaultAccount(vaultAccount: VaultAccount) {
-    const vaultState = this.getVaultState(vaultAccount.maturity);
-    if (!vaultState.isSettled) throw Error('Vault not settled');
-    const vault = this.getVault();
+  public getAccountPoolShare(vaultAccount: VaultAccount) {
+    return this.getPoolShare(vaultAccount.maturity, vaultAccount.vaultShares);
+  }
 
-    const totalStrategyTokenValueAtSettlement = TypedBigNumber.fromBalance(
-      vaultState.totalStrategyTokens.scale(vaultState.settlementStrategyTokenValue!, INTERNAL_TOKEN_PRECISION).n,
-      System.getSystem().getUnderlyingSymbol(vault.primaryBorrowCurrency),
-      true
+  public getCashValueOfShares(vaultAccount: VaultAccount) {
+    const { assetCash } = this.getAccountPoolShare(vaultAccount);
+    const underlyingStrategyTokenValue = this.implementation.getStrategyTokenValue(
+      this.getVault(),
+      this.getVaultState(vaultAccount.maturity),
+      vaultAccount
     );
 
-    let totalVaultShareValueAtSettlement = totalStrategyTokenValueAtSettlement.add(
-      vaultState.totalAssetCash.toUnderlying(true, vaultState.settlementRate)
-    );
-
-    let totalAccountValue = vaultAccount.primaryBorrowfCash;
-    if (vault.secondaryBorrowCurrencies) {
-      const [debtOwedOne, debtOwedTwo] = this.getSecondaryDebtOwed(vaultAccount);
-      const [totalDebtOne, totalDebtTwo] = vaultState.settlementSecondaryBorrowfCashSnapshot!;
-
-      if (debtOwedOne) totalAccountValue = totalAccountValue.sub(debtOwedOne);
-      if (debtOwedTwo) totalAccountValue = totalAccountValue.sub(debtOwedTwo);
-      if (totalDebtOne) totalVaultShareValueAtSettlement = totalVaultShareValueAtSettlement.add(totalDebtOne);
-      if (totalDebtTwo) totalVaultShareValueAtSettlement = totalVaultShareValueAtSettlement.add(totalDebtTwo);
-    }
-
-    totalAccountValue = totalAccountValue.add(
-      totalVaultShareValueAtSettlement.scale(vaultAccount.vaultShares, vaultState.totalVaultShares)
-    );
-
-    if (totalAccountValue.isNegative()) {
-      // This is an insolvent account
-      totalAccountValue = totalAccountValue.copy(0);
-    }
-
-    const residualAssetCashBalance = vaultState.totalAssetCash.add(
-      vaultState.totalPrimaryfCashBorrowed.toAssetCash(true, vaultState.settlementRate)
-    );
-
-    const settledVaultValue = residualAssetCashBalance
-      .toUnderlying(true, vaultState.settlementRate)
-      .add(totalStrategyTokenValueAtSettlement);
-
-    const strategyTokens = vaultState.totalStrategyTokens.scale(totalAccountValue, settledVaultValue);
-    const assetCash = residualAssetCashBalance.scale(totalAccountValue, settledVaultValue);
-
-    return { strategyTokens, assetCash };
+    return assetCash.add(underlyingStrategyTokenValue.toAssetCash());
   }
 
   // Operations
@@ -245,76 +166,7 @@ export default abstract class BaseVault<D, R> {
     throw Error(`${fCashToBorrow.symbol} is not valid currency for vault ${vault.name}`);
   }
 
-  public getSecondaryBorrowIndex(currencyId: number): 0 | 1 {
-    const vault = this.getVault();
-    if (!vault.secondaryBorrowCurrencies) {
-      throw Error('Invalid secondary borrow');
-    } else if (vault.secondaryBorrowCurrencies[0] === currencyId) {
-      return 0;
-    } else if (vault.secondaryBorrowCurrencies[1] === currencyId) {
-      return 1;
-    } else {
-      throw Error('Invalid secondary borrow');
-    }
-  }
-
   // Vault Operations
-  private _getVaultSharesMinted(vaultState: VaultState, strategyTokens: TypedBigNumber) {
-    if (vaultState.totalVaultShares.isZero()) {
-      return vaultState.totalVaultShares.copy(strategyTokens.n);
-    } else {
-      return vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
-    }
-  }
-
-  private _addSecondaryDebtShares(
-    vaultState: VaultState,
-    vaultAccount: VaultAccount,
-    secondaryfCashBorrowed: SecondaryBorrowArray
-  ) {
-    if (!secondaryfCashBorrowed) return vaultAccount;
-    const { secondaryBorrowCurrencies } = this.getVault();
-    if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow');
-
-    const didBorrow =
-      (secondaryfCashBorrowed[0] && secondaryfCashBorrowed[0].isPositive()) ||
-      (secondaryfCashBorrowed[1] && secondaryfCashBorrowed[1].isPositive());
-
-    if (didBorrow && !vaultAccount.secondaryBorrowDebtShares) {
-      // Init the array if it does not yet exit
-      vaultAccount.secondaryBorrowDebtShares = [
-        secondaryBorrowCurrencies[0] !== 0 ? TypedBigNumber.getZeroUnderlying(secondaryBorrowCurrencies[0]) : undefined,
-        secondaryBorrowCurrencies[1] !== 0 ? TypedBigNumber.getZeroUnderlying(secondaryBorrowCurrencies[1]) : undefined,
-      ];
-    }
-
-    if (secondaryfCashBorrowed[0] && secondaryfCashBorrowed[0].isPositive()) {
-      vaultAccount.secondaryBorrowDebtShares![0] = vaultAccount.secondaryBorrowDebtShares![0]!.add(
-        this._getDebtSharesMinted(vaultState, secondaryfCashBorrowed[0])
-      );
-    }
-
-    if (secondaryfCashBorrowed[1] && secondaryfCashBorrowed[1].isPositive()) {
-      vaultAccount.secondaryBorrowDebtShares![1] = vaultAccount.secondaryBorrowDebtShares![1]!.add(
-        this._getDebtSharesMinted(vaultState, secondaryfCashBorrowed[1])
-      );
-    }
-
-    return vaultAccount;
-  }
-
-  private _getDebtSharesMinted(vaultState: VaultState, secondaryfCashBorrowed: TypedBigNumber) {
-    const index = this.getSecondaryBorrowIndex(secondaryfCashBorrowed.currencyId);
-    const totalfCashBorrowed = vaultState.totalSecondaryfCashBorrowed![index]!;
-    const totalAccountDebtShares = vaultState.totalSecondaryDebtShares![index]!;
-
-    if (totalfCashBorrowed.isZero()) {
-      return totalAccountDebtShares.copy(secondaryfCashBorrowed.n);
-    } else {
-      return totalAccountDebtShares.scale(secondaryfCashBorrowed, totalfCashBorrowed);
-    }
-  }
-
   public simulateEnter(
     vaultAccount: VaultAccount,
     maturity: number,
@@ -329,15 +181,19 @@ export default abstract class BaseVault<D, R> {
     if (vaultState.isSettled || vaultState.totalAssetCash.isPositive()) {
       throw Error('Cannot enter vault');
     }
-    if (vaultAccount.maturity === 0) vaultAccount.maturity = maturity;
-    if (vaultAccount.maturity !== maturity) throw Error('Cannot Enter, Invalid Maturity');
-
     const market = this.getVaultMarket(maturity);
     const fCashToBorrow = market.getfCashAmountGivenCashAmount(cashToBorrow, blockTime);
     const assessedFee = this.assessVaultFees(maturity, fCashToBorrow, blockTime);
-    const totalCashDeposit = cashToBorrow.add(depositAmount).sub(assessedFee);
+    let totalCashDeposit = cashToBorrow.add(depositAmount).sub(assessedFee);
+    const newVaultAccount = VaultAccount.copy(vaultAccount);
 
-    let newVaultAccount = this.settleVaultAccount(vaultAccount);
+    if (vaultAccount.canSettle()) {
+      const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
+      newVaultAccount.addStrategyTokens(strategyTokens);
+      totalCashDeposit = totalCashDeposit.add(assetCash.toUnderlying());
+      newVaultAccount.updateMaturity(maturity);
+    }
+    if (newVaultAccount.maturity !== maturity) throw Error('Cannot Enter, Invalid Maturity');
 
     const { strategyTokens, secondaryfCashBorrowed, depositParams } = this.implementation.getStrategyTokensGivenDeposit(
       vault,
@@ -357,11 +213,8 @@ export default abstract class BaseVault<D, R> {
         throw Error('Exceeds max secondary borrow capacity');
     }
 
-    newVaultAccount.vaultShares = newVaultAccount.vaultShares.add(
-      this._getVaultSharesMinted(vaultState, strategyTokens)
-    );
-
-    newVaultAccount = this._addSecondaryDebtShares(vaultState, newVaultAccount, secondaryfCashBorrowed);
+    newVaultAccount.addStrategyTokens(strategyTokens);
+    newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed);
 
     return {
       fCashToBorrow,
@@ -381,9 +234,9 @@ export default abstract class BaseVault<D, R> {
     const vault = this.getVault();
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (!vaultState.isSettled) throw Error('Cannot exit, not settled');
+    const newVaultAccount = VaultAccount.copy(vaultAccount);
 
-    const { assetCash, strategyTokens } = this.settleVaultAccount(vaultAccount);
-
+    const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
     const { amountRedeemed, redeemParams } = this.implementation.getRedeemGivenStrategyTokens(
       vault,
       vaultState,
@@ -413,11 +266,12 @@ export default abstract class BaseVault<D, R> {
     const vaultMarket = this.getVaultMarket(vaultAccount.maturity);
     if (fCashToLend.add(vaultAccount.primaryBorrowfCash).isPositive()) throw Error('Cannot lend to positive balance');
 
+    const newVaultAccount = VaultAccount.copy(vaultAccount);
     const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(fCashToLend, blockTime);
     const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.implementation.getStrategyTokensGivenRedeem(
       vault,
       vaultState,
-      vaultAccount,
+      newVaultAccount,
       costToLend,
       totalSlippage,
       params,
@@ -425,11 +279,9 @@ export default abstract class BaseVault<D, R> {
     );
 
     const vaultSharesToRedeemAtCost = vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
-
-    let newVaultAccount = vaultAccount;
-    newVaultAccount.vaultShares = vaultAccount.vaultShares.sub(vaultSharesToRedeemAtCost);
-    newVaultAccount.primaryBorrowfCash = vaultAccount.primaryBorrowfCash.add(fCashToLend);
-    newVaultAccount = this._addSecondaryDebtShares(vaultState, newVaultAccount, secondaryfCashRepaid);
+    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg());
+    newVaultAccount.updatePrimaryBorrowfCash(fCashToLend);
+    newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid);
 
     return {
       costToLend,
@@ -452,14 +304,16 @@ export default abstract class BaseVault<D, R> {
     if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Roll, in Settlement');
     const vaultMarket = this.getVaultMarket(vaultAccount.maturity);
     const newVaultMarket = this.getVaultMarket(newMaturity);
+    const newVaultAccount = VaultAccount.emptyVaultAccount(this.vaultAddress);
+    newVaultAccount.updateMaturity(newMaturity);
+    const { assetCash, strategyTokens } = this.getAccountPoolShare(vaultAccount);
+    newVaultAccount.addStrategyTokens(strategyTokens);
 
-    const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(
+    const { netCashToAccount } = vaultMarket.getCashAmountGivenfCashAmount(
       vaultAccount.primaryBorrowfCash.neg(),
       blockTime
     );
-
-    // TODO: translate old vault account
-    let newVaultAccount = {} as VaultAccount;
+    const costToLend = netCashToAccount.sub(assetCash);
 
     // Calculate amount to borrow
     // TODO: buffer this slippage amount
@@ -490,13 +344,11 @@ export default abstract class BaseVault<D, R> {
 
       // TODO: does this always work?
       depositParams = _depositParams;
-      newVaultAccount.vaultShares = newVaultAccount.vaultShares.add(
-        this._getVaultSharesMinted(vaultState, strategyTokens)
-      );
-      newVaultAccount = this._addSecondaryDebtShares(vaultState, newVaultAccount, secondaryfCashBorrowed);
+      newVaultAccount.addStrategyTokens(strategyTokens);
+      newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed);
 
       if (secondaryfCashBorrowed) {
-        const [debtOwedOne, debtOwedTwo] = this.getSecondaryDebtOwed(vaultAccount);
+        const [debtOwedOne, debtOwedTwo] = vaultAccount.getSecondaryDebtOwed();
 
         if (secondaryfCashBorrowed[0]) {
           const netSecondaryBorrowed = debtOwedOne
