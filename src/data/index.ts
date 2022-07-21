@@ -83,12 +83,12 @@ export type VaultState = Omit<
 
 export type VaultConfig = Omit<
   RewriteRequired<_VaultConfig>,
-  'secondaryBorrowCurrencies' | 'maxSecondaryBorrowCapacity' | 'totalUsedSecondaryBorrowCapacity' | 'activeVaultStates'
+  'secondaryBorrowCurrencies' | 'maxSecondaryBorrowCapacity' | 'totalUsedSecondaryBorrowCapacity' | 'vaultStates'
 > & {
   readonly secondaryBorrowCurrencies?: number[];
   readonly maxSecondaryBorrowCapacity?: TypedBigNumber[];
   readonly totalUsedSecondaryBorrowCapacity?: TypedBigNumber[];
-  readonly activeVaultStates: VaultState[];
+  readonly vaultStates: VaultState[];
 };
 
 export interface SystemData {

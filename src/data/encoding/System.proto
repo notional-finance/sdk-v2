@@ -166,7 +166,7 @@ message VaultConfig {
     bool onlyVaultDeleverage = 18;
     bool onlyVaultSettle = 19;
     bool allowsReentrancy = 20;
-    repeated VaultState activeVaultStates = 21;
+    repeated VaultState vaultStates = 21;
     
     // These are optional
     repeated int32 secondaryBorrowCurrencies = 22;

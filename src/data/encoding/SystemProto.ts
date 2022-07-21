@@ -2223,7 +2223,7 @@ export interface VaultConfig {
   onlyVaultDeleverage?: boolean;
   onlyVaultSettle?: boolean;
   allowsReentrancy?: boolean;
-  activeVaultStates?: VaultState[];
+  vaultStates?: VaultState[];
   secondaryBorrowCurrencies?: number[];
   maxSecondaryBorrowCapacity?: SerializedTypedBigNumber[];
   totalUsedSecondaryBorrowCapacity?: SerializedTypedBigNumber[];
@@ -2388,10 +2388,10 @@ function _encodeVaultConfig(message: VaultConfig, bb: ByteBuffer): void {
     writeByte(bb, $allowsReentrancy ? 1 : 0);
   }
 
-  // repeated VaultState activeVaultStates = 21;
-  let array$activeVaultStates = message.activeVaultStates;
-  if (array$activeVaultStates !== undefined) {
-    for (let value of array$activeVaultStates) {
+  // repeated VaultState vaultStates = 21;
+  let array$vaultStates = message.vaultStates;
+  if (array$vaultStates !== undefined) {
+    for (let value of array$vaultStates) {
       writeVarint32(bb, 170);
       let nested = popByteBuffer();
       _encodeVaultState(value, nested);
@@ -2581,10 +2581,10 @@ function _decodeVaultConfig(bb: ByteBuffer): VaultConfig {
         break;
       }
 
-      // repeated VaultState activeVaultStates = 21;
+      // repeated VaultState vaultStates = 21;
       case 21: {
         let limit = pushTemporaryLength(bb);
-        let values = message.activeVaultStates || (message.activeVaultStates = []);
+        let values = message.vaultStates || (message.vaultStates = []);
         values.push(_decodeVaultState(bb));
         bb.limit = limit;
         break;

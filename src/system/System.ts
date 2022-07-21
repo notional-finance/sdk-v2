@@ -376,13 +376,32 @@ export default class System {
 
   /** Vault Data **/
 
-  public getAllVaults();
+  public getAllVaults(onlyActive = true) {
+    return Array.from(this.data.vaults.values()).filter((v) => {
+      return onlyActive ? v.enabled : true;
+    });
+  }
 
-  public getVaultsByStrategy();
+  public getVaultsByStrategy(strategyId: string, onlyActive = true) {
+    return this.getAllVaults(onlyActive).filter((v) => v.strategy === strategyId);
+  }
 
-  public getVaultConfiguration();
+  public getVaultsByCurrency(currencyId: number, onlyActive = true) {
+    return this.getAllVaults(onlyActive).filter((v) => v.primaryBorrowCurrency === currencyId);
+  }
 
-  public getVaultState();
+  public getVault(vaultAddress: string) {
+    const vault = this.data.vaults.get(vaultAddress);
+    if (!vault) throw Error(`Vault at ${vaultAddress} not found`);
+    return vault;
+  }
+
+  public getVaultState(vaultAddress: string, maturity: number) {
+    const vault = this.getVault(vaultAddress);
+    const state = vault.vaultStates.find((s) => s.maturity === maturity);
+    if (!state) throw Error(`Vault state ${maturity} not found`);
+    return state;
+  }
 
   /** Override Providers **/
 
