@@ -166,7 +166,7 @@ export default class System {
     System._systemInstance = undefined;
   }
 
-  /** Contracts **/
+  /** Contracts * */
 
   public getNotionalProxy() {
     return this.contracts.notionalProxy;
@@ -196,13 +196,13 @@ export default class System {
     return this.contracts.exchangeV3;
   }
 
-  /** Staked NOTE **/
+  /** Staked NOTE * */
 
   public getStakedNoteParameters() {
     return this.data.StakedNoteParameters;
   }
 
-  /** Currencies **/
+  /** Currencies * */
   public getAllCurrencies(): Currency[] {
     return Array.from(this.data.currencies.values()).sort((a, b) => a.assetSymbol.localeCompare(b.assetSymbol));
   }
@@ -248,7 +248,7 @@ export default class System {
     return this.data.cashGroups.has(currencyId);
   }
 
-  /** Cash Group and Market **/
+  /** Cash Group and Market * */
 
   public getCashGroup(currencyId: number): CashGroup {
     const cashGroupData = this.data.cashGroups.get(currencyId);
@@ -262,7 +262,7 @@ export default class System {
     return cashGroup.markets.map((m) => this.marketProviders.get(m.marketKey)?.getMarket() ?? Market.copy(m));
   }
 
-  /** Exchange Rate Data **/
+  /** Exchange Rate Data * */
 
   public getAssetRate(currencyId: number) {
     const assetRateData = this.data.assetRateData.get(currencyId);
@@ -339,7 +339,7 @@ export default class System {
     return ethRate;
   }
 
-  /** nToken Data **/
+  /** nToken Data * */
 
   public getNToken(currencyId: number): nToken | undefined {
     return this.data.nTokenData.get(currencyId);
@@ -374,12 +374,10 @@ export default class System {
     return this.data.nTokenData.get(currencyId);
   }
 
-  /** Vault Data **/
+  /** Vault Data * */
 
   public getAllVaults(onlyActive = true) {
-    return Array.from(this.data.vaults.values()).filter((v) => {
-      return onlyActive ? v.enabled : true;
-    });
+    return Array.from(this.data.vaults.values()).filter((v) => (onlyActive ? v.enabled : true));
   }
 
   public getVaultsByStrategy(strategyId: string, onlyActive = true) {
@@ -403,7 +401,7 @@ export default class System {
     return state;
   }
 
-  /** Override Providers **/
+  /** Override Providers * */
 
   public clearMarketProviders() {
     this.marketProviders.clear();
@@ -449,7 +447,7 @@ export default class System {
     this.nTokenAssetCashPVProviders.set(currencyId, provider);
   }
 
-  /** Settlement Rates **/
+  /** Settlement Rates * */
 
   // Fetch and set settlement rates
   public async settlePortfolioAsset(asset: Asset, currentTime = getNowSeconds()) {

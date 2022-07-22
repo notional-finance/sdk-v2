@@ -35,8 +35,6 @@ type Replaced<T, TReplace, TWith, TKeep = Primitive> = T extends TReplace | TKee
       [P in keyof T]: Replaced<T[P], TReplace, TWith, TKeep>;
     };
 
-type RewriteRequired<T> = DeepRequired<Rewrite<T>, BigNumber | TypedBigNumber | Contract>;
-
 type Rewrite<T> = Replaced<
   Replaced<
     Replaced<T, SerializedBigNumber, BigNumber, Primitive>,
@@ -48,6 +46,8 @@ type Rewrite<T> = Replaced<
   Contract,
   Primitive | BigNumber | TypedBigNumber
 >;
+
+type RewriteRequired<T> = DeepRequired<Rewrite<T>, BigNumber | TypedBigNumber | Contract>;
 
 export type StakedNoteParameters = RewriteRequired<_sNOTE>;
 export type Currency = Omit<RewriteRequired<_Currency>, 'assetContract' | 'underlyingContract'> & {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface SerializedBigNumber {
   _isBigNumber?: boolean;
   _hex?: string;

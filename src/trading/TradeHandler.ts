@@ -9,19 +9,19 @@ export default class TradeHandler {
 
   public static getIdealOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber) {
     this._checkAmount(amountIn);
-    if (outCurrencyId == amountIn.currencyId) throw Error('Matching currencies');
+    if (outCurrencyId === amountIn.currencyId) throw Error('Matching currencies');
     return amountIn.toInternalPrecision().toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
   }
 
   public static getIdealInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber) {
     this._checkAmount(amountOut);
-    if (inCurrencyId == amountOut.currencyId) throw Error('Matching currencies');
-    return amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision(),
+    if (inCurrencyId === amountOut.currencyId) throw Error('Matching currencies');
+    return amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
   }
 
   public static getOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber) {
     this._checkAmount(amountIn);
-    if (outCurrencyId == amountIn.currencyId) throw Error('Matching currencies');
+    if (outCurrencyId === amountIn.currencyId) throw Error('Matching currencies');
 
     return {
       amountOut: amountIn.toInternalPrecision().toETH(false).fromETH(outCurrencyId, false).toExternalPrecision(),
@@ -32,7 +32,7 @@ export default class TradeHandler {
 
   public static getInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber) {
     this._checkAmount(amountOut);
-    if (inCurrencyId == amountOut.currencyId) throw Error('Matching currencies');
+    if (inCurrencyId === amountOut.currencyId) throw Error('Matching currencies');
 
     return {
       amountIn: amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision(),

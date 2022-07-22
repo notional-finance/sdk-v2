@@ -171,12 +171,14 @@ export default abstract class BaseVault<D, R> {
     const vault = this.getVault();
     if (fCashCurrency.id === vault.primaryBorrowCurrency) {
       return vault.totalUsedPrimaryBorrowCapacity.add(fCashToBorrow).lte(vault.maxPrimaryBorrowCapacity);
-    } else if (vault.secondaryBorrowCurrencies) {
+    }
+    if (vault.secondaryBorrowCurrencies) {
       if (vault.secondaryBorrowCurrencies[0] === fCashCurrency.id) {
         return vault
           .totalUsedSecondaryBorrowCapacity![0]!.add(fCashToBorrow)
           .lte(vault.maxSecondaryBorrowCapacity![0]!);
-      } else if (vault.secondaryBorrowCurrencies[1] === fCashCurrency.id) {
+      }
+      if (vault.secondaryBorrowCurrencies[1] === fCashCurrency.id) {
         return vault
           .totalUsedSecondaryBorrowCapacity![1]!.add(fCashToBorrow)
           .lte(vault.maxSecondaryBorrowCapacity![1]!);
@@ -328,7 +330,7 @@ export default abstract class BaseVault<D, R> {
     // TODO: buffer this slippage amount
     let totalfCashToBorrow = newVaultMarket.getfCashAmountGivenCashAmount(costToLend.neg(), blockTime);
     // TODO: switch this to assess on the cash amount...because it is included in cost to lend
-    let assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
+    const assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
     // TODO: need to have some default set of values here...
     let depositParams = this.implementation.getDepositParameters(
       vault,

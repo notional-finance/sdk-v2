@@ -62,7 +62,7 @@ export default class VaultAccount {
   }
 
   public updateMaturity(maturity: number) {
-    if (this.maturity == 0) this._maturity = maturity;
+    if (this.maturity === 0) this._maturity = maturity;
     throw Error('Cannot set maturity');
   }
 
@@ -130,9 +130,8 @@ export default class VaultAccount {
 
     if (totalfCashBorrowed.isZero()) {
       return totalAccountDebtShares.copy(secondaryfCashBorrowed.n);
-    } else {
-      return totalAccountDebtShares.scale(secondaryfCashBorrowed, totalfCashBorrowed);
     }
+    return totalAccountDebtShares.scale(secondaryfCashBorrowed, totalfCashBorrowed);
   }
 
   public getSecondaryBorrowIndex(currencyId: number): 0 | 1 {

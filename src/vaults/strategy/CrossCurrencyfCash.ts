@@ -1,9 +1,9 @@
+import { BigNumber } from 'ethers';
 import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
 import { VaultConfig, VaultState } from '../../data';
 import { VaultImplementation } from '../BaseVault';
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
-import { BigNumber } from 'ethers';
 import { getNowSeconds } from '../../libs/utils';
 import TradeHandler from '../../trading/TradeHandler';
 import { RATE_PRECISION } from '../../config/constants';
@@ -23,7 +23,7 @@ interface RedeemParams {
 }
 
 export default class CrossCurrencyfCash implements VaultImplementation<DepositParams, RedeemParams> {
-  private _lendCurrencyId: number = 0;
+  private _lendCurrencyId = 0;
 
   public get lendCurrencyId() {
     return this._lendCurrencyId;
@@ -108,7 +108,7 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
     _: VaultConfig,
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
-    slippageBuffer: number = 0.05,
+    slippageBuffer = 0.05,
     blockTime = getNowSeconds()
   ) {
     const { depositParams } = this._getDepositParameters(vaultState, depositAmount, slippageBuffer, blockTime);
