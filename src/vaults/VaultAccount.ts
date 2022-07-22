@@ -4,12 +4,12 @@ import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { System } from '../system';
 
 export default class VaultAccount {
-  public static emptyVaultAccount(vaultAddress: string) {
+  public static emptyVaultAccount(vaultAddress: string, maturity: number = 0) {
     const vault = System.getSystem().getVault(vaultAddress);
     return new VaultAccount(
       vaultAddress,
-      0,
-      TypedBigNumber.from(0, BigNumberType.VaultShare, `${vaultAddress}:0`),
+      maturity,
+      TypedBigNumber.from(0, BigNumberType.VaultShare, `${vaultAddress}:${maturity}`),
       TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
       undefined
     );
@@ -49,6 +49,10 @@ export default class VaultAccount {
     return this._secondaryBorrowDebtShares;
   }
 
+  public get vaultSymbol() {
+    return `${this.vaultAddress}:${this.maturity}`;
+  }
+
   public getVaultState() {
     return System.getSystem().getVaultState(this.vaultAddress, this.maturity);
   }
@@ -65,21 +69,26 @@ export default class VaultAccount {
     if (this.maturity !== 0) throw Error('Cannot set maturity');
     if (!this.vaultShares.isZero()) throw Error('Cannot set with vault shares');
     this._maturity = maturity;
-    this._vaultShares = TypedBigNumber.from(0, BigNumberType.VaultShare, `${this.vaultAddress}:${maturity}`);
+    this._vaultShares = TypedBigNumber.from(0, BigNumberType.VaultShare, this.vaultSymbol);
   }
 
   public updateVaultShares(netVaultShares: TypedBigNumber) {
+    netVaultShares.check(BigNumberType.VaultShare, this.vaultSymbol);
     this._vaultShares = this.vaultShares.add(netVaultShares);
     if (this.vaultShares.isNegative()) throw Error('Cannot reduce vault shares negative');
   }
 
   public updatePrimaryBorrowfCash(netfCash: TypedBigNumber) {
+    const underlyingSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    netfCash.check(BigNumberType.InternalUnderlying, underlyingSymbol);
     this._primaryBorrowfCash = this.primaryBorrowfCash.add(netfCash);
     if (this.primaryBorrowfCash.isPositive()) throw Error('Cannot have positive fCash');
   }
 
   public addStrategyTokens(strategyTokens: TypedBigNumber) {
     const vaultState = this.getVaultState();
+    if (!vaultState.totalAssetCash.isZero()) throw Error('Cannot add strategy tokens when has asset cash');
+
     if (vaultState.totalVaultShares.isZero()) {
       this.updateVaultShares(vaultState.totalVaultShares.copy(strategyTokens.n));
     } else {
@@ -88,7 +97,13 @@ export default class VaultAccount {
   }
 
   public addSecondaryDebtShares(secondaryfCashBorrowed: SecondaryBorrowArray) {
-    if (!secondaryfCashBorrowed) return;
+    if (
+      !secondaryfCashBorrowed ||
+      (secondaryfCashBorrowed[0] === undefined && secondaryfCashBorrowed[0] === undefined)
+    ) {
+      return;
+    }
+
     const { secondaryBorrowCurrencies } = this.getVault();
     if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow');
 
@@ -241,7 +256,7 @@ export default class VaultAccount {
     // Clear all vault data at settlement
     this._maturity = 0;
     this._primaryBorrowfCash = this.primaryBorrowfCash.copy(0);
-    this._vaultShares = this.vaultShares.copy(0);
+    this._vaultShares = TypedBigNumber.from(0, BigNumberType.VaultShare, this.vaultSymbol);
     this._secondaryBorrowDebtShares = undefined;
 
     return { strategyTokens, assetCash };

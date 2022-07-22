@@ -1,16 +1,27 @@
 import { TypedBigNumber, BigNumberType } from '../../src';
+import { SECONDS_IN_QUARTER } from '../../src/config/constants';
 import { VaultState, VaultConfig } from '../../src/data';
 
 export function MockCrossCurrencyConfig(maturity: number) {
   const vaultSymbol = `0xabc:${maturity}`;
+  const vaultSymbolSettled = `0xabc:${maturity - SECONDS_IN_QUARTER}`;
 
-  const vaultState: VaultState = {
+  const vaultState1: VaultState = {
     maturity,
     isSettled: false,
     totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(100_000e8, 'DAI', true),
     totalAssetCash: TypedBigNumber.fromBalance(0, 'cDAI', true),
     totalVaultShares: TypedBigNumber.from(100_000e8, BigNumberType.VaultShare, vaultSymbol),
     totalStrategyTokens: TypedBigNumber.from(100_000e8, BigNumberType.StrategyToken, vaultSymbol),
+  } as unknown as VaultState;
+
+  const vaultStateSettled: VaultState = {
+    maturity: maturity - SECONDS_IN_QUARTER,
+    isSettled: true,
+    totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(100_000e8, 'DAI', true),
+    totalAssetCash: TypedBigNumber.fromBalance(5_000_000e8, 'cDAI', true),
+    totalVaultShares: TypedBigNumber.from(100_000e8, BigNumberType.VaultShare, vaultSymbolSettled),
+    totalStrategyTokens: TypedBigNumber.from(100_000e8, BigNumberType.StrategyToken, vaultSymbolSettled),
   } as unknown as VaultState;
 
   const vault: VaultConfig = {
@@ -34,7 +45,7 @@ export function MockCrossCurrencyConfig(maturity: number) {
     onlyVaultDeleverage: false,
     onlyVaultSettle: false,
     allowsReentrancy: true,
-    vaultStates: [vaultState],
+    vaultStates: [vaultStateSettled, vaultState1],
   };
 
   return { vault, vaultSymbol };

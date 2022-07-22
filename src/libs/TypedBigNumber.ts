@@ -268,7 +268,9 @@ class TypedBigNumber {
       this.type === BigNumberType.LiquidityToken ||
       this.type === BigNumberType.NOTE ||
       this.type === BigNumberType.nToken ||
-      this.type === BigNumberType.Currency
+      this.type === BigNumberType.Currency ||
+      this.type === BigNumberType.VaultShare ||
+      this.type === BigNumberType.StrategyToken
     );
   }
 
