@@ -62,8 +62,10 @@ export default class VaultAccount {
   }
 
   public updateMaturity(maturity: number) {
-    if (this.maturity === 0) this._maturity = maturity;
-    throw Error('Cannot set maturity');
+    if (this.maturity !== 0) throw Error('Cannot set maturity');
+    if (!this.vaultShares.isZero()) throw Error('Cannot set with vault shares');
+    this._maturity = maturity;
+    this._vaultShares = TypedBigNumber.from(0, BigNumberType.VaultShare, `${this.vaultAddress}:${maturity}`);
   }
 
   public updateVaultShares(netVaultShares: TypedBigNumber) {
@@ -79,11 +81,9 @@ export default class VaultAccount {
   public addStrategyTokens(strategyTokens: TypedBigNumber) {
     const vaultState = this.getVaultState();
     if (vaultState.totalVaultShares.isZero()) {
-      this._vaultShares = this.vaultShares.add(vaultState.totalVaultShares.copy(strategyTokens.n));
+      this.updateVaultShares(vaultState.totalVaultShares.copy(strategyTokens.n));
     } else {
-      this._vaultShares = this.vaultShares.add(
-        vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens)
-      );
+      this.updateVaultShares(vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens));
     }
   }
 

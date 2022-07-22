@@ -2,7 +2,7 @@ module.exports = {
   projects: [
     {
       displayName: 'unit',
-      testMatch: ['<rootDir>/tests/unit/*.test.ts'],
+      testMatch: ['<rootDir>/tests/unit/**/*.test.ts'],
       preset: 'ts-jest',
       testEnvironment: 'node',
     },
@@ -13,9 +13,6 @@ module.exports = {
       testEnvironment: 'node',
     },
   ],
-  coverageReporters: ["text", "html"],
-  collectCoverageFrom: [
-    "src/**/*.ts",
-    "!src/typechain/**"
-  ]
+  coverageReporters: ['text', 'html'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/typechain/**'],
 };
