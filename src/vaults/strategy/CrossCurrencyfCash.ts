@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers';
 import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
 import { VaultConfig, VaultState } from '../../data';
-import BaseVault, { VaultImplementation } from '../BaseVault';
+import BaseVault from '../BaseVault';
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
 import { getNowSeconds } from '../../libs/utils';
@@ -22,16 +22,10 @@ interface RedeemParams {
   exchangeData: string;
 }
 
-export default function BuildCrossCurrencyfCash(vaultAddress: string, lendCurrencyId: number) {
-  const impl = new CrossCurrencyfCashImpl();
-  impl.setLendCurrency(lendCurrencyId);
-  return new CrossCurrencyfCash(vaultAddress, impl);
-}
-
-class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams, CrossCurrencyfCashImpl> {}
-
-class CrossCurrencyfCashImpl implements VaultImplementation<DepositParams, RedeemParams> {
-  private _lendCurrencyId = 0;
+export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams> {
+  constructor(vaultAddress: string, private _lendCurrencyId: number) {
+    super(vaultAddress);
+  }
 
   public get lendCurrencyId() {
     return this._lendCurrencyId;
@@ -55,12 +49,6 @@ class CrossCurrencyfCashImpl implements VaultImplementation<DepositParams, Redee
   private fCashToStrategyTokens(fCash: TypedBigNumber, vaultAddress: string, maturity: number) {
     return TypedBigNumber.from(fCash.n, BigNumberType.StrategyToken, `${vaultAddress}:${maturity}`);
   }
-
-  // getLiquidationPrices: (
-  //   vault: VaultConfig,
-  //   vaultState: VaultState,
-  //   vaultAccount: VaultAccount
-  // ) => Record<string, TypedBigNumber>;
 
   public getStrategyTokenValue(
     vault: VaultConfig,

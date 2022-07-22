@@ -1,6 +1,6 @@
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { System } from '../../../src/system';
-import BuildCrossCurrencyfCash from '../../../src/vaults/strategy/CrossCurrencyfCash';
+import CrossCurrencyfCash from '../../../src/vaults/strategy/CrossCurrencyfCash';
 import VaultAccount from '../../../src/vaults/VaultAccount';
 import { MockCrossCurrencyConfig } from '../../mocks/MockCrossCurrencyConfig';
 import MockSystem from '../../mocks/MockSystem';
@@ -15,14 +15,14 @@ describe('Cross Currency fCash', () => {
   });
   const maturity = System.getSystem().getCashGroup(2).getMarket(1).maturity;
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
-  const crossCurrency = BuildCrossCurrencyfCash(vault.vaultAddress, 3);
+  const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, 3);
   system.setVault(vault);
 
   it.only('gets strategy token value', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
     vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol));
-    const value = crossCurrency.implementation.getStrategyTokenValue(vault, vault.vaultStates[0], vaultAccount);
+    const value = crossCurrency.getStrategyTokenValue(vault, vault.vaultStates[0], vaultAccount);
     expect(value.symbol).toBe('DAI');
     expect(value.toNumber()).toBeLessThan(100e8);
     expect(value.toNumber()).toBeGreaterThan(95e8);

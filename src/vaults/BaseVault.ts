@@ -5,97 +5,104 @@ import { getNowSeconds } from '../libs/utils';
 import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
 
-export interface VaultImplementation<D, R> {
-  // getLiquidationPrices: (
+export default abstract class BaseVault<D, R> {
+  constructor(public vaultAddress: string) {}
+
+  // public abstract getLiquidationPrices(
   //   vault: VaultConfig,
   //   vaultState: VaultState,
   //   vaultAccount: VaultAccount
-  // ) => Record<string, TypedBigNumber>;
-  getStrategyTokenValue: (vault: VaultConfig, vaultState: VaultState, vaultAccount: VaultAccount) => TypedBigNumber;
+  // ): Record<string, TypedBigNumber>;
 
-  getDepositParameters: (
+  public abstract getStrategyTokenValue(
+    vault: VaultConfig,
+    vaultState: VaultState,
+    vaultAccount: VaultAccount
+  ): TypedBigNumber;
+
+  public abstract getDepositParameters(
     vault: VaultConfig,
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
-  ) => D;
-  getSlippageFromDepositParameters: (
+  ): D;
+
+  public abstract getSlippageFromDepositParameters(
     vault: VaultConfig,
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
     params: D,
     blockTime?: number
-  ) => number;
-  getRedeemParameters: (
+  ): number;
+
+  public abstract getRedeemParameters(
     vault: VaultConfig,
     vaultState: VaultState,
     strategyTokens: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
-  ) => R;
-  getSlippageFromRedeemParameters: (
+  ): R;
+
+  public abstract getSlippageFromRedeemParameters(
     vault: VaultConfig,
     vaultState: VaultState,
     strategyTokens: TypedBigNumber,
     params: R,
     blockTime?: number
-  ) => number;
+  ): number;
 
-  getDepositGivenStrategyTokens: (
+  public abstract getDepositGivenStrategyTokens(
     vault: VaultConfig,
     vaultState: VaultState,
     vaultAccount: VaultAccount,
     strategyTokens: TypedBigNumber,
     totalSlippage: number,
     blockTime?: number
-  ) => {
+  ): {
     requiredDeposit: TypedBigNumber;
     secondaryfCashBorrowed: SecondaryBorrowArray;
     depositParams: D;
   };
-  getStrategyTokensGivenDeposit: (
+
+  public abstract getStrategyTokensGivenDeposit(
     vault: VaultConfig,
     vaultState: VaultState,
     vaultAccount: VaultAccount,
     depositAmount: TypedBigNumber,
     totalSlippage: number,
     blockTime?: number
-  ) => {
+  ): {
     strategyTokens: TypedBigNumber;
     secondaryfCashBorrowed: SecondaryBorrowArray;
     depositParams: D;
   };
 
-  getRedeemGivenStrategyTokens: (
+  public abstract getRedeemGivenStrategyTokens(
     vault: VaultConfig,
     vaultState: VaultState,
     vaultAccount: VaultAccount,
     strategyTokens: TypedBigNumber,
     totalSlippage: number,
     blockTime?: number
-  ) => {
+  ): {
     amountRedeemed: TypedBigNumber;
     secondaryfCashRepaid: SecondaryBorrowArray;
     redeemParams: R;
   };
 
-  getStrategyTokensGivenRedeem: (
+  public abstract getStrategyTokensGivenRedeem(
     vault: VaultConfig,
     vaultState: VaultState,
     vaultAccount: VaultAccount,
     redeemAmount: TypedBigNumber,
     totalSlippage: number,
     blockTime?: number
-  ) => {
+  ): {
     strategyTokens: TypedBigNumber;
     secondaryfCashRepaid: SecondaryBorrowArray;
     redeemParams: R;
   };
-}
-
-export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R>> {
-  constructor(public vaultAddress: string, public implementation: V) {}
 
   public getVaultState(maturity: number) {
     return System.getSystem().getVaultState(this.vaultAddress, maturity);
@@ -131,7 +138,7 @@ export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R
 
   public getCashValueOfShares(vaultAccount: VaultAccount) {
     const { assetCash } = vaultAccount.getPoolShare();
-    const underlyingStrategyTokenValue = this.implementation.getStrategyTokenValue(
+    const underlyingStrategyTokenValue = this.getStrategyTokenValue(
       this.getVault(),
       this.getVaultState(vaultAccount.maturity),
       vaultAccount
@@ -197,7 +204,7 @@ export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R
     }
     if (newVaultAccount.maturity !== maturity) throw Error('Cannot Enter, Invalid Maturity');
 
-    const { strategyTokens, secondaryfCashBorrowed, depositParams } = this.implementation.getStrategyTokensGivenDeposit(
+    const { strategyTokens, secondaryfCashBorrowed, depositParams } = this.getStrategyTokensGivenDeposit(
       vault,
       vaultState,
       newVaultAccount,
@@ -233,7 +240,7 @@ export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R
     const newVaultAccount = VaultAccount.copy(vaultAccount);
 
     const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
-    const { amountRedeemed, redeemParams } = this.implementation.getRedeemGivenStrategyTokens(
+    const { amountRedeemed, redeemParams } = this.getRedeemGivenStrategyTokens(
       vault,
       vaultState,
       newVaultAccount,
@@ -262,7 +269,7 @@ export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R
 
     const newVaultAccount = VaultAccount.copy(vaultAccount);
     const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(fCashToLend, blockTime);
-    const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.implementation.getStrategyTokensGivenRedeem(
+    const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
       vault,
       vaultState,
       newVaultAccount,
@@ -313,7 +320,7 @@ export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R
     // TODO: switch this to assess on the cash amount...because it is included in cost to lend
     const assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
     // TODO: need to have some default set of values here...
-    let depositParams = this.implementation.getDepositParameters(
+    let depositParams = this.getDepositParameters(
       vault,
       vaultState,
       TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
@@ -329,7 +336,7 @@ export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R
         strategyTokens,
         secondaryfCashBorrowed,
         depositParams: _depositParams,
-      } = this.implementation.getStrategyTokensGivenDeposit(
+      } = this.getStrategyTokensGivenDeposit(
         vault,
         vaultState,
         newVaultAccount,
