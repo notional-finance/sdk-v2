@@ -94,8 +94,8 @@ export interface VaultImplementation<D, R> {
   };
 }
 
-export default abstract class BaseVault<D, R> {
-  constructor(public vaultAddress: string, public implementation: VaultImplementation<D, R>) {}
+export default abstract class BaseVault<D, R, V extends VaultImplementation<D, R>> {
+  constructor(public vaultAddress: string, public implementation: V) {}
 
   public getVaultState(maturity: number) {
     return System.getSystem().getVaultState(this.vaultAddress, maturity);
@@ -110,21 +110,6 @@ export default abstract class BaseVault<D, R> {
     const marketIndex = CashGroup.getMarketIndexForMaturity(maturity);
     if (marketIndex > vault.maxBorrowMarketIndex) throw Error(`Invalid maturity for vault ${vault.name}`);
     return System.getSystem().getCashGroup(vault.primaryBorrowCurrency).getMarket(marketIndex);
-  }
-
-  public getPoolShare(maturity: number, vaultShares: TypedBigNumber) {
-    const vaultState = this.getVaultState(maturity);
-    if (vaultState.totalVaultShares.isZero()) {
-      return {
-        assetCash: vaultState.totalAssetCash.copy(0),
-        strategyTokens: vaultState.totalStrategyTokens.copy(0),
-      };
-    }
-
-    return {
-      assetCash: vaultState.totalAssetCash.scale(vaultShares, vaultState.totalVaultShares),
-      strategyTokens: vaultState.totalStrategyTokens.scale(vaultShares, vaultState.totalVaultShares),
-    };
   }
 
   // Account Descriptive Factors
@@ -144,12 +129,8 @@ export default abstract class BaseVault<D, R> {
     return debtOutstanding.scale(RATE_PRECISION, netAssetValue.n).toNumber();
   }
 
-  public getAccountPoolShare(vaultAccount: VaultAccount) {
-    return this.getPoolShare(vaultAccount.maturity, vaultAccount.vaultShares);
-  }
-
   public getCashValueOfShares(vaultAccount: VaultAccount) {
-    const { assetCash } = this.getAccountPoolShare(vaultAccount);
+    const { assetCash } = vaultAccount.getPoolShare();
     const underlyingStrategyTokenValue = this.implementation.getStrategyTokenValue(
       this.getVault(),
       this.getVaultState(vaultAccount.maturity),
@@ -160,10 +141,10 @@ export default abstract class BaseVault<D, R> {
   }
 
   // Operations
-  public assessVaultFees(maturity: number, fCashToBorrow: TypedBigNumber, blockTime = getNowSeconds()) {
+  public assessVaultFees(maturity: number, cashBorrowed: TypedBigNumber, blockTime = getNowSeconds()) {
     const annualizedFeeRate = this.getVault().feeRateBasisPoints;
     const feeRate = Math.floor(annualizedFeeRate * ((maturity - blockTime) / SECONDS_IN_YEAR));
-    return fCashToBorrow.scale(feeRate, RATE_PRECISION).toAssetCash();
+    return cashBorrowed.scale(feeRate, RATE_PRECISION);
   }
 
   public checkBorrowCapacity(fCashToBorrow: TypedBigNumber) {
@@ -317,7 +298,7 @@ export default abstract class BaseVault<D, R> {
     const newVaultMarket = this.getVaultMarket(newMaturity);
     const newVaultAccount = VaultAccount.emptyVaultAccount(this.vaultAddress);
     newVaultAccount.updateMaturity(newMaturity);
-    const { assetCash, strategyTokens } = this.getAccountPoolShare(vaultAccount);
+    const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
     newVaultAccount.addStrategyTokens(strategyTokens);
 
     const { netCashToAccount } = vaultMarket.getCashAmountGivenfCashAmount(

@@ -1,7 +1,6 @@
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { System } from '../../../src/system';
-import CrossCurrencyfCash from '../../../src/vaults/strategy/CrossCurrencyfCash';
 import VaultAccount from '../../../src/vaults/VaultAccount';
 import { MockCrossCurrencyConfig } from '../../mocks/MockCrossCurrencyConfig';
 import MockSystem from '../../mocks/MockSystem';
@@ -14,8 +13,6 @@ describe('Test Vault Account', () => {
     system.destroy();
     expect(() => System.getSystem()).toThrowError('System not initialized');
   });
-  const crossCurrency = new CrossCurrencyfCash();
-  crossCurrency.setLendCurrency(3);
   const maturity = System.getSystem().getCashGroup(2).getMarket(1).maturity;
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
   system.setVault(vault);

@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers';
 import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
 import { VaultConfig, VaultState } from '../../data';
-import { VaultImplementation } from '../BaseVault';
+import BaseVault, { VaultImplementation } from '../BaseVault';
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
 import { getNowSeconds } from '../../libs/utils';
@@ -22,7 +22,15 @@ interface RedeemParams {
   exchangeData: string;
 }
 
-export default class CrossCurrencyfCash implements VaultImplementation<DepositParams, RedeemParams> {
+export default function BuildCrossCurrencyfCash(vaultAddress: string, lendCurrencyId: number) {
+  const impl = new CrossCurrencyfCashImpl();
+  impl.setLendCurrency(lendCurrencyId);
+  return new CrossCurrencyfCash(vaultAddress, impl);
+}
+
+class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams, CrossCurrencyfCashImpl> {}
+
+class CrossCurrencyfCashImpl implements VaultImplementation<DepositParams, RedeemParams> {
   private _lendCurrencyId = 0;
 
   public get lendCurrencyId() {
