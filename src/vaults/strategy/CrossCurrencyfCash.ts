@@ -3,8 +3,10 @@ import { VaultConfig, VaultState } from '../../data';
 import { VaultImplementation } from '../BaseVault';
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber } from 'ethers';
 import { getNowSeconds } from '../../libs/utils';
+import TradeHandler from '../../trading/TradeHandler';
+import { RATE_PRECISION } from '../../config/constants';
 
 interface DepositParams {
   minPurchaseAmount: BigNumber;
@@ -27,9 +29,9 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
     return this._lendCurrencyId;
   }
 
-  public async loadImplementationParameters(vault: VaultConfig) {
-    const contract = new Contract(vault.vaultAddress, interface, System.getSystem().batchProvider);
-    this._lendCurrencyId = await contract.LEND_CURRENCY_ID().toNumber();
+  public setLendCurrency(lendCurrencyId: number) {
+    // TODO: this needs to get embedded into the cache
+    this._lendCurrencyId = lendCurrencyId;
   }
 
   public getLendMarket(maturity: number) {
@@ -67,89 +69,147 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
     return fCashPV.toETH(false).fromETH(vault.primaryBorrowCurrency, false);
   }
 
-  public getDepositParameters(
-    vault: VaultConfig,
+  private _getDepositParameters(
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
-    slippageBuffer: number
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
   ) {
+    const { amountOut, dexId, exchangeData } = TradeHandler.getOutGivenIn(
+      this.lendCurrencyId,
+      depositAmount.toUnderlying(false)
+    );
     // get minPurchaseAmount based on depositAmount, apply slippage buffer
+    const minPurchaseAmount = TradeHandler.applySlippage(amountOut, slippageBuffer);
     // get lendRate based on optimalPurchaseAmount, apply slippage buffer
+    const market = this.getLendMarket(vaultState.maturity);
+    const lendfCash = market.getfCashAmountGivenCashAmount(amountOut.toInternalPrecision(), blockTime);
+
+    const { annualizedRate: minLendRate } = Market.getSlippageRate(
+      lendfCash,
+      amountOut,
+      market.maturity,
+      slippageBuffer,
+      blockTime
+    );
+
+    return {
+      depositParams: {
+        minPurchaseAmount: minPurchaseAmount.n,
+        minLendRate,
+        dexId,
+        exchangeData,
+      },
+      amountOut,
+    };
+  }
+
+  public getDepositParameters(
+    _: VaultConfig,
+    vaultState: VaultState,
+    depositAmount: TypedBigNumber,
+    slippageBuffer: number = 0.05,
+    blockTime = getNowSeconds()
+  ) {
+    const { depositParams } = this._getDepositParameters(vaultState, depositAmount, slippageBuffer, blockTime);
+    return depositParams;
+  }
+
+  private _getRedeemParameters(
+    vault: VaultConfig,
+    vaultState: VaultState,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    const market = this.getLendMarket(vaultState.maturity);
+    const lendfCash = this.strategyTokensTofCash(strategyTokens);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash, blockTime);
+    const { amountOut, dexId, exchangeData } = TradeHandler.getOutGivenIn(
+      vault.primaryBorrowCurrency,
+      netCashToAccount.toUnderlying(false)
+    );
+    const minPurchaseAmount = TradeHandler.applySlippage(amountOut, slippageBuffer);
+
+    const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
+      lendfCash,
+      netCashToAccount,
+      market.maturity,
+      slippageBuffer,
+      blockTime
+    );
+
+    return {
+      redeemParams: {
+        minPurchaseAmount: minPurchaseAmount.n,
+        maxBorrowRate,
+        dexId,
+        exchangeData,
+      },
+      amountOut,
+    };
   }
 
   public getRedeemParameters(
     vault: VaultConfig,
     vaultState: VaultState,
     strategyTokens: TypedBigNumber,
-    slippageBuffer: number
-  ) {}
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    const { redeemParams } = this._getRedeemParameters(vault, vaultState, strategyTokens, slippageBuffer, blockTime);
+    return redeemParams;
+  }
 
   public getSlippageFromDepositParameters(
-    vault: VaultConfig,
+    _: VaultConfig,
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
-    params: DepositParams
+    params: DepositParams,
+    blockTime = getNowSeconds()
   ) {
-    // input = Cash amount in primary borrow
+    const market = this.getLendMarket(vaultState.maturity);
+
     // No Slippage Value:
     //   getCashFutureValue(fx(cashFromBorrow => lendCurrency) @ oracleRate)
+    const idealTrade = TradeHandler.getIdealOutGivenIn(this.lendCurrencyId, depositAmount.toExternalPrecision());
+    const idealfCash = Market.fCashFromExchangeRate(
+      market.marketExchangeRate(blockTime),
+      idealTrade.toInternalPrecision()
+    );
+
     // Worse Case Value:
     //   getCashFutureValue(minPurchaseAmount @ minLendRate)
+    const worstCasefCash = Market.fCashFromExchangeRate(
+      Market.interestToExchangeRate(params.minLendRate, blockTime, vaultState.maturity),
+      idealTrade.copy(params.minPurchaseAmount).toInternalPrecision()
+    );
+
     // End to End Slippage = (noSlippage - worstCase) / noSlippage
+    return idealfCash.sub(worstCasefCash).scale(RATE_PRECISION, idealfCash).toNumber();
   }
 
   public getSlippageFromRedeemParameters(
     vault: VaultConfig,
     vaultState: VaultState,
     strategyTokens: TypedBigNumber,
-    params: RedeemParams
-  ) {
-    // input = strategyTokens to redeem
-    // No Slippage Value:
-    //   fx(getPV(strategyTokens @ oracleRate) => primaryBorrow)
-    // Worse Case Value:
-    //   minPurchaseAmount
-    // End to End Slippage = (noSlippage - worstCase) / noSlippage
-  }
-
-  public getDepositGivenStrategyTokens(
-    vault: VaultConfig,
-    _: VaultState,
-    vaultAccount: VaultAccount,
-    strategyTokens: TypedBigNumber,
-    totalSlippage: number,
+    params: RedeemParams,
     blockTime = getNowSeconds()
   ) {
-    const market = this.getLendMarket(vaultAccount.maturity);
-    const fCash = this.strategyTokensTofCash(strategyTokens);
-    // TODO: apply splippage buffer
-    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCash, blockTime);
-    const { annualizedRate: minLendRate } = Market.getSlippageRate(
-      fCash,
-      netCashToAccount,
-      vaultAccount.maturity,
-      totalSlippage,
-      blockTime
-    );
+    const market = this.getLendMarket(vaultState.maturity);
+    const lendfCash = this.strategyTokensTofCash(strategyTokens);
 
-    const {
-      amountIn: requiredDeposit,
-      dexId,
-      exchangeData,
-    } = TradeHandler.getInGivenOut(vault.primaryBorrowCurrency, netCashToAccount.neg());
+    // No Slippage Value:
+    //   fx(getPV(strategyTokens @ oracleRate) => primaryBorrow)
+    const idealCash = Market.cashFromExchangeRate(market.marketExchangeRate(blockTime), lendfCash);
+    const idealTrade = TradeHandler.getIdealOutGivenIn(vault.primaryBorrowCurrency, idealCash.toExternalPrecision());
 
-    const depositParams = {
-      minPurchaseAmount: BigNumber.from(purchaseAmount * 0.95),
-      minLendRate,
-      dexId,
-      exchangeData,
-    };
+    // Worse Case Value:
+    //   minPurchaseAmount
 
-    return {
-      requiredDeposit,
-      secondaryfCashBorrowed: undefined,
-      depositParams,
-    };
+    // End to End Slippage = (noSlippage - worstCase) / noSlippage
+    const minPurchaseAmount = idealTrade.copy(params.minPurchaseAmount);
+    return idealTrade.sub(minPurchaseAmount).scale(RATE_PRECISION, idealTrade).toNumber();
   }
 
   public getStrategyTokensGivenDeposit(
@@ -157,27 +217,12 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
     _: VaultState,
     vaultAccount: VaultAccount,
     depositAmount: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ) {
     const market = this.getLendMarket(vaultAccount.maturity);
-    const { amountOut, dexId, exchangeData } = TradeHandler.getOutGivenIn(this.lendCurrencyId, depositAmount);
+    const { amountOut, depositParams } = this._getDepositParameters(_, depositAmount, slippageBuffer, blockTime);
     const lendfCash = market.getfCashAmountGivenCashAmount(amountOut.neg(), blockTime);
-
-    const { annualizedRate: minLendRate } = Market.getSlippageRate(
-      lendfCash,
-      amountOut,
-      vaultAccount.maturity,
-      totalSlippage,
-      blockTime
-    );
-
-    const depositParams = {
-      minPurchaseAmount: BigNumber.from(amountOut * 0.95),
-      minLendRate,
-      dexId,
-      exchangeData,
-    };
 
     return {
       strategyTokens: this.fCashToStrategyTokens(lendfCash, vault.vaultAddress, vaultAccount.maturity),
@@ -189,33 +234,12 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
   public getRedeemGivenStrategyTokens(
     vault: VaultConfig,
     _: VaultState,
-    vaultAccount: VaultAccount,
+    __: VaultAccount,
     strategyTokens: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ) {
-    const market = this.getLendMarket(vaultAccount.maturity);
-    const lendfCash = this.strategyTokensTofCash(strategyTokens);
-    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash, blockTime);
-    const { amountOut, dexId, exchangeData } = TradeHandler.getOutGivenIn(
-      vault.primaryBorrowCurrency,
-      netCashToAccount
-    );
-
-    const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
-      lendfCash,
-      netCashToAccount,
-      vaultAccount.maturity,
-      totalSlippage,
-      blockTime
-    );
-
-    const redeemParams = {
-      minPurchaseAmount: BigNumber.from(amountOut * 0.95),
-      maxBorrowRate,
-      dexId,
-      exchangeData,
-    };
+    const { amountOut, redeemParams } = this._getRedeemParameters(vault, _, strategyTokens, slippageBuffer, blockTime);
 
     return {
       amountRedeemed: amountOut,
@@ -224,12 +248,51 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
     };
   }
 
+  public getDepositGivenStrategyTokens(
+    vault: VaultConfig,
+    _: VaultState,
+    vaultAccount: VaultAccount,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    const market = this.getLendMarket(vaultAccount.maturity);
+    const fCash = this.strategyTokensTofCash(strategyTokens);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCash, blockTime);
+
+    const { annualizedRate: minLendRate } = Market.getSlippageRate(
+      fCash,
+      netCashToAccount,
+      market.maturity,
+      slippageBuffer,
+      blockTime
+    );
+
+    const {
+      amountIn: requiredDeposit,
+      dexId,
+      exchangeData,
+    } = TradeHandler.getInGivenOut(vault.primaryBorrowCurrency, netCashToAccount.neg());
+    const minPurchaseAmount = TradeHandler.applySlippage(requiredDeposit, slippageBuffer).n;
+
+    return {
+      requiredDeposit,
+      secondaryfCashBorrowed: undefined,
+      depositParams: {
+        minLendRate,
+        minPurchaseAmount,
+        dexId,
+        exchangeData,
+      },
+    };
+  }
+
   public getStrategyTokensGivenRedeem(
     vault: VaultConfig,
     __: VaultState,
     vaultAccount: VaultAccount,
     redeemAmount: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ) {
     const market = this.getLendMarket(vaultAccount.maturity);
@@ -240,21 +303,20 @@ export default class CrossCurrencyfCash implements VaultImplementation<DepositPa
       lendfCash,
       amountIn,
       vaultAccount.maturity,
-      totalSlippage,
+      slippageBuffer,
       blockTime
     );
 
-    const redeemParams = {
-      minPurchaseAmount: BigNumber.from(amountIn * 0.95),
-      maxBorrowRate,
-      dexId,
-      exchangeData,
-    };
-
+    const minPurchaseAmount = TradeHandler.applySlippage(amountIn, slippageBuffer).n;
     return {
       strategyTokens: this.fCashToStrategyTokens(lendfCash.neg(), vault.vaultAddress, vaultAccount.maturity),
       secondaryfCashRepaid: undefined,
-      redeemParams,
+      redeemParams: {
+        minPurchaseAmount,
+        maxBorrowRate,
+        dexId,
+        exchangeData,
+      },
     };
   }
 }

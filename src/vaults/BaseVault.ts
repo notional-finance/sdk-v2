@@ -6,37 +6,40 @@ import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
 
 export interface VaultImplementation<D, R> {
-  loadImplementationParameters: (vault: VaultConfig) => Promise<void>;
-  getLiquidationPrices: (
-    vault: VaultConfig,
-    vaultState: VaultState,
-    vaultAccount: VaultAccount
-  ) => Record<string, TypedBigNumber>;
+  // getLiquidationPrices: (
+  //   vault: VaultConfig,
+  //   vaultState: VaultState,
+  //   vaultAccount: VaultAccount
+  // ) => Record<string, TypedBigNumber>;
   getStrategyTokenValue: (vault: VaultConfig, vaultState: VaultState, vaultAccount: VaultAccount) => TypedBigNumber;
 
   getDepositParameters: (
     vault: VaultConfig,
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
-    slippageBuffer: number
+    slippageBuffer: number,
+    blockTime?: number
   ) => D;
   getSlippageFromDepositParameters: (
     vault: VaultConfig,
     vaultState: VaultState,
     depositAmount: TypedBigNumber,
-    params: D
+    params: D,
+    blockTime?: number
   ) => number;
   getRedeemParameters: (
     vault: VaultConfig,
     vaultState: VaultState,
     strategyTokens: TypedBigNumber,
-    slippageBuffer: number
+    slippageBuffer: number,
+    blockTime?: number
   ) => R;
   getSlippageFromRedeemParameters: (
     vault: VaultConfig,
     vaultState: VaultState,
     strategyTokens: TypedBigNumber,
-    params: R
+    params: R,
+    blockTime?: number
   ) => number;
 
   getDepositGivenStrategyTokens: (
@@ -327,7 +330,12 @@ export default abstract class BaseVault<D, R> {
     // TODO: switch this to assess on the cash amount...because it is included in cost to lend
     let assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
     // TODO: need to have some default set of values here...
-    let depositParams = this.implementation.getDepositParameters(vault, vaultState, 0, totalSlippage);
+    let depositParams = this.implementation.getDepositParameters(
+      vault,
+      vaultState,
+      TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
+      totalSlippage
+    );
 
     if (additionalCashToBorrow.isPositive()) {
       totalfCashToBorrow = totalfCashToBorrow.add(
