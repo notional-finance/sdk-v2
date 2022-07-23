@@ -97,7 +97,7 @@ describe('Test Vault Account', () => {
     vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
 
     const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
-    expect(assetCash.toNumber()).toBe(5000e8);
+    expect(assetCash.toNumber()).toBe(5100e8);
     expect(strategyTokens.toNumber()).toBe(100e8);
   });
 
@@ -111,7 +111,32 @@ describe('Test Vault Account', () => {
     }).toThrow();
   });
 
-  it('it calculates settlement in a single currency', () => {});
+  it('it calculates settlement in a single currency', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
+    const vaultSymbol = vaultAccount.vaultSymbol;
+    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
+    const { assetCash, strategyTokens } = vaultAccount.settleVaultAccount();
+
+    expect(assetCash.toNumber()).toBe(100e8);
+    expect(assetCash.symbol).toBe('cDAI');
+    expect(strategyTokens.symbol).toBe(vaultSymbol);
+    expect(strategyTokens.toNumber()).toBe(100e8);
+    expect(vaultAccount.maturity).toBe(0);
+    expect(vaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
+    expect(vaultAccount.vaultShares.isZero()).toBeTruthy();
+
+    // Can now update to a new maturity
+    vaultAccount.updateMaturity(maturity);
+  });
+
+  it('it throws on non matured vaults', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
+    expect(() => {
+      vaultAccount.settleVaultAccount();
+    }).toThrow();
+  });
+
   it('it calculates secondary debt owed properly', () => {});
   it('it calculates settlement with secondary borrows', () => {});
 });

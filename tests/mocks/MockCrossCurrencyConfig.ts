@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers';
 import { TypedBigNumber, BigNumberType } from '../../src';
 import { SECONDS_IN_QUARTER } from '../../src/config/constants';
 import { VaultState, VaultConfig } from '../../src/data';
@@ -9,7 +10,7 @@ export function MockCrossCurrencyConfig(maturity: number) {
   const vaultState1: VaultState = {
     maturity,
     isSettled: false,
-    totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(100_000e8, 'DAI', true),
+    totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(-100_000e8, 'DAI', true),
     totalAssetCash: TypedBigNumber.fromBalance(0, 'cDAI', true),
     totalVaultShares: TypedBigNumber.from(100_000e8, BigNumberType.VaultShare, vaultSymbol),
     totalStrategyTokens: TypedBigNumber.from(100_000e8, BigNumberType.StrategyToken, vaultSymbol),
@@ -18,10 +19,12 @@ export function MockCrossCurrencyConfig(maturity: number) {
   const vaultStateSettled: VaultState = {
     maturity: maturity - SECONDS_IN_QUARTER,
     isSettled: true,
-    totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(100_000e8, 'DAI', true),
-    totalAssetCash: TypedBigNumber.fromBalance(5_000_000e8, 'cDAI', true),
+    totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(-100_000e8, 'DAI', true),
+    totalAssetCash: TypedBigNumber.fromBalance(5_100_000e8, 'cDAI', true),
     totalVaultShares: TypedBigNumber.from(100_000e8, BigNumberType.VaultShare, vaultSymbolSettled),
     totalStrategyTokens: TypedBigNumber.from(100_000e8, BigNumberType.StrategyToken, vaultSymbolSettled),
+    settlementStrategyTokenValue: TypedBigNumber.from(1e8, BigNumberType.StrategyToken, vaultSymbolSettled),
+    settlementRate: BigNumber.from('0xA56FA5B99019A5C8000000'),
   } as unknown as VaultState;
 
   const vault: VaultConfig = {
