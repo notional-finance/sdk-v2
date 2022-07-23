@@ -53,6 +53,17 @@ export default class VaultAccount {
     return `${this.vaultAddress}:${this.maturity}`;
   }
 
+  public getDebtShareSymbol(index: 0 | 1) {
+    const { secondaryBorrowCurrencies } = this.getVault();
+    if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow currency');
+    if (secondaryBorrowCurrencies[index] !== 0) {
+      const symbol = System.getSystem().getUnderlyingSymbol(secondaryBorrowCurrencies[index]);
+      return `${this.vaultSymbol}:${symbol}`;
+    }
+
+    return undefined;
+  }
+
   public getVaultState() {
     return System.getSystem().getVaultState(this.vaultAddress, this.maturity);
   }
@@ -99,7 +110,7 @@ export default class VaultAccount {
   public addSecondaryDebtShares(secondaryfCashBorrowed: SecondaryBorrowArray) {
     if (
       !secondaryfCashBorrowed ||
-      (secondaryfCashBorrowed[0] === undefined && secondaryfCashBorrowed[0] === undefined)
+      (secondaryfCashBorrowed[0] === undefined && secondaryfCashBorrowed[1] === undefined)
     ) {
       return;
     }
@@ -108,28 +119,30 @@ export default class VaultAccount {
     if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow');
 
     const didBorrow =
-      (secondaryfCashBorrowed[0] && secondaryfCashBorrowed[0].isPositive()) ||
-      (secondaryfCashBorrowed[1] && secondaryfCashBorrowed[1].isPositive());
+      (secondaryfCashBorrowed[0] && !secondaryfCashBorrowed[0].isZero()) ||
+      (secondaryfCashBorrowed[1] && !secondaryfCashBorrowed[1].isZero());
 
     if (didBorrow && !this.secondaryBorrowDebtShares) {
+      const symbol1 = this.getDebtShareSymbol(0);
+      const symbol2 = this.getDebtShareSymbol(1);
       // Init the array if it does not yet exit
       this._secondaryBorrowDebtShares = [
-        secondaryBorrowCurrencies[0] !== 0 ? TypedBigNumber.getZeroUnderlying(secondaryBorrowCurrencies[0]) : undefined,
-        secondaryBorrowCurrencies[1] !== 0 ? TypedBigNumber.getZeroUnderlying(secondaryBorrowCurrencies[1]) : undefined,
+        symbol1 ? TypedBigNumber.from(0, BigNumberType.DebtShare, symbol1) : undefined,
+        symbol2 ? TypedBigNumber.from(0, BigNumberType.DebtShare, symbol2) : undefined,
       ];
     }
 
-    if (secondaryfCashBorrowed[0] && secondaryfCashBorrowed[0].isPositive()) {
+    if (secondaryfCashBorrowed[0] && !secondaryfCashBorrowed[0].isZero()) {
       const newDebtShares = this.secondaryBorrowDebtShares![0]!.add(
-        this._getDebtSharesMinted(secondaryfCashBorrowed[0])
+        this._getDebtSharesMinted(0, secondaryfCashBorrowed[0])
       );
       if (newDebtShares.isNegative()) throw Error('Debt shares negative');
       this._secondaryBorrowDebtShares![0] = newDebtShares;
     }
 
-    if (secondaryfCashBorrowed[1] && secondaryfCashBorrowed[1].isPositive()) {
+    if (secondaryfCashBorrowed[1] && !secondaryfCashBorrowed[1].isZero()) {
       const newDebtShares = this.secondaryBorrowDebtShares![1]!.add(
-        this._getDebtSharesMinted(secondaryfCashBorrowed[1])
+        this._getDebtSharesMinted(1, secondaryfCashBorrowed[1])
       );
 
       if (newDebtShares.isNegative()) throw Error('Debt shares negative');
@@ -137,14 +150,12 @@ export default class VaultAccount {
     }
   }
 
-  private _getDebtSharesMinted(secondaryfCashBorrowed: TypedBigNumber) {
-    const index = this.getSecondaryBorrowIndex(secondaryfCashBorrowed.currencyId);
+  private _getDebtSharesMinted(index: number, secondaryfCashBorrowed: TypedBigNumber) {
     const vaultState = this.getVaultState();
     const totalfCashBorrowed = vaultState.totalSecondaryfCashBorrowed![index]!;
     const totalAccountDebtShares = vaultState.totalSecondaryDebtShares![index]!;
-
     if (totalfCashBorrowed.isZero()) {
-      return totalAccountDebtShares.copy(secondaryfCashBorrowed.n);
+      return totalAccountDebtShares.copy(secondaryfCashBorrowed.neg().n);
     }
     return totalAccountDebtShares.scale(secondaryfCashBorrowed, totalfCashBorrowed);
   }
@@ -223,14 +234,26 @@ export default class VaultAccount {
     );
 
     let totalAccountValue = this.primaryBorrowfCash;
-    if (vault.secondaryBorrowCurrencies) {
-      const [debtOwedOne, debtOwedTwo] = this.getSecondaryDebtOwed();
+    if (vault.secondaryBorrowCurrencies && this.secondaryBorrowDebtShares) {
+      const [debtSharesOne, debtSharesTwo] = this.secondaryBorrowDebtShares;
       const [totalDebtOne, totalDebtTwo] = vaultState.settlementSecondaryBorrowfCashSnapshot!;
+      const [totalDebtSharesOne, totalDebtSharesTwo] = vaultState.totalSecondaryDebtShares!;
 
-      if (debtOwedOne) totalAccountValue = totalAccountValue.sub(debtOwedOne);
-      if (debtOwedTwo) totalAccountValue = totalAccountValue.sub(debtOwedTwo);
-      if (totalDebtOne) totalVaultShareValueAtSettlement = totalVaultShareValueAtSettlement.add(totalDebtOne);
-      if (totalDebtTwo) totalVaultShareValueAtSettlement = totalVaultShareValueAtSettlement.add(totalDebtTwo);
+      if (totalDebtOne) {
+        if (debtSharesOne) {
+          const debtOwedOne = totalDebtOne.scale(debtSharesOne, totalDebtSharesOne!);
+          totalAccountValue = totalAccountValue.sub(debtOwedOne);
+        }
+        totalVaultShareValueAtSettlement = totalVaultShareValueAtSettlement.add(totalDebtOne);
+      }
+
+      if (totalDebtTwo) {
+        if (debtSharesTwo) {
+          const debtOwedTwo = totalDebtTwo.scale(debtSharesTwo, totalDebtSharesTwo!);
+          totalAccountValue = totalAccountValue.sub(debtOwedTwo);
+        }
+        totalVaultShareValueAtSettlement = totalVaultShareValueAtSettlement.add(totalDebtTwo);
+      }
     }
 
     totalAccountValue = totalAccountValue.add(

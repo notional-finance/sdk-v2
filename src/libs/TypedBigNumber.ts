@@ -21,6 +21,7 @@ export enum BigNumberType {
   Currency = 'Currency',
   VaultShare = 'VaultShare',
   StrategyToken = 'StrategyToken',
+  DebtShare = 'DebtShare',
 }
 
 class TypedBigNumber {
@@ -270,7 +271,8 @@ class TypedBigNumber {
       this.type === BigNumberType.nToken ||
       this.type === BigNumberType.Currency ||
       this.type === BigNumberType.VaultShare ||
-      this.type === BigNumberType.StrategyToken
+      this.type === BigNumberType.StrategyToken ||
+      this.type === BigNumberType.DebtShare
     );
   }
 

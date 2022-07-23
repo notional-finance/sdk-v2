@@ -2,7 +2,7 @@ import { BigNumberType, TypedBigNumber } from '../../../src';
 import { SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { System } from '../../../src/system';
 import VaultAccount from '../../../src/vaults/VaultAccount';
-import { MockCrossCurrencyConfig } from '../../mocks/MockCrossCurrencyConfig';
+import { MockCrossCurrencyConfig, MockSecondaryBorrowConfig } from '../../mocks/MockCrossCurrencyConfig';
 import MockSystem from '../../mocks/MockSystem';
 
 describe('Test Vault Account', () => {
@@ -15,7 +15,9 @@ describe('Test Vault Account', () => {
   });
   const maturity = System.getSystem().getCashGroup(2).getMarket(1).maturity;
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
+  const { vault: vault2 } = MockSecondaryBorrowConfig(maturity);
   system.setVault(vault);
+  system.setVault(vault2);
 
   it('copies do not update each other', () => {
     const vaultAccount1 = VaultAccount.emptyVaultAccount(vault.vaultAddress);
@@ -111,6 +113,14 @@ describe('Test Vault Account', () => {
     }).toThrow();
   });
 
+  it('it calculates secondary debt owed properly', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity);
+    vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-1e8, 'ETH', true)]);
+    expect(vaultAccount.getSecondaryDebtOwed()[0]?.toNumber()).toBe(-1e8);
+    expect(vaultAccount.getSecondaryDebtOwed()[0]?.symbol).toBe('ETH');
+    expect(vaultAccount.getSecondaryDebtOwed()[1]).toBeUndefined();
+  });
+
   it('it calculates settlement in a single currency', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
     const vaultSymbol = vaultAccount.vaultSymbol;
@@ -137,6 +147,23 @@ describe('Test Vault Account', () => {
     }).toThrow();
   });
 
-  it('it calculates secondary debt owed properly', () => {});
-  it('it calculates settlement with secondary borrows', () => {});
+  it('it calculates settlement with secondary borrows', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity - SECONDS_IN_QUARTER);
+    const vaultSymbol = vaultAccount.vaultSymbol;
+    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
+    vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-0.01e8, 'ETH', true)]);
+    const { assetCash, strategyTokens } = vaultAccount.settleVaultAccount();
+
+    expect(assetCash.toNumber()).toBe(0);
+    expect(assetCash.symbol).toBe('cDAI');
+    expect(strategyTokens.symbol).toBe(vaultSymbol);
+    expect(strategyTokens.toNumber()).toBe(99e8); // Same as above but -1 DAI for the debt owed in secondary
+    expect(vaultAccount.maturity).toBe(0);
+    expect(vaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
+    expect(vaultAccount.vaultShares.isZero()).toBeTruthy();
+
+    // Can now update to a new maturity
+    vaultAccount.updateMaturity(maturity);
+  });
 });
