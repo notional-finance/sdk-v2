@@ -50,10 +50,12 @@ export default class VaultAccount {
   }
 
   public get vaultSymbol() {
+    // TODO: this needs to get a reference to BaseVault
     return `${this.vaultAddress}:${this.maturity}`;
   }
 
   public getDebtShareSymbol(index: 0 | 1) {
+    // TODO: this needs to get a reference to BaseVault
     const { secondaryBorrowCurrencies } = this.getVault();
     if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow currency');
     if (secondaryBorrowCurrencies[index] !== 0) {

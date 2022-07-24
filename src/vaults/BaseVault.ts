@@ -102,6 +102,21 @@ export default abstract class BaseVault<D, R> {
     return System.getSystem().getVault(this.vaultAddress);
   }
 
+  public getVaultSymbol(maturity: number) {
+    return `${this.vaultAddress}:${maturity}`;
+  }
+
+  public getDebtShareSymbol(index: 0 | 1, maturity: number) {
+    const { secondaryBorrowCurrencies } = this.getVault();
+    if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow currency');
+    if (secondaryBorrowCurrencies[index] !== 0) {
+      const symbol = System.getSystem().getUnderlyingSymbol(secondaryBorrowCurrencies[index]);
+      return `${this.getVaultSymbol(maturity)}:${symbol}`;
+    }
+
+    return undefined;
+  }
+
   public getVaultMarket(maturity: number) {
     const vault = this.getVault();
     const marketIndex = CashGroup.getMarketIndexForMaturity(maturity);

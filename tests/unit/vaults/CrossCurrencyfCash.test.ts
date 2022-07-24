@@ -18,17 +18,31 @@ describe('Cross Currency fCash', () => {
   const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, 3);
   system.setVault(vault);
 
-  it.only('gets strategy token value', () => {
+  it('gets strategy token value', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
     vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol));
-    const value = crossCurrency.getStrategyTokenValue(vault, vault.vaultStates[0], vaultAccount);
+    const value = crossCurrency.getStrategyTokenValue(vaultAccount);
     expect(value.symbol).toBe('DAI');
     expect(value.toNumber()).toBeLessThan(100e8);
     expect(value.toNumber()).toBeGreaterThan(95e8);
   });
 
-  it('gets deposit parameters', () => {});
+  it.only('gets deposit parameters', () => {
+    const depositAmount = TypedBigNumber.fromBalance(100e8, 'DAI', true);
+    const depositParams = crossCurrency.getDepositParameters(
+      maturity,
+      TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      0.0025
+    );
+
+    console.log(depositParams);
+    console.log(depositParams.minPurchaseAmount.toString());
+
+    const slippage = crossCurrency.getSlippageFromDepositParameters(maturity, depositAmount, depositParams);
+    console.log(slippage);
+  });
+
   it('gets redeem parameters', () => {});
   it('calculates total slippage from deposit parameters', () => {});
   it('calculates total slippage from redeem parameters', () => {});

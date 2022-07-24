@@ -45,8 +45,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     return TypedBigNumber.fromBalance(strategyTokens.n, symbol, true);
   }
 
-  private fCashToStrategyTokens(fCash: TypedBigNumber, vaultAddress: string, maturity: number) {
-    return TypedBigNumber.from(fCash.n, BigNumberType.StrategyToken, `${vaultAddress}:${maturity}`);
+  private fCashToStrategyTokens(fCash: TypedBigNumber, maturity: number) {
+    return TypedBigNumber.from(fCash.n, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }
 
   public getStrategyTokenValue(vaultAccount: VaultAccount, blockTime = getNowSeconds()) {
@@ -73,7 +73,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     );
     // get lendRate based on optimalPurchaseAmount, apply slippage buffer
     const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
-      amountOut.toInternalPrecision(),
+      amountOut.toInternalPrecision().neg(),
       blockTime
     );
 
@@ -81,9 +81,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       lendfCash,
       amountOut.toInternalPrecision(),
       maturity,
-      slippageBuffer,
+      -slippageBuffer * RATE_PRECISION,
       blockTime
     );
+    // TODO: is this simpler if we just calculate min strategy tokens?
 
     return {
       depositParams: {
@@ -99,7 +100,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
   public getDepositParameters(
     maturity: number,
     depositAmount: TypedBigNumber,
-    slippageBuffer = 0.05,
+    slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
     const { depositParams } = this._getDepositParameters(maturity, depositAmount, slippageBuffer, blockTime);
@@ -114,7 +115,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
   ) {
     const market = this.getLendMarket(maturity);
     const lendfCash = this.strategyTokensTofCash(strategyTokens);
-    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash, blockTime);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash.neg(), blockTime);
     const { amountOut, minPurchaseAmount, dexId, exchangeData } = TradeHandler.getOutGivenIn(
       this.getVault().primaryBorrowCurrency,
       netCashToAccount.toUnderlying(false),
@@ -218,7 +219,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     );
 
     return {
-      strategyTokens: this.fCashToStrategyTokens(lendfCash, this.vaultAddress, vaultAccount.maturity),
+      strategyTokens: this.fCashToStrategyTokens(lendfCash, vaultAccount.maturity),
       secondaryfCashBorrowed: undefined,
       depositParams,
     };
@@ -301,7 +302,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
 
     const minPurchaseAmount = TradeHandler.applySlippage(amountIn, slippageBuffer).n;
     return {
-      strategyTokens: this.fCashToStrategyTokens(lendfCash.neg(), this.vaultAddress, vaultAccount.maturity),
+      strategyTokens: this.fCashToStrategyTokens(lendfCash.neg(), vaultAccount.maturity),
       secondaryfCashRepaid: undefined,
       redeemParams: {
         minPurchaseAmount,

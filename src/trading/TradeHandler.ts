@@ -27,7 +27,7 @@ export default class TradeHandler {
     return {
       amountOut,
       minPurchaseAmount: this.applySlippage(amountOut, -slippageBPS),
-      dexId: 1,
+      dexId: 0,
       exchangeData: '',
     };
   }
@@ -40,7 +40,7 @@ export default class TradeHandler {
     return {
       amountIn,
       requiredAmountIn: this.applySlippage(amountIn, slippageBPS),
-      dexId: 1,
+      dexId: 0,
       exchangeData: '',
     };
   }
