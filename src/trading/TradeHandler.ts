@@ -10,32 +10,36 @@ export default class TradeHandler {
   public static getIdealOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber) {
     this._checkAmount(amountIn);
     if (outCurrencyId === amountIn.currencyId) throw Error('Matching currencies');
-    return amountIn.toInternalPrecision().toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
+    return amountIn.toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
   }
 
   public static getIdealInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber) {
     this._checkAmount(amountOut);
     if (inCurrencyId === amountOut.currencyId) throw Error('Matching currencies');
-    return amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
+    return amountOut.toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
   }
 
-  public static getOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber) {
+  public static getOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber, slippageBPS = 0) {
     this._checkAmount(amountIn);
     if (outCurrencyId === amountIn.currencyId) throw Error('Matching currencies');
+    const amountOut = amountIn.toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
 
     return {
-      amountOut: amountIn.toInternalPrecision().toETH(false).fromETH(outCurrencyId, false).toExternalPrecision(),
+      amountOut,
+      minPurchaseAmount: this.applySlippage(amountOut, -slippageBPS),
       dexId: 1,
       exchangeData: '',
     };
   }
 
-  public static getInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber) {
+  public static getInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber, slippageBPS = 0) {
     this._checkAmount(amountOut);
     if (inCurrencyId === amountOut.currencyId) throw Error('Matching currencies');
+    const amountIn = amountOut.toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
 
     return {
-      amountIn: amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision(),
+      amountIn,
+      requiredAmountIn: this.applySlippage(amountIn, slippageBPS),
       dexId: 1,
       exchangeData: '',
     };
@@ -43,6 +47,6 @@ export default class TradeHandler {
 
   public static applySlippage(amount: TypedBigNumber, slippageBPS: number) {
     this._checkAmount(amount);
-    return amount.scale(Math.floor(slippageBPS * RATE_PRECISION), RATE_PRECISION);
+    return amount.add(amount.scale(Math.floor(slippageBPS * RATE_PRECISION), RATE_PRECISION));
   }
 }

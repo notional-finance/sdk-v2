@@ -1,5 +1,5 @@
 import { RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
-import { SecondaryBorrowArray, VaultConfig, VaultState } from '../data';
+import { SecondaryBorrowArray } from '../data';
 import TypedBigNumber from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import { System, CashGroup } from '../system';
@@ -14,50 +14,46 @@ export default abstract class BaseVault<D, R> {
   //   vaultAccount: VaultAccount
   // ): Record<string, TypedBigNumber>;
 
-  public abstract getStrategyTokenValue(
-    vault: VaultConfig,
-    vaultState: VaultState,
-    vaultAccount: VaultAccount
-  ): TypedBigNumber;
+  // public abstract getReturnDrivers(
+  //   vault: VaultConfig,
+  //   vaultState: VaultState,
+  //   vaultAccount: VaultAccount
+  // ): Record<string, TypedBigNumber>;
+
+  public abstract getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber;
 
   public abstract getDepositParameters(
-    vault: VaultConfig,
-    vaultState: VaultState,
+    maturity: number,
     depositAmount: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
   ): D;
 
   public abstract getSlippageFromDepositParameters(
-    vault: VaultConfig,
-    vaultState: VaultState,
+    maturity: number,
     depositAmount: TypedBigNumber,
     params: D,
     blockTime?: number
   ): number;
 
   public abstract getRedeemParameters(
-    vault: VaultConfig,
-    vaultState: VaultState,
+    maturity: number,
     strategyTokens: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
   ): R;
 
   public abstract getSlippageFromRedeemParameters(
-    vault: VaultConfig,
-    vaultState: VaultState,
+    maturity: number,
     strategyTokens: TypedBigNumber,
     params: R,
     blockTime?: number
   ): number;
 
   public abstract getDepositGivenStrategyTokens(
-    vault: VaultConfig,
-    vaultState: VaultState,
     vaultAccount: VaultAccount,
     strategyTokens: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ): {
     requiredDeposit: TypedBigNumber;
@@ -66,11 +62,9 @@ export default abstract class BaseVault<D, R> {
   };
 
   public abstract getStrategyTokensGivenDeposit(
-    vault: VaultConfig,
-    vaultState: VaultState,
     vaultAccount: VaultAccount,
     depositAmount: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ): {
     strategyTokens: TypedBigNumber;
@@ -79,11 +73,9 @@ export default abstract class BaseVault<D, R> {
   };
 
   public abstract getRedeemGivenStrategyTokens(
-    vault: VaultConfig,
-    vaultState: VaultState,
     vaultAccount: VaultAccount,
     strategyTokens: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ): {
     amountRedeemed: TypedBigNumber;
@@ -92,11 +84,9 @@ export default abstract class BaseVault<D, R> {
   };
 
   public abstract getStrategyTokensGivenRedeem(
-    vault: VaultConfig,
-    vaultState: VaultState,
     vaultAccount: VaultAccount,
     redeemAmount: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime?: number
   ): {
     strategyTokens: TypedBigNumber;
@@ -138,11 +128,7 @@ export default abstract class BaseVault<D, R> {
 
   public getCashValueOfShares(vaultAccount: VaultAccount) {
     const { assetCash } = vaultAccount.getPoolShare();
-    const underlyingStrategyTokenValue = this.getStrategyTokenValue(
-      this.getVault(),
-      this.getVaultState(vaultAccount.maturity),
-      vaultAccount
-    );
+    const underlyingStrategyTokenValue = this.getStrategyTokenValue(vaultAccount);
 
     return assetCash.add(underlyingStrategyTokenValue.toAssetCash());
   }
@@ -182,10 +168,9 @@ export default abstract class BaseVault<D, R> {
     maturity: number,
     cashToBorrow: TypedBigNumber,
     depositAmount: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
-    const vault = this.getVault();
     const vaultState = this.getVaultState(maturity);
     if (vaultState.isSettled || vaultState.totalAssetCash.isPositive()) {
       throw Error('Cannot enter vault');
@@ -205,11 +190,9 @@ export default abstract class BaseVault<D, R> {
     if (newVaultAccount.maturity !== maturity) throw Error('Cannot Enter, Invalid Maturity');
 
     const { strategyTokens, secondaryfCashBorrowed, depositParams } = this.getStrategyTokensGivenDeposit(
-      vault,
-      vaultState,
       newVaultAccount,
       totalCashDeposit,
-      totalSlippage,
+      slippageBuffer,
       blockTime
     );
     if (!this.checkBorrowCapacity(fCashToBorrow.neg())) throw Error('Exceeds max primary borrow capacity');
@@ -233,19 +216,16 @@ export default abstract class BaseVault<D, R> {
     };
   }
 
-  public simulateExitPostMaturity(vaultAccount: VaultAccount, totalSlippage: number, blockTime = getNowSeconds()) {
-    const vault = this.getVault();
+  public simulateExitPostMaturity(vaultAccount: VaultAccount, slippageBuffer: number, blockTime = getNowSeconds()) {
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (!vaultState.isSettled) throw Error('Cannot exit, not settled');
     const newVaultAccount = VaultAccount.copy(vaultAccount);
 
     const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
     const { amountRedeemed, redeemParams } = this.getRedeemGivenStrategyTokens(
-      vault,
-      vaultState,
       newVaultAccount,
       strategyTokens,
-      totalSlippage,
+      slippageBuffer,
       blockTime
     );
 
@@ -258,10 +238,9 @@ export default abstract class BaseVault<D, R> {
   public simulateExitPreMaturity(
     vaultAccount: VaultAccount,
     fCashToLend: TypedBigNumber,
-    totalSlippage: number,
+    slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
-    const vault = this.getVault();
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Exit, in Settlement');
     const vaultMarket = this.getVaultMarket(vaultAccount.maturity);
@@ -270,11 +249,9 @@ export default abstract class BaseVault<D, R> {
     const newVaultAccount = VaultAccount.copy(vaultAccount);
     const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(fCashToLend, blockTime);
     const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
-      vault,
-      vaultState,
       newVaultAccount,
       costToLend,
-      totalSlippage,
+      slippageBuffer,
       blockTime
     );
 
@@ -294,7 +271,7 @@ export default abstract class BaseVault<D, R> {
   public simulateRollPosition(
     vaultAccount: VaultAccount,
     newMaturity: number,
-    totalSlippage: number,
+    slippageBuffer: number,
     additionalCashToBorrow: TypedBigNumber,
     blockTime = getNowSeconds()
   ) {
@@ -321,10 +298,9 @@ export default abstract class BaseVault<D, R> {
     const assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
     // TODO: need to have some default set of values here...
     let depositParams = this.getDepositParameters(
-      vault,
-      vaultState,
+      newMaturity,
       TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
-      totalSlippage
+      slippageBuffer
     );
 
     if (additionalCashToBorrow.isPositive()) {
@@ -336,14 +312,7 @@ export default abstract class BaseVault<D, R> {
         strategyTokens,
         secondaryfCashBorrowed,
         depositParams: _depositParams,
-      } = this.getStrategyTokensGivenDeposit(
-        vault,
-        vaultState,
-        newVaultAccount,
-        additionalCashToBorrow,
-        totalSlippage,
-        blockTime
-      );
+      } = this.getStrategyTokensGivenDeposit(newVaultAccount, additionalCashToBorrow, slippageBuffer, blockTime);
 
       // TODO: does this always work?
       depositParams = _depositParams;
