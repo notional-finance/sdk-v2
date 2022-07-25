@@ -190,5 +190,5 @@ message SystemData {
     map<int32, nToken> nTokenData = 9;
     map<int32, CashGroup> cashGroups = 10;
     // key = vault address
-    map<string, VaultConfig> vaultConfig = 11;
+    map<string, VaultConfig> vaults = 11;
 }

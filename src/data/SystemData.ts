@@ -93,6 +93,13 @@ export async function fetchAndEncodeSystem(
       }
       return ret;
     }, {}),
+    vaults: config.reduce((obj, c) => {
+      const ret = obj;
+      c.strategyVaults.forEach((v) => {
+        ret[v.vaultAddress] = v;
+      });
+      return ret;
+    }, {}),
   };
 
   const binary = encodeSystemData(systemObject);

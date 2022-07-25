@@ -2189,7 +2189,8 @@ function _decodeVaultState(bb: ByteBuffer): VaultState {
       // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
       case 15: {
         let limit = pushTemporaryLength(bb);
-        let values = message.settlementSecondaryBorrowfCashSnapshot || (message.settlementSecondaryBorrowfCashSnapshot = []);
+        let values =
+          message.settlementSecondaryBorrowfCashSnapshot || (message.settlementSecondaryBorrowfCashSnapshot = []);
         values.push(_decodeSerializedTypedBigNumber(bb));
         bb.limit = limit;
         break;
@@ -2643,7 +2644,7 @@ export interface SystemData {
   assetRateData?: { [key: number]: AssetRate };
   nTokenData?: { [key: number]: nToken };
   cashGroups?: { [key: number]: CashGroup };
-  vaultConfig?: { [key: string]: VaultConfig };
+  vaults?: { [key: string]: VaultConfig };
 }
 
 export function encodeSystemData(message: SystemData): Uint8Array {
@@ -2811,12 +2812,12 @@ function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
     }
   }
 
-  // optional map<string, VaultConfig> vaultConfig = 11;
-  let map$vaultConfig = message.vaultConfig;
-  if (map$vaultConfig !== undefined) {
-    for (let key in map$vaultConfig) {
+  // optional map<string, VaultConfig> vaults = 11;
+  let map$vaults = message.vaults;
+  if (map$vaults !== undefined) {
+    for (let key in map$vaults) {
       let nested = popByteBuffer();
-      let value = map$vaultConfig[key];
+      let value = map$vaults[key];
       writeVarint32(nested, 10);
       writeString(nested, key);
       writeVarint32(nested, 18);
@@ -2890,8 +2891,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: USDExchangeRates");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: USDExchangeRates');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2930,8 +2930,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: currencies");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: currencies');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2962,8 +2961,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: ethRateData");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: ethRateData');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2994,8 +2992,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: assetRateData");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: assetRateData');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -3026,8 +3023,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: nTokenData");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: nTokenData');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -3058,16 +3054,15 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: cashGroups");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: cashGroups');
         values[key] = value;
         bb.limit = outerLimit;
         break;
       }
 
-      // optional map<string, VaultConfig> vaultConfig = 11;
+      // optional map<string, VaultConfig> vaults = 11;
       case 11: {
-        let values = message.vaultConfig || (message.vaultConfig = {});
+        let values = message.vaults || (message.vaults = {});
         let outerLimit = pushTemporaryLength(bb);
         let key: string | undefined;
         let value: VaultConfig | undefined;
@@ -3090,8 +3085,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: vaultConfig");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: vaults');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -3126,11 +3120,20 @@ function pushTemporaryLength(bb: ByteBuffer): number {
 
 function skipUnknownField(bb: ByteBuffer, type: number): void {
   switch (type) {
-    case 0: while (readByte(bb) & 0x80) { } break;
-    case 2: skip(bb, readVarint32(bb)); break;
-    case 5: skip(bb, 4); break;
-    case 1: skip(bb, 8); break;
-    default: throw new Error("Unimplemented type: " + type);
+    case 0:
+      while (readByte(bb) & 0x80) {}
+      break;
+    case 2:
+      skip(bb, readVarint32(bb));
+      break;
+    case 5:
+      skip(bb, 4);
+      break;
+    case 1:
+      skip(bb, 8);
+      break;
+    default:
+      throw new Error('Unimplemented type: ' + type);
   }
 }
 
@@ -3145,11 +3148,7 @@ function stringToLong(value: string): Long {
 function longToString(value: Long): string {
   let low = value.low;
   let high = value.high;
-  return String.fromCharCode(
-    low & 0xFFFF,
-    low >>> 16,
-    high & 0xFFFF,
-    high >>> 16);
+  return String.fromCharCode(low & 0xffff, low >>> 16, high & 0xffff, high >>> 16);
 }
 
 // The code below was modified from https://github.com/protobufjs/bytebuffer.js
@@ -3249,7 +3248,11 @@ function readString(bb: ByteBuffer, count: number): string {
   let text = '';
 
   for (let i = 0; i < count; i++) {
-    let c1 = bytes[i + offset], c2: number, c3: number, c4: number, c: number;
+    let c1 = bytes[i + offset],
+      c2: number,
+      c3: number,
+      c4: number,
+      c: number;
 
     // 1 byte
     if ((c1 & 0x80) === 0) {
@@ -3257,13 +3260,13 @@ function readString(bb: ByteBuffer, count: number): string {
     }
 
     // 2 bytes
-    else if ((c1 & 0xE0) === 0xC0) {
+    else if ((c1 & 0xe0) === 0xc0) {
       if (i + 1 >= count) text += invalid;
       else {
         c2 = bytes[i + offset + 1];
-        if ((c2 & 0xC0) !== 0x80) text += invalid;
+        if ((c2 & 0xc0) !== 0x80) text += invalid;
         else {
-          c = ((c1 & 0x1F) << 6) | (c2 & 0x3F);
+          c = ((c1 & 0x1f) << 6) | (c2 & 0x3f);
           if (c < 0x80) text += invalid;
           else {
             text += fromCharCode(c);
@@ -3274,15 +3277,15 @@ function readString(bb: ByteBuffer, count: number): string {
     }
 
     // 3 bytes
-    else if ((c1 & 0xF0) == 0xE0) {
+    else if ((c1 & 0xf0) == 0xe0) {
       if (i + 2 >= count) text += invalid;
       else {
         c2 = bytes[i + offset + 1];
         c3 = bytes[i + offset + 2];
-        if (((c2 | (c3 << 8)) & 0xC0C0) !== 0x8080) text += invalid;
+        if (((c2 | (c3 << 8)) & 0xc0c0) !== 0x8080) text += invalid;
         else {
-          c = ((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
-          if (c < 0x0800 || (c >= 0xD800 && c <= 0xDFFF)) text += invalid;
+          c = ((c1 & 0x0f) << 12) | ((c2 & 0x3f) << 6) | (c3 & 0x3f);
+          if (c < 0x0800 || (c >= 0xd800 && c <= 0xdfff)) text += invalid;
           else {
             text += fromCharCode(c);
             i += 2;
@@ -3292,26 +3295,24 @@ function readString(bb: ByteBuffer, count: number): string {
     }
 
     // 4 bytes
-    else if ((c1 & 0xF8) == 0xF0) {
+    else if ((c1 & 0xf8) == 0xf0) {
       if (i + 3 >= count) text += invalid;
       else {
         c2 = bytes[i + offset + 1];
         c3 = bytes[i + offset + 2];
         c4 = bytes[i + offset + 3];
-        if (((c2 | (c3 << 8) | (c4 << 16)) & 0xC0C0C0) !== 0x808080) text += invalid;
+        if (((c2 | (c3 << 8) | (c4 << 16)) & 0xc0c0c0) !== 0x808080) text += invalid;
         else {
-          c = ((c1 & 0x07) << 0x12) | ((c2 & 0x3F) << 0x0C) | ((c3 & 0x3F) << 0x06) | (c4 & 0x3F);
-          if (c < 0x10000 || c > 0x10FFFF) text += invalid;
+          c = ((c1 & 0x07) << 0x12) | ((c2 & 0x3f) << 0x0c) | ((c3 & 0x3f) << 0x06) | (c4 & 0x3f);
+          if (c < 0x10000 || c > 0x10ffff) text += invalid;
           else {
             c -= 0x10000;
-            text += fromCharCode((c >> 10) + 0xD800, (c & 0x3FF) + 0xDC00);
+            text += fromCharCode((c >> 10) + 0xd800, (c & 0x3ff) + 0xdc00);
             i += 3;
           }
         }
       }
-    }
-
-    else text += invalid;
+    } else text += invalid;
   }
 
   return text;
@@ -3325,8 +3326,8 @@ function writeString(bb: ByteBuffer, text: string): void {
   // Write the byte count first
   for (let i = 0; i < n; i++) {
     let c = text.charCodeAt(i);
-    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < n) {
-      c = (c << 10) + text.charCodeAt(++i) - 0x35FDC00;
+    if (c >= 0xd800 && c <= 0xdbff && i + 1 < n) {
+      c = (c << 10) + text.charCodeAt(++i) - 0x35fdc00;
     }
     byteCount += c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
   }
@@ -3338,24 +3339,24 @@ function writeString(bb: ByteBuffer, text: string): void {
   // Then write the bytes
   for (let i = 0; i < n; i++) {
     let c = text.charCodeAt(i);
-    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < n) {
-      c = (c << 10) + text.charCodeAt(++i) - 0x35FDC00;
+    if (c >= 0xd800 && c <= 0xdbff && i + 1 < n) {
+      c = (c << 10) + text.charCodeAt(++i) - 0x35fdc00;
     }
     if (c < 0x80) {
       bytes[offset++] = c;
     } else {
       if (c < 0x800) {
-        bytes[offset++] = ((c >> 6) & 0x1F) | 0xC0;
+        bytes[offset++] = ((c >> 6) & 0x1f) | 0xc0;
       } else {
         if (c < 0x10000) {
-          bytes[offset++] = ((c >> 12) & 0x0F) | 0xE0;
+          bytes[offset++] = ((c >> 12) & 0x0f) | 0xe0;
         } else {
-          bytes[offset++] = ((c >> 18) & 0x07) | 0xF0;
-          bytes[offset++] = ((c >> 12) & 0x3F) | 0x80;
+          bytes[offset++] = ((c >> 18) & 0x07) | 0xf0;
+          bytes[offset++] = ((c >> 12) & 0x3f) | 0x80;
         }
-        bytes[offset++] = ((c >> 6) & 0x3F) | 0x80;
+        bytes[offset++] = ((c >> 6) & 0x3f) | 0x80;
       }
-      bytes[offset++] = (c & 0x3F) | 0x80;
+      bytes[offset++] = (c & 0x3f) | 0x80;
     }
   }
 }
@@ -3439,12 +3440,7 @@ function writeDouble(bb: ByteBuffer, value: number): void {
 function readInt32(bb: ByteBuffer): number {
   let offset = advance(bb, 4);
   let bytes = bb.bytes;
-  return (
-    bytes[offset] |
-    (bytes[offset + 1] << 8) |
-    (bytes[offset + 2] << 16) |
-    (bytes[offset + 3] << 24)
-  );
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
 }
 
 function writeInt32(bb: ByteBuffer, value: number): void {
@@ -3475,7 +3471,7 @@ function readVarint32(bb: ByteBuffer): number {
   let b: number;
   do {
     b = readByte(bb);
-    if (c < 32) value |= (b & 0x7F) << c;
+    if (c < 32) value |= (b & 0x7f) << c;
     c += 7;
   } while (b & 0x80);
   return value;
@@ -3496,18 +3492,35 @@ function readVarint64(bb: ByteBuffer, unsigned: boolean): Long {
   let part2 = 0;
   let b: number;
 
-  b = readByte(bb); part0 = (b & 0x7F); if (b & 0x80) {
-    b = readByte(bb); part0 |= (b & 0x7F) << 7; if (b & 0x80) {
-      b = readByte(bb); part0 |= (b & 0x7F) << 14; if (b & 0x80) {
-        b = readByte(bb); part0 |= (b & 0x7F) << 21; if (b & 0x80) {
-
-          b = readByte(bb); part1 = (b & 0x7F); if (b & 0x80) {
-            b = readByte(bb); part1 |= (b & 0x7F) << 7; if (b & 0x80) {
-              b = readByte(bb); part1 |= (b & 0x7F) << 14; if (b & 0x80) {
-                b = readByte(bb); part1 |= (b & 0x7F) << 21; if (b & 0x80) {
-
-                  b = readByte(bb); part2 = (b & 0x7F); if (b & 0x80) {
-                    b = readByte(bb); part2 |= (b & 0x7F) << 7;
+  b = readByte(bb);
+  part0 = b & 0x7f;
+  if (b & 0x80) {
+    b = readByte(bb);
+    part0 |= (b & 0x7f) << 7;
+    if (b & 0x80) {
+      b = readByte(bb);
+      part0 |= (b & 0x7f) << 14;
+      if (b & 0x80) {
+        b = readByte(bb);
+        part0 |= (b & 0x7f) << 21;
+        if (b & 0x80) {
+          b = readByte(bb);
+          part1 = b & 0x7f;
+          if (b & 0x80) {
+            b = readByte(bb);
+            part1 |= (b & 0x7f) << 7;
+            if (b & 0x80) {
+              b = readByte(bb);
+              part1 |= (b & 0x7f) << 14;
+              if (b & 0x80) {
+                b = readByte(bb);
+                part1 |= (b & 0x7f) << 21;
+                if (b & 0x80) {
+                  b = readByte(bb);
+                  part2 = b & 0x7f;
+                  if (b & 0x80) {
+                    b = readByte(bb);
+                    part2 |= (b & 0x7f) << 7;
                   }
                 }
               }
@@ -3532,30 +3545,50 @@ function writeVarint64(bb: ByteBuffer, value: Long): void {
 
   // ref: src/google/protobuf/io/coded_stream.cc
   let size =
-    part2 === 0 ?
-      part1 === 0 ?
-        part0 < 1 << 14 ?
-          part0 < 1 << 7 ? 1 : 2 :
-          part0 < 1 << 21 ? 3 : 4 :
-        part1 < 1 << 14 ?
-          part1 < 1 << 7 ? 5 : 6 :
-          part1 < 1 << 21 ? 7 : 8 :
-      part2 < 1 << 7 ? 9 : 10;
+    part2 === 0
+      ? part1 === 0
+        ? part0 < 1 << 14
+          ? part0 < 1 << 7
+            ? 1
+            : 2
+          : part0 < 1 << 21
+          ? 3
+          : 4
+        : part1 < 1 << 14
+        ? part1 < 1 << 7
+          ? 5
+          : 6
+        : part1 < 1 << 21
+        ? 7
+        : 8
+      : part2 < 1 << 7
+      ? 9
+      : 10;
 
   let offset = grow(bb, size);
   let bytes = bb.bytes;
 
   switch (size) {
-    case 10: bytes[offset + 9] = (part2 >>> 7) & 0x01;
-    case 9: bytes[offset + 8] = size !== 9 ? part2 | 0x80 : part2 & 0x7F;
-    case 8: bytes[offset + 7] = size !== 8 ? (part1 >>> 21) | 0x80 : (part1 >>> 21) & 0x7F;
-    case 7: bytes[offset + 6] = size !== 7 ? (part1 >>> 14) | 0x80 : (part1 >>> 14) & 0x7F;
-    case 6: bytes[offset + 5] = size !== 6 ? (part1 >>> 7) | 0x80 : (part1 >>> 7) & 0x7F;
-    case 5: bytes[offset + 4] = size !== 5 ? part1 | 0x80 : part1 & 0x7F;
-    case 4: bytes[offset + 3] = size !== 4 ? (part0 >>> 21) | 0x80 : (part0 >>> 21) & 0x7F;
-    case 3: bytes[offset + 2] = size !== 3 ? (part0 >>> 14) | 0x80 : (part0 >>> 14) & 0x7F;
-    case 2: bytes[offset + 1] = size !== 2 ? (part0 >>> 7) | 0x80 : (part0 >>> 7) & 0x7F;
-    case 1: bytes[offset] = size !== 1 ? part0 | 0x80 : part0 & 0x7F;
+    case 10:
+      bytes[offset + 9] = (part2 >>> 7) & 0x01;
+    case 9:
+      bytes[offset + 8] = size !== 9 ? part2 | 0x80 : part2 & 0x7f;
+    case 8:
+      bytes[offset + 7] = size !== 8 ? (part1 >>> 21) | 0x80 : (part1 >>> 21) & 0x7f;
+    case 7:
+      bytes[offset + 6] = size !== 7 ? (part1 >>> 14) | 0x80 : (part1 >>> 14) & 0x7f;
+    case 6:
+      bytes[offset + 5] = size !== 6 ? (part1 >>> 7) | 0x80 : (part1 >>> 7) & 0x7f;
+    case 5:
+      bytes[offset + 4] = size !== 5 ? part1 | 0x80 : part1 & 0x7f;
+    case 4:
+      bytes[offset + 3] = size !== 4 ? (part0 >>> 21) | 0x80 : (part0 >>> 21) & 0x7f;
+    case 3:
+      bytes[offset + 2] = size !== 3 ? (part0 >>> 14) | 0x80 : (part0 >>> 14) & 0x7f;
+    case 2:
+      bytes[offset + 1] = size !== 2 ? (part0 >>> 7) | 0x80 : (part0 >>> 7) & 0x7f;
+    case 1:
+      bytes[offset] = size !== 1 ? part0 | 0x80 : part0 & 0x7f;
   }
 }
 

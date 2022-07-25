@@ -3,6 +3,7 @@ import { BigNumber } from 'ethers';
 import { TokenType } from '../../libs/types';
 import GraphClient from '../GraphClient';
 import { SerializedContract } from '../encoding/SystemProto';
+import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
 
 const systemConfigurationQuery = gql`
   {
@@ -53,6 +54,61 @@ const systemConfigurationQuery = gql`
         migrationEmissionRate
         finalIntegralTotalSupply
         migrationTime
+      }
+      strategyVaults {
+        id
+        vaultAddress
+        strategy
+        name
+        primaryBorrowCurrency {
+          id
+        }
+        minAccountBorrowSize
+        minCollateralRatioBasisPoints
+        maxDeleverageCollateralRatioBasisPoints
+        feeRateBasisPoints
+        liquidationRatePercent
+        maxBorrowMarketIndex
+        secondaryBorrowCurrencies {
+          id
+        }
+        enabled
+        allowRollPosition
+        onlyVaultEntry
+        onlyVaultExit
+        onlyVaultRoll
+        onlyVaultDeleverage
+        onlyVaultSettle
+        allowsReentrancy
+        vaultCapacity {
+          id
+          maxPrimaryBorrowCapacity
+          maxSecondaryBorrowCapacity
+          totalUsedPrimaryBorrowCapacity
+          totalUsedSecondaryBorrowCapacity
+        }
+        maturities {
+          id
+          lastUpdateBlockNumber
+          maturity
+          totalPrimaryfCashBorrowed
+          totalAssetCash
+          totalVaultShares
+          totalStrategyTokens
+          totalSecondaryfCashBorrowed
+          totalSecondaryDebtShares
+          isSettled
+          settlementTimestamp
+          settlementStrategyTokenValue
+          settlementSecondaryBorrowfCashSnapshot
+          settlementSecondaryBorrowExchangeRate
+          settlementRate {
+            rate
+          }
+          shortfall
+          remainingSettledAssetCash
+          remainingSettledStrategyTokens
+        }
       }
     }
   }
@@ -107,6 +163,57 @@ interface SystemQueryResult {
       finalIntegralTotalSupply: string;
       migrationTime: string;
     } | null;
+    strategyVaults: {
+      id: string;
+      vaultAddress: string;
+      strategy: string;
+      name: string;
+      primaryBorrowCurrency: {
+        id: string;
+      };
+      minAccountBorrowSize: string;
+      minCollateralRatioBasisPoints: number;
+      maxDeleverageCollateralRatioBasisPoints: number;
+      feeRateBasisPoints: number;
+      liquidationRatePercent: number;
+      maxBorrowMarketIndex: number;
+      secondaryBorrowCurrencies: {
+        id: string;
+      }[];
+      enabled: boolean;
+      allowRollPosition: boolean;
+      onlyVaultEntry: boolean;
+      onlyVaultExit: boolean;
+      onlyVaultRoll: boolean;
+      onlyVaultDeleverage: boolean;
+      onlyVaultSettle: boolean;
+      allowsReentrancy: boolean;
+      vaultCapacity: {
+        id: string;
+        maxPrimaryBorrowCapacity: string;
+        totalUsedPrimaryBorrowCapacity: string;
+        maxSecondaryBorrowCapacity: [string, string] | null;
+        totalUsedSecondaryBorrowCapacity: [string, string] | null;
+      };
+      maturities: {
+        id: string;
+        maturity: number;
+        totalPrimaryfCashBorrowed: string;
+        totalAssetCash: string;
+        totalVaultShares: string;
+        totalStrategyTokens: string;
+        totalSecondaryfCashBorrowed: [string, string] | null;
+        totalSecondaryDebtShares: [string, string] | null;
+        isSettled: boolean;
+        settlementTimestamp: number | null;
+        settlementStrategyTokenValue: string | null;
+        settlementSecondaryBorrowfCashSnapshot: [string, string] | null;
+        settlementSecondaryBorrowExchangeRate: [string, string] | null;
+        shortfall: string | null;
+        remainingSettledAssetCash: string | null;
+        remainingSettledStrategyTokens: string | null;
+      }[];
+    }[];
   }[];
 }
 
@@ -159,6 +266,60 @@ export interface CurrencyConfig {
     integralTotalSupply: BigNumber;
     migrationTime: number;
   } | null;
+  strategyVaults: {
+    id: string;
+    vaultAddress: string;
+    strategy: string;
+    name: string;
+    primaryBorrowCurrency: number;
+    minAccountBorrowSize: TypedBigNumber;
+    minCollateralRatioBasisPoints: number;
+    maxDeleverageCollateralRatioBasisPoints: number;
+    feeRateBasisPoints: number;
+    liquidationRatePercent: number;
+    maxBorrowMarketIndex: number;
+    secondaryBorrowCurrencies: [number, number] | undefined;
+    enabled: boolean;
+    allowRollPosition: boolean;
+    onlyVaultEntry: boolean;
+    onlyVaultExit: boolean;
+    onlyVaultRoll: boolean;
+    onlyVaultDeleverage: boolean;
+    onlyVaultSettle: boolean;
+    allowsReentrancy: boolean;
+    maxPrimaryBorrowCapacity: TypedBigNumber;
+    totalUsedPrimaryBorrowCapacity: TypedBigNumber;
+    // maxSecondaryBorrowCapacity: [TypedBigNumber, TypedBigNumber] | null;
+    // totalUsedSecondaryBorrowCapacity: [TypedBigNumber, TypedBigNumber] | null;
+    maturities: {
+      maturity: number;
+      totalPrimaryfCashBorrowed: TypedBigNumber;
+      totalAssetCash: TypedBigNumber;
+      totalVaultShares: TypedBigNumber;
+      totalStrategyTokens: TypedBigNumber;
+      // totalSecondaryfCashBorrowed: [TypedBigNumber, TypedBigNumber] | null;
+      // totalSecondaryDebtShares: [TypedBigNumber, TypedBigNumber] | null;
+      isSettled: boolean;
+      settlementTimestamp: number | undefined;
+      settlementStrategyTokenValue: TypedBigNumber | undefined;
+      // settlementSecondaryBorrowfCashSnapshot: [TypedBigNumber, TypedBigNumber] | null;
+      // settlementSecondaryBorrowExchangeRate: [TypedBigNumber, TypedBigNumber] | null;
+      shortfall: TypedBigNumber | undefined;
+      remainingSettledAssetCash: TypedBigNumber | undefined;
+      remainingSettledStrategyTokens: TypedBigNumber | undefined;
+    }[];
+  }[];
+}
+
+function mapSecondaryBorrowCurrencies(s?: { id: string }[]) {
+  if (!s || s.length === 0) return undefined;
+  if (s.length === 1) return [Number(s[0].id), 0];
+  if (s.length === 2) return [Number(s[0].id), Number(s[1].id)];
+  return undefined;
+}
+
+function underlyingSymbol(c: any): string {
+  return c.underlyingSymbol || c.symbol;
 }
 
 export async function getSystemConfig(graphClient: GraphClient): Promise<CurrencyConfig[]> {
@@ -232,6 +393,60 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
                 },
               }
             : undefined,
+          strategyVaults: c.strategyVaults.map((v) => {
+            const symbol = underlyingSymbol(c);
+            return {
+              ...v,
+              primaryBorrowCurrency: Number(v.primaryBorrowCurrency.id),
+              minAccountBorrowSize: TypedBigNumber.from(
+                v.minAccountBorrowSize,
+                BigNumberType.InternalUnderlying,
+                symbol
+              ),
+              maxPrimaryBorrowCapacity: TypedBigNumber.from(
+                v.vaultCapacity.maxPrimaryBorrowCapacity,
+                BigNumberType.InternalUnderlying,
+                symbol
+              ),
+              totalUsedPrimaryBorrowCapacity: TypedBigNumber.from(
+                v.vaultCapacity.totalUsedPrimaryBorrowCapacity,
+                BigNumberType.InternalUnderlying,
+                symbol
+              ),
+              secondaryBorrowCurrencies: mapSecondaryBorrowCurrencies(v.secondaryBorrowCurrencies),
+              maturities: v.maturities.map((m) => {
+                const assetSymbol = c.symbol;
+                const vaultSymbol = `${v.vaultAddress}:${m.maturity}`;
+                return {
+                  ...m,
+                  totalPrimaryfCashBorrowed: TypedBigNumber.from(
+                    m.totalPrimaryfCashBorrowed,
+                    BigNumberType.InternalUnderlying,
+                    symbol
+                  ),
+                  totalAssetCash: TypedBigNumber.from(m.totalAssetCash, BigNumberType.InternalAsset, assetSymbol),
+                  totalVaultShares: TypedBigNumber.from(m.totalVaultShares, BigNumberType.VaultShare, vaultSymbol),
+                  totalStrategyTokens: TypedBigNumber.from(
+                    m.totalStrategyTokens,
+                    BigNumberType.StrategyToken,
+                    vaultSymbol
+                  ),
+                  settlementStrategyTokenValue: m.settlementStrategyTokenValue
+                    ? TypedBigNumber.from(m.settlementStrategyTokenValue, BigNumberType.InternalUnderlying, symbol)
+                    : undefined,
+                  shortfall: m.shortfall
+                    ? TypedBigNumber.from(m.shortfall, BigNumberType.InternalAsset, assetSymbol)
+                    : undefined,
+                  remainingSettledAssetCash: m.remainingSettledAssetCash
+                    ? TypedBigNumber.from(m.remainingSettledAssetCash, BigNumberType.InternalAsset, assetSymbol)
+                    : undefined,
+                  remainingSettledStrategyTokens: m.remainingSettledStrategyTokens
+                    ? TypedBigNumber.from(m.remainingSettledStrategyTokens, BigNumberType.StrategyToken, vaultSymbol)
+                    : undefined,
+                };
+              }),
+            };
+          }),
         } as CurrencyConfig)
     );
 }
