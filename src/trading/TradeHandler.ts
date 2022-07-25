@@ -10,13 +10,13 @@ export default class TradeHandler {
   public static getIdealOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber) {
     this._checkAmount(amountIn);
     if (outCurrencyId === amountIn.currencyId) throw Error('Matching currencies');
-    return amountIn.toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
+    return amountIn.toInternalPrecision().toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
   }
 
   public static getIdealInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber) {
     this._checkAmount(amountOut);
     if (inCurrencyId === amountOut.currencyId) throw Error('Matching currencies');
-    return amountOut.toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
+    return amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
   }
 
   public static getOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber, slippageBPS = 0) {

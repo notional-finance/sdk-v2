@@ -46,12 +46,13 @@ export default abstract class BaseVault<D, R> {
     blockTime?: number
   ): D;
 
-  public abstract getSlippageFromDepositParameters(
+  public abstract getSlippageForDeposit(
     maturity: number,
     depositAmount: TypedBigNumber,
+    strategyTokens: TypedBigNumber,
     params: D,
     blockTime?: number
-  ): number;
+  ): { likelySlippage: number; worstCaseSlippage: number };
 
   public abstract getRedeemParameters(
     maturity: number,
@@ -60,12 +61,13 @@ export default abstract class BaseVault<D, R> {
     blockTime?: number
   ): R;
 
-  public abstract getSlippageFromRedeemParameters(
+  public abstract getSlippageForRedeem(
     maturity: number,
+    redeemAmount: TypedBigNumber,
     strategyTokens: TypedBigNumber,
     params: R,
     blockTime?: number
-  ): number;
+  ): { likelySlippage: number; worstCaseSlippage: number };
 
   public abstract getDepositGivenStrategyTokens(
     vaultAccount: VaultAccount,
@@ -318,7 +320,7 @@ export default abstract class BaseVault<D, R> {
     newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid);
 
     return {
-      costToLend,
+      costToLend: costToLend.neg(),
       vaultSharesToRedeemAtCost,
       redeemParams,
       newVaultAccount,

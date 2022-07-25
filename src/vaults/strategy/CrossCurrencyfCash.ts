@@ -233,9 +233,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     return redeemParams;
   }
 
-  public getSlippageFromDepositParameters(
+  public getSlippageForDeposit(
     maturity: number,
     depositAmount: TypedBigNumber,
+    strategyTokens: TypedBigNumber,
     params: DepositParams,
     blockTime = getNowSeconds()
   ) {
@@ -249,6 +250,9 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       idealTrade.toInternalPrecision()
     );
 
+    // Likely Slippage Value:
+    const likelyfCash = this.strategyTokensTofCash(strategyTokens);
+
     // Worse Case Value:
     //   getCashFutureValue(minPurchaseAmount @ minLendRate)
     const worstCasefCash = Market.fCashFromExchangeRate(
@@ -257,11 +261,15 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     );
 
     // End to End Slippage = (noSlippage - worstCase) / noSlippage
-    return idealfCash.sub(worstCasefCash).scale(RATE_PRECISION, idealfCash).toNumber();
+    return {
+      likelySlippage: idealfCash.sub(likelyfCash).scale(RATE_PRECISION, idealfCash).toNumber(),
+      worstCaseSlippage: idealfCash.sub(worstCasefCash).scale(RATE_PRECISION, idealfCash).toNumber(),
+    };
   }
 
-  public getSlippageFromRedeemParameters(
+  public getSlippageForRedeem(
     maturity: number,
+    redeemAmount: TypedBigNumber,
     strategyTokens: TypedBigNumber,
     params: RedeemParams,
     blockTime = getNowSeconds()
@@ -280,7 +288,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
 
     // End to End Slippage = (noSlippage - worstCase) / noSlippage
     const minPurchaseAmount = idealTrade.copy(params.minPurchaseAmount);
-    return idealTrade.sub(minPurchaseAmount).scale(RATE_PRECISION, idealTrade).toNumber();
+    return {
+      likelySlippage: idealTrade.sub(redeemAmount.toExternalPrecision()).scale(RATE_PRECISION, idealTrade).toNumber(),
+      worstCaseSlippage: idealTrade.sub(minPurchaseAmount).scale(RATE_PRECISION, idealTrade).toNumber(),
+    };
   }
 
   public getStrategyTokensGivenDeposit(

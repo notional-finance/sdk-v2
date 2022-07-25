@@ -41,20 +41,50 @@ describe('Cross Currency fCash', () => {
   });
 
   it('gets deposit parameters', () => {
-    const depositAmount = TypedBigNumber.fromBalance(100e8, 'DAI', true);
-    const depositParams = crossCurrency.getDepositParameters(
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
+
+    const fCashToBorrow = TypedBigNumber.fromBalance(-10_000e8, 'DAI', true);
+    const { totalCashDeposit, newVaultAccount, depositParams } = crossCurrency.simulateEnter(
+      vaultAccount,
       maturity,
+      fCashToBorrow,
+      TypedBigNumber.fromBalance(25_000e8, 'DAI', true),
+      0.0025
+    );
+    const { strategyTokens } = newVaultAccount.getPoolShare();
+
+    const { likelySlippage, worstCaseSlippage } = crossCurrency.getSlippageForDeposit(
+      maturity,
+      totalCashDeposit,
+      strategyTokens,
+      depositParams
+    );
+    expect(likelySlippage).toBeLessThan(worstCaseSlippage);
+  });
+
+  it('gets redeem parameters', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+    );
+    const { strategyTokens: strategyTokensBefore } = vaultAccount.getPoolShare();
+
+    const { costToLend, newVaultAccount, redeemParams } = crossCurrency.simulateExitPreMaturity(
+      vaultAccount,
       TypedBigNumber.fromBalance(100e8, 'DAI', true),
       0.0025
     );
+    const { strategyTokens: strategyTokensAfter } = newVaultAccount.getPoolShare();
 
-    const slippage = crossCurrency.getSlippageFromDepositParameters(maturity, depositAmount, depositParams);
-    console.log(slippage);
+    const { likelySlippage, worstCaseSlippage } = crossCurrency.getSlippageForRedeem(
+      maturity,
+      costToLend,
+      strategyTokensBefore.sub(strategyTokensAfter),
+      redeemParams
+    );
+    expect(likelySlippage).toBeLessThan(worstCaseSlippage);
   });
-
-  it('gets redeem parameters', () => {});
-  it('calculates total slippage from deposit parameters', () => {});
-  it('calculates total slippage from redeem parameters', () => {});
 
   it('it converts between deposit and strategy tokens', () => {
     const depositAmount = TypedBigNumber.fromBalance(100e8, 'DAI', true);
@@ -179,8 +209,8 @@ describe('Cross Currency fCash', () => {
       0.0025
     );
 
-    expect(costToLend.neg().toNumber()).toBeLessThan(100e8);
-    expect(costToLend.neg().toNumber()).toBeGreaterThan(98.5e8);
+    expect(costToLend.toNumber()).toBeLessThan(100e8);
+    expect(costToLend.toNumber()).toBeGreaterThan(98.5e8);
     expect(vaultSharesToRedeemAtCost.toNumber()).toBeGreaterThan(100e8);
     expect(newVaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
     expect(vaultAccount.vaultShares.sub(newVaultAccount.vaultShares).toExactString()).toBe(
