@@ -4,7 +4,7 @@ import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { System } from '../system';
 
 export default class VaultAccount {
-  public static emptyVaultAccount(vaultAddress: string, maturity: number = 0) {
+  public static emptyVaultAccount(vaultAddress: string, maturity = 0) {
     const vault = System.getSystem().getVault(vaultAddress);
     return new VaultAccount(
       vaultAddress,

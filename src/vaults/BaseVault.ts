@@ -22,6 +22,12 @@ export default abstract class BaseVault<D, R> {
 
   public abstract getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber;
 
+  public abstract getStrategyTokensFromValue(
+    maturity: number,
+    valuation: TypedBigNumber,
+    blockTime?: number
+  ): TypedBigNumber;
+
   public abstract getDepositParameters(
     maturity: number,
     depositAmount: TypedBigNumber,
@@ -376,5 +382,35 @@ export default abstract class BaseVault<D, R> {
       newVaultAccount,
       depositParams,
     };
+  }
+
+  public getfCashBorrowFromLeverageRatio(
+    vaultAccount: VaultAccount,
+    depositAmount: TypedBigNumber,
+    leverageRatio: number,
+    slippageBuffer: number,
+    blockTime = getNowSeconds(),
+    precision = 1000
+  ) {
+    let valuation = depositAmount.scale(leverageRatio, RATE_PRECISION);
+    let actualLeverageRatio = 0;
+    let delta = 0;
+
+    do {
+      const strategyTokens = this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime);
+      // need to run this calculation manually inside here
+      // TODO: we need an estimation of the actual DEX slippage give the initial valuation guess
+      const { requiredDeposit } = this.getDepositGivenStrategyTokens(vaultAccount, strategyTokens, slippageBuffer);
+
+      const fCashRequired = this.getVaultMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
+        // TODO: need to assess fees here and inflate
+        requiredDeposit.sub(depositAmount),
+        blockTime
+      );
+
+      actualLeverageRatio = fCashRequired.scale(RATE_PRECISION, valuation.sub(fCashRequired)).toNumber();
+      delta = actualLeverageRatio - leverageRatio;
+      valuation = depositAmount.scale(leverageRatio + delta / 2, RATE_PRECISION);
+    } while (Math.abs(delta) > precision);
   }
 }

@@ -14,7 +14,7 @@ describe('Cross Currency fCash', () => {
     system.destroy();
     expect(() => System.getSystem()).toThrowError('System not initialized');
   });
-  const maturity = System.getSystem().getCashGroup(2).getMarket(1).maturity;
+  const { maturity } = System.getSystem().getCashGroup(2).getMarket(1);
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
   const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, 3);
   system.setVault(vault);
@@ -27,6 +27,15 @@ describe('Cross Currency fCash', () => {
     expect(value.symbol).toBe('DAI');
     expect(value.toNumber()).toBeLessThan(100e8);
     expect(value.toNumber()).toBeGreaterThan(95e8);
+  });
+
+  it('gets value from strategy token', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
+    vaultAccount.updateMaturity(maturity);
+    vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol));
+    const value = crossCurrency.getStrategyTokenValue(vaultAccount);
+    const strategyTokens = crossCurrency.getStrategyTokensFromValue(maturity, value);
+    expect(strategyTokens.toNumber()).toBeCloseTo(100e8, -3);
   });
 
   it('gets deposit parameters', () => {

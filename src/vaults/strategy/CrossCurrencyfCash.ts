@@ -62,52 +62,24 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     return fCashPV.toETH(false).fromETH(vault.primaryBorrowCurrency, false);
   }
 
-  // public getStrategyTokensFromValue(maturity: number, valuation: TypedBigNumber, blockTime = getNowSeconds()) {
-  //   const vault = this.getVault();
-  //   valuation.check(BigNumberType.InternalAsset, System.getSystem().getUnderlyingSymbol(vault.primaryBorrowCurrency));
-  //   const lendCurrencyPV = valuation.toETH(false).fromETH(this.lendCurrencyId, false);
-  //   const lendCurrencyfCash = Market.fCashFromExchangeRate(
-  //     this.getLendMarket(maturity).marketExchangeRate(blockTime),
-  //     lendCurrencyPV.toInternalPrecision()
-  //   );
+  public getStrategyTokensFromValue(maturity: number, valuation: TypedBigNumber, blockTime = getNowSeconds()) {
+    const vault = this.getVault();
+    valuation.check(
+      BigNumberType.InternalUnderlying,
+      System.getSystem().getUnderlyingSymbol(vault.primaryBorrowCurrency)
+    );
+    const lendCurrencyPV = valuation.toETH(false).fromETH(this.lendCurrencyId, false);
+    const riskAdjustedOracleRate = System.getSystem()
+      .getCashGroup(this.lendCurrencyId)
+      .getRiskAdjustedOracleRate(maturity, false, blockTime);
 
-  //   return this.fCashToStrategyTokens(lendCurrencyfCash, maturity);
-  // }
+    const lendCurrencyfCash = Market.fCashFromExchangeRate(
+      Market.interestToExchangeRate(riskAdjustedOracleRate, blockTime, maturity),
+      lendCurrencyPV.toInternalPrecision()
+    );
 
-  // public getfCashFromLeverageRatio(
-  //   vaultAccount: VaultAccount,
-  //   depositAmount: TypedBigNumber,
-  //   leverageRatio: number,
-  //   slippageBuffer: number,
-  //   blockTime = getNowSeconds(),
-  //   precision = 1000
-  // ) {
-  //   let valuation = depositAmount.scale(leverageRatio, RATE_PRECISION);
-  //   let actualLeverageRatio = 0;
-  //   let delta = 0;
-
-  //   // TODO: this should be in base vault
-  //   do {
-  //     const strategyTokens = this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime);
-  //     // need to run this calculation manually inside here
-  //     // TODO: we need an estimation of the actual DEX slippage give the initial valuation guess
-  //     const { requiredDeposit, depositParams, secondaryfCashBorrowed } = this.getDepositGivenStrategyTokens(
-  //       vaultAccount,
-  //       strategyTokens,
-  //       slippageBuffer
-  //     );
-
-  //     const fCashRequired = this.getVaultMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
-  //       // TODO: need to assess fees here and inflate
-  //       requiredDeposit.sub(depositAmount),
-  //       blockTime
-  //     );
-
-  //     actualLeverageRatio = fCashRequired.scale(RATE_PRECISION, valuation.sub(fCashRequired)).toNumber();
-  //     delta = actualLeverageRatio - leverageRatio;
-  //     valuation = depositAmount.scale(leverageRatio + delta / 2, RATE_PRECISION);
-  //   } while (Math.abs(delta) > precision);
-  // }
+    return this.fCashToStrategyTokens(lendCurrencyfCash, maturity);
+  }
 
   private _getDepositParameters(
     maturity: number,

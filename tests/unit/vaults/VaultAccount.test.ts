@@ -13,7 +13,7 @@ describe('Test Vault Account', () => {
     system.destroy();
     expect(() => System.getSystem()).toThrowError('System not initialized');
   });
-  const maturity = System.getSystem().getCashGroup(2).getMarket(1).maturity;
+  const { maturity } = System.getSystem().getCashGroup(2).getMarket(1);
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
   const { vault: vault2 } = MockSecondaryBorrowConfig(maturity);
   system.setVault(vault);
@@ -138,7 +138,7 @@ describe('Test Vault Account', () => {
 
   it('it calculates settlement in a single currency', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
-    const vaultSymbol = vaultAccount.vaultSymbol;
+    const { vaultSymbol } = vaultAccount;
     vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
     vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
     const { assetCash, strategyTokens } = vaultAccount.settleVaultAccount();
@@ -164,7 +164,7 @@ describe('Test Vault Account', () => {
 
   it('it calculates settlement with secondary borrows', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity - SECONDS_IN_QUARTER);
-    const vaultSymbol = vaultAccount.vaultSymbol;
+    const { vaultSymbol } = vaultAccount;
     vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
     vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
     vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-0.01e8, 'ETH', true)]);
