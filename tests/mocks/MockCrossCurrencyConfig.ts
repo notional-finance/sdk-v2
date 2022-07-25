@@ -22,7 +22,7 @@ export function MockCrossCurrencyConfig(maturity: number) {
     totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(-100_000e8, 'DAI', true),
     totalAssetCash: TypedBigNumber.fromBalance(5_100_000e8, 'cDAI', true),
     totalVaultShares: TypedBigNumber.from(100_000e8, BigNumberType.VaultShare, vaultSymbolSettled),
-    totalStrategyTokens: TypedBigNumber.from(100_000e8, BigNumberType.StrategyToken, vaultSymbolSettled),
+    totalStrategyTokens: TypedBigNumber.from(0, BigNumberType.StrategyToken, vaultSymbolSettled),
     settlementStrategyTokenValue: TypedBigNumber.from(1e8, BigNumberType.StrategyToken, vaultSymbolSettled),
     settlementRate: BigNumber.from('0xA56FA5B99019A5C8000000'),
   } as unknown as VaultState;
@@ -38,7 +38,7 @@ export function MockCrossCurrencyConfig(maturity: number) {
     feeRateBasisPoints: 20 * BASIS_POINT,
     liquidationRatePercent: 104,
     maxBorrowMarketIndex: 2,
-    maxPrimaryBorrowCapacity: TypedBigNumber.fromBalance(100_000e8, 'DAI', true),
+    maxPrimaryBorrowCapacity: TypedBigNumber.fromBalance(10_000e8, 'DAI', true),
     totalUsedPrimaryBorrowCapacity: TypedBigNumber.fromBalance(0, 'DAI', true),
     enabled: true,
     allowRollPosition: false,

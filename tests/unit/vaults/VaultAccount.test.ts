@@ -57,26 +57,41 @@ describe('Test Vault Account', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100, 'DAI', true));
-    expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-100);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-100e8);
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-500, 'DAI', true));
-    expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-600);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-500e8, 'DAI', true));
+    expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-600e8);
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(200, 'DAI', true));
-    expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-400);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(200e8, 'DAI', true));
+    expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-400e8);
 
     expect(() => {
-      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(500, 'DAI', true));
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(500e8, 'DAI', true));
     }).toThrow();
 
     expect(() => {
-      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(100, 'USDC', true));
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(100e8, 'USDC', true));
+    }).toThrow();
+  });
+
+  it('it does not allow primary borrow to be below minimum', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
+    vaultAccount.updateMaturity(maturity);
+
+    expect(() => {
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-99e8, 'DAI', true));
+    }).toThrow();
+
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+
+    expect(() => {
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(1e8, 'DAI', true));
     }).toThrow();
   });
 
   it('it does not allow strategy tokens to be added if there is asset cash', () => {
-    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress);
     vaultAccount.updateMaturity(maturity - SECONDS_IN_QUARTER);
     expect(() => {
       vaultAccount.addStrategyTokens(TypedBigNumber.from(100, BigNumberType.StrategyToken, vaultAccount.vaultSymbol));
@@ -95,12 +110,12 @@ describe('Test Vault Account', () => {
   });
 
   it('it gets pool shares properly', () => {
-    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity - SECONDS_IN_QUARTER);
     vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
 
     const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
-    expect(assetCash.toNumber()).toBe(5100e8);
-    expect(strategyTokens.toNumber()).toBe(100e8);
+    expect(assetCash.toNumber()).toBe(5000e8);
+    expect(strategyTokens.toNumber()).toBe(90e8);
   });
 
   it('it fails on invalid secondary debt', () => {
@@ -131,7 +146,7 @@ describe('Test Vault Account', () => {
     expect(assetCash.toNumber()).toBe(100e8);
     expect(assetCash.symbol).toBe('cDAI');
     expect(strategyTokens.symbol).toBe(vaultSymbol);
-    expect(strategyTokens.toNumber()).toBe(100e8);
+    expect(strategyTokens.toNumber()).toBe(0);
     expect(vaultAccount.maturity).toBe(0);
     expect(vaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
     expect(vaultAccount.vaultShares.isZero()).toBeTruthy();

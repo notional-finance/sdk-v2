@@ -88,15 +88,19 @@ export default class VaultAccount {
 
   public updateVaultShares(netVaultShares: TypedBigNumber) {
     netVaultShares.check(BigNumberType.VaultShare, this.vaultSymbol);
-    this._vaultShares = this.vaultShares.add(netVaultShares);
-    if (this.vaultShares.isNegative()) throw Error('Cannot reduce vault shares negative');
+    const newVaultShares = this.vaultShares.add(netVaultShares);
+    if (newVaultShares.isNegative()) throw Error('Cannot reduce vault shares negative');
+    this._vaultShares = newVaultShares;
   }
 
   public updatePrimaryBorrowfCash(netfCash: TypedBigNumber) {
     const underlyingSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
     netfCash.check(BigNumberType.InternalUnderlying, underlyingSymbol);
-    this._primaryBorrowfCash = this.primaryBorrowfCash.add(netfCash);
-    if (this.primaryBorrowfCash.isPositive()) throw Error('Cannot have positive fCash');
+    const newPrimaryBorrow = this.primaryBorrowfCash.add(netfCash);
+    if (newPrimaryBorrow.isPositive()) throw Error('Cannot have positive fCash');
+    if (newPrimaryBorrow.isNegative() && newPrimaryBorrow.neg().lt(this.getVault().minAccountBorrowSize))
+      throw Error('Below minimum borrow size');
+    this._primaryBorrowfCash = newPrimaryBorrow;
   }
 
   public addStrategyTokens(strategyTokens: TypedBigNumber) {

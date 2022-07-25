@@ -1,6 +1,6 @@
 import { RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
 import { SecondaryBorrowArray } from '../data';
-import TypedBigNumber from '../libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
@@ -198,9 +198,11 @@ export default abstract class BaseVault<D, R> {
 
     if (vaultAccount.canSettle()) {
       const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
-      newVaultAccount.addStrategyTokens(strategyTokens);
-      totalCashDeposit = totalCashDeposit.add(assetCash.toUnderlying());
       newVaultAccount.updateMaturity(maturity);
+      newVaultAccount.addStrategyTokens(
+        TypedBigNumber.from(strategyTokens.n, BigNumberType.StrategyToken, newVaultAccount.vaultSymbol)
+      );
+      totalCashDeposit = totalCashDeposit.add(assetCash.toUnderlying());
     } else if (vaultAccount.maturity === 0) {
       newVaultAccount.updateMaturity(maturity);
     }
@@ -241,15 +243,17 @@ export default abstract class BaseVault<D, R> {
 
     const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
     const { amountRedeemed, redeemParams } = this.getRedeemGivenStrategyTokens(
-      newVaultAccount,
+      // Pass the previous vault account prior to settlement (which clears all the attributes)
+      vaultAccount,
       strategyTokens,
       slippageBuffer,
       blockTime
     );
 
     return {
-      amountRedeemed: amountRedeemed.add(assetCash),
+      amountRedeemed: amountRedeemed.toInternalPrecision().add(assetCash.toUnderlying(true)),
       redeemParams,
+      newVaultAccount,
     };
   }
 
