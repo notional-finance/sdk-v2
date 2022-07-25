@@ -1,11 +1,11 @@
 import { BigNumber } from 'ethers';
 import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
-import BaseVault from '../BaseVault';
+import BaseVault, { LiquidationThreshold, LiquidationThresholdType } from '../BaseVault';
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
 import { getNowSeconds } from '../../libs/utils';
 import TradeHandler from '../../trading/TradeHandler';
-import { RATE_PRECISION } from '../../config/constants';
+import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../config/constants';
 
 interface DepositParams {
   minPurchaseAmount: BigNumber;
@@ -79,6 +79,52 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     );
 
     return this.fCashToStrategyTokens(lendCurrencyfCash, maturity);
+  }
+
+  public getLiquidationThresholds(
+    vaultAccount: VaultAccount,
+    blockTime = getNowSeconds()
+  ): Array<LiquidationThreshold> {
+    const thresholds = new Array<LiquidationThreshold>();
+    const { perShareValue } = this.getLiquidationVaultShareValue(vaultAccount);
+    const lendCurrencySymbol = System.getSystem().getUnderlyingSymbol(this.lendCurrencyId);
+    const riskAdjustedExchangeRate = Market.interestToExchangeRate(
+      System.getSystem()
+        .getCashGroup(this.lendCurrencyId)
+        .getRiskAdjustedOracleRate(vaultAccount.maturity, false, blockTime),
+      blockTime,
+      vaultAccount.maturity
+    );
+
+    thresholds.push({
+      name: 'Exchange Rate',
+      type: LiquidationThresholdType.exchangeRate,
+      rate: 0,
+      ethExchangeRate: perShareValue.scale(riskAdjustedExchangeRate, RATE_PRECISION).toETH(false),
+      debtCurrencyId: this.getVault().primaryBorrowCurrency,
+      collateralCurrencyId: this.lendCurrencyId,
+    });
+
+    const perShareValueInLendCurrency = perShareValue.toETH(false).fromETH(this.lendCurrencyId, false);
+    const liquidationExchangeRate = Market.exchangeRate(
+      TypedBigNumber.from(INTERNAL_TOKEN_PRECISION, BigNumberType.InternalUnderlying, lendCurrencySymbol),
+      perShareValueInLendCurrency
+    );
+
+    const liquidationInterestRate = Market.exchangeToInterestRate(
+      liquidationExchangeRate,
+      blockTime,
+      vaultAccount.maturity
+    );
+
+    thresholds.push({
+      name: 'Interest Rate',
+      type: LiquidationThresholdType.fCashInterestRate,
+      rate: liquidationInterestRate,
+      collateralCurrencyId: this.lendCurrencyId,
+    });
+
+    return thresholds;
   }
 
   private _getDepositParameters(

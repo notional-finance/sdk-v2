@@ -1,10 +1,12 @@
+import { ETHRate } from '../../../lib/data';
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
-import { System } from '../../../src/system';
+import { getNowSeconds } from '../../../src/libs/utils';
+import { Market, System } from '../../../src/system';
 import CrossCurrencyfCash from '../../../src/vaults/strategy/CrossCurrencyfCash';
 import VaultAccount from '../../../src/vaults/VaultAccount';
 import { MockCrossCurrencyConfig } from '../../mocks/MockCrossCurrencyConfig';
-import MockSystem from '../../mocks/MockSystem';
+import MockSystem, { MutableForTesting } from '../../mocks/MockSystem';
 
 describe('Cross Currency fCash', () => {
   const system = new MockSystem();
@@ -129,7 +131,7 @@ describe('Cross Currency fCash', () => {
 
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow.add(vaultAccount.primaryBorrowfCash))).toBeTruthy();
-    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2293);
+    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2343);
     expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.2686);
   });
 
@@ -240,6 +242,36 @@ describe('Cross Currency fCash', () => {
     expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.0);
   });
 
-  it('calculates collateral and leverage ratio for a vault', () => {});
-  it('calculates cash value of shares with asset cash', () => {});
+  it('calculates liquidation thresholds', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
+    const depositAmount = TypedBigNumber.fromBalance(100e8, 'DAI', true);
+    const { fCashToBorrow } = crossCurrency.getfCashBorrowFromLeverageRatio(vaultAccount, depositAmount, 4.7e9, 0.025);
+
+    const { newVaultAccount } = crossCurrency.simulateEnter(
+      vaultAccount,
+      maturity,
+      fCashToBorrow,
+      depositAmount,
+      0.0025
+    );
+
+    const thresholds = crossCurrency.getLiquidationThresholds(newVaultAccount);
+
+    // Simulate exchange rate at liquidation price
+    const ethRateData: MutableForTesting<ETHRate> = system.getETHRate(3);
+    ethRateData.latestRate = thresholds[0].ethExchangeRate!.toExternalPrecision().n;
+    const rateProvider = { getETHRate: () => ethRateData };
+    System.getSystem().setETHRateProvider(3, rateProvider);
+    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2, 4);
+    System.getSystem().setETHRateProvider(3, null);
+
+    const { strategyTokens } = newVaultAccount.getPoolShare();
+    const fCash = TypedBigNumber.fromBalance(strategyTokens.n, 'USDC', true);
+    const { liquidationVaultSharesValue } = crossCurrency.getLiquidationVaultShareValue(newVaultAccount);
+    const fCashPVAtLiquidationRate = Market.cashFromExchangeRate(
+      Market.interestToExchangeRate(thresholds[1].rate!, getNowSeconds(), vaultAccount.maturity),
+      fCash
+    );
+    expect(fCashPVAtLiquidationRate.toNumber()).toBeCloseTo(liquidationVaultSharesValue.toNumber(), -6);
+  });
 });

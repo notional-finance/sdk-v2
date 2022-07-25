@@ -1,24 +1,35 @@
-import { BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
+import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
 import { SecondaryBorrowArray } from '../data';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
 
+export interface ReturnDriver {
+  name: string;
+  key: string;
+  rate: number;
+  absoluteValue: TypedBigNumber;
+}
+
+export enum LiquidationThresholdType {
+  exchangeRate,
+  fCashInterestRate,
+}
+
+export interface LiquidationThreshold {
+  name: string;
+  type: LiquidationThresholdType;
+  rate?: number;
+  ethExchangeRate?: TypedBigNumber;
+  debtCurrencyId?: number;
+  collateralCurrencyId?: number;
+}
+
 export default abstract class BaseVault<D, R> {
   constructor(public vaultAddress: string) {}
 
-  // public abstract getLiquidationPrices(
-  //   vault: VaultConfig,
-  //   vaultState: VaultState,
-  //   vaultAccount: VaultAccount
-  // ): Record<string, TypedBigNumber>;
-
-  // public abstract getReturnDrivers(
-  //   vault: VaultConfig,
-  //   vaultState: VaultState,
-  //   vaultAccount: VaultAccount
-  // ): Record<string, TypedBigNumber>;
+  public abstract getLiquidationThresholds(vaultAccount: VaultAccount, blockTime: number): Array<LiquidationThreshold>;
 
   public abstract getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber;
 
@@ -110,6 +121,25 @@ export default abstract class BaseVault<D, R> {
 
   public getVaultSymbol(maturity: number) {
     return `${this.vaultAddress}:${maturity}`;
+  }
+
+  public getLiquidationVaultShareValue(vaultAccount: VaultAccount) {
+    // Liquidation exchange rate is the exchange rate where the value of the vault shares
+    // is below the minimum required collateral ratio of the borrowed currency
+
+    // minCollateralRatio = (vaultShares - debtOutstanding) / debtOutstanding
+    // minCollateralRatio * debtOutstanding + debtOutstanding = vaultShares
+    // (minCollateralRatio + 1) * debtOutstanding = vaultSharesValue
+    const debtOutstanding = vaultAccount.primaryBorrowfCash.neg();
+    const minCollateralRatio = this.getVault().minCollateralRatioBasisPoints;
+
+    // If the account's vault shares reach this value then they will become eligible for liquidation
+    const liquidationVaultSharesValue = debtOutstanding.scale(minCollateralRatio + RATE_PRECISION, RATE_PRECISION);
+
+    return {
+      liquidationVaultSharesValue,
+      perShareValue: liquidationVaultSharesValue.scale(INTERNAL_TOKEN_PRECISION, vaultAccount.vaultShares),
+    };
   }
 
   public getDebtShareSymbol(index: 0 | 1, maturity: number) {
@@ -419,7 +449,7 @@ export default abstract class BaseVault<D, R> {
 
       depositMultiple = Math.floor(depositMultiple + delta);
       valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
-      iters++;
+      iters += 1;
     } while (iters < 10);
 
     return {
