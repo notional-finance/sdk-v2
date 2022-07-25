@@ -128,7 +128,7 @@ export default abstract class BaseVault<D, R> {
   public getCollateralRatio(vaultAccount: VaultAccount) {
     if (vaultAccount.primaryBorrowfCash.isZero()) return null;
 
-    const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash();
+    const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
     return netAssetValue.scale(RATE_PRECISION, debtOutstanding.n).toNumber();
   }
@@ -136,7 +136,7 @@ export default abstract class BaseVault<D, R> {
   public getLeverageRatio(vaultAccount: VaultAccount) {
     if (vaultAccount.primaryBorrowfCash.isZero()) return null;
 
-    const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash();
+    const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
     return debtOutstanding.scale(RATE_PRECISION, netAssetValue.n).toNumber();
   }
@@ -192,7 +192,7 @@ export default abstract class BaseVault<D, R> {
     }
     const market = this.getVaultMarket(maturity);
     const fCashToBorrow = market.getfCashAmountGivenCashAmount(cashToBorrow, blockTime);
-    const assessedFee = this.assessVaultFees(maturity, fCashToBorrow, blockTime);
+    const assessedFee = this.assessVaultFees(maturity, cashToBorrow, blockTime);
     let totalCashDeposit = cashToBorrow.add(depositAmount).sub(assessedFee);
     const newVaultAccount = VaultAccount.copy(vaultAccount);
 
@@ -200,6 +200,8 @@ export default abstract class BaseVault<D, R> {
       const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
       newVaultAccount.addStrategyTokens(strategyTokens);
       totalCashDeposit = totalCashDeposit.add(assetCash.toUnderlying());
+      newVaultAccount.updateMaturity(maturity);
+    } else if (vaultAccount.maturity === 0) {
       newVaultAccount.updateMaturity(maturity);
     }
     if (newVaultAccount.maturity !== maturity) throw Error('Cannot Enter, Invalid Maturity');
@@ -219,6 +221,7 @@ export default abstract class BaseVault<D, R> {
         throw Error('Exceeds max secondary borrow capacity');
     }
 
+    newVaultAccount.updatePrimaryBorrowfCash(fCashToBorrow);
     newVaultAccount.addStrategyTokens(strategyTokens);
     newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed);
 
@@ -265,7 +268,7 @@ export default abstract class BaseVault<D, R> {
     const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(fCashToLend, blockTime);
     const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
       newVaultAccount,
-      costToLend,
+      costToLend.neg(),
       slippageBuffer,
       blockTime
     );
@@ -291,6 +294,7 @@ export default abstract class BaseVault<D, R> {
     blockTime = getNowSeconds()
   ) {
     const vault = this.getVault();
+    if (!vault.allowRollPosition) throw Error('Cannot roll position in vault');
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Roll, in Settlement');
     const vaultMarket = this.getVaultMarket(vaultAccount.maturity);

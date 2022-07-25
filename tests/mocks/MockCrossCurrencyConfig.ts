@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers';
 import { TypedBigNumber, BigNumberType } from '../../src';
-import { SECONDS_IN_QUARTER } from '../../src/config/constants';
+import { BASIS_POINT, SECONDS_IN_QUARTER } from '../../src/config/constants';
 import { VaultState, VaultConfig } from '../../src/data';
 
 export function MockCrossCurrencyConfig(maturity: number) {
@@ -33,9 +33,9 @@ export function MockCrossCurrencyConfig(maturity: number) {
     name: 'Cross Currency',
     primaryBorrowCurrency: 2,
     minAccountBorrowSize: TypedBigNumber.fromBalance(100e8, 'DAI', true),
-    minCollateralRatioBasisPoints: 2000,
-    maxDeleverageCollateralRatioBasisPoints: 4000,
-    feeRateBasisPoints: 20,
+    minCollateralRatioBasisPoints: 2000 * BASIS_POINT,
+    maxDeleverageCollateralRatioBasisPoints: 4000 * BASIS_POINT,
+    feeRateBasisPoints: 20 * BASIS_POINT,
     liquidationRatePercent: 104,
     maxBorrowMarketIndex: 2,
     maxPrimaryBorrowCapacity: TypedBigNumber.fromBalance(100_000e8, 'DAI', true),

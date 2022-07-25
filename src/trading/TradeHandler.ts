@@ -22,7 +22,7 @@ export default class TradeHandler {
   public static getOutGivenIn(outCurrencyId: number, amountIn: TypedBigNumber, slippageBPS = 0) {
     this._checkAmount(amountIn);
     if (outCurrencyId === amountIn.currencyId) throw Error('Matching currencies');
-    const amountOut = amountIn.toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
+    const amountOut = amountIn.toInternalPrecision().toETH(false).fromETH(outCurrencyId, false).toExternalPrecision();
 
     return {
       amountOut,
@@ -35,7 +35,7 @@ export default class TradeHandler {
   public static getInGivenOut(inCurrencyId: number, amountOut: TypedBigNumber, slippageBPS = 0) {
     this._checkAmount(amountOut);
     if (inCurrencyId === amountOut.currencyId) throw Error('Matching currencies');
-    const amountIn = amountOut.toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
+    const amountIn = amountOut.toInternalPrecision().toETH(false).fromETH(inCurrencyId, false).toExternalPrecision();
 
     return {
       amountIn,

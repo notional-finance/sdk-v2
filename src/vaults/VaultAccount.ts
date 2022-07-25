@@ -75,6 +75,7 @@ export default class VaultAccount {
   }
 
   public canSettle() {
+    if (this.maturity === 0) return false;
     return this.getVaultState().isSettled;
   }
 
