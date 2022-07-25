@@ -1,4 +1,4 @@
-import { RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
+import { BASIS_POINT, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
 import { SecondaryBorrowArray } from '../data';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
@@ -187,7 +187,7 @@ export default abstract class BaseVault<D, R> {
   public simulateEnter(
     vaultAccount: VaultAccount,
     maturity: number,
-    cashToBorrow: TypedBigNumber,
+    fCashToBorrow: TypedBigNumber,
     depositAmount: TypedBigNumber,
     slippageBuffer: number,
     blockTime = getNowSeconds()
@@ -197,7 +197,7 @@ export default abstract class BaseVault<D, R> {
       throw Error('Cannot enter vault');
     }
     const market = this.getVaultMarket(maturity);
-    const fCashToBorrow = market.getfCashAmountGivenCashAmount(cashToBorrow, blockTime);
+    const { netCashToAccount: cashToBorrow } = market.getCashAmountGivenfCashAmount(fCashToBorrow, blockTime);
     const assessedFee = this.assessVaultFees(maturity, cashToBorrow, blockTime);
     let totalCashDeposit = cashToBorrow.add(depositAmount).sub(assessedFee);
     const newVaultAccount = VaultAccount.copy(vaultAccount);
@@ -234,7 +234,6 @@ export default abstract class BaseVault<D, R> {
     newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed);
 
     return {
-      fCashToBorrow,
       assessedFee,
       totalCashDeposit,
       newVaultAccount,
@@ -321,10 +320,9 @@ export default abstract class BaseVault<D, R> {
     const costToLend = netCashToAccount.sub(assetCash);
 
     // Calculate amount to borrow
+    const assessedFee = this.assessVaultFees(newMaturity, costToLend.neg(), blockTime);
     // TODO: buffer this slippage amount
-    let totalfCashToBorrow = newVaultMarket.getfCashAmountGivenCashAmount(costToLend.neg(), blockTime);
-    // TODO: switch this to assess on the cash amount...because it is included in cost to lend
-    const assessedFee = this.assessVaultFees(newMaturity, totalfCashToBorrow, blockTime);
+    let totalfCashToBorrow = newVaultMarket.getfCashAmountGivenCashAmount(costToLend.neg().add(assessedFee), blockTime);
     // TODO: need to have some default set of values here...
     let depositParams = this.getDepositParameters(
       newMaturity,
@@ -390,27 +388,43 @@ export default abstract class BaseVault<D, R> {
     leverageRatio: number,
     slippageBuffer: number,
     blockTime = getNowSeconds(),
-    precision = 1000
+    precision = BASIS_POINT * 50
   ) {
-    let valuation = depositAmount.scale(leverageRatio, RATE_PRECISION);
+    let depositMultiple = leverageRatio;
+    let valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
     let actualLeverageRatio = 0;
     let delta = 0;
+    let fCashToBorrow: TypedBigNumber;
+    let strategyTokens: TypedBigNumber;
+    let iters = 0;
 
     do {
-      const strategyTokens = this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime);
-      // need to run this calculation manually inside here
+      strategyTokens = this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime);
       // TODO: we need an estimation of the actual DEX slippage give the initial valuation guess
       const { requiredDeposit } = this.getDepositGivenStrategyTokens(vaultAccount, strategyTokens, slippageBuffer);
+      const borrowedCash = requiredDeposit.sub(depositAmount);
+      const fees = this.assessVaultFees(vaultAccount.maturity, borrowedCash, blockTime);
 
-      const fCashRequired = this.getVaultMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
-        // TODO: need to assess fees here and inflate
-        requiredDeposit.sub(depositAmount),
+      fCashToBorrow = this.getVaultMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
+        borrowedCash.add(fees),
         blockTime
       );
 
-      actualLeverageRatio = fCashRequired.scale(RATE_PRECISION, valuation.sub(fCashRequired)).toNumber();
-      delta = actualLeverageRatio - leverageRatio;
-      valuation = depositAmount.scale(leverageRatio + delta / 2, RATE_PRECISION);
-    } while (Math.abs(delta) > precision);
+      const debtOutstanding = fCashToBorrow.toAssetCash().neg();
+      actualLeverageRatio = debtOutstanding
+        .scale(RATE_PRECISION, valuation.toAssetCash().sub(debtOutstanding))
+        .toNumber();
+      delta = leverageRatio - actualLeverageRatio;
+      if (Math.abs(delta) < precision) break;
+
+      depositMultiple = Math.floor(depositMultiple + delta);
+      valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
+      iters++;
+    } while (iters < 10);
+
+    return {
+      fCashToBorrow,
+      strategyTokens: this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime),
+    };
   }
 }

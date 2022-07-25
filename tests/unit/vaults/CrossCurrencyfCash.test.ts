@@ -96,19 +96,19 @@ describe('Cross Currency fCash', () => {
   it('simulates entering a vault with empty account', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
 
-    const { fCashToBorrow, assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
+    const fCashToBorrow = TypedBigNumber.fromBalance(-100e8, 'DAI', true);
+    const { assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
       vaultAccount,
       maturity,
-      TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      fCashToBorrow,
       TypedBigNumber.fromBalance(25e8, 'DAI', true),
       0.0025
     );
 
-    expect(totalCashDeposit.add(assessedFee).eq(TypedBigNumber.fromBalance(125e8, 'DAI', true))).toBeTruthy();
-    expect(fCashToBorrow.isNegative()).toBeTruthy();
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow)).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2293);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.3596);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.3257);
   });
 
   it('simulates entering a vault with matching shares', () => {
@@ -118,38 +118,37 @@ describe('Cross Currency fCash', () => {
       TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
     );
 
-    const { fCashToBorrow, assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
+    const fCashToBorrow = TypedBigNumber.fromBalance(-100e8, 'DAI', true);
+    const { assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
       vaultAccount,
       maturity,
-      TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      fCashToBorrow,
       TypedBigNumber.fromBalance(25e8, 'DAI', true),
       0.0025
     );
 
-    expect(totalCashDeposit.add(assessedFee).eq(TypedBigNumber.fromBalance(125e8, 'DAI', true))).toBeTruthy();
-    expect(fCashToBorrow.isNegative()).toBeTruthy();
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow.add(vaultAccount.primaryBorrowfCash))).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2293);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.2834);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.2686);
   });
 
   it('simulates entering a vault with settled shares', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
     vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
     vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
-    const { fCashToBorrow, assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
+    const { assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
       vaultAccount,
       maturity,
-      TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      TypedBigNumber.fromBalance(-100e8, 'DAI', true),
       TypedBigNumber.fromBalance(0, 'DAI', true),
       0.0025
     );
 
     // There is 2e8 asset cash from the settled vault
-    expect(totalCashDeposit.add(assessedFee).eq(TypedBigNumber.fromBalance(102e8, 'DAI', true))).toBeTruthy();
-    expect(fCashToBorrow.isNegative()).toBeTruthy();
-    expect(newVaultAccount.primaryBorrowfCash.toNumber()).toBeCloseTo(-100.628e8, -7);
-    expect(newVaultAccount.vaultShares.toNumber()).toBeCloseTo(102.426e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(101.3764e8, -7);
+    expect(newVaultAccount.primaryBorrowfCash.toNumber()).toBe(-100e8);
+    expect(newVaultAccount.vaultShares.toNumber()).toBeCloseTo(101.799e8, -7);
   });
 
   it('checks borrow capacities do not exceed', () => {
@@ -158,7 +157,7 @@ describe('Cross Currency fCash', () => {
       crossCurrency.simulateEnter(
         vaultAccount,
         maturity,
-        TypedBigNumber.fromBalance(11_000e8, 'DAI', true),
+        TypedBigNumber.fromBalance(-11_000e8, 'DAI', true),
         TypedBigNumber.fromBalance(25e8, 'DAI', true),
         0.0025
       );
@@ -203,7 +202,7 @@ describe('Cross Currency fCash', () => {
     const { newVaultAccount } = crossCurrency.simulateEnter(
       vaultAccount,
       maturity,
-      TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      TypedBigNumber.fromBalance(-100e8, 'DAI', true),
       TypedBigNumber.fromBalance(25e8, 'DAI', true),
       0.0025
     );
@@ -219,16 +218,26 @@ describe('Cross Currency fCash', () => {
   });
 
   it('simulates entering a vault given leverage ratio', () => {
-    // leverage = (debtOutstanding / (valueOfTokens - debtOutstanding))
-    // borrowAmount = deposit * (leverageRatio - 1)
-    // leverage * valueOfTokens - leverage * debtOutstanding = debtOutstanding
-    // leverage * (cashDeposit + borrowedAmount) * slippage - leverage * debtOutstanding = debtOutstanding
-    // leverage * (cashDeposit + debtOutstanding * exchangeRate(debtOutstanding)) * slippage - leverage * debtOutstanding = debtOutstanding
-    // leverage * * slippage * cashDeposit + debtOutstanding * exchangeRate(debtOutstanding)) * slippage - leverage * debtOutstanding = debtOutstanding
-    // leverage * valueOfTokens = debtOutstanding * (leverage + 1)
-    // valueOfTokens = (cashDeposit + borrowedAmount) * slippage
-    // borrowedAmount = debtOutstanding * exchangeRate(debtOutstanding)
-    // (leverage * valueOfTokens) / (leverage + 1) = debtOutstanding
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
+    const depositAmount = TypedBigNumber.fromBalance(25e8, 'DAI', true);
+    const { fCashToBorrow, strategyTokens } = crossCurrency.getfCashBorrowFromLeverageRatio(
+      vaultAccount,
+      depositAmount,
+      5e9,
+      0.025
+    );
+
+    const { newVaultAccount } = crossCurrency.simulateEnter(
+      vaultAccount,
+      maturity,
+      fCashToBorrow,
+      depositAmount,
+      0.0025
+    );
+    const { strategyTokens: finalStrategyTokens } = newVaultAccount.getPoolShare();
+
+    expect(Math.abs(finalStrategyTokens.sub(strategyTokens).toNumber())).toBeLessThan(5000);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.0);
   });
 
   it('calculates collateral and leverage ratio for a vault', () => {});
