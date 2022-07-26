@@ -27,7 +27,9 @@ export interface LiquidationThreshold {
 }
 
 export default abstract class BaseVault<D, R> {
-  constructor(public vaultAddress: string) {}
+  protected constructor(public vaultAddress: string) {}
+
+  public abstract loadVault(vaultAddress: string): Promise<BaseVault<D, R>>;
 
   public abstract getLiquidationThresholds(vaultAccount: VaultAccount, blockTime: number): Array<LiquidationThreshold>;
 

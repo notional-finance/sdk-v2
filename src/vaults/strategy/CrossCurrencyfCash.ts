@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, Contract, utils } from 'ethers';
 import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
 import BaseVault, { LiquidationThreshold, LiquidationThresholdType } from '../BaseVault';
 import VaultAccount from '../VaultAccount';
@@ -21,18 +21,22 @@ interface RedeemParams {
   exchangeData: string;
 }
 
+const crossCurrencyInterface = new utils.Interface(['function LEND_CURRENCY_ID() view returns (uint16)']);
+
 export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams> {
   constructor(vaultAddress: string, private _lendCurrencyId: number) {
     super(vaultAddress);
   }
 
-  public get lendCurrencyId() {
-    return this._lendCurrencyId;
+  public async loadVault(vaultAddress: string) {
+    const provider = System.getSystem().batchProvider;
+    const contract = new Contract(vaultAddress, crossCurrencyInterface, provider);
+    const lendCurrencyId: number = await contract.LEND_CURRENCY_ID();
+    return new CrossCurrencyfCash(vaultAddress, lendCurrencyId);
   }
 
-  public setLendCurrency(lendCurrencyId: number) {
-    // TODO: this needs to get embedded into the cache
-    this._lendCurrencyId = lendCurrencyId;
+  public get lendCurrencyId() {
+    return this._lendCurrencyId;
   }
 
   public getLendMarket(maturity: number) {

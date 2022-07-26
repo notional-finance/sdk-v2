@@ -139,8 +139,8 @@ describe('Cross Currency fCash', () => {
 
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow)).toBeTruthy();
-    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2293);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.3257);
+    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.22, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.32, 1);
   });
 
   it('simulates entering a vault with matching shares', () => {
@@ -161,8 +161,8 @@ describe('Cross Currency fCash', () => {
 
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow.add(vaultAccount.primaryBorrowfCash))).toBeTruthy();
-    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.2343);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.2686);
+    expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.23, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.26, 1);
   });
 
   it('simulates entering a vault with settled shares', () => {
