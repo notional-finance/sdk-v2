@@ -40,19 +40,19 @@ message Asset {
 }
 
 message ETHRate {
-  SerializedContract rateOracle = 1;
-  int32 rateDecimalPlaces = 2;
-  bool mustInvert = 3;
-  int32 buffer = 4;
-  int32 haircut = 5;
-  SerializedBigNumber latestRate = 6;
+    SerializedContract rateOracle = 1;
+    int32 rateDecimalPlaces = 2;
+    bool mustInvert = 3;
+    int32 buffer = 4;
+    int32 haircut = 5;
+    SerializedBigNumber latestRate = 6;
 }
 
 message AssetRate {
-  SerializedContract rateAdapter = 1;
-  int32 underlyingDecimalPlaces = 2;
-  SerializedBigNumber latestRate = 3;
-  SerializedBigNumber annualSupplyRate = 4;
+    SerializedContract rateAdapter = 1;
+    int32 underlyingDecimalPlaces = 2;
+    SerializedBigNumber latestRate = 3;
+    SerializedBigNumber annualSupplyRate = 4;
 }
 
 message nToken {
@@ -118,6 +118,62 @@ message CashGroup {
     repeated Market markets = 9;
 }
 
+message VaultHistoricalValue {
+    int32 timestamp = 1;
+    SerializedTypedBigNumber underlyingValueOfStrategyToken = 2;
+    SerializedBigNumber ethExchangeRate = 3;
+    SerializedBigNumber assetExchangeRate = 4;
+}
+
+message VaultState {
+    int32 maturity = 1;
+    bool isSettled = 2;
+    SerializedTypedBigNumber totalPrimaryfCashBorrowed = 3;
+    SerializedTypedBigNumber totalAssetCash = 4;
+    SerializedTypedBigNumber totalVaultShares = 5;
+    SerializedTypedBigNumber totalStrategyTokens = 6;
+    repeated VaultHistoricalValue historicalValue = 11;
+    // These are optional or nullable
+    SerializedTypedBigNumber settlementStrategyTokenValue = 7;
+    SerializedBigNumber settlementRate = 8;
+    SerializedTypedBigNumber remainingSettledAssetCash = 9;
+    SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
+    SerializedTypedBigNumber shortfall = 11;
+    SerializedTypedBigNumber insolvency = 12;
+    repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
+    repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
+    repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+}
+
+message VaultConfig {
+    string vaultAddress = 1;
+    string strategy = 2;
+    string name = 3;
+    int32 primaryBorrowCurrency = 4;
+    SerializedTypedBigNumber minAccountBorrowSize = 5;
+    int32 minCollateralRatioBasisPoints = 6;
+    int32 maxDeleverageCollateralRatioBasisPoints = 7;
+    int32 feeRateBasisPoints = 8;
+    int32 liquidationRatePercent = 9;
+    int32 maxBorrowMarketIndex = 10;
+    SerializedTypedBigNumber maxPrimaryBorrowCapacity = 11;
+    SerializedTypedBigNumber totalUsedPrimaryBorrowCapacity = 12;
+    bool enabled = 13;
+    bool allowRollPosition = 14;
+    bool onlyVaultEntry = 15;
+    bool onlyVaultExit = 16;
+    bool onlyVaultRoll = 17;
+    bool onlyVaultDeleverage = 18;
+    bool onlyVaultSettle = 19;
+    bool allowsReentrancy = 20;
+    repeated VaultState vaultStates = 21;
+    
+    // These are optional
+    repeated int32 secondaryBorrowCurrencies = 22;
+    repeated SerializedTypedBigNumber maxSecondaryBorrowCapacity = 23;
+    repeated SerializedTypedBigNumber totalUsedSecondaryBorrowCapacity = 24;
+}
+
 message SystemData {
     string network = 1;
     int32 lastUpdateBlockNumber = 2;
@@ -133,4 +189,6 @@ message SystemData {
     map<int32, AssetRate> assetRateData = 8;
     map<int32, nToken> nTokenData = 9;
     map<int32, CashGroup> cashGroups = 10;
+    // key = vault address
+    map<string, VaultConfig> vaults = 11;
 }

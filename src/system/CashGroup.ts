@@ -148,6 +148,24 @@ export default class CashGroup {
     );
   }
 
+  public getRiskAdjustedOracleRate(
+    maturity: number,
+    isDebt: boolean,
+    blockTime = getNowSeconds(),
+    marketOverrides?: Market[],
+    blockSupplyRateOverride?: number
+  ) {
+    let oracleRate = this.getOracleRate(maturity, blockTime, marketOverrides, blockSupplyRateOverride);
+    if (isDebt) {
+      oracleRate -= this.debtBufferBasisPoints;
+      if (oracleRate < 0) oracleRate = 0;
+    } else {
+      oracleRate += this.fCashHaircutBasisPoints;
+    }
+
+    return oracleRate;
+  }
+
   public getfCashPresentValueUnderlyingInternal(
     maturity: number,
     notional: TypedBigNumber,
@@ -156,13 +174,15 @@ export default class CashGroup {
     marketOverrides?: Market[],
     blockSupplyRateOverride?: number
   ): TypedBigNumber {
-    let oracleRate = this.getOracleRate(maturity, blockTime, marketOverrides, blockSupplyRateOverride);
-    if (useHaircut && notional.isNegative()) {
-      oracleRate -= this.debtBufferBasisPoints;
-      if (oracleRate < 0) oracleRate = 0;
-    } else if (useHaircut) {
-      oracleRate += this.fCashHaircutBasisPoints;
-    }
+    const oracleRate = useHaircut
+      ? this.getRiskAdjustedOracleRate(
+          maturity,
+          notional.isNegative(),
+          blockTime,
+          marketOverrides,
+          blockSupplyRateOverride
+        )
+      : this.getOracleRate(maturity, blockTime, marketOverrides, blockSupplyRateOverride);
 
     const timeToMaturity = maturity - blockTime;
     if (timeToMaturity < 0) return notional;

@@ -19,6 +19,9 @@ export enum BigNumberType {
   NOTE = 'NOTE',
   sNOTE = 'Staked NOTE',
   Currency = 'Currency',
+  VaultShare = 'VaultShare',
+  StrategyToken = 'StrategyToken',
+  DebtShare = 'DebtShare',
 }
 
 class TypedBigNumber {
@@ -162,8 +165,19 @@ class TypedBigNumber {
     return this.copy(this.n.sub(other.n));
   }
 
-  scale(numerator: BigNumberish, divisor: BigNumberish): TypedBigNumber {
-    return this.copy(this.n.mul(numerator).div(divisor));
+  scale(numerator: BigNumberish | TypedBigNumber, divisor: BigNumberish | TypedBigNumber): TypedBigNumber {
+    const num = numerator instanceof TypedBigNumber ? numerator.n : numerator;
+    const denom = divisor instanceof TypedBigNumber ? divisor.n : divisor;
+
+    if (numerator instanceof TypedBigNumber && divisor instanceof TypedBigNumber) {
+      try {
+        numerator.checkMatch(divisor);
+      } catch {
+        this.checkMatch(divisor);
+      }
+    }
+
+    return this.copy(this.n.mul(num).div(denom));
   }
 
   neg(): TypedBigNumber {
@@ -255,7 +269,10 @@ class TypedBigNumber {
       this.type === BigNumberType.LiquidityToken ||
       this.type === BigNumberType.NOTE ||
       this.type === BigNumberType.nToken ||
-      this.type === BigNumberType.Currency
+      this.type === BigNumberType.Currency ||
+      this.type === BigNumberType.VaultShare ||
+      this.type === BigNumberType.StrategyToken ||
+      this.type === BigNumberType.DebtShare
     );
   }
 

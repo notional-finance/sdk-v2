@@ -1743,6 +1743,896 @@ function _decodeCashGroup(bb: ByteBuffer): CashGroup {
   return message;
 }
 
+export interface VaultHistoricalValue {
+  timestamp?: number;
+  underlyingValueOfStrategyToken?: SerializedTypedBigNumber;
+  ethExchangeRate?: SerializedBigNumber;
+  assetExchangeRate?: SerializedBigNumber;
+}
+
+export function encodeVaultHistoricalValue(message: VaultHistoricalValue): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeVaultHistoricalValue(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeVaultHistoricalValue(message: VaultHistoricalValue, bb: ByteBuffer): void {
+  // optional int32 timestamp = 1;
+  let $timestamp = message.timestamp;
+  if ($timestamp !== undefined) {
+    writeVarint32(bb, 8);
+    writeVarint64(bb, intToLong($timestamp));
+  }
+
+  // optional SerializedTypedBigNumber underlyingValueOfStrategyToken = 2;
+  let $underlyingValueOfStrategyToken = message.underlyingValueOfStrategyToken;
+  if ($underlyingValueOfStrategyToken !== undefined) {
+    writeVarint32(bb, 18);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($underlyingValueOfStrategyToken, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber ethExchangeRate = 3;
+  let $ethExchangeRate = message.ethExchangeRate;
+  if ($ethExchangeRate !== undefined) {
+    writeVarint32(bb, 26);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($ethExchangeRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber assetExchangeRate = 4;
+  let $assetExchangeRate = message.assetExchangeRate;
+  if ($assetExchangeRate !== undefined) {
+    writeVarint32(bb, 34);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($assetExchangeRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+}
+
+export function decodeVaultHistoricalValue(binary: Uint8Array): VaultHistoricalValue {
+  return _decodeVaultHistoricalValue(wrapByteBuffer(binary));
+}
+
+function _decodeVaultHistoricalValue(bb: ByteBuffer): VaultHistoricalValue {
+  let message: VaultHistoricalValue = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional int32 timestamp = 1;
+      case 1: {
+        message.timestamp = readVarint32(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber underlyingValueOfStrategyToken = 2;
+      case 2: {
+        let limit = pushTemporaryLength(bb);
+        message.underlyingValueOfStrategyToken = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber ethExchangeRate = 3;
+      case 3: {
+        let limit = pushTemporaryLength(bb);
+        message.ethExchangeRate = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber assetExchangeRate = 4;
+      case 4: {
+        let limit = pushTemporaryLength(bb);
+        message.assetExchangeRate = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
+export interface VaultState {
+  maturity?: number;
+  isSettled?: boolean;
+  totalPrimaryfCashBorrowed?: SerializedTypedBigNumber;
+  totalAssetCash?: SerializedTypedBigNumber;
+  totalVaultShares?: SerializedTypedBigNumber;
+  totalStrategyTokens?: SerializedTypedBigNumber;
+  historicalValue?: VaultHistoricalValue[];
+  settlementStrategyTokenValue?: SerializedTypedBigNumber;
+  settlementRate?: SerializedBigNumber;
+  remainingSettledAssetCash?: SerializedTypedBigNumber;
+  remainingSettledStrategyTokens?: SerializedTypedBigNumber;
+  shortfall?: SerializedTypedBigNumber;
+  insolvency?: SerializedTypedBigNumber;
+  totalSecondaryfCashBorrowed?: SerializedTypedBigNumber[];
+  totalSecondaryDebtShares?: SerializedTypedBigNumber[];
+  settlementSecondaryBorrowfCashSnapshot?: SerializedTypedBigNumber[];
+}
+
+export function encodeVaultState(message: VaultState): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeVaultState(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
+  // optional int32 maturity = 1;
+  let $maturity = message.maturity;
+  if ($maturity !== undefined) {
+    writeVarint32(bb, 8);
+    writeVarint64(bb, intToLong($maturity));
+  }
+
+  // optional bool isSettled = 2;
+  let $isSettled = message.isSettled;
+  if ($isSettled !== undefined) {
+    writeVarint32(bb, 16);
+    writeByte(bb, $isSettled ? 1 : 0);
+  }
+
+  // optional SerializedTypedBigNumber totalPrimaryfCashBorrowed = 3;
+  let $totalPrimaryfCashBorrowed = message.totalPrimaryfCashBorrowed;
+  if ($totalPrimaryfCashBorrowed !== undefined) {
+    writeVarint32(bb, 26);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalPrimaryfCashBorrowed, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalAssetCash = 4;
+  let $totalAssetCash = message.totalAssetCash;
+  if ($totalAssetCash !== undefined) {
+    writeVarint32(bb, 34);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalAssetCash, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalVaultShares = 5;
+  let $totalVaultShares = message.totalVaultShares;
+  if ($totalVaultShares !== undefined) {
+    writeVarint32(bb, 42);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalVaultShares, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalStrategyTokens = 6;
+  let $totalStrategyTokens = message.totalStrategyTokens;
+  if ($totalStrategyTokens !== undefined) {
+    writeVarint32(bb, 50);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalStrategyTokens, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // repeated VaultHistoricalValue historicalValue = 11;
+  let array$historicalValue = message.historicalValue;
+  if (array$historicalValue !== undefined) {
+    for (let value of array$historicalValue) {
+      writeVarint32(bb, 90);
+      let nested = popByteBuffer();
+      _encodeVaultHistoricalValue(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // optional SerializedTypedBigNumber settlementStrategyTokenValue = 7;
+  let $settlementStrategyTokenValue = message.settlementStrategyTokenValue;
+  if ($settlementStrategyTokenValue !== undefined) {
+    writeVarint32(bb, 58);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($settlementStrategyTokenValue, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber settlementRate = 8;
+  let $settlementRate = message.settlementRate;
+  if ($settlementRate !== undefined) {
+    writeVarint32(bb, 66);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($settlementRate, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber remainingSettledAssetCash = 9;
+  let $remainingSettledAssetCash = message.remainingSettledAssetCash;
+  if ($remainingSettledAssetCash !== undefined) {
+    writeVarint32(bb, 74);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($remainingSettledAssetCash, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
+  let $remainingSettledStrategyTokens = message.remainingSettledStrategyTokens;
+  if ($remainingSettledStrategyTokens !== undefined) {
+    writeVarint32(bb, 82);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($remainingSettledStrategyTokens, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber shortfall = 11;
+  let $shortfall = message.shortfall;
+  if ($shortfall !== undefined) {
+    writeVarint32(bb, 90);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($shortfall, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber insolvency = 12;
+  let $insolvency = message.insolvency;
+  if ($insolvency !== undefined) {
+    writeVarint32(bb, 98);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($insolvency, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
+  let array$totalSecondaryfCashBorrowed = message.totalSecondaryfCashBorrowed;
+  if (array$totalSecondaryfCashBorrowed !== undefined) {
+    for (let value of array$totalSecondaryfCashBorrowed) {
+      writeVarint32(bb, 106);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
+  let array$totalSecondaryDebtShares = message.totalSecondaryDebtShares;
+  if (array$totalSecondaryDebtShares !== undefined) {
+    for (let value of array$totalSecondaryDebtShares) {
+      writeVarint32(bb, 114);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+  let array$settlementSecondaryBorrowfCashSnapshot = message.settlementSecondaryBorrowfCashSnapshot;
+  if (array$settlementSecondaryBorrowfCashSnapshot !== undefined) {
+    for (let value of array$settlementSecondaryBorrowfCashSnapshot) {
+      writeVarint32(bb, 122);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+}
+
+export function decodeVaultState(binary: Uint8Array): VaultState {
+  return _decodeVaultState(wrapByteBuffer(binary));
+}
+
+function _decodeVaultState(bb: ByteBuffer): VaultState {
+  let message: VaultState = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional int32 maturity = 1;
+      case 1: {
+        message.maturity = readVarint32(bb);
+        break;
+      }
+
+      // optional bool isSettled = 2;
+      case 2: {
+        message.isSettled = !!readByte(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalPrimaryfCashBorrowed = 3;
+      case 3: {
+        let limit = pushTemporaryLength(bb);
+        message.totalPrimaryfCashBorrowed = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalAssetCash = 4;
+      case 4: {
+        let limit = pushTemporaryLength(bb);
+        message.totalAssetCash = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalVaultShares = 5;
+      case 5: {
+        let limit = pushTemporaryLength(bb);
+        message.totalVaultShares = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalStrategyTokens = 6;
+      case 6: {
+        let limit = pushTemporaryLength(bb);
+        message.totalStrategyTokens = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated VaultHistoricalValue historicalValue = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.historicalValue || (message.historicalValue = []);
+        values.push(_decodeVaultHistoricalValue(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber settlementStrategyTokenValue = 7;
+      case 7: {
+        let limit = pushTemporaryLength(bb);
+        message.settlementStrategyTokenValue = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber settlementRate = 8;
+      case 8: {
+        let limit = pushTemporaryLength(bb);
+        message.settlementRate = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber remainingSettledAssetCash = 9;
+      case 9: {
+        let limit = pushTemporaryLength(bb);
+        message.remainingSettledAssetCash = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
+      case 10: {
+        let limit = pushTemporaryLength(bb);
+        message.remainingSettledStrategyTokens = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber shortfall = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        message.shortfall = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber insolvency = 12;
+      case 12: {
+        let limit = pushTemporaryLength(bb);
+        message.insolvency = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
+      case 13: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.totalSecondaryfCashBorrowed || (message.totalSecondaryfCashBorrowed = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
+      case 14: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.totalSecondaryDebtShares || (message.totalSecondaryDebtShares = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+      case 15: {
+        let limit = pushTemporaryLength(bb);
+        let values =
+          message.settlementSecondaryBorrowfCashSnapshot || (message.settlementSecondaryBorrowfCashSnapshot = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
+export interface VaultConfig {
+  vaultAddress?: string;
+  strategy?: string;
+  name?: string;
+  primaryBorrowCurrency?: number;
+  minAccountBorrowSize?: SerializedTypedBigNumber;
+  minCollateralRatioBasisPoints?: number;
+  maxDeleverageCollateralRatioBasisPoints?: number;
+  feeRateBasisPoints?: number;
+  liquidationRatePercent?: number;
+  maxBorrowMarketIndex?: number;
+  maxPrimaryBorrowCapacity?: SerializedTypedBigNumber;
+  totalUsedPrimaryBorrowCapacity?: SerializedTypedBigNumber;
+  enabled?: boolean;
+  allowRollPosition?: boolean;
+  onlyVaultEntry?: boolean;
+  onlyVaultExit?: boolean;
+  onlyVaultRoll?: boolean;
+  onlyVaultDeleverage?: boolean;
+  onlyVaultSettle?: boolean;
+  allowsReentrancy?: boolean;
+  vaultStates?: VaultState[];
+  secondaryBorrowCurrencies?: number[];
+  maxSecondaryBorrowCapacity?: SerializedTypedBigNumber[];
+  totalUsedSecondaryBorrowCapacity?: SerializedTypedBigNumber[];
+}
+
+export function encodeVaultConfig(message: VaultConfig): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeVaultConfig(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeVaultConfig(message: VaultConfig, bb: ByteBuffer): void {
+  // optional string vaultAddress = 1;
+  let $vaultAddress = message.vaultAddress;
+  if ($vaultAddress !== undefined) {
+    writeVarint32(bb, 10);
+    writeString(bb, $vaultAddress);
+  }
+
+  // optional string strategy = 2;
+  let $strategy = message.strategy;
+  if ($strategy !== undefined) {
+    writeVarint32(bb, 18);
+    writeString(bb, $strategy);
+  }
+
+  // optional string name = 3;
+  let $name = message.name;
+  if ($name !== undefined) {
+    writeVarint32(bb, 26);
+    writeString(bb, $name);
+  }
+
+  // optional int32 primaryBorrowCurrency = 4;
+  let $primaryBorrowCurrency = message.primaryBorrowCurrency;
+  if ($primaryBorrowCurrency !== undefined) {
+    writeVarint32(bb, 32);
+    writeVarint64(bb, intToLong($primaryBorrowCurrency));
+  }
+
+  // optional SerializedTypedBigNumber minAccountBorrowSize = 5;
+  let $minAccountBorrowSize = message.minAccountBorrowSize;
+  if ($minAccountBorrowSize !== undefined) {
+    writeVarint32(bb, 42);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($minAccountBorrowSize, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional int32 minCollateralRatioBasisPoints = 6;
+  let $minCollateralRatioBasisPoints = message.minCollateralRatioBasisPoints;
+  if ($minCollateralRatioBasisPoints !== undefined) {
+    writeVarint32(bb, 48);
+    writeVarint64(bb, intToLong($minCollateralRatioBasisPoints));
+  }
+
+  // optional int32 maxDeleverageCollateralRatioBasisPoints = 7;
+  let $maxDeleverageCollateralRatioBasisPoints = message.maxDeleverageCollateralRatioBasisPoints;
+  if ($maxDeleverageCollateralRatioBasisPoints !== undefined) {
+    writeVarint32(bb, 56);
+    writeVarint64(bb, intToLong($maxDeleverageCollateralRatioBasisPoints));
+  }
+
+  // optional int32 feeRateBasisPoints = 8;
+  let $feeRateBasisPoints = message.feeRateBasisPoints;
+  if ($feeRateBasisPoints !== undefined) {
+    writeVarint32(bb, 64);
+    writeVarint64(bb, intToLong($feeRateBasisPoints));
+  }
+
+  // optional int32 liquidationRatePercent = 9;
+  let $liquidationRatePercent = message.liquidationRatePercent;
+  if ($liquidationRatePercent !== undefined) {
+    writeVarint32(bb, 72);
+    writeVarint64(bb, intToLong($liquidationRatePercent));
+  }
+
+  // optional int32 maxBorrowMarketIndex = 10;
+  let $maxBorrowMarketIndex = message.maxBorrowMarketIndex;
+  if ($maxBorrowMarketIndex !== undefined) {
+    writeVarint32(bb, 80);
+    writeVarint64(bb, intToLong($maxBorrowMarketIndex));
+  }
+
+  // optional SerializedTypedBigNumber maxPrimaryBorrowCapacity = 11;
+  let $maxPrimaryBorrowCapacity = message.maxPrimaryBorrowCapacity;
+  if ($maxPrimaryBorrowCapacity !== undefined) {
+    writeVarint32(bb, 90);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($maxPrimaryBorrowCapacity, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedTypedBigNumber totalUsedPrimaryBorrowCapacity = 12;
+  let $totalUsedPrimaryBorrowCapacity = message.totalUsedPrimaryBorrowCapacity;
+  if ($totalUsedPrimaryBorrowCapacity !== undefined) {
+    writeVarint32(bb, 98);
+    let nested = popByteBuffer();
+    _encodeSerializedTypedBigNumber($totalUsedPrimaryBorrowCapacity, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional bool enabled = 13;
+  let $enabled = message.enabled;
+  if ($enabled !== undefined) {
+    writeVarint32(bb, 104);
+    writeByte(bb, $enabled ? 1 : 0);
+  }
+
+  // optional bool allowRollPosition = 14;
+  let $allowRollPosition = message.allowRollPosition;
+  if ($allowRollPosition !== undefined) {
+    writeVarint32(bb, 112);
+    writeByte(bb, $allowRollPosition ? 1 : 0);
+  }
+
+  // optional bool onlyVaultEntry = 15;
+  let $onlyVaultEntry = message.onlyVaultEntry;
+  if ($onlyVaultEntry !== undefined) {
+    writeVarint32(bb, 120);
+    writeByte(bb, $onlyVaultEntry ? 1 : 0);
+  }
+
+  // optional bool onlyVaultExit = 16;
+  let $onlyVaultExit = message.onlyVaultExit;
+  if ($onlyVaultExit !== undefined) {
+    writeVarint32(bb, 128);
+    writeByte(bb, $onlyVaultExit ? 1 : 0);
+  }
+
+  // optional bool onlyVaultRoll = 17;
+  let $onlyVaultRoll = message.onlyVaultRoll;
+  if ($onlyVaultRoll !== undefined) {
+    writeVarint32(bb, 136);
+    writeByte(bb, $onlyVaultRoll ? 1 : 0);
+  }
+
+  // optional bool onlyVaultDeleverage = 18;
+  let $onlyVaultDeleverage = message.onlyVaultDeleverage;
+  if ($onlyVaultDeleverage !== undefined) {
+    writeVarint32(bb, 144);
+    writeByte(bb, $onlyVaultDeleverage ? 1 : 0);
+  }
+
+  // optional bool onlyVaultSettle = 19;
+  let $onlyVaultSettle = message.onlyVaultSettle;
+  if ($onlyVaultSettle !== undefined) {
+    writeVarint32(bb, 152);
+    writeByte(bb, $onlyVaultSettle ? 1 : 0);
+  }
+
+  // optional bool allowsReentrancy = 20;
+  let $allowsReentrancy = message.allowsReentrancy;
+  if ($allowsReentrancy !== undefined) {
+    writeVarint32(bb, 160);
+    writeByte(bb, $allowsReentrancy ? 1 : 0);
+  }
+
+  // repeated VaultState vaultStates = 21;
+  let array$vaultStates = message.vaultStates;
+  if (array$vaultStates !== undefined) {
+    for (let value of array$vaultStates) {
+      writeVarint32(bb, 170);
+      let nested = popByteBuffer();
+      _encodeVaultState(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated int32 secondaryBorrowCurrencies = 22;
+  let array$secondaryBorrowCurrencies = message.secondaryBorrowCurrencies;
+  if (array$secondaryBorrowCurrencies !== undefined) {
+    let packed = popByteBuffer();
+    for (let value of array$secondaryBorrowCurrencies) {
+      writeVarint64(packed, intToLong(value));
+    }
+    writeVarint32(bb, 178);
+    writeVarint32(bb, packed.offset);
+    writeByteBuffer(bb, packed);
+    pushByteBuffer(packed);
+  }
+
+  // repeated SerializedTypedBigNumber maxSecondaryBorrowCapacity = 23;
+  let array$maxSecondaryBorrowCapacity = message.maxSecondaryBorrowCapacity;
+  if (array$maxSecondaryBorrowCapacity !== undefined) {
+    for (let value of array$maxSecondaryBorrowCapacity) {
+      writeVarint32(bb, 186);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber totalUsedSecondaryBorrowCapacity = 24;
+  let array$totalUsedSecondaryBorrowCapacity = message.totalUsedSecondaryBorrowCapacity;
+  if (array$totalUsedSecondaryBorrowCapacity !== undefined) {
+    for (let value of array$totalUsedSecondaryBorrowCapacity) {
+      writeVarint32(bb, 194);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+}
+
+export function decodeVaultConfig(binary: Uint8Array): VaultConfig {
+  return _decodeVaultConfig(wrapByteBuffer(binary));
+}
+
+function _decodeVaultConfig(bb: ByteBuffer): VaultConfig {
+  let message: VaultConfig = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional string vaultAddress = 1;
+      case 1: {
+        message.vaultAddress = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional string strategy = 2;
+      case 2: {
+        message.strategy = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional string name = 3;
+      case 3: {
+        message.name = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional int32 primaryBorrowCurrency = 4;
+      case 4: {
+        message.primaryBorrowCurrency = readVarint32(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber minAccountBorrowSize = 5;
+      case 5: {
+        let limit = pushTemporaryLength(bb);
+        message.minAccountBorrowSize = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional int32 minCollateralRatioBasisPoints = 6;
+      case 6: {
+        message.minCollateralRatioBasisPoints = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 maxDeleverageCollateralRatioBasisPoints = 7;
+      case 7: {
+        message.maxDeleverageCollateralRatioBasisPoints = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 feeRateBasisPoints = 8;
+      case 8: {
+        message.feeRateBasisPoints = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 liquidationRatePercent = 9;
+      case 9: {
+        message.liquidationRatePercent = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 maxBorrowMarketIndex = 10;
+      case 10: {
+        message.maxBorrowMarketIndex = readVarint32(bb);
+        break;
+      }
+
+      // optional SerializedTypedBigNumber maxPrimaryBorrowCapacity = 11;
+      case 11: {
+        let limit = pushTemporaryLength(bb);
+        message.maxPrimaryBorrowCapacity = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedTypedBigNumber totalUsedPrimaryBorrowCapacity = 12;
+      case 12: {
+        let limit = pushTemporaryLength(bb);
+        message.totalUsedPrimaryBorrowCapacity = _decodeSerializedTypedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional bool enabled = 13;
+      case 13: {
+        message.enabled = !!readByte(bb);
+        break;
+      }
+
+      // optional bool allowRollPosition = 14;
+      case 14: {
+        message.allowRollPosition = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultEntry = 15;
+      case 15: {
+        message.onlyVaultEntry = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultExit = 16;
+      case 16: {
+        message.onlyVaultExit = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultRoll = 17;
+      case 17: {
+        message.onlyVaultRoll = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultDeleverage = 18;
+      case 18: {
+        message.onlyVaultDeleverage = !!readByte(bb);
+        break;
+      }
+
+      // optional bool onlyVaultSettle = 19;
+      case 19: {
+        message.onlyVaultSettle = !!readByte(bb);
+        break;
+      }
+
+      // optional bool allowsReentrancy = 20;
+      case 20: {
+        message.allowsReentrancy = !!readByte(bb);
+        break;
+      }
+
+      // repeated VaultState vaultStates = 21;
+      case 21: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.vaultStates || (message.vaultStates = []);
+        values.push(_decodeVaultState(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated int32 secondaryBorrowCurrencies = 22;
+      case 22: {
+        let values = message.secondaryBorrowCurrencies || (message.secondaryBorrowCurrencies = []);
+        if ((tag & 7) === 2) {
+          let outerLimit = pushTemporaryLength(bb);
+          while (!isAtEnd(bb)) {
+            values.push(readVarint32(bb));
+          }
+          bb.limit = outerLimit;
+        } else {
+          values.push(readVarint32(bb));
+        }
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber maxSecondaryBorrowCapacity = 23;
+      case 23: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.maxSecondaryBorrowCapacity || (message.maxSecondaryBorrowCapacity = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated SerializedTypedBigNumber totalUsedSecondaryBorrowCapacity = 24;
+      case 24: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.totalUsedSecondaryBorrowCapacity || (message.totalUsedSecondaryBorrowCapacity = []);
+        values.push(_decodeSerializedTypedBigNumber(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
 export interface SystemData {
   network?: string;
   lastUpdateBlockNumber?: number;
@@ -1754,6 +2644,7 @@ export interface SystemData {
   assetRateData?: { [key: number]: AssetRate };
   nTokenData?: { [key: number]: nToken };
   cashGroups?: { [key: number]: CashGroup };
+  vaults?: { [key: string]: VaultConfig };
 }
 
 export function encodeSystemData(message: SystemData): Uint8Array {
@@ -1920,6 +2811,27 @@ function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
       pushByteBuffer(nested);
     }
   }
+
+  // optional map<string, VaultConfig> vaults = 11;
+  let map$vaults = message.vaults;
+  if (map$vaults !== undefined) {
+    for (let key in map$vaults) {
+      let nested = popByteBuffer();
+      let value = map$vaults[key];
+      writeVarint32(nested, 10);
+      writeString(nested, key);
+      writeVarint32(nested, 18);
+      let nestedValue = popByteBuffer();
+      _encodeVaultConfig(value, nestedValue);
+      writeVarint32(nested, nestedValue.limit);
+      writeByteBuffer(nested, nestedValue);
+      pushByteBuffer(nestedValue);
+      writeVarint32(bb, 90);
+      writeVarint32(bb, nested.offset);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
 }
 
 export function decodeSystemData(binary: Uint8Array): SystemData {
@@ -1979,8 +2891,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: USDExchangeRates");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: USDExchangeRates');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2019,8 +2930,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: currencies");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: currencies');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2051,8 +2961,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: ethRateData");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: ethRateData');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2083,8 +2992,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: assetRateData");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: assetRateData');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2115,8 +3023,7 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: nTokenData");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: nTokenData');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2147,8 +3054,38 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
               skipUnknownField(bb, tag & 7);
           }
         }
-        if (key === undefined || value === undefined)
-          throw new Error("Invalid data for map: cashGroups");
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: cashGroups');
+        values[key] = value;
+        bb.limit = outerLimit;
+        break;
+      }
+
+      // optional map<string, VaultConfig> vaults = 11;
+      case 11: {
+        let values = message.vaults || (message.vaults = {});
+        let outerLimit = pushTemporaryLength(bb);
+        let key: string | undefined;
+        let value: VaultConfig | undefined;
+        end_of_entry: while (!isAtEnd(bb)) {
+          let tag = readVarint32(bb);
+          switch (tag >>> 3) {
+            case 0:
+              break end_of_entry;
+            case 1: {
+              key = readString(bb, readVarint32(bb));
+              break;
+            }
+            case 2: {
+              let valueLimit = pushTemporaryLength(bb);
+              value = _decodeVaultConfig(bb);
+              bb.limit = valueLimit;
+              break;
+            }
+            default:
+              skipUnknownField(bb, tag & 7);
+          }
+        }
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: vaults');
         values[key] = value;
         bb.limit = outerLimit;
         break;
@@ -2183,11 +3120,20 @@ function pushTemporaryLength(bb: ByteBuffer): number {
 
 function skipUnknownField(bb: ByteBuffer, type: number): void {
   switch (type) {
-    case 0: while (readByte(bb) & 0x80) { } break;
-    case 2: skip(bb, readVarint32(bb)); break;
-    case 5: skip(bb, 4); break;
-    case 1: skip(bb, 8); break;
-    default: throw new Error("Unimplemented type: " + type);
+    case 0:
+      while (readByte(bb) & 0x80) {}
+      break;
+    case 2:
+      skip(bb, readVarint32(bb));
+      break;
+    case 5:
+      skip(bb, 4);
+      break;
+    case 1:
+      skip(bb, 8);
+      break;
+    default:
+      throw new Error('Unimplemented type: ' + type);
   }
 }
 
@@ -2202,11 +3148,7 @@ function stringToLong(value: string): Long {
 function longToString(value: Long): string {
   let low = value.low;
   let high = value.high;
-  return String.fromCharCode(
-    low & 0xFFFF,
-    low >>> 16,
-    high & 0xFFFF,
-    high >>> 16);
+  return String.fromCharCode(low & 0xffff, low >>> 16, high & 0xffff, high >>> 16);
 }
 
 // The code below was modified from https://github.com/protobufjs/bytebuffer.js
@@ -2306,7 +3248,11 @@ function readString(bb: ByteBuffer, count: number): string {
   let text = '';
 
   for (let i = 0; i < count; i++) {
-    let c1 = bytes[i + offset], c2: number, c3: number, c4: number, c: number;
+    let c1 = bytes[i + offset],
+      c2: number,
+      c3: number,
+      c4: number,
+      c: number;
 
     // 1 byte
     if ((c1 & 0x80) === 0) {
@@ -2314,13 +3260,13 @@ function readString(bb: ByteBuffer, count: number): string {
     }
 
     // 2 bytes
-    else if ((c1 & 0xE0) === 0xC0) {
+    else if ((c1 & 0xe0) === 0xc0) {
       if (i + 1 >= count) text += invalid;
       else {
         c2 = bytes[i + offset + 1];
-        if ((c2 & 0xC0) !== 0x80) text += invalid;
+        if ((c2 & 0xc0) !== 0x80) text += invalid;
         else {
-          c = ((c1 & 0x1F) << 6) | (c2 & 0x3F);
+          c = ((c1 & 0x1f) << 6) | (c2 & 0x3f);
           if (c < 0x80) text += invalid;
           else {
             text += fromCharCode(c);
@@ -2331,15 +3277,15 @@ function readString(bb: ByteBuffer, count: number): string {
     }
 
     // 3 bytes
-    else if ((c1 & 0xF0) == 0xE0) {
+    else if ((c1 & 0xf0) == 0xe0) {
       if (i + 2 >= count) text += invalid;
       else {
         c2 = bytes[i + offset + 1];
         c3 = bytes[i + offset + 2];
-        if (((c2 | (c3 << 8)) & 0xC0C0) !== 0x8080) text += invalid;
+        if (((c2 | (c3 << 8)) & 0xc0c0) !== 0x8080) text += invalid;
         else {
-          c = ((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
-          if (c < 0x0800 || (c >= 0xD800 && c <= 0xDFFF)) text += invalid;
+          c = ((c1 & 0x0f) << 12) | ((c2 & 0x3f) << 6) | (c3 & 0x3f);
+          if (c < 0x0800 || (c >= 0xd800 && c <= 0xdfff)) text += invalid;
           else {
             text += fromCharCode(c);
             i += 2;
@@ -2349,26 +3295,24 @@ function readString(bb: ByteBuffer, count: number): string {
     }
 
     // 4 bytes
-    else if ((c1 & 0xF8) == 0xF0) {
+    else if ((c1 & 0xf8) == 0xf0) {
       if (i + 3 >= count) text += invalid;
       else {
         c2 = bytes[i + offset + 1];
         c3 = bytes[i + offset + 2];
         c4 = bytes[i + offset + 3];
-        if (((c2 | (c3 << 8) | (c4 << 16)) & 0xC0C0C0) !== 0x808080) text += invalid;
+        if (((c2 | (c3 << 8) | (c4 << 16)) & 0xc0c0c0) !== 0x808080) text += invalid;
         else {
-          c = ((c1 & 0x07) << 0x12) | ((c2 & 0x3F) << 0x0C) | ((c3 & 0x3F) << 0x06) | (c4 & 0x3F);
-          if (c < 0x10000 || c > 0x10FFFF) text += invalid;
+          c = ((c1 & 0x07) << 0x12) | ((c2 & 0x3f) << 0x0c) | ((c3 & 0x3f) << 0x06) | (c4 & 0x3f);
+          if (c < 0x10000 || c > 0x10ffff) text += invalid;
           else {
             c -= 0x10000;
-            text += fromCharCode((c >> 10) + 0xD800, (c & 0x3FF) + 0xDC00);
+            text += fromCharCode((c >> 10) + 0xd800, (c & 0x3ff) + 0xdc00);
             i += 3;
           }
         }
       }
-    }
-
-    else text += invalid;
+    } else text += invalid;
   }
 
   return text;
@@ -2382,8 +3326,8 @@ function writeString(bb: ByteBuffer, text: string): void {
   // Write the byte count first
   for (let i = 0; i < n; i++) {
     let c = text.charCodeAt(i);
-    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < n) {
-      c = (c << 10) + text.charCodeAt(++i) - 0x35FDC00;
+    if (c >= 0xd800 && c <= 0xdbff && i + 1 < n) {
+      c = (c << 10) + text.charCodeAt(++i) - 0x35fdc00;
     }
     byteCount += c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
   }
@@ -2395,24 +3339,24 @@ function writeString(bb: ByteBuffer, text: string): void {
   // Then write the bytes
   for (let i = 0; i < n; i++) {
     let c = text.charCodeAt(i);
-    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < n) {
-      c = (c << 10) + text.charCodeAt(++i) - 0x35FDC00;
+    if (c >= 0xd800 && c <= 0xdbff && i + 1 < n) {
+      c = (c << 10) + text.charCodeAt(++i) - 0x35fdc00;
     }
     if (c < 0x80) {
       bytes[offset++] = c;
     } else {
       if (c < 0x800) {
-        bytes[offset++] = ((c >> 6) & 0x1F) | 0xC0;
+        bytes[offset++] = ((c >> 6) & 0x1f) | 0xc0;
       } else {
         if (c < 0x10000) {
-          bytes[offset++] = ((c >> 12) & 0x0F) | 0xE0;
+          bytes[offset++] = ((c >> 12) & 0x0f) | 0xe0;
         } else {
-          bytes[offset++] = ((c >> 18) & 0x07) | 0xF0;
-          bytes[offset++] = ((c >> 12) & 0x3F) | 0x80;
+          bytes[offset++] = ((c >> 18) & 0x07) | 0xf0;
+          bytes[offset++] = ((c >> 12) & 0x3f) | 0x80;
         }
-        bytes[offset++] = ((c >> 6) & 0x3F) | 0x80;
+        bytes[offset++] = ((c >> 6) & 0x3f) | 0x80;
       }
-      bytes[offset++] = (c & 0x3F) | 0x80;
+      bytes[offset++] = (c & 0x3f) | 0x80;
     }
   }
 }
@@ -2496,12 +3440,7 @@ function writeDouble(bb: ByteBuffer, value: number): void {
 function readInt32(bb: ByteBuffer): number {
   let offset = advance(bb, 4);
   let bytes = bb.bytes;
-  return (
-    bytes[offset] |
-    (bytes[offset + 1] << 8) |
-    (bytes[offset + 2] << 16) |
-    (bytes[offset + 3] << 24)
-  );
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
 }
 
 function writeInt32(bb: ByteBuffer, value: number): void {
@@ -2532,7 +3471,7 @@ function readVarint32(bb: ByteBuffer): number {
   let b: number;
   do {
     b = readByte(bb);
-    if (c < 32) value |= (b & 0x7F) << c;
+    if (c < 32) value |= (b & 0x7f) << c;
     c += 7;
   } while (b & 0x80);
   return value;
@@ -2553,18 +3492,35 @@ function readVarint64(bb: ByteBuffer, unsigned: boolean): Long {
   let part2 = 0;
   let b: number;
 
-  b = readByte(bb); part0 = (b & 0x7F); if (b & 0x80) {
-    b = readByte(bb); part0 |= (b & 0x7F) << 7; if (b & 0x80) {
-      b = readByte(bb); part0 |= (b & 0x7F) << 14; if (b & 0x80) {
-        b = readByte(bb); part0 |= (b & 0x7F) << 21; if (b & 0x80) {
-
-          b = readByte(bb); part1 = (b & 0x7F); if (b & 0x80) {
-            b = readByte(bb); part1 |= (b & 0x7F) << 7; if (b & 0x80) {
-              b = readByte(bb); part1 |= (b & 0x7F) << 14; if (b & 0x80) {
-                b = readByte(bb); part1 |= (b & 0x7F) << 21; if (b & 0x80) {
-
-                  b = readByte(bb); part2 = (b & 0x7F); if (b & 0x80) {
-                    b = readByte(bb); part2 |= (b & 0x7F) << 7;
+  b = readByte(bb);
+  part0 = b & 0x7f;
+  if (b & 0x80) {
+    b = readByte(bb);
+    part0 |= (b & 0x7f) << 7;
+    if (b & 0x80) {
+      b = readByte(bb);
+      part0 |= (b & 0x7f) << 14;
+      if (b & 0x80) {
+        b = readByte(bb);
+        part0 |= (b & 0x7f) << 21;
+        if (b & 0x80) {
+          b = readByte(bb);
+          part1 = b & 0x7f;
+          if (b & 0x80) {
+            b = readByte(bb);
+            part1 |= (b & 0x7f) << 7;
+            if (b & 0x80) {
+              b = readByte(bb);
+              part1 |= (b & 0x7f) << 14;
+              if (b & 0x80) {
+                b = readByte(bb);
+                part1 |= (b & 0x7f) << 21;
+                if (b & 0x80) {
+                  b = readByte(bb);
+                  part2 = b & 0x7f;
+                  if (b & 0x80) {
+                    b = readByte(bb);
+                    part2 |= (b & 0x7f) << 7;
                   }
                 }
               }
@@ -2589,30 +3545,50 @@ function writeVarint64(bb: ByteBuffer, value: Long): void {
 
   // ref: src/google/protobuf/io/coded_stream.cc
   let size =
-    part2 === 0 ?
-      part1 === 0 ?
-        part0 < 1 << 14 ?
-          part0 < 1 << 7 ? 1 : 2 :
-          part0 < 1 << 21 ? 3 : 4 :
-        part1 < 1 << 14 ?
-          part1 < 1 << 7 ? 5 : 6 :
-          part1 < 1 << 21 ? 7 : 8 :
-      part2 < 1 << 7 ? 9 : 10;
+    part2 === 0
+      ? part1 === 0
+        ? part0 < 1 << 14
+          ? part0 < 1 << 7
+            ? 1
+            : 2
+          : part0 < 1 << 21
+          ? 3
+          : 4
+        : part1 < 1 << 14
+        ? part1 < 1 << 7
+          ? 5
+          : 6
+        : part1 < 1 << 21
+        ? 7
+        : 8
+      : part2 < 1 << 7
+      ? 9
+      : 10;
 
   let offset = grow(bb, size);
   let bytes = bb.bytes;
 
   switch (size) {
-    case 10: bytes[offset + 9] = (part2 >>> 7) & 0x01;
-    case 9: bytes[offset + 8] = size !== 9 ? part2 | 0x80 : part2 & 0x7F;
-    case 8: bytes[offset + 7] = size !== 8 ? (part1 >>> 21) | 0x80 : (part1 >>> 21) & 0x7F;
-    case 7: bytes[offset + 6] = size !== 7 ? (part1 >>> 14) | 0x80 : (part1 >>> 14) & 0x7F;
-    case 6: bytes[offset + 5] = size !== 6 ? (part1 >>> 7) | 0x80 : (part1 >>> 7) & 0x7F;
-    case 5: bytes[offset + 4] = size !== 5 ? part1 | 0x80 : part1 & 0x7F;
-    case 4: bytes[offset + 3] = size !== 4 ? (part0 >>> 21) | 0x80 : (part0 >>> 21) & 0x7F;
-    case 3: bytes[offset + 2] = size !== 3 ? (part0 >>> 14) | 0x80 : (part0 >>> 14) & 0x7F;
-    case 2: bytes[offset + 1] = size !== 2 ? (part0 >>> 7) | 0x80 : (part0 >>> 7) & 0x7F;
-    case 1: bytes[offset] = size !== 1 ? part0 | 0x80 : part0 & 0x7F;
+    case 10:
+      bytes[offset + 9] = (part2 >>> 7) & 0x01;
+    case 9:
+      bytes[offset + 8] = size !== 9 ? part2 | 0x80 : part2 & 0x7f;
+    case 8:
+      bytes[offset + 7] = size !== 8 ? (part1 >>> 21) | 0x80 : (part1 >>> 21) & 0x7f;
+    case 7:
+      bytes[offset + 6] = size !== 7 ? (part1 >>> 14) | 0x80 : (part1 >>> 14) & 0x7f;
+    case 6:
+      bytes[offset + 5] = size !== 6 ? (part1 >>> 7) | 0x80 : (part1 >>> 7) & 0x7f;
+    case 5:
+      bytes[offset + 4] = size !== 5 ? part1 | 0x80 : part1 & 0x7f;
+    case 4:
+      bytes[offset + 3] = size !== 4 ? (part0 >>> 21) | 0x80 : (part0 >>> 21) & 0x7f;
+    case 3:
+      bytes[offset + 2] = size !== 3 ? (part0 >>> 14) | 0x80 : (part0 >>> 14) & 0x7f;
+    case 2:
+      bytes[offset + 1] = size !== 2 ? (part0 >>> 7) | 0x80 : (part0 >>> 7) & 0x7f;
+    case 1:
+      bytes[offset] = size !== 1 ? part0 | 0x80 : part0 & 0x7f;
   }
 }
 

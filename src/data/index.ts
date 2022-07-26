@@ -12,6 +12,9 @@ import {
   SerializedContract,
   SerializedTypedBigNumber,
   sNOTE as _sNOTE,
+  VaultConfig as _VaultConfig,
+  VaultState as _VaultState,
+  VaultHistoricalValue as _VaultHistoricalValue,
 } from './encoding/SystemProto';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
@@ -32,31 +35,68 @@ type Replaced<T, TReplace, TWith, TKeep = Primitive> = T extends TReplace | TKee
       [P in keyof T]: Replaced<T[P], TReplace, TWith, TKeep>;
     };
 
-type Rewrite<T> = DeepRequired<
+type Rewrite<T> = Replaced<
   Replaced<
-    Replaced<
-      Replaced<T, SerializedBigNumber, BigNumber, Primitive>,
-      SerializedTypedBigNumber,
-      TypedBigNumber,
-      Primitive | BigNumber
-    >,
-    SerializedContract,
-    Contract,
-    Primitive | BigNumber | TypedBigNumber
+    Replaced<T, SerializedBigNumber, BigNumber, Primitive>,
+    SerializedTypedBigNumber,
+    TypedBigNumber,
+    Primitive | BigNumber
   >,
-  BigNumber | TypedBigNumber | Contract
+  SerializedContract,
+  Contract,
+  Primitive | BigNumber | TypedBigNumber
 >;
 
-export type StakedNoteParameters = Rewrite<_sNOTE>;
-export type Currency = Omit<Omit<Rewrite<_Currency>, 'assetContract'>, 'underlyingContract'> & {
-  assetContract: ERC20;
-  underlyingContract: ERC20;
+type RewriteRequired<T> = DeepRequired<Rewrite<T>, BigNumber | TypedBigNumber | Contract>;
+
+export type StakedNoteParameters = RewriteRequired<_sNOTE>;
+export type Currency = Omit<RewriteRequired<_Currency>, 'assetContract' | 'underlyingContract'> & {
+  readonly assetContract: ERC20;
+  readonly underlyingContract: ERC20;
 };
-export type ETHRate = Omit<Rewrite<_ETHRate>, 'rateOracle'> & { rateOracle: IAggregator };
-export type AssetRate = Omit<Rewrite<_AssetRate>, 'rateAdapter'> & { rateAdapter: AssetRateAggregator };
-export type nToken = Omit<Rewrite<_nToken>, 'contract'> & { contract: NTokenERC20 };
-export type CashGroupData = Rewrite<_CashGroup>;
-export type Asset = Omit<Rewrite<_Asset>, 'assetType'> & { assetType: AssetType };
+export type ETHRate = Omit<RewriteRequired<_ETHRate>, 'rateOracle'> & { readonly rateOracle: IAggregator };
+export type AssetRate = Omit<RewriteRequired<_AssetRate>, 'rateAdapter'> & {
+  readonly rateAdapter: AssetRateAggregator;
+};
+export type nToken = Omit<RewriteRequired<_nToken>, 'contract'> & { readonly contract: NTokenERC20 };
+export type CashGroupData = RewriteRequired<_CashGroup>;
+export type Asset = Omit<RewriteRequired<_Asset>, 'assetType'> & { readonly assetType: AssetType };
+export type SecondaryBorrowArray = [TypedBigNumber?, TypedBigNumber?] | undefined;
+export type VaultHistoricalValue = RewriteRequired<_VaultHistoricalValue>;
+export type VaultState = Omit<
+  Rewrite<_VaultState>,
+  | 'maturity'
+  | 'isSettled'
+  | 'totalPrimaryfCashBorrowed'
+  | 'totalAssetCash'
+  | 'totalVaultShares'
+  | 'totalStrategyTokens'
+  | 'historicalValue'
+  | 'totalSecondaryfCashBorrowed'
+  | 'totalSecondaryDebtShares'
+  | 'settlementSecondaryBorrowfCashSnapshot'
+> & {
+  readonly maturity: number;
+  readonly isSettled: boolean;
+  readonly totalPrimaryfCashBorrowed: TypedBigNumber;
+  readonly totalAssetCash: TypedBigNumber;
+  readonly totalVaultShares: TypedBigNumber;
+  readonly totalStrategyTokens: TypedBigNumber;
+  readonly historicalValue: VaultHistoricalValue;
+  readonly totalSecondaryfCashBorrowed?: SecondaryBorrowArray;
+  readonly totalSecondaryDebtShares?: SecondaryBorrowArray;
+  readonly settlementSecondaryBorrowfCashSnapshot?: SecondaryBorrowArray;
+};
+
+export type VaultConfig = Omit<
+  RewriteRequired<_VaultConfig>,
+  'secondaryBorrowCurrencies' | 'maxSecondaryBorrowCapacity' | 'totalUsedSecondaryBorrowCapacity' | 'vaultStates'
+> & {
+  readonly secondaryBorrowCurrencies?: number[];
+  readonly maxSecondaryBorrowCapacity?: SecondaryBorrowArray;
+  readonly totalUsedSecondaryBorrowCapacity?: SecondaryBorrowArray;
+  readonly vaultStates: VaultState[];
+};
 
 export interface SystemData {
   network: string;
@@ -69,4 +109,5 @@ export interface SystemData {
   assetRateData: Map<number, AssetRate>;
   nTokenData: Map<number, nToken>;
   cashGroups: Map<number, CashGroupData>;
+  vaults: Map<string, VaultConfig>;
 }

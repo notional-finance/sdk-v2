@@ -93,6 +93,13 @@ export async function fetchAndEncodeSystem(
       }
       return ret;
     }, {}),
+    vaults: config.reduce((obj, c) => {
+      const ret = obj;
+      c.strategyVaults.forEach((v) => {
+        ret[v.vaultAddress] = v;
+      });
+      return ret;
+    }, {}),
   };
 
   const binary = encodeSystemData(systemObject);
@@ -173,6 +180,7 @@ function _encodeMap(decoded: any) {
   mapped.assetRateData = new Map(Object.entries(decoded.assetRateData).map(([k, v]) => [Number(k), v]));
   mapped.nTokenData = new Map(Object.entries(decoded.nTokenData).map(([k, v]) => [Number(k), v]));
   mapped.cashGroups = new Map(Object.entries(decoded.cashGroups).map(([k, v]) => [Number(k), v]));
+  mapped.vaults = new Map(Object.entries(decoded.vaults));
   return mapped;
 }
 

@@ -4,7 +4,7 @@ import TypedBigNumber from '../../src/libs/TypedBigNumber';
 import { Contracts, IncentiveFactors, IncentiveMigration } from '../../src/libs/types';
 import GraphClient from '../../src/data/GraphClient';
 import { decodeJSON } from '../../src/data/SystemData';
-import { Asset, CashGroupData, nToken, StakedNoteParameters } from '../../src/data';
+import { Asset, CashGroupData, nToken, StakedNoteParameters, VaultConfig } from '../../src/data';
 
 const MockSystemData = require('./MockSystemData.json');
 
@@ -88,5 +88,9 @@ export default class MockSystem extends System {
 
   public setCashGroup(currencyId: number, params: CashGroupData) {
     this.data.cashGroups.set(currencyId, params);
+  }
+
+  public setVault(vault: VaultConfig) {
+    this.data.vaults.set(vault.vaultAddress, vault);
   }
 }
