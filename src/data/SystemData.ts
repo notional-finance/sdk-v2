@@ -199,11 +199,10 @@ export async function fetchAndDecodeSystem(
 ) {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
   const resp = await _fetch(cacheUrl);
-  const reader = resp.body?.getReader();
-  if (reader) {
-    const { value } = await reader.read();
-    if (value) return decodeBinary(value, provider);
-  }
+  if (!resp.ok) throw Error('Could not fetch system');
+
+  const value = new Uint8Array(await resp.arrayBuffer());
+  if (value) return decodeBinary(value, provider);
 
   throw Error('Could not fetch system');
 }

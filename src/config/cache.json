@@ -1,5 +1,4 @@
 {
-  "kovan:http": "https://api.thegraph.com/subgraphs/name/notional-finance/kovan-v2",
-  "goerli:http": "https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2",
-  "mainnet:http": "https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-v2"
+  "goerli:http": "https://system-cache-dev.notional-finance.workers.dev/v2/goerli?encoding=binary",
+  "mainnet:http": "https://system-cache-dev.notional-finance.workers.dev/v2/mainnet?encoding=binary"
 }

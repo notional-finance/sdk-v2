@@ -7,4 +7,5 @@ import FreeCollateral from './system/FreeCollateral';
 
 export default Notional;
 export * from './libs/types';
+export * from './data/index';
 export { FreeCollateral, TypedBigNumber, BigNumberType, SystemEvents, AccountEvents, Account, AccountData };
