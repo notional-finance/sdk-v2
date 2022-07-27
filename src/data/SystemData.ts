@@ -156,8 +156,12 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
   if (Object.prototype.hasOwnProperty.call(val, '_isTypedBigNumber') && val._isTypedBigNumber) {
     return TypedBigNumber.fromObject(val);
   }
-  if (Object.prototype.hasOwnProperty.call(val, '_isSerializedContract') && val._isSerializedContract) {
-    return new ethers.Contract(val._address, _getABI(val._abiName), provider);
+  if (Object.prototype.hasOwnProperty.call(val, '_isSerializedContract')) {
+    if (val._isSerializedContract) {
+      return new ethers.Contract(val._address, _getABI(val._abiName), provider);
+    }
+    // Will delete this key when it returns undefined
+    return undefined;
   }
   if (Array.isArray(val)) {
     return val.map((v) => _decodeValue(v, provider));
@@ -166,7 +170,12 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
   // This is an object, recurse through it to decode nested properties
   const newVal = val;
   Object.keys(newVal).forEach((key) => {
-    newVal[key] = _decodeValue(newVal[key], provider);
+    const decoded = _decodeValue(newVal[key], provider);
+    if (key === 'underlyingContract' && decoded === undefined) {
+      delete newVal[key];
+    } else {
+      newVal[key] = decoded;
+    }
   });
   return newVal;
 }

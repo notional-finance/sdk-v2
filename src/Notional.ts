@@ -3,7 +3,6 @@ import { System } from './system';
 import GraphClient from './data/GraphClient';
 import { Account, AccountData, AccountGraphLoader } from './account';
 
-import { SystemEvents } from './system/System';
 // eslint-disable import/no-named-as-default import/no-named-as-default-member
 import TransactionBuilder from './TransactionBuilder';
 import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
@@ -147,14 +146,6 @@ export default class Notional extends TransactionBuilder {
       refreshDataInterval,
       skipFetchSetup
     );
-
-    // await for the first data refresh before returning
-    // TODO: maybe move this code somewhere else so that we don't have to wait for paint
-    await new Promise<void>((resolve) => {
-      system.eventEmitter.once(SystemEvents.DATA_REFRESH, () => {
-        resolve();
-      });
-    });
 
     return new Notional(contracts.note, graphClient, system, provider, contracts);
   }

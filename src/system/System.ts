@@ -156,8 +156,10 @@ export default class System {
     if (refreshIntervalMS > 0) {
       this.dataRefreshInterval = setInterval(async () => {
         this.data = await fetchAndDecodeSystem(this.cacheUrl, this.batchProvider, skipFetchSetup);
+        this.eventEmitter.emit(SystemEvents.DATA_REFRESH);
       }, this.refreshIntervalMS);
     }
+    this.eventEmitter.emit(SystemEvents.DATA_REFRESH);
   }
 
   public destroy() {
