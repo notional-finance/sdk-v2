@@ -178,6 +178,7 @@ describe('Typed Big Number', () => {
 
   it('converts to NOTE to other currencies', () => {
     const noteTokens = TypedBigNumber.fromBalance(1e8, 'NOTE', true);
+    expect(noteTokens.toUSD().toNumber()).toBe(1e8);
     expect(noteTokens.toETH(false).toString()).toEqual(BigNumber.from(0.01e8).toString());
     expect(noteTokens.toETH(false).fromETH(3).toString()).toEqual(BigNumber.from(1e8).toString());
   });

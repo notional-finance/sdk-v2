@@ -300,9 +300,14 @@ export default class System {
     const usdRate = this.data.USDExchangeRates.get(symbol);
     if (!usdRate) {
       // USD Rate = DAI/ETH => ETH/DAI * USDC/ETH == USDC/DAI
-      const currency = this.getCurrencyBySymbol(symbol);
+      let currencyId: number;
+      if (symbol === 'NOTE') {
+        currencyId = NOTE_CURRENCY_ID;
+      } else {
+        ({ id: currencyId } = this.getCurrencyBySymbol(symbol));
+      }
       const { rateDecimals, usdcRate } = this._getUSDCRate();
-      const { latestRate, rateDecimalPlaces } = this.getETHRate(currency.id);
+      const { latestRate, rateDecimalPlaces } = this.getETHRate(currencyId);
 
       // Invert the ETH Rate
       const ethRateDecimals = BigNumber.from(10).pow(rateDecimalPlaces);

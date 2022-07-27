@@ -56,7 +56,7 @@ export async function fetchAndEncodeSystem(
       const ret = obj;
       ret[c.id] = {
         ...c.ethExchangeRate,
-        latestRate: c.id === 1 ? ethers.constants.WeiPerEther.toJSON() : results[ConfigKeys.ETH_EXCHANGE_RATE(c.id)],
+        latestRate: c.id === 1 ? ethers.constants.WeiPerEther : results[ConfigKeys.ETH_EXCHANGE_RATE(c.id)],
       };
       return ret;
     }, {}),
@@ -101,6 +101,7 @@ export async function fetchAndEncodeSystem(
       return ret;
     }, {}),
   };
+  console.log(systemObject.ethRateData!['1']);
 
   const binary = encodeSystemData(systemObject);
   const json = JSON.stringify(decodeSystemData(binary));
