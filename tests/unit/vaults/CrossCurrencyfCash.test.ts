@@ -1,4 +1,5 @@
 import { ETHRate } from '../../../lib/data';
+import BaseVault from '../../../lib/vaults/BaseVault';
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { getNowSeconds } from '../../../src/libs/utils';
@@ -20,6 +21,11 @@ describe('Cross Currency fCash', () => {
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
   const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, 3);
   system.setVault(vault);
+
+  it('calculates collateral ratios from leverage ratios and vice versa', () => {
+    const leverageRatio = BaseVault.collateralToLeverageRatio(0.2e9);
+    expect(BaseVault.leverageToCollateralRatio(leverageRatio)).toBe(0.2e9);
+  });
 
   it('gets strategy token value', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
@@ -137,10 +143,10 @@ describe('Cross Currency fCash', () => {
       0.0025
     );
 
-    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow)).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.22, 1);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.32, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.32, 1);
   });
 
   it('simulates entering a vault with matching shares', () => {
@@ -159,10 +165,10 @@ describe('Cross Currency fCash', () => {
       0.0025
     );
 
-    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow.add(vaultAccount.primaryBorrowfCash))).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.23, 1);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.26, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.26, 1);
   });
 
   it('simulates entering a vault with settled shares', () => {
@@ -178,7 +184,7 @@ describe('Cross Currency fCash', () => {
     );
 
     // There is 2e8 asset cash from the settled vault
-    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(101.3764e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(101.3764e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.toNumber()).toBe(-100e8);
     expect(newVaultAccount.vaultShares.toNumber()).toBeCloseTo(101.799e8, -7);
   });
@@ -255,7 +261,7 @@ describe('Cross Currency fCash', () => {
     const { fCashToBorrow, strategyTokens } = crossCurrency.getfCashBorrowFromLeverageRatio(
       vaultAccount,
       depositAmount,
-      5e9,
+      6e9,
       0.025
     );
 
@@ -269,7 +275,7 @@ describe('Cross Currency fCash', () => {
     const { strategyTokens: finalStrategyTokens } = newVaultAccount.getPoolShare();
 
     expect(Math.abs(finalStrategyTokens.sub(strategyTokens).toNumber())).toBeLessThan(5000);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.0);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(6.0);
   });
 
   it('calculates liquidation thresholds', () => {

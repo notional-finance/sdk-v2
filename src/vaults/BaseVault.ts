@@ -27,6 +27,14 @@ export interface LiquidationThreshold {
 }
 
 export default abstract class BaseVault<D, R> {
+  public static collateralToLeverageRatio(collateralRatio: number): number {
+    return Math.floor((RATE_PRECISION / collateralRatio) * RATE_PRECISION) + RATE_PRECISION;
+  }
+
+  public static leverageToCollateralRatio(leverageRatio: number): number {
+    return Math.floor((RATE_PRECISION / (leverageRatio - RATE_PRECISION)) * RATE_PRECISION);
+  }
+
   protected constructor(public vaultAddress: string) {}
 
   public abstract loadVault(vaultAddress: string): Promise<BaseVault<D, R>>;
@@ -178,7 +186,8 @@ export default abstract class BaseVault<D, R> {
 
     const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
-    return debtOutstanding.scale(RATE_PRECISION, netAssetValue.n).toNumber();
+    // Minimum leverage ratio is 1
+    return debtOutstanding.scale(RATE_PRECISION, netAssetValue.n).toNumber() + RATE_PRECISION;
   }
 
   public getCashValueOfShares(vaultAccount: VaultAccount) {
@@ -445,9 +454,8 @@ export default abstract class BaseVault<D, R> {
       );
 
       const debtOutstanding = fCashToBorrow.toAssetCash().neg();
-      actualLeverageRatio = debtOutstanding
-        .scale(RATE_PRECISION, valuation.toAssetCash().sub(debtOutstanding))
-        .toNumber();
+      actualLeverageRatio =
+        debtOutstanding.scale(RATE_PRECISION, valuation.toAssetCash().sub(debtOutstanding)).toNumber() + RATE_PRECISION;
       delta = leverageRatio - actualLeverageRatio;
       if (Math.abs(delta) < precision) break;
 
