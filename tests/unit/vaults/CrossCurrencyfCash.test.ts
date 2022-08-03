@@ -4,9 +4,8 @@ import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { getNowSeconds } from '../../../src/libs/utils';
 import { Market, System } from '../../../src/system';
-import CrossCurrencyfCash from '../../../src/vaults/strategy/CrossCurrencyfCash';
 import VaultAccount from '../../../src/vaults/VaultAccount';
-import { MockCrossCurrencyConfig } from '../../mocks/MockCrossCurrencyConfig';
+import { MockCrossCurrencyConfig, MockCrossCurrencyfCash } from '../../mocks/MockCrossCurrencyConfig';
 import MockSystem, { MutableForTesting } from '../../mocks/MockSystem';
 
 describe('Cross Currency fCash', () => {
@@ -19,7 +18,8 @@ describe('Cross Currency fCash', () => {
   });
   const { maturity } = System.getSystem().getCashGroup(2).getMarket(1);
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
-  const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, 3);
+  const crossCurrency = new MockCrossCurrencyfCash(vault.vaultAddress);
+  crossCurrency.setLendCurrencyId(3);
   system.setVault(vault);
 
   it('calculates collateral ratios from leverage ratios and vice versa', () => {

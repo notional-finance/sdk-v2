@@ -35,9 +35,9 @@ export default abstract class BaseVault<D, R> {
     return Math.floor((RATE_PRECISION / (leverageRatio - RATE_PRECISION)) * RATE_PRECISION);
   }
 
-  protected constructor(public vaultAddress: string) {}
+  constructor(public vaultAddress: string) {}
 
-  public abstract loadVault(vaultAddress: string): Promise<BaseVault<D, R>>;
+  public abstract initializeVault(): Promise<void>;
 
   public abstract getLiquidationThresholds(vaultAccount: VaultAccount, blockTime: number): Array<LiquidationThreshold>;
 

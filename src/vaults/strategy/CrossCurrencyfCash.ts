@@ -24,15 +24,17 @@ interface RedeemParams {
 const crossCurrencyInterface = new utils.Interface(['function LEND_CURRENCY_ID() view returns (uint16)']);
 
 export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams> {
-  constructor(vaultAddress: string, private _lendCurrencyId: number) {
+  protected _lendCurrencyId: number;
+
+  constructor(vaultAddress: string) {
     super(vaultAddress);
+    this._lendCurrencyId = 0;
   }
 
-  public async loadVault(vaultAddress: string) {
+  public async initializeVault(): Promise<void> {
     const provider = System.getSystem().batchProvider;
-    const contract = new Contract(vaultAddress, crossCurrencyInterface, provider);
-    const lendCurrencyId: number = await contract.LEND_CURRENCY_ID();
-    return new CrossCurrencyfCash(vaultAddress, lendCurrencyId);
+    const contract = new Contract(this.vaultAddress, crossCurrencyInterface, provider);
+    this._lendCurrencyId = await contract.LEND_CURRENCY_ID();
   }
 
   public get lendCurrencyId() {
