@@ -2633,6 +2633,287 @@ function _decodeVaultConfig(bb: ByteBuffer): VaultConfig {
   return message;
 }
 
+export interface TradingEstimate {
+  buyTokenAddress?: string;
+  sellTokenAddress?: string;
+  estimates?: Estimate[];
+}
+
+export function encodeTradingEstimate(message: TradingEstimate): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeTradingEstimate(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeTradingEstimate(message: TradingEstimate, bb: ByteBuffer): void {
+  // optional string buyTokenAddress = 1;
+  let $buyTokenAddress = message.buyTokenAddress;
+  if ($buyTokenAddress !== undefined) {
+    writeVarint32(bb, 10);
+    writeString(bb, $buyTokenAddress);
+  }
+
+  // optional string sellTokenAddress = 2;
+  let $sellTokenAddress = message.sellTokenAddress;
+  if ($sellTokenAddress !== undefined) {
+    writeVarint32(bb, 18);
+    writeString(bb, $sellTokenAddress);
+  }
+
+  // repeated Estimate estimates = 3;
+  let array$estimates = message.estimates;
+  if (array$estimates !== undefined) {
+    for (let value of array$estimates) {
+      writeVarint32(bb, 26);
+      let nested = popByteBuffer();
+      _encodeEstimate(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+}
+
+export function decodeTradingEstimate(binary: Uint8Array): TradingEstimate {
+  return _decodeTradingEstimate(wrapByteBuffer(binary));
+}
+
+function _decodeTradingEstimate(bb: ByteBuffer): TradingEstimate {
+  let message: TradingEstimate = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional string buyTokenAddress = 1;
+      case 1: {
+        message.buyTokenAddress = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional string sellTokenAddress = 2;
+      case 2: {
+        message.sellTokenAddress = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // repeated Estimate estimates = 3;
+      case 3: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.estimates || (message.estimates = []);
+        values.push(_decodeEstimate(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
+export interface Sources {
+  name?: string;
+  proportion?: number;
+}
+
+export function encodeSources(message: Sources): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeSources(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeSources(message: Sources, bb: ByteBuffer): void {
+  // optional string name = 1;
+  let $name = message.name;
+  if ($name !== undefined) {
+    writeVarint32(bb, 10);
+    writeString(bb, $name);
+  }
+
+  // optional float proportion = 2;
+  let $proportion = message.proportion;
+  if ($proportion !== undefined) {
+    writeVarint32(bb, 21);
+    writeFloat(bb, $proportion);
+  }
+}
+
+export function decodeSources(binary: Uint8Array): Sources {
+  return _decodeSources(wrapByteBuffer(binary));
+}
+
+function _decodeSources(bb: ByteBuffer): Sources {
+  let message: Sources = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional string name = 1;
+      case 1: {
+        message.name = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional float proportion = 2;
+      case 2: {
+        message.proportion = readFloat(bb);
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
+export interface Estimate {
+  price?: SerializedBigNumber;
+  estimatedPriceImpact?: SerializedBigNumber;
+  buyAmount?: SerializedBigNumber;
+  sellAmount?: SerializedBigNumber;
+  sources?: Sources[];
+}
+
+export function encodeEstimate(message: Estimate): Uint8Array {
+  let bb = popByteBuffer();
+  _encodeEstimate(message, bb);
+  return toUint8Array(bb);
+}
+
+function _encodeEstimate(message: Estimate, bb: ByteBuffer): void {
+  // optional SerializedBigNumber price = 1;
+  let $price = message.price;
+  if ($price !== undefined) {
+    writeVarint32(bb, 10);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($price, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber estimatedPriceImpact = 2;
+  let $estimatedPriceImpact = message.estimatedPriceImpact;
+  if ($estimatedPriceImpact !== undefined) {
+    writeVarint32(bb, 18);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($estimatedPriceImpact, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber buyAmount = 3;
+  let $buyAmount = message.buyAmount;
+  if ($buyAmount !== undefined) {
+    writeVarint32(bb, 26);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($buyAmount, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // optional SerializedBigNumber sellAmount = 4;
+  let $sellAmount = message.sellAmount;
+  if ($sellAmount !== undefined) {
+    writeVarint32(bb, 34);
+    let nested = popByteBuffer();
+    _encodeSerializedBigNumber($sellAmount, nested);
+    writeVarint32(bb, nested.limit);
+    writeByteBuffer(bb, nested);
+    pushByteBuffer(nested);
+  }
+
+  // repeated Sources sources = 5;
+  let array$sources = message.sources;
+  if (array$sources !== undefined) {
+    for (let value of array$sources) {
+      writeVarint32(bb, 42);
+      let nested = popByteBuffer();
+      _encodeSources(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+}
+
+export function decodeEstimate(binary: Uint8Array): Estimate {
+  return _decodeEstimate(wrapByteBuffer(binary));
+}
+
+function _decodeEstimate(bb: ByteBuffer): Estimate {
+  let message: Estimate = {} as any;
+
+  end_of_message: while (!isAtEnd(bb)) {
+    let tag = readVarint32(bb);
+
+    switch (tag >>> 3) {
+      case 0:
+        break end_of_message;
+
+      // optional SerializedBigNumber price = 1;
+      case 1: {
+        let limit = pushTemporaryLength(bb);
+        message.price = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber estimatedPriceImpact = 2;
+      case 2: {
+        let limit = pushTemporaryLength(bb);
+        message.estimatedPriceImpact = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber buyAmount = 3;
+      case 3: {
+        let limit = pushTemporaryLength(bb);
+        message.buyAmount = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // optional SerializedBigNumber sellAmount = 4;
+      case 4: {
+        let limit = pushTemporaryLength(bb);
+        message.sellAmount = _decodeSerializedBigNumber(bb);
+        bb.limit = limit;
+        break;
+      }
+
+      // repeated Sources sources = 5;
+      case 5: {
+        let limit = pushTemporaryLength(bb);
+        let values = message.sources || (message.sources = []);
+        values.push(_decodeSources(bb));
+        bb.limit = limit;
+        break;
+      }
+
+      default:
+        skipUnknownField(bb, tag & 7);
+    }
+  }
+
+  return message;
+}
+
 export interface SystemData {
   network?: string;
   lastUpdateBlockNumber?: number;
@@ -2645,6 +2926,7 @@ export interface SystemData {
   nTokenData?: { [key: number]: nToken };
   cashGroups?: { [key: number]: CashGroup };
   vaults?: { [key: string]: VaultConfig };
+  tradingEstimates?: { [key: string]: TradingEstimate };
 }
 
 export function encodeSystemData(message: SystemData): Uint8Array {
@@ -2827,6 +3109,27 @@ function _encodeSystemData(message: SystemData, bb: ByteBuffer): void {
       writeByteBuffer(nested, nestedValue);
       pushByteBuffer(nestedValue);
       writeVarint32(bb, 90);
+      writeVarint32(bb, nested.offset);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // optional map<string, TradingEstimate> tradingEstimates = 12;
+  let map$tradingEstimates = message.tradingEstimates;
+  if (map$tradingEstimates !== undefined) {
+    for (let key in map$tradingEstimates) {
+      let nested = popByteBuffer();
+      let value = map$tradingEstimates[key];
+      writeVarint32(nested, 10);
+      writeString(nested, key);
+      writeVarint32(nested, 18);
+      let nestedValue = popByteBuffer();
+      _encodeTradingEstimate(value, nestedValue);
+      writeVarint32(nested, nestedValue.limit);
+      writeByteBuffer(nested, nestedValue);
+      pushByteBuffer(nestedValue);
+      writeVarint32(bb, 98);
       writeVarint32(bb, nested.offset);
       writeByteBuffer(bb, nested);
       pushByteBuffer(nested);
@@ -3086,6 +3389,37 @@ function _decodeSystemData(bb: ByteBuffer): SystemData {
           }
         }
         if (key === undefined || value === undefined) throw new Error('Invalid data for map: vaults');
+        values[key] = value;
+        bb.limit = outerLimit;
+        break;
+      }
+
+      // optional map<string, TradingEstimate> tradingEstimates = 12;
+      case 12: {
+        let values = message.tradingEstimates || (message.tradingEstimates = {});
+        let outerLimit = pushTemporaryLength(bb);
+        let key: string | undefined;
+        let value: TradingEstimate | undefined;
+        end_of_entry: while (!isAtEnd(bb)) {
+          let tag = readVarint32(bb);
+          switch (tag >>> 3) {
+            case 0:
+              break end_of_entry;
+            case 1: {
+              key = readString(bb, readVarint32(bb));
+              break;
+            }
+            case 2: {
+              let valueLimit = pushTemporaryLength(bb);
+              value = _decodeTradingEstimate(bb);
+              bb.limit = valueLimit;
+              break;
+            }
+            default:
+              skipUnknownField(bb, tag & 7);
+          }
+        }
+        if (key === undefined || value === undefined) throw new Error('Invalid data for map: tradingEstimates');
         values[key] = value;
         bb.limit = outerLimit;
         break;

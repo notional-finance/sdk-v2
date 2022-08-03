@@ -7,6 +7,7 @@ import { Contracts } from '../libs/types';
 import { ConfigKeys, getBlockchainData } from './sources/Blockchain';
 import getUSDPriceData from './sources/ExchangeRate';
 import { getSystemConfig } from './sources/Subgraph';
+import { getTradingEstimates } from './sources/ZeroExApi';
 import { decodeSystemData, encodeSystemData, SystemData as _SystemData } from './encoding/SystemProto';
 
 import IAggregatorABI from '../abi/IAggregator.json';
@@ -26,15 +27,24 @@ export async function fetchAndEncodeSystem(
   const config = await getSystemConfig(graphClient);
   const { blockNumber, results } = await getBlockchainData(provider, contracts, config);
   const network = await provider.getNetwork();
+  const networkName = network.name === 'homestead' ? 'mainnet' : network.name;
   const block = await provider.getBlock(blockNumber.toNumber());
   // Only refresh exchange rates if a value is not provided
   const usdExchangeRates = _usdExchangeRates ?? (await getUSDPriceData(exchangeRateApiKey, skipFetchSetup));
+  // Currently hardcoded to mainnet
+  const estimateResults = await getTradingEstimates('mainnet', skipFetchSetup);
+  const tradingEstimates = estimateResults.reduce((obj, e) => {
+    const o = obj;
+    o[`${e.buyTokenAddress}:${e.sellTokenAddress}`] = e;
+    return o;
+  }, {});
 
   const systemObject: _SystemData = {
-    network: network.name === 'homestead' ? 'mainnet' : network.name,
+    network: networkName,
     lastUpdateBlockNumber: block.number,
     lastUpdateTimestamp: block.timestamp,
     USDExchangeRates: usdExchangeRates,
+    tradingEstimates,
     StakedNoteParameters: {
       poolId: results[ConfigKeys.sNOTE.POOL_ID],
       coolDownTimeInSeconds: results[ConfigKeys.sNOTE.COOL_DOWN_TIME_SECS],
@@ -101,7 +111,6 @@ export async function fetchAndEncodeSystem(
       return ret;
     }, {}),
   };
-  console.log(systemObject.ethRateData!['1']);
 
   const binary = encodeSystemData(systemObject);
   const json = JSON.stringify(decodeSystemData(binary));
@@ -184,6 +193,7 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
 function _encodeMap(decoded: any) {
   // Coverts records to maps so that we can use .get on them and get type checking
   const mapped = decoded;
+  console.log(decoded);
   mapped.USDExchangeRates = new Map(Object.entries(decoded.USDExchangeRates));
   mapped.currencies = new Map(Object.entries(decoded.currencies).map(([k, v]) => [Number(k), v]));
   mapped.ethRateData = new Map(Object.entries(decoded.ethRateData).map(([k, v]) => [Number(k), v]));
@@ -191,6 +201,7 @@ function _encodeMap(decoded: any) {
   mapped.nTokenData = new Map(Object.entries(decoded.nTokenData).map(([k, v]) => [Number(k), v]));
   mapped.cashGroups = new Map(Object.entries(decoded.cashGroups).map(([k, v]) => [Number(k), v]));
   mapped.vaults = new Map(Object.entries(decoded.vaults));
+  mapped.tradingEstimates = new Map(Object.entries(decoded.tradingEstimates));
   return mapped;
 }
 
