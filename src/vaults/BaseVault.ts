@@ -6,13 +6,6 @@ import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
 
-export interface ReturnDriver {
-  name: string;
-  key: string;
-  rate: number;
-  absoluteValue: TypedBigNumber;
-}
-
 export enum LiquidationThresholdType {
   exchangeRate,
   fCashInterestRate,
@@ -68,6 +61,20 @@ export default abstract class BaseVault<D, R> {
     slippageBuffer: number,
     blockTime?: number
   ): D;
+
+  public abstract getDepositParametersExact(
+    maturity: number,
+    depositAmount: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime?: number
+  ): Promise<D>;
+
+  public abstract getRedeemParametersExact(
+    maturity: number,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime?: number
+  ): Promise<R>;
 
   public abstract getSlippageForDeposit(
     maturity: number,
@@ -210,7 +217,32 @@ export default abstract class BaseVault<D, R> {
     return assetCash.add(underlyingStrategyTokenValue.toAssetCash());
   }
 
+  public getPoolShare(maturity: number, vaultShares: TypedBigNumber) {
+    const vaultState = this.getVaultState(maturity);
+    if (vaultState.totalVaultShares.isZero()) {
+      return {
+        assetCash: vaultState.totalAssetCash.copy(0),
+        strategyTokens: vaultState.totalStrategyTokens.copy(0),
+      };
+    }
+
+    return {
+      assetCash: vaultState.totalAssetCash.scale(vaultShares, vaultState.totalVaultShares),
+      strategyTokens: vaultState.totalStrategyTokens.scale(vaultShares, vaultState.totalVaultShares),
+    };
+  }
+
   // Operations
+  public getDepositedCashFromBorrow(maturity: number, fCashToBorrow: TypedBigNumber, blockTime = getNowSeconds()) {
+    const market = this.getVaultMarket(maturity);
+    const { netCashToAccount: cashToBorrow } = market.getCashAmountGivenfCashAmount(fCashToBorrow, blockTime);
+    const assessedFee = this.assessVaultFees(maturity, cashToBorrow, blockTime);
+    return {
+      cashToVault: cashToBorrow.sub(assessedFee),
+      assessedFee,
+    };
+  }
+
   public assessVaultFees(maturity: number, cashBorrowed: TypedBigNumber, blockTime = getNowSeconds()) {
     const annualizedFeeRate = this.getVault().feeRateBasisPoints;
     const feeRate = Math.floor(annualizedFeeRate * ((maturity - blockTime) / SECONDS_IN_YEAR));
@@ -252,10 +284,8 @@ export default abstract class BaseVault<D, R> {
     if (vaultState.isSettled || vaultState.totalAssetCash.isPositive()) {
       throw Error('Cannot enter vault');
     }
-    const market = this.getVaultMarket(maturity);
-    const { netCashToAccount: cashToBorrow } = market.getCashAmountGivenfCashAmount(fCashToBorrow, blockTime);
-    const assessedFee = this.assessVaultFees(maturity, cashToBorrow, blockTime);
-    let totalCashDeposit = cashToBorrow.add(depositAmount).sub(assessedFee);
+    const { cashToVault, assessedFee } = this.getDepositedCashFromBorrow(maturity, fCashToBorrow, blockTime);
+    let totalCashDeposit = cashToVault.add(depositAmount);
     const newVaultAccount = VaultAccount.copy(vaultAccount);
 
     if (vaultAccount.canSettle()) {
@@ -482,13 +512,13 @@ export default abstract class BaseVault<D, R> {
     };
   }
 
-  public populateEnterTransaction(
+  public async populateEnterTransaction(
     account: string,
     depositAmount: TypedBigNumber,
     maturity: number,
     fCashToBorrow: TypedBigNumber,
     maxBorrowRate: number,
-    depositParams: D
+    slippageBuffer: number
   ) {
     const system = System.getSystem();
     const notional = system.getNotionalProxy();
@@ -496,6 +526,9 @@ export default abstract class BaseVault<D, R> {
     depositAmount.check(BigNumberType.ExternalUnderlying, underlyingSymbol);
     fCashToBorrow.check(BigNumberType.InternalUnderlying, underlyingSymbol);
     const overrides = underlyingSymbol === 'ETH' ? { value: depositAmount.n } : {};
+    const { cashToVault } = this.getDepositedCashFromBorrow(maturity, fCashToBorrow);
+    const totalDepositAmount = cashToVault.add(depositAmount);
+    const depositParams = await this.getDepositParametersExact(maturity, totalDepositAmount, slippageBuffer);
 
     return populateTxnAndGas(notional, account, 'enterVault', [
       account,
@@ -509,12 +542,13 @@ export default abstract class BaseVault<D, R> {
     ]);
   }
 
-  public populateExitTransaction(
+  public async populateExitTransaction(
     account: string,
+    maturity: number,
     vaultSharesToRedeem: TypedBigNumber,
     fCashToLend: TypedBigNumber,
     minLendRate: number,
-    redeemParams: R,
+    slippageBuffer: number,
     receiver?: string
   ) {
     const system = System.getSystem();
@@ -522,6 +556,8 @@ export default abstract class BaseVault<D, R> {
     const underlyingSymbol = system.getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
     if (vaultSharesToRedeem.type !== BigNumberType.VaultShare) throw Error('Invalid vault shares');
     fCashToLend.check(BigNumberType.InternalUnderlying, underlyingSymbol);
+    const { strategyTokens } = this.getPoolShare(maturity, vaultSharesToRedeem);
+    const redeemParams = await this.getRedeemParametersExact(maturity, strategyTokens, slippageBuffer);
 
     return populateTxnAndGas(notional, account, 'exitVault', [
       account,
@@ -534,18 +570,22 @@ export default abstract class BaseVault<D, R> {
     ]);
   }
 
-  public populateRollTransaction(
+  public async populateRollTransaction(
     account: string,
     maturity: number,
     fCashToBorrow: TypedBigNumber,
     minLendRate: number,
     maxBorrowRate: number,
-    depositParams: D
+    slippageBuffer: number
   ) {
     const system = System.getSystem();
     const notional = system.getNotionalProxy();
     const underlyingSymbol = system.getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
     fCashToBorrow.check(BigNumberType.InternalUnderlying, underlyingSymbol);
+    const { cashToVault } = this.getDepositedCashFromBorrow(maturity, fCashToBorrow);
+    // TODO: fix this here...
+    const totalDepositAmount = cashToVault; // .sub(costToLend);
+    const depositParams = await this.getDepositParametersExact(maturity, totalDepositAmount, slippageBuffer);
 
     return populateTxnAndGas(notional, account, 'rollVaultPosition', [
       account,

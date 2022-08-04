@@ -1,8 +1,19 @@
 import { BigNumber } from 'ethers';
 import { TradingEstimate } from '..';
 import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../config/constants';
+import { getTrade, NETWORKS } from '../data/sources/ZeroExApi';
 import TypedBigNumber from '../libs/TypedBigNumber';
 import { System } from '../system';
+
+export enum DexId {
+  _UNUSED = 0,
+  UNISWAP_V2 = 1,
+  UNISWAP_V3 = 2,
+  ZERO_EX = 3,
+  BALANCER_V2 = 4,
+  CURVE = 5,
+  NOTIONAL_VAULT = 6,
+}
 
 export default class TradeHandler {
   private static INTERNAL_TOKEN_SQUARED = BigNumber.from(INTERNAL_TOKEN_PRECISION).mul(INTERNAL_TOKEN_PRECISION);
@@ -100,8 +111,23 @@ export default class TradeHandler {
     }
   }
 
-  // public static getExactTrade(sellToken: string, buyToken: string, requiredSellAmount: BigNumber, slippageBPS = 0) {
-  // }
+  public static async getExactTrade(sellToken: string, buyToken: string, requiredSellAmount: TypedBigNumber) {
+    if (sellToken === buyToken) throw Error('Matching currencies');
+    const { sellTokenAddress, buyTokenAddress, estimates } = System.getSystem().getTradingEstimates(
+      sellToken,
+      buyToken
+    );
+    const { buyAmount } = estimates[0];
+    const network = System.getSystem().network as NETWORKS;
+    const { skipFetchSetup } = System.getSystem();
+    const trade = await getTrade(network, sellTokenAddress, buyTokenAddress, requiredSellAmount.n, skipFetchSetup);
+
+    return {
+      ...trade,
+      buyAmount: buyAmount.copy(trade.buyAmount),
+      minPurchaseAmount: trade.sellAmount.mul(trade.guaranteedPrice).div(INTERNAL_TOKEN_PRECISION),
+    };
+  }
 
   public static applySlippage(amount: TypedBigNumber, slippageBPS: number) {
     this._checkAmount(amount);

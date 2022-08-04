@@ -4,7 +4,7 @@ import BaseVault, { LiquidationThreshold, LiquidationThresholdType } from '../Ba
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
 import { getNowSeconds } from '../../libs/utils';
-import TradeHandler from '../../trading/TradeHandler';
+import TradeHandler, { DexId } from '../../trading/TradeHandler';
 import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../config/constants';
 
 interface DepositParams {
@@ -137,6 +137,83 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     });
 
     return thresholds;
+  }
+
+  public async getDepositParametersExact(
+    maturity: number,
+    depositAmount: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    const { buyAmount, minPurchaseAmount, data } = await TradeHandler.getExactTrade(
+      System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
+      depositAmount.symbol,
+      depositAmount.toUnderlying(false)
+    );
+    // get lendRate based on optimalPurchaseAmount, apply slippage buffer
+    const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
+      buyAmount.toInternalPrecision().neg(),
+      blockTime
+    );
+
+    const { annualizedRate: minLendRate } = Market.getSlippageRate(
+      lendfCash,
+      buyAmount.toInternalPrecision(),
+      maturity,
+      -slippageBuffer * RATE_PRECISION,
+      blockTime
+    );
+
+    return {
+      minPurchaseAmount,
+      minLendRate,
+      dexId: DexId.ZERO_EX,
+      exchangeData: data,
+    };
+  }
+
+  public async getRedeemParametersExact(
+    maturity: number,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    if (maturity < blockTime) {
+      if (!strategyTokens.isZero()) throw Error('Vault not settled');
+
+      // No strategy tokens left past maturity for this vault
+      return {
+        minPurchaseAmount: BigNumber.from(0),
+        maxBorrowRate: 0,
+        dexId: 0,
+        exchangeData: '0x',
+      };
+    }
+
+    const market = this.getLendMarket(maturity);
+    const lendfCash = this.strategyTokensTofCash(strategyTokens);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash.neg(), blockTime);
+    const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    const { minPurchaseAmount, data } = await TradeHandler.getExactTrade(
+      primaryBorrowSymbol,
+      netCashToAccount.symbol,
+      netCashToAccount.toUnderlying(false)
+    );
+
+    const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
+      lendfCash,
+      netCashToAccount,
+      market.maturity,
+      slippageBuffer * RATE_PRECISION,
+      blockTime
+    );
+
+    return {
+      minPurchaseAmount,
+      maxBorrowRate,
+      dexId: DexId.ZERO_EX,
+      exchangeData: data,
+    };
   }
 
   private _getDepositParameters(

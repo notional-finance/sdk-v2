@@ -138,7 +138,17 @@ export default class System {
     skipFetchSetup = false
   ) {
     const initData = await fetchAndDecodeSystem(cacheUrl, batchProvider, skipFetchSetup);
-    return new System(cacheUrl, graphClient, contracts, batchProvider, refreshIntervalMS, initData, skipFetchSetup);
+    const network = await batchProvider.getNetwork();
+    return new System(
+      cacheUrl,
+      graphClient,
+      contracts,
+      batchProvider,
+      refreshIntervalMS,
+      network.name === 'homestead' ? 'mainnet' : network.name,
+      skipFetchSetup,
+      initData
+    );
   }
 
   constructor(
@@ -147,8 +157,9 @@ export default class System {
     private contracts: Contracts,
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public refreshIntervalMS: number,
-    initData: SystemData,
-    skipFetchSetup: boolean
+    public network: string,
+    public skipFetchSetup: boolean,
+    initData: SystemData
   ) {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;

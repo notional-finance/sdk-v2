@@ -24,8 +24,9 @@ export default class MockSystem extends System {
       } as unknown as Contracts,
       provider,
       0,
-      initData,
-      false
+      'local',
+      false,
+      initData
     );
   }
 

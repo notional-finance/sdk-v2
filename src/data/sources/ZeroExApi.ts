@@ -2,6 +2,7 @@ import { BigNumber } from 'ethers';
 import { parseUnits } from 'ethers/lib/utils';
 import { fetch as crossFetch } from 'cross-fetch';
 import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
+import { INTERNAL_TOKEN_PRECISION } from '../../config/constants';
 
 const apiUrl = {
   mainnet: 'https://api.0x.org',
@@ -20,7 +21,7 @@ export type SOURCES =
   | 'Uniswap_V2'
   | 'Uniswap_V3';
 
-interface SwapResponse {
+interface PriceResponse {
   buyTokenAddress: string;
   sellTokenAddress: string;
   price: string;
@@ -33,6 +34,19 @@ interface SwapResponse {
   }[];
   sellTokenToEthRate: string;
   buyTokenToEthRate: string;
+}
+
+interface QuoteResponse {
+  price: string;
+  guaranteedPrice: string;
+  estimatedPriceImpact: string;
+  buyAmount: string;
+  sellAmount: string;
+  data: string;
+  sources: {
+    name: string;
+    proportion: string;
+  }[];
 }
 
 export interface Estimate {
@@ -97,6 +111,11 @@ const RequiredEstimates: Record<NETWORKS, { buyToken: Token; sellToken: Token; s
   ],
 };
 
+const filterSource = (sources: { name: string; proportion: string }[]) =>
+  sources
+    .map(({ name, proportion }) => ({ name, proportion: Number(proportion) }))
+    .filter(({ proportion }) => Number(proportion) > 0);
+
 const fetchTradingEstimate = async (
   buyToken: Token,
   sellToken: Token,
@@ -114,10 +133,10 @@ const fetchTradingEstimate = async (
           const resp = await _fetch(
             `${zeroExUrl}/swap/v1/price?sellToken=${sellToken.address}&buyToken=${buyToken.address}&sellAmount=${sellAmountString}`
           );
-          const v: SwapResponse = await resp.json();
+          const v: PriceResponse = await resp.json();
           return {
-            price: BigNumber.from(Math.floor(Number(v.price) * 1e8)),
-            estimatedPriceImpact: BigNumber.from(Math.floor(Number(v.price) * 1e8)),
+            price: BigNumber.from(Math.floor(Number(v.price) * INTERNAL_TOKEN_PRECISION)),
+            estimatedPriceImpact: BigNumber.from(Math.floor(Number(v.price) * INTERNAL_TOKEN_PRECISION)),
             buyAmount: TypedBigNumber.from(
               v.buyAmount,
               BigNumberType.ExternalUnderlying,
@@ -130,9 +149,7 @@ const fetchTradingEstimate = async (
               sellToken.symbol,
               sellToken.decimals
             ),
-            sources: v.sources
-              .map(({ name, proportion }) => ({ name, proportion: Number(proportion) }))
-              .filter(({ proportion }) => Number(proportion) > 0),
+            sources: filterSource(v.sources),
           };
         } catch (e) {
           console.error(e);
@@ -159,4 +176,29 @@ export function getTradingEstimates(network: NETWORKS, skipFetchSetup: boolean) 
       fetchTradingEstimate(buyToken, sellToken, sellRanges, network as NETWORKS, _fetch)
     )
   );
+}
+
+export async function getTrade(
+  network: NETWORKS,
+  sellTokenAddress: string,
+  buyTokenAddress: string,
+  sellAmount: BigNumber,
+  skipFetchSetup: boolean
+) {
+  const _fetch = skipFetchSetup ? fetch : crossFetch;
+  const zeroExUrl = apiUrl[network];
+
+  const resp = await _fetch(
+    `${zeroExUrl}/swap/v1/quote?sellToken=${sellTokenAddress}&buyToken=${buyTokenAddress}&sellAmount=${sellAmount.toString()}`
+  );
+  const v: QuoteResponse = await resp.json();
+
+  return {
+    price: Number(v.price),
+    guaranteedPrice: Math.floor(Number(v.guaranteedPrice) * INTERNAL_TOKEN_PRECISION),
+    buyAmount: BigNumber.from(v.buyAmount),
+    sellAmount: BigNumber.from(v.sellAmount),
+    data: v.data,
+    sources: filterSource(v.sources),
+  };
 }

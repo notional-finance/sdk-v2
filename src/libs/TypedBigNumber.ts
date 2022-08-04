@@ -159,7 +159,7 @@ class TypedBigNumber {
   }
 
   copy(n: BigNumberish = this.n) {
-    return new TypedBigNumber(BigNumber.from(n), this.type, this.symbol);
+    return new TypedBigNumber(BigNumber.from(n), this.type, this.symbol, this._decimalsOverride);
   }
 
   abs(): TypedBigNumber {

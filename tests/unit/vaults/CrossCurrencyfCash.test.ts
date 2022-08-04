@@ -148,7 +148,7 @@ describe('Cross Currency fCash', () => {
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow)).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.22, 1);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.32, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.3, 0);
   });
 
   it('simulates entering a vault with matching shares', () => {
