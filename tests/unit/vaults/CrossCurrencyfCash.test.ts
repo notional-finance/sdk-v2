@@ -1,11 +1,11 @@
 import { ETHRate } from '../../../lib/data';
+import BaseVault from '../../../lib/vaults/BaseVault';
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { getNowSeconds } from '../../../src/libs/utils';
 import { Market, System } from '../../../src/system';
-import CrossCurrencyfCash from '../../../src/vaults/strategy/CrossCurrencyfCash';
 import VaultAccount from '../../../src/vaults/VaultAccount';
-import { MockCrossCurrencyConfig } from '../../mocks/MockCrossCurrencyConfig';
+import { MockCrossCurrencyConfig, MockCrossCurrencyfCash } from '../../mocks/MockCrossCurrencyConfig';
 import MockSystem, { MutableForTesting } from '../../mocks/MockSystem';
 
 describe('Cross Currency fCash', () => {
@@ -18,8 +18,14 @@ describe('Cross Currency fCash', () => {
   });
   const { maturity } = System.getSystem().getCashGroup(2).getMarket(1);
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
-  const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, 3);
+  const crossCurrency = new MockCrossCurrencyfCash(vault.vaultAddress);
+  crossCurrency.setLendCurrencyId(3);
   system.setVault(vault);
+
+  it('calculates collateral ratios from leverage ratios and vice versa', () => {
+    const leverageRatio = BaseVault.collateralToLeverageRatio(0.2e9);
+    expect(BaseVault.leverageToCollateralRatio(leverageRatio)).toBe(0.2e9);
+  });
 
   it('gets strategy token value', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
@@ -60,6 +66,7 @@ describe('Cross Currency fCash', () => {
       depositParams
     );
     expect(likelySlippage).toBeLessThan(worstCaseSlippage);
+    expect(crossCurrency.encodeDepositParams(depositParams)).toBeDefined();
   });
 
   it('gets redeem parameters', () => {
@@ -84,6 +91,7 @@ describe('Cross Currency fCash', () => {
       redeemParams
     );
     expect(likelySlippage).toBeLessThan(worstCaseSlippage);
+    expect(crossCurrency.encodeRedeemParams(redeemParams)).toBeDefined();
   });
 
   it('it converts between deposit and strategy tokens', () => {
@@ -102,7 +110,7 @@ describe('Cross Currency fCash', () => {
     );
 
     expect(requiredDeposit.toNumber()).toBeCloseTo(depositAmount.toNumber(), -3);
-    expect(depositParams1.minPurchaseAmount.toString()).toBe(depositParams2.minPurchaseAmount.toString());
+    expect(depositParams1.minPurchaseAmount.sub(depositParams2.minPurchaseAmount).toNumber()).toBeLessThan(2);
     expect(depositParams1.minLendRate).toBeCloseTo(depositParams2.minLendRate, -3);
   });
 
@@ -137,10 +145,10 @@ describe('Cross Currency fCash', () => {
       0.0025
     );
 
-    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow)).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.22, 1);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.32, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.3, 0);
   });
 
   it('simulates entering a vault with matching shares', () => {
@@ -159,10 +167,10 @@ describe('Cross Currency fCash', () => {
       0.0025
     );
 
-    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.eq(fCashToBorrow.add(vaultAccount.primaryBorrowfCash))).toBeTruthy();
     expect(crossCurrency.getCollateralRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(0.23, 1);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(4.26, 1);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.26, 1);
   });
 
   it('simulates entering a vault with settled shares', () => {
@@ -178,7 +186,7 @@ describe('Cross Currency fCash', () => {
     );
 
     // There is 2e8 asset cash from the settled vault
-    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(101.3764e8, -7);
+    expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(101.3764e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.toNumber()).toBe(-100e8);
     expect(newVaultAccount.vaultShares.toNumber()).toBeCloseTo(101.799e8, -7);
   });
@@ -255,7 +263,7 @@ describe('Cross Currency fCash', () => {
     const { fCashToBorrow, strategyTokens } = crossCurrency.getfCashBorrowFromLeverageRatio(
       vaultAccount,
       depositAmount,
-      5e9,
+      6e9,
       0.025
     );
 
@@ -269,7 +277,7 @@ describe('Cross Currency fCash', () => {
     const { strategyTokens: finalStrategyTokens } = newVaultAccount.getPoolShare();
 
     expect(Math.abs(finalStrategyTokens.sub(strategyTokens).toNumber())).toBeLessThan(5000);
-    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(5.0);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(6.0);
   });
 
   it('calculates liquidation thresholds', () => {

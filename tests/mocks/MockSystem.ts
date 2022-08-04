@@ -16,7 +16,18 @@ export default class MockSystem extends System {
   constructor() {
     const provider = new ethers.providers.JsonRpcBatchProvider('http://localhost:8545');
     const initData = decodeJSON(MockSystemData, provider);
-    super('none', {} as unknown as GraphClient, {} as unknown as Contracts, provider, 0, initData, false);
+    super(
+      'none',
+      {} as unknown as GraphClient,
+      {
+        weth: { address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' },
+      } as unknown as Contracts,
+      provider,
+      0,
+      'local',
+      false,
+      initData
+    );
   }
 
   public setNTokenSupply(currencyId: number, totalSupply: TypedBigNumber) {

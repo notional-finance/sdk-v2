@@ -49,6 +49,12 @@ class TypedBigNumber {
   }
 
   get decimals() {
+    // Decimals override allows us to load custom tokens that are not in the
+    // "System" object. These cannot access the fromETH / toETH methods but
+    // we can still convert between internal and external precision as well as
+    // do all the formatting methods.
+    if (this._decimalsOverride) return BigNumber.from(10).pow(this._decimalsOverride);
+
     const currency = System.getSystem().getCurrencyById(this.currencyId);
     const decimals = this.isUnderlying()
       ? currency.underlyingDecimals || currency.assetDecimals
@@ -57,7 +63,12 @@ class TypedBigNumber {
     return decimals;
   }
 
-  private constructor(public n: BigNumber, public type: BigNumberType, public symbol: string) {
+  private constructor(
+    public n: BigNumber,
+    public type: BigNumberType,
+    public symbol: string,
+    private _decimalsOverride?: number
+  ) {
     if (symbol === 'WETH') {
       this.symbol = 'ETH';
       // Mark the currency as WETH even though we treat it as ETH for calculations
@@ -111,14 +122,14 @@ class TypedBigNumber {
     return new TypedBigNumber(BigNumber.from(value), bnType, symbol);
   }
 
-  static from(value: any, type: BigNumberType, symbol: string) {
+  static from(value: any, type: BigNumberType, symbol: string, decimalsOverride?: number) {
     // eslint-disable-next-line no-underscore-dangle
-    if (value._isBigNumber) return new TypedBigNumber(value, type, symbol);
-    return new TypedBigNumber(BigNumber.from(value), type, symbol);
+    if (value._isBigNumber) return new TypedBigNumber(value, type, symbol, decimalsOverride);
+    return new TypedBigNumber(BigNumber.from(value), type, symbol, decimalsOverride);
   }
 
-  static fromObject(value: { hex: string; bigNumberType: BigNumberType; symbol: string }) {
-    return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol);
+  static fromObject(value: { hex: string; bigNumberType: BigNumberType; symbol: string; decimals?: number }) {
+    return new TypedBigNumber(BigNumber.from(value.hex), value.bigNumberType, value.symbol, value.decimals);
   }
 
   static max(a: TypedBigNumber, b: TypedBigNumber): TypedBigNumber {
@@ -148,7 +159,7 @@ class TypedBigNumber {
   }
 
   copy(n: BigNumberish = this.n) {
-    return new TypedBigNumber(BigNumber.from(n), this.type, this.symbol);
+    return new TypedBigNumber(BigNumber.from(n), this.type, this.symbol, this._decimalsOverride);
   }
 
   abs(): TypedBigNumber {
@@ -421,7 +432,12 @@ class TypedBigNumber {
       throw TypeError('Unknown external precision type');
     }
 
-    return new TypedBigNumber(this.n.mul(INTERNAL_TOKEN_PRECISION).div(this.decimals), newType, this.symbol);
+    return new TypedBigNumber(
+      this.n.mul(INTERNAL_TOKEN_PRECISION).div(this.decimals),
+      newType,
+      this.symbol,
+      this._decimalsOverride
+    );
   }
 
   toExternalPrecision(): TypedBigNumber {
@@ -442,7 +458,12 @@ class TypedBigNumber {
       throw TypeError('Unknown external precision type');
     }
 
-    return new TypedBigNumber(this.n.mul(this.decimals).div(INTERNAL_TOKEN_PRECISION), newType, this.symbol);
+    return new TypedBigNumber(
+      this.n.mul(this.decimals).div(INTERNAL_TOKEN_PRECISION),
+      newType,
+      this.symbol,
+      this._decimalsOverride
+    );
   }
 
   toETH(useHaircut: boolean) {
@@ -516,6 +537,7 @@ class TypedBigNumber {
       hex: this.toHexString(),
       bigNumberType: this.type,
       symbol: this.isWETH ? 'WETH' : this.symbol,
+      decimals: this._decimalsOverride,
     };
   }
 }

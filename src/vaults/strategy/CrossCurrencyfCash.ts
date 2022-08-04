@@ -4,7 +4,7 @@ import BaseVault, { LiquidationThreshold, LiquidationThresholdType } from '../Ba
 import VaultAccount from '../VaultAccount';
 import { CashGroup, Market, System } from '../../system';
 import { getNowSeconds } from '../../libs/utils';
-import TradeHandler from '../../trading/TradeHandler';
+import TradeHandler, { DexId } from '../../trading/TradeHandler';
 import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../config/constants';
 
 interface DepositParams {
@@ -24,15 +24,23 @@ interface RedeemParams {
 const crossCurrencyInterface = new utils.Interface(['function LEND_CURRENCY_ID() view returns (uint16)']);
 
 export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams> {
-  constructor(vaultAddress: string, private _lendCurrencyId: number) {
+  protected _lendCurrencyId: number;
+
+  readonly depositTuple: string =
+    'tuple(uint256 minPurchaseAmount, uint32 minLendRate, uint16 dexId, bytes exchangeData) d';
+
+  readonly redeemTuple: string =
+    'tuple(uint256 minPurchaseAmount, uint32 maxBorrowRate, uint16 dexId, bytes exchangeData) r';
+
+  constructor(vaultAddress: string) {
     super(vaultAddress);
+    this._lendCurrencyId = 0;
   }
 
-  public async loadVault(vaultAddress: string) {
+  public async initializeVault(): Promise<void> {
     const provider = System.getSystem().batchProvider;
-    const contract = new Contract(vaultAddress, crossCurrencyInterface, provider);
-    const lendCurrencyId: number = await contract.LEND_CURRENCY_ID();
-    return new CrossCurrencyfCash(vaultAddress, lendCurrencyId);
+    const contract = new Contract(this.vaultAddress, crossCurrencyInterface, provider);
+    this._lendCurrencyId = await contract.LEND_CURRENCY_ID();
   }
 
   public get lendCurrencyId() {
@@ -131,26 +139,103 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     return thresholds;
   }
 
+  public async getDepositParametersExact(
+    maturity: number,
+    depositAmount: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    const { buyAmount, minPurchaseAmount, data } = await TradeHandler.getExactTrade(
+      System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
+      depositAmount.symbol,
+      depositAmount.toUnderlying(false)
+    );
+    // get lendRate based on optimalPurchaseAmount, apply slippage buffer
+    const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
+      buyAmount.toInternalPrecision().neg(),
+      blockTime
+    );
+
+    const { annualizedRate: minLendRate } = Market.getSlippageRate(
+      lendfCash,
+      buyAmount.toInternalPrecision(),
+      maturity,
+      -slippageBuffer * RATE_PRECISION,
+      blockTime
+    );
+
+    return {
+      minPurchaseAmount,
+      minLendRate,
+      dexId: DexId.ZERO_EX,
+      exchangeData: data,
+    };
+  }
+
+  public async getRedeemParametersExact(
+    maturity: number,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    if (maturity < blockTime) {
+      if (!strategyTokens.isZero()) throw Error('Vault not settled');
+
+      // No strategy tokens left past maturity for this vault
+      return {
+        minPurchaseAmount: BigNumber.from(0),
+        maxBorrowRate: 0,
+        dexId: 0,
+        exchangeData: '0x',
+      };
+    }
+
+    const market = this.getLendMarket(maturity);
+    const lendfCash = this.strategyTokensTofCash(strategyTokens);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash.neg(), blockTime);
+    const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    const { minPurchaseAmount, data } = await TradeHandler.getExactTrade(
+      primaryBorrowSymbol,
+      netCashToAccount.symbol,
+      netCashToAccount.toUnderlying(false)
+    );
+
+    const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
+      lendfCash,
+      netCashToAccount,
+      market.maturity,
+      slippageBuffer * RATE_PRECISION,
+      blockTime
+    );
+
+    return {
+      minPurchaseAmount,
+      maxBorrowRate,
+      dexId: DexId.ZERO_EX,
+      exchangeData: data,
+    };
+  }
+
   private _getDepositParameters(
     maturity: number,
     depositAmount: TypedBigNumber,
     slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
-    const { amountOut, minPurchaseAmount, dexId, exchangeData } = TradeHandler.getOutGivenIn(
-      this.lendCurrencyId,
+    const { buyEstimate, minPurchaseAmount } = TradeHandler.getBuyEstimate(
+      System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
       depositAmount.toUnderlying(false),
       slippageBuffer
     );
     // get lendRate based on optimalPurchaseAmount, apply slippage buffer
     const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
-      amountOut.toInternalPrecision().neg(),
+      buyEstimate.toInternalPrecision().neg(),
       blockTime
     );
 
     const { annualizedRate: minLendRate } = Market.getSlippageRate(
       lendfCash,
-      amountOut.toInternalPrecision(),
+      buyEstimate.toInternalPrecision(),
       maturity,
       -slippageBuffer * RATE_PRECISION,
       blockTime
@@ -161,10 +246,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       depositParams: {
         minPurchaseAmount: minPurchaseAmount.n,
         minLendRate,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '0x',
       },
-      amountOut,
+      buyEstimate,
     };
   }
 
@@ -193,17 +278,18 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
           minPurchaseAmount: BigNumber.from(0),
           maxBorrowRate: 0,
           dexId: 0,
-          exchangeData: '',
+          exchangeData: '0x',
         },
-        amountOut: TypedBigNumber.fromBalance(0, 'DAI', true),
+        buyEstimate: TypedBigNumber.fromBalance(0, 'DAI', true),
       };
     }
 
     const market = this.getLendMarket(maturity);
     const lendfCash = this.strategyTokensTofCash(strategyTokens);
     const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash.neg(), blockTime);
-    const { amountOut, minPurchaseAmount, dexId, exchangeData } = TradeHandler.getOutGivenIn(
-      this.getVault().primaryBorrowCurrency,
+    const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    const { buyEstimate, minPurchaseAmount } = TradeHandler.getBuyEstimate(
+      primaryBorrowSymbol,
       netCashToAccount.toUnderlying(false),
       slippageBuffer
     );
@@ -220,10 +306,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       redeemParams: {
         minPurchaseAmount: minPurchaseAmount.n,
         maxBorrowRate,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '0x',
       },
-      amountOut,
+      buyEstimate,
     };
   }
 
@@ -304,14 +390,14 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     slippageBuffer: number,
     blockTime?: number
   ) {
-    const { amountOut, depositParams } = this._getDepositParameters(
+    const { buyEstimate, depositParams } = this._getDepositParameters(
       vaultAccount.maturity,
       depositAmount,
       slippageBuffer,
       blockTime
     );
     const lendfCash = this.getLendMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
-      amountOut.toInternalPrecision().neg(),
+      buyEstimate.toInternalPrecision().neg(),
       blockTime
     );
 
@@ -328,15 +414,16 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     slippageBuffer: number,
     blockTime?: number
   ) {
-    const { amountOut, redeemParams } = this._getRedeemParameters(
+    const { buyEstimate, redeemParams } = this._getRedeemParameters(
       vaultAccount.maturity,
       strategyTokens,
       slippageBuffer,
       blockTime
     );
+    if (!buyEstimate) throw Error('Unable to estimate trade');
 
     return {
-      amountRedeemed: amountOut,
+      amountRedeemed: buyEstimate,
       secondaryfCashRepaid: undefined,
       redeemParams,
     };
@@ -359,12 +446,12 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       -slippageBuffer * RATE_PRECISION,
       blockTime
     );
+    const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
 
-    const {
-      amountIn: requiredDeposit,
-      dexId,
-      exchangeData,
-    } = TradeHandler.getInGivenOut(this.getVault().primaryBorrowCurrency, netCashToAccount.toExternalPrecision().neg());
+    const { sellEstimate: requiredDeposit } = TradeHandler.getSellEstimate(
+      primaryBorrowSymbol,
+      netCashToAccount.toExternalPrecision().neg()
+    );
     const minPurchaseAmount = TradeHandler.applySlippage(
       netCashToAccount.toExternalPrecision().neg(),
       -slippageBuffer
@@ -376,8 +463,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       depositParams: {
         minLendRate,
         minPurchaseAmount,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '0x',
       },
     };
   }
@@ -389,14 +476,14 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     blockTime?: number
   ) {
     const market = this.getLendMarket(vaultAccount.maturity);
-    const { amountIn, dexId, exchangeData } = TradeHandler.getInGivenOut(
-      this.lendCurrencyId,
+    const { sellEstimate } = TradeHandler.getSellEstimate(
+      System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
       redeemAmount.toExternalPrecision()
     );
-    const lendfCash = market.getfCashAmountGivenCashAmount(amountIn.toInternalPrecision(), blockTime);
+    const lendfCash = market.getfCashAmountGivenCashAmount(sellEstimate.toInternalPrecision(), blockTime);
     const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
       lendfCash,
-      amountIn.toInternalPrecision(),
+      sellEstimate.toInternalPrecision(),
       vaultAccount.maturity,
       slippageBuffer * RATE_PRECISION,
       blockTime
@@ -409,8 +496,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       redeemParams: {
         minPurchaseAmount,
         maxBorrowRate,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '0x',
       },
     };
   }
