@@ -140,6 +140,7 @@ export interface SerializedTypedBigNumber {
   hex?: string;
   bigNumberType?: string;
   symbol?: string;
+  decimals?: number;
 }
 
 export function encodeSerializedTypedBigNumber(message: SerializedTypedBigNumber): Uint8Array {
@@ -175,6 +176,13 @@ function _encodeSerializedTypedBigNumber(message: SerializedTypedBigNumber, bb: 
   if ($symbol !== undefined) {
     writeVarint32(bb, 34);
     writeString(bb, $symbol);
+  }
+
+  // optional int32 decimals = 5;
+  let $decimals = message.decimals;
+  if ($decimals !== undefined) {
+    writeVarint32(bb, 40);
+    writeVarint64(bb, intToLong($decimals));
   }
 }
 
@@ -213,6 +221,12 @@ function _decodeSerializedTypedBigNumber(bb: ByteBuffer): SerializedTypedBigNumb
       // optional string symbol = 4;
       case 4: {
         message.symbol = readString(bb, readVarint32(bb));
+        break;
+      }
+
+      // optional int32 decimals = 5;
+      case 5: {
+        message.decimals = readVarint32(bb);
         break;
       }
 
@@ -2781,8 +2795,8 @@ function _decodeSources(bb: ByteBuffer): Sources {
 export interface Estimate {
   price?: SerializedBigNumber;
   estimatedPriceImpact?: SerializedBigNumber;
-  buyAmount?: SerializedBigNumber;
-  sellAmount?: SerializedBigNumber;
+  buyAmount?: SerializedTypedBigNumber;
+  sellAmount?: SerializedTypedBigNumber;
   sources?: Sources[];
 }
 
@@ -2815,23 +2829,23 @@ function _encodeEstimate(message: Estimate, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedBigNumber buyAmount = 3;
+  // optional SerializedTypedBigNumber buyAmount = 3;
   let $buyAmount = message.buyAmount;
   if ($buyAmount !== undefined) {
     writeVarint32(bb, 26);
     let nested = popByteBuffer();
-    _encodeSerializedBigNumber($buyAmount, nested);
+    _encodeSerializedTypedBigNumber($buyAmount, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
 
-  // optional SerializedBigNumber sellAmount = 4;
+  // optional SerializedTypedBigNumber sellAmount = 4;
   let $sellAmount = message.sellAmount;
   if ($sellAmount !== undefined) {
     writeVarint32(bb, 34);
     let nested = popByteBuffer();
-    _encodeSerializedBigNumber($sellAmount, nested);
+    _encodeSerializedTypedBigNumber($sellAmount, nested);
     writeVarint32(bb, nested.limit);
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
@@ -2881,18 +2895,18 @@ function _decodeEstimate(bb: ByteBuffer): Estimate {
         break;
       }
 
-      // optional SerializedBigNumber buyAmount = 3;
+      // optional SerializedTypedBigNumber buyAmount = 3;
       case 3: {
         let limit = pushTemporaryLength(bb);
-        message.buyAmount = _decodeSerializedBigNumber(bb);
+        message.buyAmount = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional SerializedBigNumber sellAmount = 4;
+      // optional SerializedTypedBigNumber sellAmount = 4;
       case 4: {
         let limit = pushTemporaryLength(bb);
-        message.sellAmount = _decodeSerializedBigNumber(bb);
+        message.sellAmount = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }

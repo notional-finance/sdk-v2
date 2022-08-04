@@ -1,6 +1,7 @@
 import { BigNumber } from 'ethers';
-import { parseEther } from 'ethers/lib/utils';
+import { parseUnits } from 'ethers/lib/utils';
 import { fetch as crossFetch } from 'cross-fetch';
+import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
 
 const apiUrl = {
   mainnet: 'https://api.0x.org',
@@ -37,8 +38,8 @@ interface SwapResponse {
 export interface Estimate {
   price: BigNumber;
   estimatedPriceImpact: BigNumber;
-  buyAmount: BigNumber;
-  sellAmount: BigNumber;
+  buyAmount: TypedBigNumber;
+  sellAmount: TypedBigNumber;
   sources: {
     name: string;
     proportion: number;
@@ -52,23 +53,54 @@ export interface EstimateResult {
   estimates: Estimate[];
 }
 
-const RequiredEstimates = {
+interface Token {
+  symbol: string;
+  address: string;
+  decimals: number;
+}
+
+const Tokens: Record<string, Token> = {
+  USDC: {
+    symbol: 'USDC',
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    decimals: 6,
+  },
+  DAI: {
+    symbol: 'DAI',
+    address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    decimals: 18,
+  },
+  WETH: {
+    symbol: 'WETH',
+    address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    decimals: 18,
+  },
+};
+
+const RequiredEstimates: Record<NETWORKS, { buyToken: Token; sellToken: Token; sellRanges: number[] }[]> = {
   mainnet: [
     {
-      // USDC
-      buyToken: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      // DAI
-      sellToken: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-      // 100_000, 10_000_000
-      sellRanges: [parseEther('100000'), parseEther('10000000')],
+      buyToken: Tokens.USDC,
+      sellToken: Tokens.DAI,
+      sellRanges: [100_000, 10_000_000],
+    },
+    {
+      buyToken: Tokens.DAI,
+      sellToken: Tokens.USDC,
+      sellRanges: [100_000, 10_000_000],
+    },
+    {
+      buyToken: Tokens.WETH,
+      sellToken: Tokens.DAI,
+      sellRanges: [100_000, 10_000_000],
     },
   ],
 };
 
 const fetchTradingEstimate = async (
-  buyToken: string,
-  sellToken: string,
-  sellRanges: BigNumber[],
+  buyToken: Token,
+  sellToken: Token,
+  sellRanges: number[],
   network: NETWORKS,
   _fetch: any
 ): Promise<EstimateResult> => {
@@ -78,16 +110,26 @@ const fetchTradingEstimate = async (
     await Promise.all(
       sellRanges.map(async (a) => {
         try {
-          console.log('fetching once');
+          const sellAmountString = parseUnits(a.toString(), sellToken.decimals).toString();
           const resp = await _fetch(
-            `${zeroExUrl}/swap/v1/price?sellToken=${sellToken}&buyToken=${buyToken}&sellAmount=${a.toString()}`
+            `${zeroExUrl}/swap/v1/price?sellToken=${sellToken.address}&buyToken=${buyToken.address}&sellAmount=${sellAmountString}`
           );
           const v: SwapResponse = await resp.json();
           return {
             price: BigNumber.from(Math.floor(Number(v.price) * 1e8)),
             estimatedPriceImpact: BigNumber.from(Math.floor(Number(v.price) * 1e8)),
-            buyAmount: BigNumber.from(v.buyAmount),
-            sellAmount: BigNumber.from(v.sellAmount),
+            buyAmount: TypedBigNumber.from(
+              v.buyAmount,
+              BigNumberType.ExternalUnderlying,
+              buyToken.symbol,
+              buyToken.decimals
+            ),
+            sellAmount: TypedBigNumber.from(
+              v.sellAmount,
+              BigNumberType.ExternalUnderlying,
+              sellToken.symbol,
+              sellToken.decimals
+            ),
             sources: v.sources
               .map(({ name, proportion }) => ({ name, proportion: Number(proportion) }))
               .filter(({ proportion }) => Number(proportion) > 0),
@@ -98,19 +140,21 @@ const fetchTradingEstimate = async (
         }
       })
     )
-  ).filter((r): r is Estimate => !!r);
+  )
+    .filter((r): r is Estimate => !!r)
+    .sort((a, b) => (a.sellAmount.lt(b.sellAmount) ? -1 : 1));
 
   return {
     network,
-    buyTokenAddress: buyToken,
-    sellTokenAddress: sellToken,
+    buyTokenAddress: buyToken.address,
+    sellTokenAddress: sellToken.address,
     estimates,
   };
 };
 
-export function getTradingEstimates(network: string, skipFetchSetup: boolean) {
+export function getTradingEstimates(network: NETWORKS, skipFetchSetup: boolean) {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
-  return Promise.all<EstimateResult[]>(
+  return Promise.all(
     RequiredEstimates[network].map(({ buyToken, sellToken, sellRanges }) =>
       fetchTradingEstimate(buyToken, sellToken, sellRanges, network as NETWORKS, _fetch)
     )

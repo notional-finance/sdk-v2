@@ -3,7 +3,7 @@ import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import { AssetType, Contracts, IncentiveMigration, SettlementMarket } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
-import { DEFAULT_DATA_REFRESH_INTERVAL, NOTE_CURRENCY_ID } from '../config/constants';
+import { DEFAULT_DATA_REFRESH_INTERVAL, ETHER_CURRENCY_ID, NOTE_CURRENCY_ID } from '../config/constants';
 
 import { ERC20 } from '../typechain/ERC20';
 import GraphClient from '../data/GraphClient';
@@ -406,6 +406,32 @@ export default class System {
     const state = vault.vaultStates.find((s) => s.maturity === maturity);
     if (!state) throw Error(`Vault state ${maturity} not found`);
     return state;
+  }
+
+  /** Trading Estimation Data * */
+  private _getTokenAddressForTradingEstimation(symbol: string | number) {
+    if (symbol === 'ETH' || symbol === ETHER_CURRENCY_ID) {
+      // WETH is used in trading estimation
+      return this.getWETH().address;
+    }
+    if (typeof symbol === 'number') {
+      const currency = this.getCurrencyById(symbol);
+      return currency.underlyingContract?.address || currency.assetContract.address;
+    }
+    if (ethers.utils.isAddress(symbol)) {
+      return symbol;
+    }
+    const currency = this.getCurrencyBySymbol(symbol);
+    return symbol === currency.underlyingSymbol ? currency.underlyingContract!.address : currency.assetContract.address;
+  }
+
+  public getTradingEstimates(sellToken: string | number, buyToken: string | number) {
+    const buyTokenAddress = this._getTokenAddressForTradingEstimation(buyToken);
+    const sellTokenAddress = this._getTokenAddressForTradingEstimation(sellToken);
+
+    const estimate = this.data.tradingEstimates.get(`${buyTokenAddress}:${sellTokenAddress}`);
+    if (!estimate) throw Error(`No estimate found for ${buyToken} and ${sellToken}`);
+    return estimate;
   }
 
   /** Override Providers * */

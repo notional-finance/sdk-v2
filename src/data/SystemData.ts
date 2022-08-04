@@ -35,7 +35,13 @@ export async function fetchAndEncodeSystem(
   const estimateResults = await getTradingEstimates('mainnet', skipFetchSetup);
   const tradingEstimates = estimateResults.reduce((obj, e) => {
     const o = obj;
-    o[`${e.buyTokenAddress}:${e.sellTokenAddress}`] = e;
+    o[`${e.buyTokenAddress}:${e.sellTokenAddress}`] = {
+      ...e,
+      estimates: e.estimates.map((e) =>
+        // Serialized TypedBigNumbers
+        ({ ...e, sellAmount: e.sellAmount.toJSON(), buyAmount: e.buyAmount.toJSON() })
+      ),
+    };
     return o;
   }, {});
 
@@ -111,6 +117,11 @@ export async function fetchAndEncodeSystem(
       return ret;
     }, {}),
   };
+  console.log(
+    systemObject.tradingEstimates![
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48:0x6B175474E89094C44Da98b954EedeAC495271d0F'
+    ].estimates
+  );
 
   const binary = encodeSystemData(systemObject);
   const json = JSON.stringify(decodeSystemData(binary));
@@ -193,7 +204,6 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
 function _encodeMap(decoded: any) {
   // Coverts records to maps so that we can use .get on them and get type checking
   const mapped = decoded;
-  console.log(decoded);
   mapped.USDExchangeRates = new Map(Object.entries(decoded.USDExchangeRates));
   mapped.currencies = new Map(Object.entries(decoded.currencies).map(([k, v]) => [Number(k), v]));
   mapped.ethRateData = new Map(Object.entries(decoded.ethRateData).map(([k, v]) => [Number(k), v]));

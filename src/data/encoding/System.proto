@@ -16,6 +16,8 @@ message SerializedTypedBigNumber {
     string hex = 2;
     string bigNumberType = 3;
     string symbol = 4;
+    // This is an optional field that is not always present
+    int32 decimals = 5;
 }
 
 message sNOTE {
@@ -188,8 +190,8 @@ message Sources {
 message Estimate {
     SerializedBigNumber price = 1;
     SerializedBigNumber estimatedPriceImpact = 2;
-    SerializedBigNumber buyAmount = 3;
-    SerializedBigNumber sellAmount = 4;
+    SerializedTypedBigNumber buyAmount = 3;
+    SerializedTypedBigNumber sellAmount = 4;
     repeated Sources sources = 5;
 }
 
