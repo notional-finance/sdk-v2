@@ -2,6 +2,7 @@ import { BigNumber } from 'ethers';
 import { TypedBigNumber, BigNumberType } from '../../src';
 import { BASIS_POINT, SECONDS_IN_QUARTER } from '../../src/config/constants';
 import { VaultState, VaultConfig } from '../../src/data';
+import CrossCurrencyfCash from '../../src/vaults/strategy/CrossCurrencyfCash';
 
 export function MockCrossCurrencyConfig(maturity: number) {
   const vaultSymbol = `0xabc:${maturity}`;
@@ -114,4 +115,10 @@ export function MockSecondaryBorrowConfig(maturity: number) {
   };
 
   return { vault, vaultSymbol };
+}
+
+export class MockCrossCurrencyfCash extends CrossCurrencyfCash {
+  public setLendCurrencyId(id: number) {
+    this._lendCurrencyId = id;
+  }
 }

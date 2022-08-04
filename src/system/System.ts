@@ -3,7 +3,7 @@ import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import { AssetType, Contracts, IncentiveMigration, SettlementMarket } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
-import { DEFAULT_DATA_REFRESH_INTERVAL, NOTE_CURRENCY_ID } from '../config/constants';
+import { DEFAULT_DATA_REFRESH_INTERVAL, ETHER_CURRENCY_ID, NOTE_CURRENCY_ID } from '../config/constants';
 
 import { ERC20 } from '../typechain/ERC20';
 import GraphClient from '../data/GraphClient';
@@ -11,7 +11,7 @@ import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../data/SystemData';
-import { Asset, Currency, SystemData, nToken, ETHRate } from '../data';
+import { Asset, Currency, SystemData, nToken, ETHRate, TradingEstimate } from '../data';
 import { IAggregator } from '../typechain';
 
 export enum SystemEvents {
@@ -138,7 +138,17 @@ export default class System {
     skipFetchSetup = false
   ) {
     const initData = await fetchAndDecodeSystem(cacheUrl, batchProvider, skipFetchSetup);
-    return new System(cacheUrl, graphClient, contracts, batchProvider, refreshIntervalMS, initData, skipFetchSetup);
+    const network = await batchProvider.getNetwork();
+    return new System(
+      cacheUrl,
+      graphClient,
+      contracts,
+      batchProvider,
+      refreshIntervalMS,
+      network.name === 'homestead' ? 'mainnet' : network.name,
+      skipFetchSetup,
+      initData
+    );
   }
 
   constructor(
@@ -147,8 +157,9 @@ export default class System {
     private contracts: Contracts,
     public batchProvider: ethers.providers.JsonRpcBatchProvider,
     public refreshIntervalMS: number,
-    initData: SystemData,
-    skipFetchSetup: boolean
+    public network: string,
+    public skipFetchSetup: boolean,
+    initData: SystemData
   ) {
     // eslint-disable-next-line no-underscore-dangle
     System._systemInstance = this;
@@ -406,6 +417,31 @@ export default class System {
     const state = vault.vaultStates.find((s) => s.maturity === maturity);
     if (!state) throw Error(`Vault state ${maturity} not found`);
     return state;
+  }
+
+  /** Trading Estimation Data * */
+  private _getTokenAddressForTradingEstimation(symbol: string | number) {
+    if (symbol === 'ETH' || symbol === ETHER_CURRENCY_ID) {
+      return '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+    }
+    if (typeof symbol === 'number') {
+      const currency = this.getCurrencyById(symbol);
+      return currency.underlyingContract?.address || currency.assetContract.address;
+    }
+    if (ethers.utils.isAddress(symbol)) {
+      return symbol;
+    }
+    const currency = this.getCurrencyBySymbol(symbol);
+    return symbol === currency.underlyingSymbol ? currency.underlyingContract!.address : currency.assetContract.address;
+  }
+
+  public getTradingEstimates(sellToken: string | number, buyToken: string | number): TradingEstimate {
+    const buyTokenAddress = this._getTokenAddressForTradingEstimation(buyToken);
+    const sellTokenAddress = this._getTokenAddressForTradingEstimation(sellToken);
+
+    const estimate = this.data.tradingEstimates.get(`${buyTokenAddress}:${sellTokenAddress}`);
+    if (!estimate) throw Error(`No estimate found for ${buyToken} and ${sellToken}`);
+    return estimate;
   }
 
   /** Override Providers * */

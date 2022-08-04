@@ -1029,5 +1029,139 @@
       ]
     }
   },
-  "vaults": {}
+  "vaults": {},
+  "tradingEstimates": {
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0x6b175474e89094c44da98b954eedeac495271d0f": {
+      "buyTokenAddress": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "sellTokenAddress": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "estimates": [
+        {
+          "price": { "_isBigNumber": true, "_hex": "0x05f5c738" },
+          "estimatedPriceImpact": { "_isBigNumber": true, "_hex": "0x05f5c738" },
+          "buyAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x174812495c",
+            "bigNumberType": "External Underlying",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "sellAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x152d02c7e14af6800000",
+            "bigNumberType": "External Underlying",
+            "symbol": "DAI",
+            "decimals": 18
+          },
+          "sources": [{ "name": "Uniswap_V3", "proportion": 1 }]
+        },
+        {
+          "price": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+          "estimatedPriceImpact": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+          "buyAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x09184e72a000",
+            "bigNumberType": "External Underlying",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "sellAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x084595161401484a000000",
+            "bigNumberType": "External Underlying",
+            "symbol": "DAI",
+            "decimals": 18
+          },
+          "sources": [{ "name": "MakerPsm", "proportion": 1 }]
+        }
+      ]
+    },
+    "0x6b175474e89094c44da98b954eedeac495271d0f:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+      "buyTokenAddress": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "sellTokenAddress": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "estimates": [
+        {
+          "price": { "_isBigNumber": true, "_hex": "0x05f5dd6a" },
+          "estimatedPriceImpact": { "_isBigNumber": true, "_hex": "0x05f5dd6a" },
+          "buyAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x152cf60cf74fda8f51e4",
+            "bigNumberType": "External Underlying",
+            "symbol": "DAI",
+            "decimals": 18
+          },
+          "sellAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x174876e800",
+            "bigNumberType": "External Underlying",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "sources": [{ "name": "Balancer_V2", "proportion": 1 }]
+        },
+        {
+          "price": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+          "estimatedPriceImpact": { "_isBigNumber": true, "_hex": "0x05f5e100" },
+          "buyAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x084595161401484a000000",
+            "bigNumberType": "External Underlying",
+            "symbol": "DAI",
+            "decimals": 18
+          },
+          "sellAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x09184e72a000",
+            "bigNumberType": "External Underlying",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "sources": [{ "name": "MakerPsm", "proportion": 1 }]
+        }
+      ]
+    },
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:0x6b175474e89094c44da98b954eedeac495271d0f": {
+      "buyTokenAddress": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "sellTokenAddress": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "estimates": [
+        {
+          "price": { "_isBigNumber": true, "_hex": "0xf1e3" },
+          "estimatedPriceImpact": { "_isBigNumber": true, "_hex": "0xf1e3" },
+          "buyAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x035b5bcd2a17073abc",
+            "bigNumberType": "External Underlying",
+            "symbol": "ETH",
+            "decimals": 18
+          },
+          "sellAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x152d02c7e14af6800000",
+            "bigNumberType": "External Underlying",
+            "symbol": "DAI",
+            "decimals": 18
+          },
+          "sources": [{ "name": "Uniswap_V3", "proportion": 1 }]
+        },
+        {
+          "price": { "_isBigNumber": true, "_hex": "0xeed6" },
+          "estimatedPriceImpact": { "_isBigNumber": true, "_hex": "0xeed6" },
+          "buyAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x014b7488e20844e45fd1",
+            "bigNumberType": "External Underlying",
+            "symbol": "ETH",
+            "decimals": 18
+          },
+          "sellAmount": {
+            "_isTypedBigNumber": true,
+            "hex": "0x084595161401484a000000",
+            "bigNumberType": "External Underlying",
+            "symbol": "DAI",
+            "decimals": 18
+          },
+          "sources": [{ "name": "Uniswap_V3", "proportion": 1 }]
+        }
+      ]
+    }
+  }
 }

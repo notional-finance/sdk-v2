@@ -1,4 +1,4 @@
-import { ethers, VoidSigner } from 'ethers';
+import { BigNumber, ethers, VoidSigner } from 'ethers';
 import Notional, { Contracts } from '../../src';
 import GraphClient from '../../src/data/GraphClient';
 import { decodeBinary, fetchAndEncodeSystem } from '../../src/data/SystemData';
@@ -28,7 +28,8 @@ describe('System Integration Test', () => {
       provider,
       contracts,
       false,
-      process.env.EXCHANGE_RATE_API || ''
+      process.env.EXCHANGE_RATE_API || '',
+      { USD: BigNumber.from(1) }
     );
 
     decodeBinary(binary, provider);

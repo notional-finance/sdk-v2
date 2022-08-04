@@ -15,6 +15,7 @@ import {
   VaultConfig as _VaultConfig,
   VaultState as _VaultState,
   VaultHistoricalValue as _VaultHistoricalValue,
+  TradingEstimate as _TradingEstimate,
 } from './encoding/SystemProto';
 
 type DeepRequired<T, TIgnore> = T extends object | TIgnore
@@ -52,7 +53,7 @@ type RewriteRequired<T> = DeepRequired<Rewrite<T>, BigNumber | TypedBigNumber | 
 export type StakedNoteParameters = RewriteRequired<_sNOTE>;
 export type Currency = Omit<RewriteRequired<_Currency>, 'assetContract' | 'underlyingContract'> & {
   readonly assetContract: ERC20;
-  readonly underlyingContract: ERC20;
+  readonly underlyingContract?: ERC20;
 };
 export type ETHRate = Omit<RewriteRequired<_ETHRate>, 'rateOracle'> & { readonly rateOracle: IAggregator };
 export type AssetRate = Omit<RewriteRequired<_AssetRate>, 'rateAdapter'> & {
@@ -63,6 +64,7 @@ export type CashGroupData = RewriteRequired<_CashGroup>;
 export type Asset = Omit<RewriteRequired<_Asset>, 'assetType'> & { readonly assetType: AssetType };
 export type SecondaryBorrowArray = [TypedBigNumber?, TypedBigNumber?] | undefined;
 export type VaultHistoricalValue = RewriteRequired<_VaultHistoricalValue>;
+export type TradingEstimate = RewriteRequired<_TradingEstimate>;
 export type VaultState = Omit<
   Rewrite<_VaultState>,
   | 'maturity'
@@ -110,4 +112,5 @@ export interface SystemData {
   nTokenData: Map<number, nToken>;
   cashGroups: Map<number, CashGroupData>;
   vaults: Map<string, VaultConfig>;
+  tradingEstimates: Map<string, TradingEstimate>;
 }
