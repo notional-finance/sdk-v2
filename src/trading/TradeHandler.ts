@@ -32,14 +32,14 @@ export default class TradeHandler {
 
     // sell = buy / price
     const sellEstimate = TypedBigNumber.fromBalance(
-      requiredBuyAmount.scale(INTERNAL_TOKEN_PRECISION, expectedPrice).n,
+      requiredBuyAmount.scale(INTERNAL_TOKEN_PRECISION, expectedPrice).toInternalPrecision().n,
       sellToken,
       true
-    );
+    ).toExternalPrecision();
 
     return {
       sellEstimate,
-      minPurchaseAmount: this.applySlippage(sellEstimate, -slippageBPS),
+      minPurchaseAmount: this.applySlippage(sellEstimate, slippageBPS),
     };
   }
 
@@ -51,14 +51,14 @@ export default class TradeHandler {
 
     // sell * price = buy
     const buyEstimate = TypedBigNumber.fromBalance(
-      requiredSellAmount.scale(expectedPrice, INTERNAL_TOKEN_PRECISION).n,
+      requiredSellAmount.scale(expectedPrice, INTERNAL_TOKEN_PRECISION).toInternalPrecision().n,
       buyToken,
       true
-    );
+    ).toExternalPrecision();
 
     return {
       buyEstimate,
-      minPurchaseAmount: this.applySlippage(buyEstimate, slippageBPS),
+      minPurchaseAmount: this.applySlippage(buyEstimate, -slippageBPS),
       expectedPrice,
     };
   }
@@ -104,6 +104,7 @@ export default class TradeHandler {
   // }
 
   public static applySlippage(amount: TypedBigNumber, slippageBPS: number) {
-    return amount.sub(amount.scale(Math.floor(slippageBPS * RATE_PRECISION), RATE_PRECISION));
+    this._checkAmount(amount);
+    return amount.add(amount.scale(Math.floor(slippageBPS * RATE_PRECISION), RATE_PRECISION));
   }
 }

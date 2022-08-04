@@ -42,7 +42,7 @@ describe('Test Trade Handler', () => {
     expect(buyEstimate.toFloat() * 0.995).toBeCloseTo(minPurchaseAmount.toFloat());
   });
 
-  it('returns a buy estimate where token precisions are different', () => {
+  it('returns a buy estimate DAI to USDC', () => {
     const { buyEstimate, minPurchaseAmount } = TradeHandler.getBuyEstimate(
       'DAI',
       TypedBigNumber.fromBalance(1_000_000e8, 'USDC', true),
@@ -50,6 +50,17 @@ describe('Test Trade Handler', () => {
     );
     expect(buyEstimate.toFloat()).toBeCloseTo(1_000_000 - 10, -1);
     expect(buyEstimate.symbol).toBe('DAI');
+    expect(buyEstimate.toFloat() * 0.995).toBeCloseTo(minPurchaseAmount.toFloat());
+  });
+
+  it('returns a buy estimate USDC to DAI', () => {
+    const { buyEstimate, minPurchaseAmount } = TradeHandler.getBuyEstimate(
+      'USDC',
+      TypedBigNumber.fromBalance(1_000_000e8, 'DAI', true),
+      0.005
+    );
+    expect(buyEstimate.toFloat()).toBeCloseTo(1_000_000 - 60, -1);
+    expect(buyEstimate.symbol).toBe('USDC');
     expect(buyEstimate.toFloat() * 0.995).toBeCloseTo(minPurchaseAmount.toFloat());
   });
 

@@ -139,20 +139,20 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
-    const { amountOut, minPurchaseAmount, dexId, exchangeData } = TradeHandler.getOutGivenIn(
-      this.lendCurrencyId,
+    const { buyEstimate, minPurchaseAmount } = TradeHandler.getBuyEstimate(
+      System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
       depositAmount.toUnderlying(false),
       slippageBuffer
     );
     // get lendRate based on optimalPurchaseAmount, apply slippage buffer
     const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
-      amountOut.toInternalPrecision().neg(),
+      buyEstimate.toInternalPrecision().neg(),
       blockTime
     );
 
     const { annualizedRate: minLendRate } = Market.getSlippageRate(
       lendfCash,
-      amountOut.toInternalPrecision(),
+      buyEstimate.toInternalPrecision(),
       maturity,
       -slippageBuffer * RATE_PRECISION,
       blockTime
@@ -163,10 +163,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       depositParams: {
         minPurchaseAmount: minPurchaseAmount.n,
         minLendRate,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '',
       },
-      amountOut,
+      buyEstimate,
     };
   }
 
@@ -197,15 +197,16 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
           dexId: 0,
           exchangeData: '',
         },
-        amountOut: TypedBigNumber.fromBalance(0, 'DAI', true),
+        buyEstimate: TypedBigNumber.fromBalance(0, 'DAI', true),
       };
     }
 
     const market = this.getLendMarket(maturity);
     const lendfCash = this.strategyTokensTofCash(strategyTokens);
     const { netCashToAccount } = market.getCashAmountGivenfCashAmount(lendfCash.neg(), blockTime);
-    const { amountOut, minPurchaseAmount, dexId, exchangeData } = TradeHandler.getOutGivenIn(
-      this.getVault().primaryBorrowCurrency,
+    const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    const { buyEstimate, minPurchaseAmount } = TradeHandler.getBuyEstimate(
+      primaryBorrowSymbol,
       netCashToAccount.toUnderlying(false),
       slippageBuffer
     );
@@ -222,10 +223,10 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       redeemParams: {
         minPurchaseAmount: minPurchaseAmount.n,
         maxBorrowRate,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '',
       },
-      amountOut,
+      buyEstimate,
     };
   }
 
@@ -306,14 +307,14 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     slippageBuffer: number,
     blockTime?: number
   ) {
-    const { amountOut, depositParams } = this._getDepositParameters(
+    const { buyEstimate, depositParams } = this._getDepositParameters(
       vaultAccount.maturity,
       depositAmount,
       slippageBuffer,
       blockTime
     );
     const lendfCash = this.getLendMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
-      amountOut.toInternalPrecision().neg(),
+      buyEstimate.toInternalPrecision().neg(),
       blockTime
     );
 
@@ -330,15 +331,16 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     slippageBuffer: number,
     blockTime?: number
   ) {
-    const { amountOut, redeemParams } = this._getRedeemParameters(
+    const { buyEstimate, redeemParams } = this._getRedeemParameters(
       vaultAccount.maturity,
       strategyTokens,
       slippageBuffer,
       blockTime
     );
+    if (!buyEstimate) throw Error('Unable to estimate trade');
 
     return {
-      amountRedeemed: amountOut,
+      amountRedeemed: buyEstimate,
       secondaryfCashRepaid: undefined,
       redeemParams,
     };
@@ -361,12 +363,12 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       -slippageBuffer * RATE_PRECISION,
       blockTime
     );
+    const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
 
-    const {
-      amountIn: requiredDeposit,
-      dexId,
-      exchangeData,
-    } = TradeHandler.getInGivenOut(this.getVault().primaryBorrowCurrency, netCashToAccount.toExternalPrecision().neg());
+    const { sellEstimate: requiredDeposit } = TradeHandler.getSellEstimate(
+      primaryBorrowSymbol,
+      netCashToAccount.toExternalPrecision().neg()
+    );
     const minPurchaseAmount = TradeHandler.applySlippage(
       netCashToAccount.toExternalPrecision().neg(),
       -slippageBuffer
@@ -378,8 +380,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       depositParams: {
         minLendRate,
         minPurchaseAmount,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '',
       },
     };
   }
@@ -391,14 +393,14 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     blockTime?: number
   ) {
     const market = this.getLendMarket(vaultAccount.maturity);
-    const { amountIn, dexId, exchangeData } = TradeHandler.getInGivenOut(
-      this.lendCurrencyId,
+    const { sellEstimate } = TradeHandler.getSellEstimate(
+      System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
       redeemAmount.toExternalPrecision()
     );
-    const lendfCash = market.getfCashAmountGivenCashAmount(amountIn.toInternalPrecision(), blockTime);
+    const lendfCash = market.getfCashAmountGivenCashAmount(sellEstimate.toInternalPrecision(), blockTime);
     const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
       lendfCash,
-      amountIn.toInternalPrecision(),
+      sellEstimate.toInternalPrecision(),
       vaultAccount.maturity,
       slippageBuffer * RATE_PRECISION,
       blockTime
@@ -411,8 +413,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       redeemParams: {
         minPurchaseAmount,
         maxBorrowRate,
-        dexId,
-        exchangeData,
+        dexId: 0,
+        exchangeData: '',
       },
     };
   }

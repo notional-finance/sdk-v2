@@ -108,7 +108,7 @@ describe('Cross Currency fCash', () => {
     );
 
     expect(requiredDeposit.toNumber()).toBeCloseTo(depositAmount.toNumber(), -3);
-    expect(depositParams1.minPurchaseAmount.toString()).toBe(depositParams2.minPurchaseAmount.toString());
+    expect(depositParams1.minPurchaseAmount.sub(depositParams2.minPurchaseAmount).toNumber()).toBeLessThan(2);
     expect(depositParams1.minLendRate).toBeCloseTo(depositParams2.minLendRate, -3);
   });
 
