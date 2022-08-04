@@ -53,7 +53,7 @@ class TypedBigNumber {
     // "System" object. These cannot access the fromETH / toETH methods but
     // we can still convert between internal and external precision as well as
     // do all the formatting methods.
-    if (this._decimalsOverride) return this._decimalsOverride;
+    if (this._decimalsOverride) return BigNumber.from(10).pow(this._decimalsOverride);
 
     const currency = System.getSystem().getCurrencyById(this.currencyId);
     const decimals = this.isUnderlying()
@@ -432,7 +432,12 @@ class TypedBigNumber {
       throw TypeError('Unknown external precision type');
     }
 
-    return new TypedBigNumber(this.n.mul(INTERNAL_TOKEN_PRECISION).div(this.decimals), newType, this.symbol);
+    return new TypedBigNumber(
+      this.n.mul(INTERNAL_TOKEN_PRECISION).div(this.decimals),
+      newType,
+      this.symbol,
+      this._decimalsOverride
+    );
   }
 
   toExternalPrecision(): TypedBigNumber {
@@ -453,7 +458,12 @@ class TypedBigNumber {
       throw TypeError('Unknown external precision type');
     }
 
-    return new TypedBigNumber(this.n.mul(this.decimals).div(INTERNAL_TOKEN_PRECISION), newType, this.symbol);
+    return new TypedBigNumber(
+      this.n.mul(this.decimals).div(INTERNAL_TOKEN_PRECISION),
+      newType,
+      this.symbol,
+      this._decimalsOverride
+    );
   }
 
   toETH(useHaircut: boolean) {

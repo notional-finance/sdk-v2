@@ -11,7 +11,7 @@ import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../data/SystemData';
-import { Asset, Currency, SystemData, nToken, ETHRate } from '../data';
+import { Asset, Currency, SystemData, nToken, ETHRate, TradingEstimate } from '../data';
 import { IAggregator } from '../typechain';
 
 export enum SystemEvents {
@@ -411,8 +411,7 @@ export default class System {
   /** Trading Estimation Data * */
   private _getTokenAddressForTradingEstimation(symbol: string | number) {
     if (symbol === 'ETH' || symbol === ETHER_CURRENCY_ID) {
-      // WETH is used in trading estimation
-      return this.getWETH().address;
+      return '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
     }
     if (typeof symbol === 'number') {
       const currency = this.getCurrencyById(symbol);
@@ -425,7 +424,7 @@ export default class System {
     return symbol === currency.underlyingSymbol ? currency.underlyingContract!.address : currency.assetContract.address;
   }
 
-  public getTradingEstimates(sellToken: string | number, buyToken: string | number) {
+  public getTradingEstimates(sellToken: string | number, buyToken: string | number): TradingEstimate {
     const buyTokenAddress = this._getTokenAddressForTradingEstimation(buyToken);
     const sellTokenAddress = this._getTokenAddressForTradingEstimation(sellToken);
 

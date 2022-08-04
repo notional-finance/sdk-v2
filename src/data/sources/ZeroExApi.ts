@@ -70,9 +70,9 @@ const Tokens: Record<string, Token> = {
     address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
     decimals: 18,
   },
-  WETH: {
-    symbol: 'WETH',
-    address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  ETH: {
+    symbol: 'ETH',
+    address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
     decimals: 18,
   },
 };
@@ -90,7 +90,7 @@ const RequiredEstimates: Record<NETWORKS, { buyToken: Token; sellToken: Token; s
       sellRanges: [100_000, 10_000_000],
     },
     {
-      buyToken: Tokens.WETH,
+      buyToken: Tokens.ETH,
       sellToken: Tokens.DAI,
       sellRanges: [100_000, 10_000_000],
     },
@@ -146,8 +146,8 @@ const fetchTradingEstimate = async (
 
   return {
     network,
-    buyTokenAddress: buyToken.address,
-    sellTokenAddress: sellToken.address,
+    buyTokenAddress: buyToken.address.toLowerCase(),
+    sellTokenAddress: sellToken.address.toLowerCase(),
     estimates,
   };
 };
