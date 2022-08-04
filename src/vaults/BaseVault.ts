@@ -1,7 +1,8 @@
+import { utils } from 'ethers';
 import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
 import { SecondaryBorrowArray } from '../data';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { getNowSeconds } from '../libs/utils';
+import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup } from '../system';
 import VaultAccount from './VaultAccount';
 
@@ -33,6 +34,18 @@ export default abstract class BaseVault<D, R> {
 
   public static leverageToCollateralRatio(leverageRatio: number): number {
     return Math.floor((RATE_PRECISION / (leverageRatio - RATE_PRECISION)) * RATE_PRECISION);
+  }
+
+  abstract readonly depositTuple: string;
+
+  abstract readonly redeemTuple: string;
+
+  public encodeDepositParams(depositParams: D) {
+    return utils.defaultAbiCoder.encode([this.depositTuple], [depositParams]);
+  }
+
+  public encodeRedeemParams(redeemParams: R) {
+    return utils.defaultAbiCoder.encode([this.redeemTuple], [redeemParams]);
   }
 
   constructor(public vaultAddress: string) {}
@@ -443,7 +456,6 @@ export default abstract class BaseVault<D, R> {
 
     do {
       strategyTokens = this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime);
-      // TODO: we need an estimation of the actual DEX slippage give the initial valuation guess
       const { requiredDeposit } = this.getDepositGivenStrategyTokens(vaultAccount, strategyTokens, slippageBuffer);
       const borrowedCash = requiredDeposit.sub(depositAmount);
       const fees = this.assessVaultFees(vaultAccount.maturity, borrowedCash, blockTime);
@@ -468,5 +480,81 @@ export default abstract class BaseVault<D, R> {
       fCashToBorrow,
       strategyTokens: this.getStrategyTokensFromValue(vaultAccount.maturity, valuation, blockTime),
     };
+  }
+
+  public populateEnterTransaction(
+    account: string,
+    depositAmount: TypedBigNumber,
+    maturity: number,
+    fCashToBorrow: TypedBigNumber,
+    maxBorrowRate: number,
+    depositParams: D
+  ) {
+    const system = System.getSystem();
+    const notional = system.getNotionalProxy();
+    const underlyingSymbol = system.getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    depositAmount.check(BigNumberType.ExternalUnderlying, underlyingSymbol);
+    fCashToBorrow.check(BigNumberType.InternalUnderlying, underlyingSymbol);
+    const overrides = underlyingSymbol === 'ETH' ? { value: depositAmount.n } : {};
+
+    return populateTxnAndGas(notional, account, 'enterVault', [
+      account,
+      this.vaultAddress,
+      depositAmount.toExternalPrecision().n,
+      maturity,
+      fCashToBorrow.n,
+      maxBorrowRate,
+      this.encodeDepositParams(depositParams),
+      overrides,
+    ]);
+  }
+
+  public populateExitTransaction(
+    account: string,
+    vaultSharesToRedeem: TypedBigNumber,
+    fCashToLend: TypedBigNumber,
+    minLendRate: number,
+    redeemParams: R,
+    receiver?: string
+  ) {
+    const system = System.getSystem();
+    const notional = system.getNotionalProxy();
+    const underlyingSymbol = system.getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    if (vaultSharesToRedeem.type !== BigNumberType.VaultShare) throw Error('Invalid vault shares');
+    fCashToLend.check(BigNumberType.InternalUnderlying, underlyingSymbol);
+
+    return populateTxnAndGas(notional, account, 'exitVault', [
+      account,
+      this.vaultAddress,
+      receiver ?? account,
+      vaultSharesToRedeem.n,
+      fCashToLend.n,
+      minLendRate,
+      this.encodeRedeemParams(redeemParams),
+    ]);
+  }
+
+  public populateRollTransaction(
+    account: string,
+    maturity: number,
+    fCashToBorrow: TypedBigNumber,
+    minLendRate: number,
+    maxBorrowRate: number,
+    depositParams: D
+  ) {
+    const system = System.getSystem();
+    const notional = system.getNotionalProxy();
+    const underlyingSymbol = system.getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    fCashToBorrow.check(BigNumberType.InternalUnderlying, underlyingSymbol);
+
+    return populateTxnAndGas(notional, account, 'rollVaultPosition', [
+      account,
+      this.vaultAddress,
+      fCashToBorrow.n,
+      maturity,
+      minLendRate,
+      maxBorrowRate,
+      this.encodeDepositParams(depositParams),
+    ]);
   }
 }

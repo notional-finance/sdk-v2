@@ -66,6 +66,7 @@ describe('Cross Currency fCash', () => {
       depositParams
     );
     expect(likelySlippage).toBeLessThan(worstCaseSlippage);
+    expect(crossCurrency.encodeDepositParams(depositParams)).toBeDefined();
   });
 
   it('gets redeem parameters', () => {
@@ -90,6 +91,7 @@ describe('Cross Currency fCash', () => {
       redeemParams
     );
     expect(likelySlippage).toBeLessThan(worstCaseSlippage);
+    expect(crossCurrency.encodeRedeemParams(redeemParams)).toBeDefined();
   });
 
   it('it converts between deposit and strategy tokens', () => {

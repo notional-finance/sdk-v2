@@ -26,6 +26,12 @@ const crossCurrencyInterface = new utils.Interface(['function LEND_CURRENCY_ID()
 export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemParams> {
   protected _lendCurrencyId: number;
 
+  readonly depositTuple: string =
+    'tuple(uint256 minPurchaseAmount, uint32 minLendRate, uint16 dexId, bytes exchangeData) d';
+
+  readonly redeemTuple: string =
+    'tuple(uint256 minPurchaseAmount, uint32 maxBorrowRate, uint16 dexId, bytes exchangeData) r';
+
   constructor(vaultAddress: string) {
     super(vaultAddress);
     this._lendCurrencyId = 0;
@@ -164,7 +170,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
         minPurchaseAmount: minPurchaseAmount.n,
         minLendRate,
         dexId: 0,
-        exchangeData: '',
+        exchangeData: '0x',
       },
       buyEstimate,
     };
@@ -195,7 +201,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
           minPurchaseAmount: BigNumber.from(0),
           maxBorrowRate: 0,
           dexId: 0,
-          exchangeData: '',
+          exchangeData: '0x',
         },
         buyEstimate: TypedBigNumber.fromBalance(0, 'DAI', true),
       };
@@ -224,7 +230,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
         minPurchaseAmount: minPurchaseAmount.n,
         maxBorrowRate,
         dexId: 0,
-        exchangeData: '',
+        exchangeData: '0x',
       },
       buyEstimate,
     };
@@ -381,7 +387,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
         minLendRate,
         minPurchaseAmount,
         dexId: 0,
-        exchangeData: '',
+        exchangeData: '0x',
       },
     };
   }
@@ -414,7 +420,7 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
         minPurchaseAmount,
         maxBorrowRate,
         dexId: 0,
-        exchangeData: '',
+        exchangeData: '0x',
       },
     };
   }
