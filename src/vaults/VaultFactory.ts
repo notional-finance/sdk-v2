@@ -1,4 +1,4 @@
-import { keccak256 } from 'ethers/lib/utils';
+import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import BaseVault from './BaseVault';
 import CrossCurrencyfCash from './strategy/CrossCurrencyfCash';
 
@@ -14,8 +14,9 @@ export default class VaultFactory {
     CrossCurrencyfCash,
   };
 
-  private static idsToNames = this.names.reduce((m, n) => {
-    m.set(keccak256(n).slice(0, 10), n);
+  private static idsToNames = this.names.reduce((m, n: string) => {
+    const hash = keccak256(toUtf8Bytes(n)).slice(0, 10);
+    m.set(hash, n);
     return m;
   }, new Map<string, string>());
 
