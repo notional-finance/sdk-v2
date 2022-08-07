@@ -7,7 +7,7 @@ import { Contracts } from '../libs/types';
 import { ConfigKeys, getBlockchainData } from './sources/Blockchain';
 import getUSDPriceData from './sources/ExchangeRate';
 import { getSystemConfig } from './sources/Subgraph';
-import { getTradingEstimates } from './sources/ZeroExApi';
+import { getTradingEstimates, NETWORKS } from './sources/ZeroExApi';
 import { decodeSystemData, encodeSystemData, SystemData as _SystemData } from './encoding/SystemProto';
 
 import IAggregatorABI from '../abi/IAggregator.json';
@@ -32,7 +32,7 @@ export async function fetchAndEncodeSystem(
   // Only refresh exchange rates if a value is not provided
   const usdExchangeRates = _usdExchangeRates ?? (await getUSDPriceData(exchangeRateApiKey, skipFetchSetup));
   // Currently hardcoded to mainnet
-  const estimateResults = await getTradingEstimates('mainnet', skipFetchSetup);
+  const estimateResults = await getTradingEstimates(networkName as NETWORKS, skipFetchSetup);
   const tradingEstimates = estimateResults.reduce((obj, e) => {
     const o = obj;
     o[`${e.buyTokenAddress}:${e.sellTokenAddress}`] = {

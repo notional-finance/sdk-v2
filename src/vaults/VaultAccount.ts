@@ -80,6 +80,7 @@ export default class VaultAccount {
   }
 
   public updateMaturity(maturity: number) {
+    if (this.maturity === maturity) return;
     if (this.maturity !== 0) throw Error('Cannot set maturity');
     if (!this.vaultShares.isZero()) throw Error('Cannot set with vault shares');
     this._maturity = maturity;

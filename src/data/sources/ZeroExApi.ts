@@ -6,11 +6,14 @@ import { INTERNAL_TOKEN_PRECISION } from '../../config/constants';
 
 const apiUrl = {
   mainnet: 'https://api.0x.org',
+  // Goerli is not supported by zero ex so we use mainnet for estimation
+  goerli: 'https://api.0x.org',
 };
 
 export type NETWORKS = keyof typeof apiUrl;
 export type SOURCES =
   | '0x'
+  | 'Multihop'
   | 'Balancer_V2'
   | 'Curve'
   | 'Curve_V2'
@@ -91,7 +94,18 @@ const Tokens: Record<string, Token> = {
   },
 };
 
-const RequiredEstimates: Record<NETWORKS, { buyToken: Token; sellToken: Token; sellRanges: number[] }[]> = {
+const RequiredEstimates: Record<
+  NETWORKS,
+  {
+    buyToken: Token;
+    sellToken: Token;
+    sellRanges: number[];
+    addressOverride?: {
+      buyToken: string;
+      sellToken: string;
+    };
+  }[]
+> = {
   mainnet: [
     {
       buyToken: Tokens.USDC,
@@ -109,6 +123,35 @@ const RequiredEstimates: Record<NETWORKS, { buyToken: Token; sellToken: Token; s
       sellRanges: [100_000, 10_000_000],
     },
   ],
+  goerli: [
+    {
+      buyToken: Tokens.USDC,
+      sellToken: Tokens.DAI,
+      sellRanges: [100_000, 10_000_000],
+      addressOverride: {
+        buyToken: '0x31dd61ac1b7a0bc88f7a58389c0660833a66c35c',
+        sellToken: '0x84e90bddff9a0e124f1ab7f4d1d33a7c748c1a16',
+      },
+    },
+    {
+      buyToken: Tokens.DAI,
+      sellToken: Tokens.USDC,
+      sellRanges: [100_000, 10_000_000],
+      addressOverride: {
+        buyToken: '0x84e90bddff9a0e124f1ab7f4d1d33a7c748c1a16',
+        sellToken: '0x31dd61ac1b7a0bc88f7a58389c0660833a66c35c',
+      },
+    },
+    {
+      buyToken: Tokens.ETH,
+      sellToken: Tokens.DAI,
+      sellRanges: [100_000, 10_000_000],
+      addressOverride: {
+        buyToken: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        sellToken: '0x84e90bddff9a0e124f1ab7f4d1d33a7c748c1a16',
+      },
+    },
+  ],
 };
 
 const filterSource = (sources: { name: string; proportion: string }[]) =>
@@ -121,7 +164,11 @@ const fetchTradingEstimate = async (
   sellToken: Token,
   sellRanges: number[],
   network: NETWORKS,
-  _fetch: any
+  _fetch: any,
+  addressOverride?: {
+    buyToken: string;
+    sellToken: string;
+  }
 ): Promise<EstimateResult> => {
   const zeroExUrl = apiUrl[network];
 
@@ -163,8 +210,10 @@ const fetchTradingEstimate = async (
 
   return {
     network,
-    buyTokenAddress: buyToken.address.toLowerCase(),
-    sellTokenAddress: sellToken.address.toLowerCase(),
+    // Since not all networks are supported by zero ex, we override the token addresses on
+    // testnet so that we use mainnet data
+    buyTokenAddress: addressOverride ? addressOverride.buyToken.toLowerCase() : buyToken.address.toLowerCase(),
+    sellTokenAddress: addressOverride ? addressOverride.sellToken.toLowerCase() : sellToken.address.toLowerCase(),
     estimates,
   };
 };
@@ -172,8 +221,8 @@ const fetchTradingEstimate = async (
 export function getTradingEstimates(network: NETWORKS, skipFetchSetup: boolean) {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
   return Promise.all(
-    RequiredEstimates[network].map(({ buyToken, sellToken, sellRanges }) =>
-      fetchTradingEstimate(buyToken, sellToken, sellRanges, network as NETWORKS, _fetch)
+    RequiredEstimates[network].map(({ buyToken, sellToken, sellRanges, addressOverride }) =>
+      fetchTradingEstimate(buyToken, sellToken, sellRanges, network as NETWORKS, _fetch, addressOverride)
     )
   );
 }
