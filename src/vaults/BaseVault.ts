@@ -501,10 +501,13 @@ export default abstract class BaseVault<D, R> {
       delta = leverageRatio - actualLeverageRatio;
       if (Math.abs(delta) < precision) break;
 
-      depositMultiple = Math.floor(depositMultiple + delta);
+      // Only adjust by half of the delta, otherwise we will overshoot and fail to converge
+      depositMultiple = Math.floor(depositMultiple + delta / 2);
       valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
       iters += 1;
     } while (iters < 10);
+
+    if (Math.abs(delta) > precision) throw Error('Failed to converge');
 
     return {
       fCashToBorrow,

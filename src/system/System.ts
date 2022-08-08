@@ -11,7 +11,7 @@ import CashGroup from './CashGroup';
 import Market from './Market';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../data/SystemData';
-import { Asset, Currency, SystemData, nToken, ETHRate, TradingEstimate } from '../data';
+import { Asset, Currency, SystemData, nToken, ETHRate, TradingEstimate, VaultState } from '../data';
 import { IAggregator } from '../typechain';
 
 export enum SystemEvents {
@@ -414,8 +414,18 @@ export default class System {
 
   public getVaultState(vaultAddress: string, maturity: number) {
     const vault = this.getVault(vaultAddress);
-    const state = vault.vaultStates.find((s) => s.maturity === maturity);
-    if (!state) throw Error(`Vault state ${maturity} not found`);
+    const state = vault.vaultStates?.find((s) => s.maturity === maturity);
+    if (!state) {
+      return {
+        maturity,
+        isSettled: false,
+        totalPrimaryfCashBorrowed: TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
+        totalAssetCash: TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency).toAssetCash(),
+        totalStrategyTokens: TypedBigNumber.from(0, BigNumberType.StrategyToken, `${vaultAddress}:${maturity}`),
+        totalVaultShares: TypedBigNumber.from(0, BigNumberType.VaultShare, `${vaultAddress}:${maturity}`),
+      } as VaultState;
+    }
+
     return state;
   }
 
