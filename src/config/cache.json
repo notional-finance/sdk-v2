@@ -1,4 +1,4 @@
 {
-  "goerli:http": "https://system-cache-dev.notional-finance.workers.dev/v2/goerli?encoding=binary",
-  "mainnet:http": "https://system-cache-dev.notional-finance.workers.dev/v2/mainnet?encoding=binary"
+  "goerli:http": "https://system-cache-dev.notional-finance.workers.dev/v2/goerli",
+  "mainnet:http": "https://system-cache-dev.notional-finance.workers.dev/v2/mainnet"
 }
