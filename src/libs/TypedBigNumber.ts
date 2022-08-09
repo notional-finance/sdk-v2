@@ -527,6 +527,7 @@ class TypedBigNumber {
 
   toCUR(symbol: string) {
     const usdValue = this.toUSD();
+    if (symbol === 'USD') return usdValue;
     const usdRate = System.getSystem().getUSDRate(symbol);
     return new TypedBigNumber(usdValue.scale(usdRate, ethers.constants.WeiPerEther).n, BigNumberType.Currency, symbol);
   }
