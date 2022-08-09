@@ -121,6 +121,7 @@ export default abstract class AccountRefresh {
   public async refreshAccountData() {
     try {
       const data = await this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r));
+      await data.fetchHistory(this.address);
       this._accountData = data;
     } catch (e) {
       throw new Error(`Failed to refresh account data for ${this.address}`);
