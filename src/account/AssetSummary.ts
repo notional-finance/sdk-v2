@@ -53,8 +53,9 @@ export default class AssetSummary {
     this.currency = System.getSystem().getCurrencyById(this.currencyId);
   }
 
-  public getTransactionHistory(): TransactionHistory[] {
-    return this.history.map((h) => ({
+  public static getTransactionHistory(history: TradeHistory[]): TransactionHistory[] {
+    return history.map((h) => ({
+      currencyId: h.currencyId,
       txnType: h.tradeType,
       timestampMS: h.blockTime.getTime(),
       transactionHash: h.transactionHash,
@@ -63,12 +64,15 @@ export default class AssetSummary {
     }));
   }
 
+  public getTransactionHistory(): TransactionHistory[] {
+    return AssetSummary.getTransactionHistory(this.history);
+  }
+
   /**
    * Builds a summary of a portfolio given the current account portfolio and the trade history.
    * @param accountData
-   * @param tradeHistory
    */
-  public static build(accountData: AccountData, tradeHistory: TradeHistory[], currentTime = getNowSeconds()) {
+  public static build(accountData: AccountData, currentTime = getNowSeconds()) {
     const system = System.getSystem();
     // Reduce portfolio to combine fCash and liquidity tokens at the same maturity, if liquidity tokens
     // exist. This makes it easier to reason about.
@@ -100,12 +104,7 @@ export default class AssetSummary {
     return Object.keys(assetsReduced)
       .map((assetKey) => {
         // Returns the trade history for each asset key
-        const filteredHistory = tradeHistory
-          .filter((t) => {
-            const historyAssetKey = `${t.currencyId.toString()}:${t.maturity.toString()}`;
-            return historyAssetKey === assetKey;
-          })
-          .sort((a, b) => a.blockNumber - b.blockNumber);
+        const filteredHistory = accountData.getAssetHistory(assetKey);
 
         // Add historical cash flows to the object
         const cashFlows = filteredHistory.map((h) => ({

@@ -147,13 +147,18 @@ export default class BalanceSummary {
     }
   }
 
-  public getTransactionHistory(): TransactionHistory[] {
-    return this.history.map((h) => ({
+  public static getTransactionHistory(history: BalanceHistory[]): TransactionHistory[] {
+    return history.map((h) => ({
+      currencyId: h.currencyId,
       txnType: h.tradeType,
       timestampMS: h.blockTime.getTime(),
       transactionHash: h.transactionHash,
       amount: h.totalUnderlyingValueChange,
     }));
+  }
+
+  public getTransactionHistory(): TransactionHistory[] {
+    return BalanceSummary.getTransactionHistory(this.history);
   }
 
   public getReturnsBreakdown(): ReturnsBreakdown[] {
@@ -198,7 +203,7 @@ export default class BalanceSummary {
     this.nToken = system.getNToken(this.currencyId);
   }
 
-  public static build(accountData: AccountData, balanceHistory: BalanceHistory[], currentTime = getNowSeconds()) {
+  public static build(accountData: AccountData, currentTime = getNowSeconds()) {
     const system = System.getSystem();
     const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } =
       FreeCollateral.getFreeCollateral(accountData);
@@ -207,10 +212,7 @@ export default class BalanceSummary {
     return (
       accountData.accountBalances
         .map((v) => {
-          const filteredHistory = balanceHistory
-            .filter((h) => h.currencyId === v.currencyId)
-            .sort((a, b) => a.blockNumber - b.blockNumber);
-
+          const filteredHistory = accountData.getBalanceHistory(v.currencyId);
           const cashBalanceCashFlows = BalanceSummary.getCashBalanceCashFlows(
             v.cashBalance,
             filteredHistory,

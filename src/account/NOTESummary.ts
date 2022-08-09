@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client/core';
 import { ReturnsBreakdown, TransactionHistory, TypedBigNumber } from '..';
-import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID } from '../config/constants';
+import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID, STAKED_NOTE_CURRENCY_ID } from '../config/constants';
 import GraphClient from '../data/GraphClient';
 import { getNowSeconds } from '../libs/utils';
 import { StakedNote } from '../staking';
@@ -184,6 +184,7 @@ export default class NOTESummary {
       }
 
       return {
+        currencyId: STAKED_NOTE_CURRENCY_ID,
         txnType,
         timestampMS: h.blockTime.getTime(),
         transactionHash: h.transactionHash,

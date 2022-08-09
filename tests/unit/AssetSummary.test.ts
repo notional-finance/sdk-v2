@@ -50,10 +50,14 @@ describe('Asset Summary', () => {
           settlementDate: maturity,
         },
       ],
-      false
+      false,
+      {
+        trades: tradeHistory,
+        balanceHistory: [],
+      }
     );
 
-    const summary = AssetSummary.build(accountData, tradeHistory, currentTime);
+    const summary = AssetSummary.build(accountData, currentTime);
     expect(summary).toHaveLength(1);
     expect(summary[0].history).toHaveLength(1);
     expect(summary[0].fCash).toBeDefined();
@@ -67,6 +71,7 @@ describe('Asset Summary', () => {
     const borrowTradeHistory = { ...baseTradeHistory };
     borrowTradeHistory.netUnderlyingCash = borrowTradeHistory.netUnderlyingCash.neg();
     borrowTradeHistory.netfCash = borrowTradeHistory.netfCash.neg();
+    const tradeHistory = [borrowTradeHistory];
     const accountData = new MockAccountData(
       0,
       false,
@@ -82,12 +87,15 @@ describe('Asset Summary', () => {
           settlementDate: maturity,
         },
       ],
-      false
+      false,
+      {
+        trades: tradeHistory,
+        balanceHistory: [],
+      }
     );
 
-    const tradeHistory = [borrowTradeHistory];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
-    const summary = AssetSummary.build(accountData, tradeHistory, currentTime);
+    const summary = AssetSummary.build(accountData, currentTime);
     expect(summary).toHaveLength(1);
     expect(summary[0].history).toHaveLength(1);
     expect(summary[0].fCash).toBeDefined();

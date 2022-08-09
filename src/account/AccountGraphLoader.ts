@@ -15,7 +15,6 @@ import {
   TransactionHistoryQuery,
   TransactionHistoryResponse,
 } from './queries/TransactionHistory';
-import { Unwrap } from '../libs/UtilityTypes';
 
 export default class AccountGraphLoader {
   private static parseBalance(balance: BalanceResponse) {
@@ -264,7 +263,7 @@ export default class AccountGraphLoader {
     }
 
     const { balanceHistory } = accountData.accountHistory!;
-    const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
+    const balanceSummary = BalanceSummary.build(accountData);
     return { balanceHistory, balanceSummary };
   }
 
@@ -283,7 +282,7 @@ export default class AccountGraphLoader {
     }
 
     const tradeHistory = accountData.accountHistory!.trades;
-    const assetSummary = AssetSummary.build(accountData, tradeHistory);
+    const assetSummary = AssetSummary.build(accountData);
     return { tradeHistory, assetSummary };
   }
 
@@ -310,5 +309,3 @@ export default class AccountGraphLoader {
     );
   }
 }
-
-export type AccountHistory = Unwrap<ReturnType<typeof AccountGraphLoader.loadTransactionHistory>>;

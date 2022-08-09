@@ -7,11 +7,13 @@ import {
   MAX_PORTFOLIO_ASSETS,
 } from '../config/constants';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { AssetType, Balance } from '../libs/types';
+import { AssetType, Balance, BalanceHistory, TradeHistory, TransactionHistory, AccountHistory } from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
 import { Asset } from '../data';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
-import AccountGraphLoader, { AccountHistory } from './AccountGraphLoader';
+import AccountGraphLoader from './AccountGraphLoader';
+import AssetSummary from './AssetSummary';
+import BalanceSummary from './BalanceSummary';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -85,6 +87,46 @@ export default class AccountData {
 
   public get portfolioWithMaturedAssets() {
     return this._portfolio;
+  }
+
+  public getAssetHistory(filterByAssetKey?: string): TradeHistory[] {
+    if (!this.accountHistory) throw Error('Must fetch account history');
+    return this.accountHistory.trades
+      .filter((t) => {
+        if (filterByAssetKey) {
+          const historyAssetKey = `${t.currencyId.toString()}:${t.maturity.toString()}`;
+          return historyAssetKey === filterByAssetKey;
+        }
+        return true;
+      })
+      .sort((a, b) => a.blockNumber - b.blockNumber);
+  }
+
+  public getBalanceHistory(filterByCurrencyId?: number): BalanceHistory[] {
+    if (!this.accountHistory) throw Error('Must fetch account history');
+    return this.accountHistory.balanceHistory
+      .filter((h) => (filterByCurrencyId ? h.currencyId === filterByCurrencyId : true))
+      .sort((a, b) => a.blockNumber - b.blockNumber);
+  }
+
+  public getBalanceTransactionHistory(filterByCurrencyId?: number): TransactionHistory[] {
+    return this.getBalanceHistory(filterByCurrencyId).map((h) => ({
+      currencyId: h.currencyId,
+      txnType: h.tradeType,
+      timestampMS: h.blockTime.getTime(),
+      transactionHash: h.transactionHash,
+      amount: h.totalUnderlyingValueChange,
+    }));
+  }
+
+  public getFullTransactionHistory(sinceTime?: number): TransactionHistory[] {
+    const fullHistory = BalanceSummary.getTransactionHistory(this.getBalanceHistory()).concat(
+      AssetSummary.getTransactionHistory(this.getAssetHistory())
+    );
+
+    return fullHistory
+      .filter((h) => (sinceTime ? h.timestampMS >= sinceTime : true))
+      .sort((a, b) => a.timestampMS - b.timestampMS);
   }
 
   public getHash() {

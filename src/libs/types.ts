@@ -150,6 +150,11 @@ export interface BalanceHistory {
   totalUnderlyingValueChange: TypedBigNumber;
 }
 
+export type AccountHistory = {
+  trades: TradeHistory[];
+  balanceHistory: BalanceHistory[];
+};
+
 export interface IncentiveFactors {
   accumulatedNOTEPerNToken: BigNumber;
   lastAccumulatedTime: BigNumber;
@@ -191,6 +196,7 @@ export interface ReturnsBreakdown {
 }
 
 export interface TransactionHistory {
+  currencyId: number;
   txnType: string;
   timestampMS: number;
   transactionHash: string;
