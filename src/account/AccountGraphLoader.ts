@@ -11,6 +11,7 @@ import { BalanceResponse, AssetResponse, AccountQuery, AccountQueryResponse } fr
 import { BatchAccountQuery, BatchAccountResponse } from './queries/BatchAccountQuery';
 import {
   BalanceHistoryResponse,
+  StakedNoteResponse,
   TradeHistoryResponse,
   TransactionHistoryQuery,
   TransactionHistoryResponse,
@@ -211,6 +212,39 @@ export default class AccountGraphLoader {
     });
   }
 
+  private static parseSNOTEHistory(sNOTEHistory: StakedNoteResponse) {
+    if (sNOTEHistory.stakedNoteBalance === null) {
+      // Handle the case where the user has not staked
+      return {
+        transactions: [],
+        ethAmountJoined: TypedBigNumber.fromBalance(0, 'ETH', false),
+        ethAmountRedeemed: TypedBigNumber.fromBalance(0, 'ETH', false),
+        noteAmountJoined: TypedBigNumber.fromBalance(0, 'NOTE', false),
+        noteAmountRedeemed: TypedBigNumber.fromBalance(0, 'NOTE', false),
+      };
+    }
+
+    const history = sNOTEHistory.stakedNoteBalance.stakedNoteChanges
+      .map((r) => ({
+        blockNumber: r.blockNumber,
+        transactionHash: r.transactionHash,
+        blockTime: new Date(r.timestamp * 1000),
+        sNOTEAmountBefore: TypedBigNumber.fromBalance(r.sNOTEAmountBefore, 'sNOTE', false),
+        sNOTEAmountAfter: TypedBigNumber.fromBalance(r.sNOTEAmountAfter, 'sNOTE', false),
+        ethAmountChange: TypedBigNumber.fromBalance(r.ethAmountChange, 'ETH', false),
+        noteAmountChange: TypedBigNumber.fromBalance(r.noteAmountChange, 'NOTE', false),
+      }))
+      .sort((a, b) => b.blockNumber - a.blockNumber); // sorts descending
+
+    return {
+      transactions: history,
+      ethAmountJoined: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.ethAmountJoined, 'ETH', false),
+      ethAmountRedeemed: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.ethAmountRedeemed, 'ETH', false),
+      noteAmountJoined: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.noteAmountJoined, 'NOTE', false),
+      noteAmountRedeemed: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.noteAmountRedeemed, 'NOTE', false),
+    };
+  }
+
   /**
    * Loads multiple accounts in a single query.
    *
@@ -245,6 +279,7 @@ export default class AccountGraphLoader {
     return {
       trades: this.parseTradeHistory(history.trades),
       balanceHistory: this.parseBalanceHistory(history.balanceHistory),
+      sNOTEHistory: this.parseSNOTEHistory(history.stakedNoteBalance),
     };
   }
 

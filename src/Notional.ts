@@ -155,7 +155,7 @@ export default class Notional extends TransactionBuilder {
   }
 
   public async getAccount(address: string | Signer) {
-    return Account.load(address, this.provider as ethers.providers.JsonRpcBatchProvider, this.system, this.graphClient);
+    return Account.load(address, this.provider as ethers.providers.JsonRpcBatchProvider, this.system);
   }
 
   public async getAccountBalanceSummaryFromGraph(address: string, accountData: AccountData) {

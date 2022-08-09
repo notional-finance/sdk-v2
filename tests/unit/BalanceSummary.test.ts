@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers';
-import { BalanceHistory } from '../../src/libs/types';
+import { BalanceHistory, StakedNoteHistory } from '../../src/libs/types';
 import { getNowSeconds } from '../../src/libs/utils';
 import { BalanceSummary } from '../../src/account';
 import { SECONDS_IN_DAY } from '../../src/config/constants';
@@ -59,6 +59,7 @@ describe('Balance Summary', () => {
       {
         trades: [],
         balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
 
@@ -95,6 +96,7 @@ describe('Balance Summary', () => {
       {
         trades: [],
         balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
 
@@ -144,6 +146,7 @@ describe('Balance Summary', () => {
       {
         trades: [],
         balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
     const summary = BalanceSummary.build(data, currentTime);
@@ -178,6 +181,7 @@ describe('Balance Summary', () => {
       {
         trades: [],
         balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
@@ -214,6 +218,7 @@ describe('Balance Summary', () => {
       {
         trades: [],
         balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;

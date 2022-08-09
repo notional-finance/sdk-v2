@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers';
-import { AssetType, TradeType } from '../../src/libs/types';
+import { AssetType, StakedNoteHistory, TradeType } from '../../src/libs/types';
 import { AssetSummary } from '../../src/account';
 import { SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../src/config/constants';
 import MockSystem from '../mocks/MockSystem';
@@ -54,6 +54,7 @@ describe('Asset Summary', () => {
       {
         trades: tradeHistory,
         balanceHistory: [],
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
 
@@ -91,6 +92,7 @@ describe('Asset Summary', () => {
       {
         trades: tradeHistory,
         balanceHistory: [],
+        sNOTEHistory: {} as StakedNoteHistory,
       }
     );
 

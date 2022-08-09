@@ -150,9 +150,27 @@ export interface BalanceHistory {
   totalUnderlyingValueChange: TypedBigNumber;
 }
 
+export interface StakedNoteHistory {
+  ethAmountJoined: TypedBigNumber;
+  noteAmountJoined: TypedBigNumber;
+  ethAmountRedeemed: TypedBigNumber;
+  noteAmountRedeemed: TypedBigNumber;
+
+  transactions: {
+    blockNumber: number;
+    transactionHash: string;
+    blockTime: Date;
+    sNOTEAmountBefore: TypedBigNumber;
+    sNOTEAmountAfter: TypedBigNumber;
+    ethAmountChange: TypedBigNumber;
+    noteAmountChange: TypedBigNumber;
+  }[];
+}
+
 export type AccountHistory = {
   trades: TradeHistory[];
   balanceHistory: BalanceHistory[];
+  sNOTEHistory: StakedNoteHistory;
 };
 
 export interface IncentiveFactors {

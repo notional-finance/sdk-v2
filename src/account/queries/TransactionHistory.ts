@@ -42,9 +42,31 @@ export interface TradeHistoryResponse {
   maturity: string;
 }
 
+export interface StakedNoteResponse {
+  stakedNoteBalance: {
+    id: string;
+    sNOTEBalance: string;
+    ethAmountJoined: string;
+    noteAmountJoined: string;
+    ethAmountRedeemed: string;
+    noteAmountRedeemed: string;
+
+    stakedNoteChanges: {
+      blockNumber: number;
+      transactionHash: string;
+      timestamp: number;
+      sNOTEAmountBefore: string;
+      sNOTEAmountAfter: string;
+      ethAmountChange: string;
+      noteAmountChange: string;
+    }[];
+  };
+}
+
 export interface TransactionHistoryResponse {
   trades: TradeHistoryResponse[];
   balanceHistory: BalanceHistoryResponse[];
+  stakedNoteBalance: StakedNoteResponse;
 }
 
 export const TransactionHistoryQuery = gql`
@@ -89,6 +111,25 @@ export const TransactionHistoryQuery = gql`
       nTokenValueUnderlyingAfter
       nTokenValueAssetBefore
       nTokenValueAssetAfter
+    }
+
+    stakedNOTEBalance(id: $id) {
+      sNOTEBalance
+      ethAmountJoined
+      noteAmountJoined
+      ethAmountRedeemed
+      noteAmountRedeemed
+
+      stakedNoteChanges {
+        id
+        blockNumber
+        transactionHash
+        timestamp
+        sNOTEAmountBefore
+        sNOTEAmountAfter
+        ethAmountChange
+        noteAmountChange
+      }
     }
   }
 `;

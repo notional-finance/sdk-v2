@@ -1,117 +1,23 @@
-import { gql } from '@apollo/client/core';
-import { ReturnsBreakdown, TransactionHistory, TypedBigNumber } from '..';
+import { ReturnsBreakdown, StakedNoteHistory, TransactionHistory, TypedBigNumber } from '..';
 import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID, STAKED_NOTE_CURRENCY_ID } from '../config/constants';
-import GraphClient from '../data/GraphClient';
 import { getNowSeconds } from '../libs/utils';
 import { StakedNote } from '../staking';
 import { NTokenValue } from '../system';
 import Account from './Account';
 import AccountData from './AccountData';
 
-interface StakedNoteQueryResult {
-  stakedNoteBalance: {
-    id: string;
-    sNOTEBalance: string;
-    ethAmountJoined: string;
-    noteAmountJoined: string;
-    ethAmountRedeemed: string;
-    noteAmountRedeemed: string;
-
-    stakedNoteChanges: {
-      blockNumber: number;
-      transactionHash: string;
-      timestamp: number;
-      sNOTEAmountBefore: string;
-      sNOTEAmountAfter: string;
-      ethAmountChange: string;
-      noteAmountChange: string;
-    }[];
-  };
-}
-
-interface StakedNoteHistory {
-  ethAmountJoined: TypedBigNumber;
-  noteAmountJoined: TypedBigNumber;
-  ethAmountRedeemed: TypedBigNumber;
-  noteAmountRedeemed: TypedBigNumber;
-
-  transactions: {
-    blockNumber: number;
-    transactionHash: string;
-    blockTime: Date;
-    sNOTEAmountBefore: TypedBigNumber;
-    sNOTEAmountAfter: TypedBigNumber;
-    ethAmountChange: TypedBigNumber;
-    noteAmountChange: TypedBigNumber;
-  }[];
-}
-
 export default class NOTESummary {
-  private static historyQuery(address: string) {
-    return gql`{
-        stakedNoteBalance (
-          id: "${address.toLowerCase()}",
-        ) {
-        sNOTEBalance
-        ethAmountJoined
-        noteAmountJoined
-        ethAmountRedeemed
-        noteAmountRedeemed
-        
-        stakedNoteChanges {
-          id
-          blockNumber
-          transactionHash
-          timestamp
-          sNOTEAmountBefore
-          sNOTEAmountAfter
-          ethAmountChange
-          noteAmountChange
-        }
-      }
-    }`;
-  }
-
-  public static async fetchHistory(address: string, graphClient: GraphClient): Promise<StakedNoteHistory> {
-    const result = await graphClient.queryOrThrow<StakedNoteQueryResult>(NOTESummary.historyQuery(address));
-    if (result.stakedNoteBalance === null) {
-      // Handle the case where the user has not staked
-      return {
-        transactions: [],
-        ethAmountJoined: TypedBigNumber.fromBalance(0, 'ETH', false),
-        ethAmountRedeemed: TypedBigNumber.fromBalance(0, 'ETH', false),
-        noteAmountJoined: TypedBigNumber.fromBalance(0, 'NOTE', false),
-        noteAmountRedeemed: TypedBigNumber.fromBalance(0, 'NOTE', false),
-      };
+  public static async build(account: Account) {
+    const accountData = account.accountData || AccountData.emptyAccountData();
+    if (!accountData.accountHistory) {
+      await accountData.fetchHistory(account.address);
     }
 
-    const history = result.stakedNoteBalance.stakedNoteChanges
-      .map((r) => ({
-        blockNumber: r.blockNumber,
-        transactionHash: r.transactionHash,
-        blockTime: new Date(r.timestamp * 1000),
-        sNOTEAmountBefore: TypedBigNumber.fromBalance(r.sNOTEAmountBefore, 'sNOTE', false),
-        sNOTEAmountAfter: TypedBigNumber.fromBalance(r.sNOTEAmountAfter, 'sNOTE', false),
-        ethAmountChange: TypedBigNumber.fromBalance(r.ethAmountChange, 'ETH', false),
-        noteAmountChange: TypedBigNumber.fromBalance(r.noteAmountChange, 'NOTE', false),
-      }))
-      .sort((a, b) => b.blockNumber - a.blockNumber); // sorts descending
-
-    return {
-      transactions: history,
-      ethAmountJoined: TypedBigNumber.fromBalance(result.stakedNoteBalance.ethAmountJoined, 'ETH', false),
-      ethAmountRedeemed: TypedBigNumber.fromBalance(result.stakedNoteBalance.ethAmountRedeemed, 'ETH', false),
-      noteAmountJoined: TypedBigNumber.fromBalance(result.stakedNoteBalance.noteAmountJoined, 'NOTE', false),
-      noteAmountRedeemed: TypedBigNumber.fromBalance(result.stakedNoteBalance.noteAmountRedeemed, 'NOTE', false),
-    };
-  }
-
-  public static async build(account: Account, graphClient: GraphClient) {
     return new NOTESummary(
       account.walletBalanceBySymbol('NOTE')?.balance || TypedBigNumber.fromBalance(0, 'NOTE', false),
       account.walletBalanceBySymbol('sNOTE')?.balance || TypedBigNumber.fromBalance(0, 'sNOTE', false),
-      account.accountData || AccountData.emptyAccountData(),
-      await NOTESummary.fetchHistory(account.address, graphClient)
+      accountData,
+      accountData.accountHistory!.sNOTEHistory
     );
   }
 
@@ -174,8 +80,10 @@ export default class NOTESummary {
     return returnsBreakdown;
   }
 
-  public getTransactionHistory(): TransactionHistory[] {
-    return this.stakedNoteHistory.transactions.map((h) => {
+  public static getTransactionHistory(stakedNoteHistory?: StakedNoteHistory): TransactionHistory[] {
+    if (!stakedNoteHistory) return [];
+
+    return stakedNoteHistory.transactions.map((h) => {
       let txnType = 'unknown';
       if (h.sNOTEAmountBefore.lt(h.sNOTEAmountAfter)) {
         txnType = 'Stake NOTE';
@@ -191,6 +99,10 @@ export default class NOTESummary {
         amount: h.sNOTEAmountAfter.sub(h.sNOTEAmountBefore).abs(),
       };
     });
+  }
+
+  public getTransactionHistory(): TransactionHistory[] {
+    return NOTESummary.getTransactionHistory(this.stakedNoteHistory);
   }
 
   private getStakedNoteReturns() {

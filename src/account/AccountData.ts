@@ -14,6 +14,7 @@ import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
 import AccountGraphLoader from './AccountGraphLoader';
 import AssetSummary from './AssetSummary';
 import BalanceSummary from './BalanceSummary';
+import NOTESummary from './NOTESummary';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -120,9 +121,9 @@ export default class AccountData {
   }
 
   public getFullTransactionHistory(sinceTime?: number): TransactionHistory[] {
-    const fullHistory = BalanceSummary.getTransactionHistory(this.getBalanceHistory()).concat(
-      AssetSummary.getTransactionHistory(this.getAssetHistory())
-    );
+    const fullHistory = BalanceSummary.getTransactionHistory(this.getBalanceHistory())
+      .concat(AssetSummary.getTransactionHistory(this.getAssetHistory()))
+      .concat(NOTESummary.getTransactionHistory(this.accountHistory?.sNOTEHistory));
 
     return fullHistory
       .filter((h) => (sinceTime ? h.timestampMS >= sinceTime : true))
