@@ -1,5 +1,5 @@
 import { AccountData } from '../../src/account';
-import { Balance } from '../../src/libs/types';
+import { Balance, AccountHistory } from '../../src/libs/types';
 import { Asset } from '../../src/data';
 
 export default class MockAccountData extends AccountData {
@@ -11,8 +11,18 @@ export default class MockAccountData extends AccountData {
     bitmapCurrencyId: number | undefined,
     accountBalances: Balance[],
     _portfolio: Asset[],
-    isCopy: boolean
+    isCopy: boolean,
+    accountHistory?: AccountHistory
   ) {
-    super(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, accountBalances, _portfolio, isCopy);
+    super(
+      nextSettleTime,
+      hasCashDebt,
+      hasAssetDebt,
+      bitmapCurrencyId,
+      accountBalances,
+      _portfolio,
+      isCopy,
+      accountHistory
+    );
   }
 }

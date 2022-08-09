@@ -2,7 +2,6 @@ import { BigNumber, ethers, Overrides, Signer } from 'ethers';
 import { System } from '../system';
 import { Notional as NotionalTypechain } from '../typechain/Notional';
 import AccountRefresh from './AccountRefresh';
-import GraphClient from '../data/GraphClient';
 import { ERC20 } from '../typechain/ERC20';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
@@ -14,7 +13,6 @@ export default class Account extends AccountRefresh {
     address: string,
     provider: ethers.providers.JsonRpcBatchProvider,
     notionalProxy: NotionalTypechain,
-    private graphClient: GraphClient,
     public signer?: Signer
   ) {
     super(address, provider, notionalProxy);
@@ -23,17 +21,12 @@ export default class Account extends AccountRefresh {
   /**
    * Loads an account object
    *
-   * @param signer
+   * @param _signer
    * @param provider
    * @param system
    * @returns
    */
-  public static async load(
-    _signer: string | Signer,
-    provider: ethers.providers.JsonRpcBatchProvider,
-    system: System,
-    graphClient: GraphClient
-  ) {
+  public static async load(_signer: string | Signer, provider: ethers.providers.JsonRpcBatchProvider, system: System) {
     let address: string;
     let notionalProxy = system.getNotionalProxy();
     let signer: Signer | undefined;
@@ -50,7 +43,7 @@ export default class Account extends AccountRefresh {
       signer = _signer;
     }
 
-    const account = new Account(address, provider, notionalProxy, graphClient, signer);
+    const account = new Account(address, provider, notionalProxy, signer);
     await account.refresh();
 
     return account;
@@ -61,8 +54,8 @@ export default class Account extends AccountRefresh {
    */
   public async getBalanceSummary() {
     const [{ balanceSummary }, noteSummary] = await Promise.all([
-      AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient),
-      NOTESummary.build(this, this.graphClient),
+      AccountGraphLoader.getBalanceSummary(this.address, this.accountData),
+      NOTESummary.build(this),
     ]);
 
     return { balanceSummary, noteSummary };
@@ -79,7 +72,7 @@ export default class Account extends AccountRefresh {
       };
     }
 
-    return AccountGraphLoader.getAssetSummary(this.address, this.accountData, this.graphClient);
+    return AccountGraphLoader.getAssetSummary(this.address, this.accountData);
   }
 
   /**

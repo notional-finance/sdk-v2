@@ -7,10 +7,14 @@ import {
   MAX_PORTFOLIO_ASSETS,
 } from '../config/constants';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { AssetType, Balance } from '../libs/types';
+import { AssetType, Balance, BalanceHistory, TradeHistory, TransactionHistory, AccountHistory } from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
 import { Asset } from '../data';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
+import AccountGraphLoader from './AccountGraphLoader';
+import AssetSummary from './AssetSummary';
+import BalanceSummary from './BalanceSummary';
+import NOTESummary from './NOTESummary';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -51,7 +55,8 @@ export default class AccountData {
     public bitmapCurrencyId: number | undefined,
     _accountBalances: Balance[],
     private _portfolio: Asset[],
-    public isCopy: boolean
+    public isCopy: boolean,
+    public accountHistory?: AccountHistory
   ) {
     // Assets of a currency that are not found in accountBalances must be marked as having a zero
     // balance in the accountBalances list
@@ -83,6 +88,46 @@ export default class AccountData {
 
   public get portfolioWithMaturedAssets() {
     return this._portfolio;
+  }
+
+  public getAssetHistory(filterByAssetKey?: string): TradeHistory[] {
+    if (!this.accountHistory) throw Error('Must fetch account history');
+    return this.accountHistory.trades
+      .filter((t) => {
+        if (filterByAssetKey) {
+          const historyAssetKey = `${t.currencyId.toString()}:${t.maturity.toString()}`;
+          return historyAssetKey === filterByAssetKey;
+        }
+        return true;
+      })
+      .sort((a, b) => a.blockNumber - b.blockNumber);
+  }
+
+  public getBalanceHistory(filterByCurrencyId?: number): BalanceHistory[] {
+    if (!this.accountHistory) throw Error('Must fetch account history');
+    return this.accountHistory.balanceHistory
+      .filter((h) => (filterByCurrencyId ? h.currencyId === filterByCurrencyId : true))
+      .sort((a, b) => a.blockNumber - b.blockNumber);
+  }
+
+  public getBalanceTransactionHistory(filterByCurrencyId?: number): TransactionHistory[] {
+    return this.getBalanceHistory(filterByCurrencyId).map((h) => ({
+      currencyId: h.currencyId,
+      txnType: h.tradeType,
+      timestampMS: h.blockTime.getTime(),
+      transactionHash: h.transactionHash,
+      amount: h.totalUnderlyingValueChange,
+    }));
+  }
+
+  public getFullTransactionHistory(filterStartTime?: number): TransactionHistory[] {
+    const fullHistory = BalanceSummary.getTransactionHistory(this.getBalanceHistory())
+      .concat(AssetSummary.getTransactionHistory(this.getAssetHistory()))
+      .concat(NOTESummary.getTransactionHistory(this.accountHistory?.sNOTEHistory));
+
+    return fullHistory
+      .filter((h) => (filterStartTime ? h.timestampMS >= filterStartTime : true))
+      .sort((a, b) => a.timestampMS - b.timestampMS);
   }
 
   public getHash() {
@@ -121,8 +166,13 @@ export default class AccountData {
       accountData.bitmapCurrencyId,
       accountData.accountBalances.map((b) => ({ ...b })),
       accountData.portfolio.map((a) => ({ ...a })),
-      true
+      true,
+      accountData.accountHistory
     );
+  }
+
+  public copy() {
+    return AccountData.copyAccountData(this);
   }
 
   public static parsePortfolioFromBlockchain(portfolio: AssetResult[]): Asset[] {
@@ -215,6 +265,11 @@ export default class AccountData {
     return new AccountData(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, balances, portfolio, false);
   }
 
+  public async fetchHistory(address: string) {
+    const { graphClient } = System.getSystem();
+    this.accountHistory = await AccountGraphLoader.loadTransactionHistory(address, graphClient);
+  }
+
   /**
    * Updates a balance in place, can only be done on copied account data objects, will throw an error if balances
    * exceed the maximum number of slots.
@@ -249,6 +304,49 @@ export default class AccountData {
 
     // Do this to ensure that there is a balance slot set for the asset
     this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, assetSymbol));
+  }
+
+  /**
+   * Returns total assets and total debts in each currency without local currency netting and
+   * without haircuts and buffers applied.
+   */
+  public getTotalCurrencyValue() {
+    const system = System.getSystem();
+    return this.accountBalances.reduce((totals, b) => {
+      const id = b.currencyId;
+      let totalAssets = TypedBigNumber.getZeroUnderlying(id);
+      let totalDebts = TypedBigNumber.getZeroUnderlying(id);
+      const cashGroup = system.getCashGroup(id);
+
+      const { totalCashClaims, fCashAssets } = FreeCollateral.getNetfCashPositions(
+        id,
+        this.portfolio,
+        undefined,
+        false
+      );
+      totalAssets = totalAssets.add(totalCashClaims);
+      fCashAssets.forEach((a) => {
+        const pv = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false);
+        if (pv.isPositive()) {
+          totalAssets = totalAssets.add(pv);
+        } else {
+          totalDebts = totalDebts.add(pv.abs());
+        }
+      });
+
+      if (b.nTokenBalance) {
+        totalAssets = totalAssets.add(b.nTokenBalance.toUnderlying());
+      }
+
+      if (b.cashBalance?.isPositive()) {
+        totalAssets = totalAssets.add(b.cashBalance.toUnderlying());
+      } else if (b.cashBalance?.isNegative()) {
+        totalDebts = totalDebts.add(b.cashBalance.toUnderlying().abs());
+      }
+
+      totals.set(id, { totalAssets, totalDebts });
+      return totals;
+    }, new Map<number, { totalAssets: TypedBigNumber; totalDebts: TypedBigNumber }>());
   }
 
   /**

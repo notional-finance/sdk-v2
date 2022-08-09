@@ -247,7 +247,7 @@ describe('Typed Big Number', () => {
     expect(usdValue?.type).toBe(BigNumberType.Currency);
 
     const dai = notional.parseInput('1', 'DAI', false);
-    usdValue = dai?.toUSD();
+    usdValue = dai?.toCUR('USD');
     expect(usdValue?.toExactString()).toBe('1.0');
     expect(usdValue?.symbol).toBe('USD');
     expect(usdValue?.type).toBe(BigNumberType.Currency);

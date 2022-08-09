@@ -199,10 +199,46 @@ export default class FreeCollateral {
   }
 
   /**
+   * Returns the total borrow capacity in present value terms of the given currency
+   * @param borrowCurrencyId currency to borrow this asset by
+   * @param accountData account data object
+   */
+  public static getBorrowCapacity(
+    borrowCurrencyId: number,
+    accountData: AccountData,
+    blockTime = getNowSeconds()
+  ): {
+    usedBorrowCapacity: TypedBigNumber;
+    totalBorrowCapacity: TypedBigNumber;
+  } {
+    const accountDataCopy = accountData.copy();
+    const { haircut, buffer } = System.getSystem().getETHRate(borrowCurrencyId);
+    const { netETHCollateralWithHaircut, netUnderlyingAvailable } = this.getFreeCollateral(accountDataCopy, blockTime);
+    const netLocal = netUnderlyingAvailable.get(borrowCurrencyId) || TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
+
+    // The total borrow capacity is:
+    // netUnderlyingAvailable + netHaircutLocalValueOfOtherCollateral / buffer
+    const adjustedNetLocal = netLocal.isPositive()
+      ? netLocal.scale(haircut, 100)
+      : TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
+    const netRiskAdjustedValueOfOtherCollateral = netETHCollateralWithHaircut
+      .fromETH(borrowCurrencyId)
+      .sub(adjustedNetLocal)
+      .scale(100, buffer);
+
+    const totalBorrowCapacity = netLocal.add(netRiskAdjustedValueOfOtherCollateral);
+    const usedBorrowCapacity = netLocal.isNegative()
+      ? netLocal.abs()
+      : TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
+
+    return { totalBorrowCapacity, usedBorrowCapacity };
+  }
+
+  /**
    * Calculates borrow requirements for a given amount of fCash and a target collateral ratio
    *
    * @param collateralCurrencyId currency to collateralize this asset by
-   * @param bufferedRatio the target post haircut / buffer collateral ratio
+   * @param _bufferedRatio the target post haircut / buffer collateral ratio
    * @param accountData account data object with borrow amounts applied
    * @param mintNTokenCollateral true if collateral should be minted as nTokens
    * @param blockTime

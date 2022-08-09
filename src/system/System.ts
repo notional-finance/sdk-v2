@@ -307,6 +307,8 @@ export default class System {
   }
 
   public getUSDRate(symbol: string) {
+    if (symbol === 'USD') return ethers.constants.WeiPerEther;
+
     // If in USDExchangeRates then return
     const usdRate = this.data.USDExchangeRates.get(symbol);
     if (!usdRate) {

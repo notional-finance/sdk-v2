@@ -1,34 +1,10 @@
-import { gql } from '@apollo/client/core';
 import { Balance, BalanceHistory, NTokenStatus, ReturnsBreakdown, TransactionHistory } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import { xirr, CashFlow, convertBigNumber } from '../libs/xirr';
 import AccountData from './AccountData';
-import GraphClient from '../data/GraphClient';
 import { System, FreeCollateral, NTokenValue } from '../system';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { Currency, nToken } from '../data';
-
-interface BalanceHistoryQueryResult {
-  balanceChanges: {
-    id: string;
-    blockNumber: number;
-    transactionHash: string;
-    timestamp: number;
-    currency: {
-      id: string;
-    };
-    assetCashBalanceBefore: string;
-    assetCashBalanceAfter: string;
-    assetCashValueUnderlyingBefore: string;
-    assetCashValueUnderlyingAfter: string;
-    nTokenBalanceBefore: string;
-    nTokenBalanceAfter: string;
-    nTokenValueUnderlyingBefore: string;
-    nTokenValueUnderlyingAfter: string;
-    nTokenValueAssetBefore: string;
-    nTokenValueAssetAfter: string;
-  }[];
-}
 
 export default class BalanceSummary {
   private currency: Currency;
@@ -171,13 +147,18 @@ export default class BalanceSummary {
     }
   }
 
-  public getTransactionHistory(): TransactionHistory[] {
-    return this.history.map((h) => ({
+  public static getTransactionHistory(history: BalanceHistory[]): TransactionHistory[] {
+    return history.map((h) => ({
+      currencyId: h.currencyId,
       txnType: h.tradeType,
       timestampMS: h.blockTime.getTime(),
       transactionHash: h.transactionHash,
       amount: h.totalUnderlyingValueChange,
     }));
+  }
+
+  public getTransactionHistory(): TransactionHistory[] {
+    return BalanceSummary.getTransactionHistory(this.history);
   }
 
   public getReturnsBreakdown(): ReturnsBreakdown[] {
@@ -222,134 +203,7 @@ export default class BalanceSummary {
     this.nToken = system.getNToken(this.currencyId);
   }
 
-  private static balanceHistoryQuery(address: string) {
-    return gql`{
-      balanceChanges (
-        where: {account: "${address.toLowerCase()}"},
-        orderBy: blockNumber,
-        orderDirection: asc
-      ) {
-        id
-        blockNumber
-        transactionHash
-        timestamp
-        currency {
-          id
-        }
-        assetCashBalanceBefore
-        assetCashBalanceAfter
-        assetCashValueUnderlyingBefore
-        assetCashValueUnderlyingAfter
-        nTokenBalanceBefore
-        nTokenBalanceAfter
-        nTokenValueUnderlyingBefore
-        nTokenValueUnderlyingAfter
-        nTokenValueAssetBefore
-        nTokenValueAssetAfter
-      }
-    }`;
-  }
-
-  public static getTradeType(
-    assetCashBalanceBefore: TypedBigNumber,
-    assetCashBalanceAfter: TypedBigNumber,
-    nTokenBalanceBefore?: TypedBigNumber,
-    nTokenBalanceAfter?: TypedBigNumber
-  ) {
-    let tradeType = '';
-    if (assetCashBalanceBefore.gt(assetCashBalanceAfter)) {
-      tradeType = 'Withdraw';
-    } else if (assetCashBalanceBefore.lt(assetCashBalanceAfter)) {
-      tradeType = 'Deposit';
-    }
-
-    if (!nTokenBalanceBefore || !nTokenBalanceAfter) return tradeType || 'unknown';
-    if (nTokenBalanceBefore.gt(nTokenBalanceAfter)) {
-      tradeType = tradeType ? `${tradeType} & Redeem nToken` : 'Redeem nToken';
-    } else if (nTokenBalanceBefore.lt(nTokenBalanceAfter)) {
-      tradeType = tradeType ? `${tradeType} & Mint nToken` : 'Mint nToken';
-    }
-
-    return tradeType || 'unknown';
-  }
-
-  public static async fetchBalanceHistory(address: string, graphClient: GraphClient): Promise<BalanceHistory[]> {
-    const system = System.getSystem();
-    const queryResult = await graphClient.queryOrThrow<BalanceHistoryQueryResult>(
-      BalanceSummary.balanceHistoryQuery(address)
-    );
-
-    return queryResult.balanceChanges.map((r) => {
-      const currencyId = Number(r.currency.id);
-      const currency = system.getCurrencyById(currencyId);
-      const { assetSymbol } = currency;
-      const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
-      const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
-      const assetCashBalanceBefore = TypedBigNumber.fromBalance(r.assetCashBalanceBefore, assetSymbol, true);
-      const assetCashBalanceAfter = TypedBigNumber.fromBalance(r.assetCashBalanceAfter, assetSymbol, true);
-      const nTokenBalanceBefore = nTokenSymbol
-        ? TypedBigNumber.fromBalance(r.nTokenBalanceBefore, nTokenSymbol, true)
-        : undefined;
-      const nTokenBalanceAfter = nTokenSymbol
-        ? TypedBigNumber.fromBalance(r.nTokenBalanceAfter, nTokenSymbol, true)
-        : undefined;
-
-      // Use from instead of fromBalance here to override default for NonMintable tokens
-      // which are always categorized as InternalAsset
-      const assetCashValueUnderlyingBefore = TypedBigNumber.from(
-        r.assetCashValueUnderlyingBefore,
-        BigNumberType.InternalUnderlying,
-        underlyingSymbol
-      );
-      const assetCashValueUnderlyingAfter = TypedBigNumber.from(
-        r.assetCashValueUnderlyingAfter,
-        BigNumberType.InternalUnderlying,
-        underlyingSymbol
-      );
-      const nTokenValueUnderlyingBefore = TypedBigNumber.from(
-        r.nTokenValueUnderlyingBefore,
-        BigNumberType.InternalUnderlying,
-        underlyingSymbol
-      );
-      const nTokenValueUnderlyingAfter = TypedBigNumber.from(
-        r.nTokenValueUnderlyingAfter,
-        BigNumberType.InternalUnderlying,
-        underlyingSymbol
-      );
-      const totalUnderlyingValueChange = assetCashValueUnderlyingAfter
-        .sub(assetCashValueUnderlyingBefore)
-        .add(nTokenValueUnderlyingAfter.sub(nTokenValueUnderlyingBefore));
-
-      const tradeType = BalanceSummary.getTradeType(
-        assetCashBalanceBefore,
-        assetCashBalanceAfter,
-        nTokenBalanceBefore,
-        nTokenBalanceAfter
-      );
-
-      return {
-        id: r.id,
-        blockNumber: r.blockNumber,
-        blockTime: new Date(r.timestamp * 1000),
-        transactionHash: r.transactionHash,
-        currencyId: Number(r.currency.id),
-        tradeType,
-        assetCashBalanceBefore,
-        assetCashBalanceAfter,
-        assetCashValueUnderlyingBefore,
-        assetCashValueUnderlyingAfter,
-        nTokenBalanceBefore,
-        nTokenBalanceAfter,
-        nTokenValueUnderlyingBefore,
-        nTokenValueUnderlyingAfter,
-        nTokenValueAssetBefore: TypedBigNumber.from(r.nTokenValueAssetBefore, BigNumberType.InternalAsset, assetSymbol),
-        nTokenValueAssetAfter: TypedBigNumber.from(r.nTokenValueAssetAfter, BigNumberType.InternalAsset, assetSymbol),
-        totalUnderlyingValueChange,
-      };
-    });
-  }
-
-  public static build(accountData: AccountData, balanceHistory: BalanceHistory[], currentTime = getNowSeconds()) {
+  public static build(accountData: AccountData, currentTime = getNowSeconds()) {
     const system = System.getSystem();
     const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } =
       FreeCollateral.getFreeCollateral(accountData);
@@ -358,10 +212,7 @@ export default class BalanceSummary {
     return (
       accountData.accountBalances
         .map((v) => {
-          const filteredHistory = balanceHistory
-            .filter((h) => h.currencyId === v.currencyId)
-            .sort((a, b) => a.blockNumber - b.blockNumber);
-
+          const filteredHistory = accountData.getBalanceHistory(v.currencyId);
           const cashBalanceCashFlows = BalanceSummary.getCashBalanceCashFlows(
             v.cashBalance,
             filteredHistory,

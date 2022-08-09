@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers';
-import { BalanceHistory } from '../../src/libs/types';
+import { BalanceHistory, StakedNoteHistory } from '../../src/libs/types';
 import { getNowSeconds } from '../../src/libs/utils';
 import { BalanceSummary } from '../../src/account';
 import { SECONDS_IN_DAY } from '../../src/config/constants';
@@ -55,10 +55,15 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false
+      false,
+      {
+        trades: [],
+        balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
+      }
     );
 
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime);
+    const summary = BalanceSummary.build(data, currentTime);
     expect(summary).toHaveLength(1);
     expect(summary[0].assetCashBalance.toString()).toEqual(BigNumber.from(5000e8).toString());
     expect(summary[0].assetCashValueUnderlying.toString()).toEqual(BigNumber.from(100e8).toString());
@@ -87,11 +92,16 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false
+      false,
+      {
+        trades: [],
+        balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
+      }
     );
 
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime);
+    const summary = BalanceSummary.build(data, currentTime);
     expect(summary).toHaveLength(1);
     expect(summary[0].nTokenBalance!.toString()).toEqual(BigNumber.from(1000e8).toString());
     expect(summary[0].nTokenValueUnderlying!.toNumber()).toEqual(1989503177);
@@ -132,9 +142,14 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false
+      false,
+      {
+        trades: [],
+        balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
+      }
     );
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime);
+    const summary = BalanceSummary.build(data, currentTime);
     expect(summary).toHaveLength(1);
     expect(summary[0].assetCashBalance.toString()).toEqual(BigNumber.from(5000e8).toString());
     expect(summary[0].assetCashValueUnderlying.toString()).toEqual(BigNumber.from(100e8).toString());
@@ -142,6 +157,11 @@ describe('Balance Summary', () => {
   });
 
   it('it returns the entire balance to withdraw if there is no debt', () => {
+    const cTokenBalance = { ...baseBalanceHistory };
+    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(20e8, BigNumberType.InternalUnderlying, 'DAI');
+    const tradeHistory = [cTokenBalance];
+
     const data = new MockAccountData(
       0,
       false,
@@ -157,20 +177,28 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false
+      false,
+      {
+        trades: [],
+        balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
+      }
     );
-    const cTokenBalance = { ...baseBalanceHistory };
-    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cDAI');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(20e8, BigNumberType.InternalUnderlying, 'DAI');
-    const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0];
+    const summary = BalanceSummary.build(data, currentTime)[0];
     expect(summary.isWithdrawable).toBeTruthy();
     expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual('1000.0');
   });
 
   it('it returns the prorata balance to withdraw if there is debt', () => {
+    const cTokenBalance = { ...baseBalanceHistory };
+    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cETH');
+    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(-20e8, BigNumberType.InternalUnderlying, 'ETH');
+    cTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nETH');
+    cTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cETH');
+    cTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(50e8, BigNumberType.InternalUnderlying, 'ETH');
+    const tradeHistory = [cTokenBalance];
     const data = new MockAccountData(
       0,
       true,
@@ -186,18 +214,16 @@ describe('Balance Summary', () => {
         },
       ],
       [],
-      false
+      false,
+      {
+        trades: [],
+        balanceHistory: tradeHistory,
+        sNOTEHistory: {} as StakedNoteHistory,
+      }
     );
-    const cTokenBalance = { ...baseBalanceHistory };
-    cTokenBalance.assetCashBalanceAfter = TypedBigNumber.from(-1000e8, BigNumberType.InternalAsset, 'cETH');
-    cTokenBalance.assetCashValueUnderlyingAfter = TypedBigNumber.from(-20e8, BigNumberType.InternalUnderlying, 'ETH');
-    cTokenBalance.nTokenBalanceAfter = TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nETH');
-    cTokenBalance.nTokenValueAssetAfter = TypedBigNumber.from(2500e8, BigNumberType.InternalAsset, 'cETH');
-    cTokenBalance.nTokenValueUnderlyingAfter = TypedBigNumber.from(50e8, BigNumberType.InternalUnderlying, 'ETH');
-    const tradeHistory = [cTokenBalance];
     const currentTime = blockTime + 45 * SECONDS_IN_DAY;
 
-    const summary = BalanceSummary.build(data, tradeHistory, currentTime)[0];
+    const summary = BalanceSummary.build(data, currentTime)[0];
     expect(summary.isWithdrawable).toBeTruthy();
     // ntoken pv == 5000, haircut value is: 4500, free collateral is 2000 <= this is what can be withdrawn
     expect(summary.maxWithdrawValueAssetCash.toExactString()).toEqual('2000.0');
