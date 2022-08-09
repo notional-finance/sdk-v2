@@ -252,6 +252,49 @@ export default class AccountData {
   }
 
   /**
+   * Returns total assets and total debts in each currency without local currency netting and
+   * without haircuts and buffers applied.
+   */
+  public getTotalCurrencyValue() {
+    const system = System.getSystem();
+    return this.accountBalances.reduce((totals, b) => {
+      const id = b.currencyId;
+      let totalAssets = TypedBigNumber.getZeroUnderlying(id);
+      let totalDebts = TypedBigNumber.getZeroUnderlying(id);
+      const cashGroup = system.getCashGroup(id);
+
+      const { totalCashClaims, fCashAssets } = FreeCollateral.getNetfCashPositions(
+        id,
+        this.portfolio,
+        undefined,
+        false
+      );
+      totalAssets = totalAssets.add(totalCashClaims);
+      fCashAssets.forEach((a) => {
+        const pv = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false);
+        if (pv.isPositive()) {
+          totalAssets = totalAssets.add(pv);
+        } else {
+          totalDebts = totalDebts.add(pv.abs());
+        }
+      });
+
+      if (b.nTokenBalance) {
+        totalAssets = totalAssets.add(b.nTokenBalance.toUnderlying());
+      }
+
+      if (b.cashBalance?.isPositive()) {
+        totalAssets = totalAssets.add(b.cashBalance.toUnderlying());
+      } else if (b.cashBalance?.isNegative()) {
+        totalDebts = totalDebts.add(b.cashBalance.toUnderlying().abs());
+      }
+
+      totals.set(id, { totalAssets, totalDebts });
+      return totals;
+    }, new Map<number, { totalAssets: TypedBigNumber; totalDebts: TypedBigNumber }>());
+  }
+
+  /**
    * Calculates loan to value ratio. A loan to value ratio is the total value of debts in ETH divided by
    * the total value of collateral in ETH. It does not use any net currency values.
    */

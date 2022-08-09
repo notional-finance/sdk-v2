@@ -406,4 +406,53 @@ describe('Account Data', () => {
       expect(liquidationPrice?.toNumber()).toBeCloseTo(0.5e8, -6);
     });
   });
+
+  it('returns total assets and debts per currency', () => {
+    const account = new MockAccountData(
+      0,
+      false,
+      false,
+      undefined,
+      [
+        {
+          currencyId: 2,
+          cashBalance: TypedBigNumber.from(-5000e8, BigNumberType.InternalAsset, 'cDAI'),
+          nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+          lastClaimTime: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
+        },
+        {
+          currencyId: 3,
+          cashBalance: TypedBigNumber.from(Math.floor(5000e8), BigNumberType.InternalAsset, 'cUSDC'),
+          nTokenBalance: TypedBigNumber.from(1000e8, BigNumberType.nToken, 'nUSDC'),
+          lastClaimTime: BigNumber.from(0),
+          accountIncentiveDebt: BigNumber.from(0),
+        },
+      ],
+      [
+        {
+          currencyId: 2,
+          maturity: getNowSeconds() + 1000,
+          assetType: AssetType.fCash,
+          notional: TypedBigNumber.from(200e8, BigNumberType.InternalUnderlying, 'DAI'),
+          settlementDate: getNowSeconds() + 1000,
+        },
+        {
+          currencyId: 3,
+          maturity: getNowSeconds() + 1000,
+          assetType: AssetType.fCash,
+          notional: TypedBigNumber.from(-150e8, BigNumberType.InternalUnderlying, 'USDC'),
+          settlementDate: getNowSeconds() + 1000,
+        },
+      ],
+      false
+    );
+
+    const totals = account.getTotalCurrencyValue();
+    expect(totals.size).toBe(2);
+    expect(totals.get(2)?.totalAssets.toFloat()).toBeCloseTo(200);
+    expect(totals.get(2)?.totalDebts.toFloat()).toBeCloseTo(100);
+    expect(totals.get(3)?.totalAssets.toFloat()).toBeCloseTo(119.833);
+    expect(totals.get(3)?.totalDebts.toFloat()).toBeCloseTo(150);
+  });
 });
