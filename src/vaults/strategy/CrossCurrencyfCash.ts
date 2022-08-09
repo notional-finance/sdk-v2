@@ -129,12 +129,16 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       vaultAccount.maturity
     );
 
-    thresholds.push({
-      name: 'Interest Rate',
-      type: LiquidationThresholdType.fCashInterestRate,
-      rate: liquidationInterestRate,
-      collateralCurrencyId: this.lendCurrencyId,
-    });
+    const maxInterestRate = this.getVaultMarket(vaultAccount.maturity).maxInterestRate();
+    if (liquidationInterestRate <= maxInterestRate) {
+      // Only show the liquidation rate if it is less than the market
+      thresholds.push({
+        name: 'Interest Rate',
+        type: LiquidationThresholdType.fCashInterestRate,
+        rate: liquidationInterestRate,
+        collateralCurrencyId: this.lendCurrencyId,
+      });
+    }
 
     return thresholds;
   }

@@ -224,7 +224,7 @@ export async function fetchAndDecodeSystem(
   skipFetchSetup: boolean
 ) {
   const _fetch = skipFetchSetup ? fetch : crossFetch;
-  const resp = await _fetch(cacheUrl);
+  const resp = await _fetch(`${cacheUrl}/cache?encoding=binary`);
   if (!resp.ok) throw Error('Could not fetch system');
 
   const value = new Uint8Array(await resp.arrayBuffer());

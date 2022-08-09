@@ -134,17 +134,17 @@ message VaultState {
     SerializedTypedBigNumber totalAssetCash = 4;
     SerializedTypedBigNumber totalVaultShares = 5;
     SerializedTypedBigNumber totalStrategyTokens = 6;
-    repeated VaultHistoricalValue historicalValue = 11;
+    repeated VaultHistoricalValue historicalValue = 7;
     // These are optional or nullable
-    SerializedTypedBigNumber settlementStrategyTokenValue = 7;
-    SerializedBigNumber settlementRate = 8;
-    SerializedTypedBigNumber remainingSettledAssetCash = 9;
-    SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
-    SerializedTypedBigNumber shortfall = 11;
-    SerializedTypedBigNumber insolvency = 12;
-    repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
-    repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
-    repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+    SerializedTypedBigNumber settlementStrategyTokenValue = 8;
+    SerializedBigNumber settlementRate = 9;
+    SerializedTypedBigNumber remainingSettledAssetCash = 10;
+    SerializedTypedBigNumber remainingSettledStrategyTokens = 11;
+    SerializedTypedBigNumber shortfall = 12;
+    SerializedTypedBigNumber insolvency = 13;
+    repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 14;
+    repeated SerializedTypedBigNumber totalSecondaryDebtShares = 15;
+    repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 16;
 }
 
 message VaultConfig {

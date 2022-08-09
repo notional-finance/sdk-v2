@@ -1029,7 +1029,226 @@
       ]
     }
   },
-  "vaults": {},
+  "vaults": {
+    "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524": {
+      "vaultAddress": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524",
+      "strategy": "0xa587d31a",
+      "name": "Simple Strategy v1: DAI",
+      "primaryBorrowCurrency": 2,
+      "minAccountBorrowSize": {
+        "_isTypedBigNumber": true,
+        "hex": "0x02540be400",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "DAI"
+      },
+      "minCollateralRatioBasisPoints": 200000000,
+      "maxDeleverageCollateralRatioBasisPoints": 400000000,
+      "feeRateBasisPoints": 10000000,
+      "liquidationRatePercent": 1040000000,
+      "maxBorrowMarketIndex": 2,
+      "maxPrimaryBorrowCapacity": {
+        "_isTypedBigNumber": true,
+        "hex": "0x013fbe85edc90000",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "DAI"
+      },
+      "totalUsedPrimaryBorrowCapacity": {
+        "_isTypedBigNumber": true,
+        "hex": "0x02d03020ea",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "DAI"
+      },
+      "enabled": false,
+      "allowRollPosition": true,
+      "onlyVaultEntry": false,
+      "onlyVaultExit": false,
+      "onlyVaultRoll": false,
+      "onlyVaultDeleverage": false,
+      "onlyVaultSettle": false,
+      "allowsReentrancy": false,
+      "vaultStates": [
+        {
+          "maturity": 1664064000,
+          "isSettled": false,
+          "totalPrimaryfCashBorrowed": {
+            "_isTypedBigNumber": true,
+            "hex": "0x00",
+            "bigNumberType": "Internal Underlying",
+            "symbol": "DAI"
+          },
+          "totalAssetCash": {
+            "_isTypedBigNumber": true,
+            "hex": "0x00",
+            "bigNumberType": "Internal Asset",
+            "symbol": "cDAI"
+          },
+          "totalVaultShares": {
+            "_isTypedBigNumber": true,
+            "hex": "0x00",
+            "bigNumberType": "VaultShare",
+            "symbol": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524:1664064000"
+          },
+          "totalStrategyTokens": {
+            "_isTypedBigNumber": true,
+            "hex": "0x00",
+            "bigNumberType": "StrategyToken",
+            "symbol": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524:1664064000"
+          },
+          "totalSecondaryfCashBorrowed": [
+            {
+              "_isTypedBigNumber": true,
+              "hex": "0x0184ac",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "ETH"
+            }
+          ],
+          "totalSecondaryDebtShares": [
+            {
+              "_isTypedBigNumber": true,
+              "hex": "0x0184ac",
+              "bigNumberType": "DebtShare",
+              "symbol": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524:1664064000:ETH"
+            }
+          ]
+        },
+        {
+          "maturity": 1671840000,
+          "isSettled": false,
+          "totalPrimaryfCashBorrowed": {
+            "_isTypedBigNumber": true,
+            "hex": "-0x02d03020ea",
+            "bigNumberType": "Internal Underlying",
+            "symbol": "DAI"
+          },
+          "totalAssetCash": {
+            "_isTypedBigNumber": true,
+            "hex": "0x00",
+            "bigNumberType": "Internal Asset",
+            "symbol": "cDAI"
+          },
+          "totalVaultShares": {
+            "_isTypedBigNumber": true,
+            "hex": "0x04f360cd5e",
+            "bigNumberType": "VaultShare",
+            "symbol": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524:1671840000"
+          },
+          "totalStrategyTokens": {
+            "_isTypedBigNumber": true,
+            "hex": "0x04f360cd5e",
+            "bigNumberType": "StrategyToken",
+            "symbol": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524:1671840000"
+          },
+          "totalSecondaryfCashBorrowed": [
+            {
+              "_isTypedBigNumber": true,
+              "hex": "0x00",
+              "bigNumberType": "Internal Underlying",
+              "symbol": "ETH"
+            }
+          ],
+          "totalSecondaryDebtShares": [
+            {
+              "_isTypedBigNumber": true,
+              "hex": "0x00",
+              "bigNumberType": "DebtShare",
+              "symbol": "0x71515faa73f74f449da0c8e7d8cc3c0fa502e524:1671840000:ETH"
+            }
+          ]
+        }
+      ],
+      "secondaryBorrowCurrencies": [1, 0],
+      "maxSecondaryBorrowCapacity": [
+        {
+          "_isTypedBigNumber": true,
+          "hex": "0x02540be400",
+          "bigNumberType": "Internal Underlying",
+          "symbol": "ETH"
+        }
+      ],
+      "totalUsedSecondaryBorrowCapacity": [
+        {
+          "_isTypedBigNumber": true,
+          "hex": "0x0184ac",
+          "bigNumberType": "Internal Underlying",
+          "symbol": "ETH"
+        }
+      ]
+    },
+    "0xf8ee1fd40853e4962253ab947a3df4406982dff9": {
+      "vaultAddress": "0xf8ee1fd40853e4962253ab947a3df4406982dff9",
+      "strategy": "0x8fd8f0b0",
+      "name": "Cross Currency fCash: DAI/USDC",
+      "primaryBorrowCurrency": 2,
+      "minAccountBorrowSize": {
+        "_isTypedBigNumber": true,
+        "hex": "0x02540be400",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "DAI"
+      },
+      "minCollateralRatioBasisPoints": 50000000,
+      "maxDeleverageCollateralRatioBasisPoints": 200000000,
+      "feeRateBasisPoints": 3000000,
+      "liquidationRatePercent": 1040000000,
+      "maxBorrowMarketIndex": 2,
+      "maxPrimaryBorrowCapacity": {
+        "_isTypedBigNumber": true,
+        "hex": "0x09184e72a000",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "DAI"
+      },
+      "totalUsedPrimaryBorrowCapacity": {
+        "_isTypedBigNumber": true,
+        "hex": "0x00",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "DAI"
+      },
+      "enabled": true,
+      "allowRollPosition": false,
+      "onlyVaultEntry": false,
+      "onlyVaultExit": false,
+      "onlyVaultRoll": false,
+      "onlyVaultDeleverage": false,
+      "onlyVaultSettle": true,
+      "allowsReentrancy": true
+    },
+    "0x8771d21a2cc656f7da0f342313f1e157f8fcd354": {
+      "vaultAddress": "0x8771d21a2cc656f7da0f342313f1e157f8fcd354",
+      "strategy": "0x8fd8f0b0",
+      "name": "Cross Currency fCash: USDC/DAI",
+      "primaryBorrowCurrency": 3,
+      "minAccountBorrowSize": {
+        "_isTypedBigNumber": true,
+        "hex": "0x02540be400",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "USDC"
+      },
+      "minCollateralRatioBasisPoints": 50000000,
+      "maxDeleverageCollateralRatioBasisPoints": 200000000,
+      "feeRateBasisPoints": 3000000,
+      "liquidationRatePercent": 1040000000,
+      "maxBorrowMarketIndex": 2,
+      "maxPrimaryBorrowCapacity": {
+        "_isTypedBigNumber": true,
+        "hex": "0x09184e72a000",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "USDC"
+      },
+      "totalUsedPrimaryBorrowCapacity": {
+        "_isTypedBigNumber": true,
+        "hex": "0x00",
+        "bigNumberType": "Internal Underlying",
+        "symbol": "USDC"
+      },
+      "enabled": true,
+      "allowRollPosition": false,
+      "onlyVaultEntry": false,
+      "onlyVaultExit": false,
+      "onlyVaultRoll": false,
+      "onlyVaultDeleverage": false,
+      "onlyVaultSettle": true,
+      "allowsReentrancy": true
+    }
+  },
   "tradingEstimates": {
     "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0x6b175474e89094c44da98b954eedeac495271d0f": {
       "buyTokenAddress": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",

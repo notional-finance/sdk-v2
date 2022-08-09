@@ -97,7 +97,7 @@ export type VaultConfig = Omit<
   readonly secondaryBorrowCurrencies?: number[];
   readonly maxSecondaryBorrowCapacity?: SecondaryBorrowArray;
   readonly totalUsedSecondaryBorrowCapacity?: SecondaryBorrowArray;
-  readonly vaultStates: VaultState[];
+  readonly vaultStates?: VaultState[];
 };
 
 export interface SystemData {
