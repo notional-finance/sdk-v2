@@ -2,7 +2,6 @@
 import {
   BigNumber,
 } from 'ethers';
-import { gql } from '@apollo/client/core';
 
 import { CashGroup, System } from '../system';
 import GraphClient from '../data/GraphClient';
@@ -12,116 +11,8 @@ import AccountData from './AccountData';
 import { AssetType, BalanceHistory } from '../libs/types';
 import BalanceSummary from './BalanceSummary';
 import AssetSummary from './AssetSummary';
-
-const accountsQuery = gql`
-  query batchQuery($pageSize: Int!, $lastID: String) {
-    batch: accounts(first: $pageSize, where: { id_gt: $lastID }, orderBy: id, orderDirection: asc) {
-      id
-      nextSettleTime
-      hasCashDebt
-      hasPortfolioAssetDebt
-      assetBitmapCurrency {
-        id
-      }
-      balances {
-        currency {
-          id
-          symbol
-        }
-        assetCashBalance
-        nTokenBalance
-        lastClaimTime
-        lastClaimIntegralSupply
-        accountIncentiveDebt
-        didMigrateIncentives
-      }
-      portfolio {
-        currency {
-          id
-          symbol
-        }
-        settlementDate
-        maturity
-        assetType
-        notional
-      }
-    }
-  }
-`;
-
-const accountQuery = gql`
-  query getAccount($id: String!) {
-    account(id: $id) {
-      id
-      nextSettleTime
-      hasCashDebt
-      hasPortfolioAssetDebt
-      assetBitmapCurrency {
-        id
-      }
-      balances {
-        currency {
-          id
-          symbol
-        }
-        assetCashBalance
-        nTokenBalance
-        lastClaimTime
-        lastClaimIntegralSupply
-        accountIncentiveDebt
-        didMigrateIncentives
-      }
-      portfolio {
-        currency {
-          id
-          symbol
-        }
-        settlementDate
-        maturity
-        assetType
-        notional
-      }
-    }
-  }
-`;
-
-interface AssetResponse {
-  currency: {
-    id: string;
-    symbol: string;
-  };
-  settlementDate: string;
-  maturity: string;
-  assetType: string;
-  notional: number;
-}
-
-interface BalanceResponse {
-  currency: {
-    id: string;
-    symbol: string;
-  };
-  assetCashBalance: string;
-  nTokenBalance: string;
-  lastClaimTime: number;
-  lastClaimIntegralSupply: string;
-  accountIncentiveDebt: string;
-  didMigrateIncentives: boolean;
-}
-
-interface AccountResponse {
-  id: string;
-  nextSettleTime: number;
-  hasCashDebt: boolean;
-  hasPortfolioAssetDebt: boolean;
-  assetBitmapCurrency: {
-    id: string;
-  } | null;
-  balances: BalanceResponse[];
-  portfolio: AssetResponse[];
-}
-
-type AccountQueryResponse = { account: AccountResponse };
+import { BalanceResponse, AssetResponse, AccountQuery, AccountQueryResponse } from './queries/AccountQuery';
+import { BatchAccountQuery, BatchAccountResponse } from './queries/BatchAccountQuery';
 
 export default class AccountGraphLoader {
   public static parseBalance(balance: BalanceResponse) {
@@ -190,7 +81,7 @@ export default class AccountGraphLoader {
    * @returns
    */
   public static async loadBatch(graphClient: GraphClient) {
-    const response = (await graphClient.batchQuery(accountsQuery)) as AccountResponse[];
+    const response = (await graphClient.batchQuery(BatchAccountQuery)) as BatchAccountResponse;
     const accounts = new Map<string, AccountData>();
     await Promise.all(
       response.map(async (account) => {
@@ -245,7 +136,7 @@ export default class AccountGraphLoader {
    */
   public static async load(graphClient: GraphClient, address: string) {
     const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
-    const { account } = await graphClient.queryOrThrow<AccountQueryResponse>(accountQuery, { id: lowerCaseAddress });
+    const { account } = await graphClient.queryOrThrow<AccountQueryResponse>(AccountQuery, { id: lowerCaseAddress });
 
     const balances = account.balances.map(AccountGraphLoader.parseBalance);
     const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);
