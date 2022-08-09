@@ -16,6 +16,97 @@ describe('calculates free collateral', () => {
     system.destroy();
   });
 
+  describe('total borrow capacity', () => {
+    it('calculates with no net local', () => {
+      const accountData = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+        ],
+        [],
+        true
+      );
+
+      const { usedBorrowCapacity, totalBorrowCapacity } = FreeCollateral.getBorrowCapacity(3, accountData);
+      expect(usedBorrowCapacity.isZero()).toBeTruthy();
+      expect(totalBorrowCapacity.toFloat()).toBeCloseTo((92 / 109) * 100);
+      expect(totalBorrowCapacity.symbol).toBe('USDC');
+    });
+
+    it('calculates it with positive net local', () => {
+      const accountData = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+          {
+            currencyId: 3,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cUSDC'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+        ],
+        [],
+        true
+      );
+
+      const { usedBorrowCapacity, totalBorrowCapacity } = FreeCollateral.getBorrowCapacity(3, accountData);
+      expect(usedBorrowCapacity.isZero()).toBeTruthy();
+      expect(totalBorrowCapacity.toFloat()).toBeCloseTo((92 / 109) * 100 + 100);
+      expect(totalBorrowCapacity.symbol).toBe('USDC');
+    });
+
+    it('calculates it with negative net local', () => {
+      const accountData = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+          {
+            currencyId: 3,
+            cashBalance: TypedBigNumber.from(-500e8, BigNumberType.InternalAsset, 'cUSDC'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nUSDC'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+        ],
+        [],
+        true
+      );
+
+      const { usedBorrowCapacity, totalBorrowCapacity } = FreeCollateral.getBorrowCapacity(3, accountData);
+      expect(usedBorrowCapacity.toFloat()).toBe(10);
+      expect(totalBorrowCapacity.toFloat()).toBeCloseTo((92 / 109) * 100 - 10);
+      expect(totalBorrowCapacity.symbol).toBe('USDC');
+    });
+  });
+
   describe('calculates free collateral', () => {
     const blockTime = CashGroup.getTimeReference(getNowSeconds());
     const maturity = CashGroup.getMaturityForMarketIndex(1, blockTime);

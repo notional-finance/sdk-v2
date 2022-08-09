@@ -21,7 +21,7 @@ export default class Account extends AccountRefresh {
   /**
    * Loads an account object
    *
-   * @param signer
+   * @param _signer
    * @param provider
    * @param system
    * @returns

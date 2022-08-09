@@ -120,13 +120,13 @@ export default class AccountData {
     }));
   }
 
-  public getFullTransactionHistory(sinceTime?: number): TransactionHistory[] {
+  public getFullTransactionHistory(filterStartTime?: number): TransactionHistory[] {
     const fullHistory = BalanceSummary.getTransactionHistory(this.getBalanceHistory())
       .concat(AssetSummary.getTransactionHistory(this.getAssetHistory()))
       .concat(NOTESummary.getTransactionHistory(this.accountHistory?.sNOTEHistory));
 
     return fullHistory
-      .filter((h) => (sinceTime ? h.timestampMS >= sinceTime : true))
+      .filter((h) => (filterStartTime ? h.timestampMS >= filterStartTime : true))
       .sort((a, b) => a.timestampMS - b.timestampMS);
   }
 
@@ -169,6 +169,10 @@ export default class AccountData {
       true,
       accountData.accountHistory
     );
+  }
+
+  public copy() {
+    return AccountData.copyAccountData(this);
   }
 
   public static parsePortfolioFromBlockchain(portfolio: AssetResult[]): Asset[] {
