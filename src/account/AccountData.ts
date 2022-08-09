@@ -11,6 +11,7 @@ import { AssetType, Balance } from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
 import { Asset } from '../data';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
+import AccountGraphLoader, { AccountHistory } from './AccountGraphLoader';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -51,7 +52,8 @@ export default class AccountData {
     public bitmapCurrencyId: number | undefined,
     _accountBalances: Balance[],
     private _portfolio: Asset[],
-    public isCopy: boolean
+    public isCopy: boolean,
+    public accountHistory?: AccountHistory
   ) {
     // Assets of a currency that are not found in accountBalances must be marked as having a zero
     // balance in the accountBalances list
@@ -121,7 +123,8 @@ export default class AccountData {
       accountData.bitmapCurrencyId,
       accountData.accountBalances.map((b) => ({ ...b })),
       accountData.portfolio.map((a) => ({ ...a })),
-      true
+      true,
+      accountData.accountHistory
     );
   }
 
@@ -213,6 +216,11 @@ export default class AccountData {
     }
 
     return new AccountData(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, balances, portfolio, false);
+  }
+
+  public async fetchHistory(address: string) {
+    const { graphClient } = System.getSystem();
+    this.accountHistory = await AccountGraphLoader.loadTransactionHistory(address, graphClient);
   }
 
   /**

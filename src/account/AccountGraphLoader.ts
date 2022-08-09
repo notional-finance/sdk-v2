@@ -1,21 +1,24 @@
-// prettier-ignore
-import {
-  BigNumber,
-} from 'ethers';
-
-import { CashGroup, System } from '../system';
+import { BigNumber } from 'ethers';
+import { CashGroup, Market, System } from '../system';
 import GraphClient from '../data/GraphClient';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
-import { AssetType, BalanceHistory } from '../libs/types';
+import { AssetType, BalanceHistory, TradeType } from '../libs/types';
 import BalanceSummary from './BalanceSummary';
 import AssetSummary from './AssetSummary';
 import { BalanceResponse, AssetResponse, AccountQuery, AccountQueryResponse } from './queries/AccountQuery';
 import { BatchAccountQuery, BatchAccountResponse } from './queries/BatchAccountQuery';
+import {
+  BalanceHistoryResponse,
+  TradeHistoryResponse,
+  TransactionHistoryQuery,
+  TransactionHistoryResponse,
+} from './queries/TransactionHistory';
+import { Unwrap } from '../libs/UtilityTypes';
 
 export default class AccountGraphLoader {
-  public static parseBalance(balance: BalanceResponse) {
+  private static parseBalance(balance: BalanceResponse) {
     const currencyId = Number(balance.currency.id);
     const currency = System.getSystem().getCurrencyById(currencyId);
 
@@ -23,12 +26,10 @@ export default class AccountGraphLoader {
       throw Error(`Currency ${currencyId} cannot be found.`);
     }
 
-    if (!currency.nTokenSymbol) {
-      throw Error(`Currency ${currencyId} does not have a nToken.`);
-    }
-
     const cashBalance = TypedBigNumber.fromBalance(balance.assetCashBalance, currency.assetSymbol, true);
-    const nTokenBalance = TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, true);
+    const nTokenBalance = currency.nTokenSymbol
+      ? TypedBigNumber.fromBalance(balance.nTokenBalance, currency.nTokenSymbol, true)
+      : undefined;
     const lastClaimTime = BigNumber.from(balance.lastClaimTime);
     const accountIncentiveDebt = balance.didMigrateIncentives
       ? BigNumber.from(balance.accountIncentiveDebt)
@@ -72,13 +73,150 @@ export default class AccountGraphLoader {
     };
   }
 
+  private static parseTradeHistory(trades: TradeHistoryResponse[]) {
+    return trades.map((t) => {
+      const currencyId = Number(t.currency.id);
+      const maturity = BigNumber.from(t.maturity);
+      const currency = System.getSystem().getCurrencyById(currencyId);
+      const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
+      const { assetSymbol } = currency;
+      const netUnderlyingCash = TypedBigNumber.from(
+        t.netUnderlyingCash,
+        BigNumberType.InternalUnderlying,
+        underlyingSymbol
+      );
+      const netfCash = TypedBigNumber.from(t.netfCash, BigNumberType.InternalUnderlying, underlyingSymbol);
+
+      const tradedInterestRate =
+        t.tradeType === TradeType.Transfer
+          ? 0
+          : Market.exchangeToInterestRate(
+              Market.exchangeRate(netfCash, netUnderlyingCash),
+              t.timestamp,
+              maturity.toNumber()
+            );
+
+      return {
+        id: t.id,
+        blockNumber: t.blockNumber,
+        transactionHash: t.transactionHash,
+        blockTime: new Date(t.timestamp * 1000),
+        currencyId: Number(t.currency.id),
+        tradeType: t.tradeType as TradeType,
+        settlementDate: t.market ? BigNumber.from(t.market.settlementDate) : null,
+        maturityLength: t.market ? t.market.marketMaturityLengthSeconds : null,
+        maturity: BigNumber.from(t.maturity),
+        netAssetCash: TypedBigNumber.from(t.netAssetCash, BigNumberType.InternalAsset, assetSymbol),
+        netfCash,
+        netUnderlyingCash,
+        netLiquidityTokens: t.netLiquidityTokens
+          ? TypedBigNumber.from(t.netLiquidityTokens, BigNumberType.LiquidityToken, assetSymbol)
+          : null,
+        tradedInterestRate,
+      };
+    });
+  }
+
+  private static getBalanceHistoryType(
+    assetCashBalanceBefore: TypedBigNumber,
+    assetCashBalanceAfter: TypedBigNumber,
+    nTokenBalanceBefore?: TypedBigNumber,
+    nTokenBalanceAfter?: TypedBigNumber
+  ) {
+    let tradeType = '';
+    if (assetCashBalanceBefore.gt(assetCashBalanceAfter)) {
+      tradeType = 'Withdraw';
+    } else if (assetCashBalanceBefore.lt(assetCashBalanceAfter)) {
+      tradeType = 'Deposit';
+    }
+
+    if (!nTokenBalanceBefore || !nTokenBalanceAfter) return tradeType || 'unknown';
+    if (nTokenBalanceBefore.gt(nTokenBalanceAfter)) {
+      tradeType = tradeType ? `${tradeType} & Redeem nToken` : 'Redeem nToken';
+    } else if (nTokenBalanceBefore.lt(nTokenBalanceAfter)) {
+      tradeType = tradeType ? `${tradeType} & Mint nToken` : 'Mint nToken';
+    }
+
+    return tradeType || 'unknown';
+  }
+
+  private static parseBalanceHistory(balances: BalanceHistoryResponse[]) {
+    return balances.map((r) => {
+      const system = System.getSystem();
+      const currencyId = Number(r.currency.id);
+      const currency = system.getCurrencyById(currencyId);
+      const { assetSymbol } = currency;
+      const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
+      const nTokenSymbol = system.getNToken(currencyId)?.nTokenSymbol;
+      const assetCashBalanceBefore = TypedBigNumber.fromBalance(r.assetCashBalanceBefore, assetSymbol, true);
+      const assetCashBalanceAfter = TypedBigNumber.fromBalance(r.assetCashBalanceAfter, assetSymbol, true);
+      const nTokenBalanceBefore = nTokenSymbol
+        ? TypedBigNumber.fromBalance(r.nTokenBalanceBefore, nTokenSymbol, true)
+        : undefined;
+      const nTokenBalanceAfter = nTokenSymbol
+        ? TypedBigNumber.fromBalance(r.nTokenBalanceAfter, nTokenSymbol, true)
+        : undefined;
+
+      // Use from instead of fromBalance here to override default for NonMintable tokens
+      // which are always categorized as InternalAsset
+      const assetCashValueUnderlyingBefore = TypedBigNumber.from(
+        r.assetCashValueUnderlyingBefore,
+        BigNumberType.InternalUnderlying,
+        underlyingSymbol
+      );
+      const assetCashValueUnderlyingAfter = TypedBigNumber.from(
+        r.assetCashValueUnderlyingAfter,
+        BigNumberType.InternalUnderlying,
+        underlyingSymbol
+      );
+      const nTokenValueUnderlyingBefore = TypedBigNumber.from(
+        r.nTokenValueUnderlyingBefore,
+        BigNumberType.InternalUnderlying,
+        underlyingSymbol
+      );
+      const nTokenValueUnderlyingAfter = TypedBigNumber.from(
+        r.nTokenValueUnderlyingAfter,
+        BigNumberType.InternalUnderlying,
+        underlyingSymbol
+      );
+      const totalUnderlyingValueChange = assetCashValueUnderlyingAfter
+        .sub(assetCashValueUnderlyingBefore)
+        .add(nTokenValueUnderlyingAfter.sub(nTokenValueUnderlyingBefore));
+
+      const tradeType = this.getBalanceHistoryType(
+        assetCashBalanceBefore,
+        assetCashBalanceAfter,
+        nTokenBalanceBefore,
+        nTokenBalanceAfter
+      );
+
+      return {
+        id: r.id,
+        blockNumber: r.blockNumber,
+        blockTime: new Date(r.timestamp * 1000),
+        transactionHash: r.transactionHash,
+        currencyId: Number(r.currency.id),
+        tradeType,
+        assetCashBalanceBefore,
+        assetCashBalanceAfter,
+        assetCashValueUnderlyingBefore,
+        assetCashValueUnderlyingAfter,
+        nTokenBalanceBefore,
+        nTokenBalanceAfter,
+        nTokenValueUnderlyingBefore,
+        nTokenValueUnderlyingAfter,
+        nTokenValueAssetBefore: TypedBigNumber.from(r.nTokenValueAssetBefore, BigNumberType.InternalAsset, assetSymbol),
+        nTokenValueAssetAfter: TypedBigNumber.from(r.nTokenValueAssetAfter, BigNumberType.InternalAsset, assetSymbol),
+        totalUnderlyingValueChange,
+      };
+    });
+  }
+
   /**
    * Loads multiple accounts in a single query.
    *
    * @param graphClient
-   * @param pageSize
-   * @param pageNumber
-   * @returns
+   * @returns Map<string, AccountData>
    */
   public static async loadBatch(graphClient: GraphClient) {
     const response = (await graphClient.batchQuery(BatchAccountQuery)) as BatchAccountResponse;
@@ -99,22 +237,33 @@ export default class AccountGraphLoader {
     return accounts;
   }
 
+  public static async loadTransactionHistory(address: string, graphClient: GraphClient) {
+    const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
+    const history = await graphClient.queryOrThrow<TransactionHistoryResponse>(TransactionHistoryQuery, {
+      id: lowerCaseAddress,
+    });
+
+    return {
+      trades: this.parseTradeHistory(history.trades),
+      balanceHistory: this.parseBalanceHistory(history.balanceHistory),
+    };
+  }
+
   /**
    * Returns a summary of an account's balances with historical transactions and internal return rate
    */
-  public static async getBalanceSummary(
-    address: string,
-    accountData: AccountData | undefined,
-    graphClient: GraphClient
-  ) {
+  public static async getBalanceSummary(address: string, accountData: AccountData | undefined) {
     if (!accountData) {
       return {
         balanceHistory: new Array<BalanceHistory>(),
         balanceSummary: new Array<BalanceSummary>(),
       };
     }
+    if (!accountData.accountHistory) {
+      await accountData.fetchHistory(address);
+    }
 
-    const balanceHistory = await BalanceSummary.fetchBalanceHistory(address, graphClient);
+    const { balanceHistory } = accountData.accountHistory!;
     const balanceSummary = BalanceSummary.build(accountData, balanceHistory);
     return { balanceHistory, balanceSummary };
   }
@@ -122,8 +271,18 @@ export default class AccountGraphLoader {
   /**
    * Returns the tradeHistory and assetSummary for an account
    */
-  public static async getAssetSummary(address: string, accountData: AccountData, graphClient: GraphClient) {
-    const tradeHistory = await AssetSummary.fetchTradeHistory(address, graphClient);
+  public static async getAssetSummary(address: string, accountData?: AccountData) {
+    if (!accountData) {
+      return {
+        balanceHistory: new Array<BalanceHistory>(),
+        balanceSummary: new Array<BalanceSummary>(),
+      };
+    }
+    if (!accountData.accountHistory) {
+      await accountData.fetchHistory(address);
+    }
+
+    const tradeHistory = accountData.accountHistory!.trades;
     const assetSummary = AssetSummary.build(accountData, tradeHistory);
     return { tradeHistory, assetSummary };
   }
@@ -151,3 +310,5 @@ export default class AccountGraphLoader {
     );
   }
 }
+
+export type AccountHistory = Unwrap<ReturnType<typeof AccountGraphLoader.loadTransactionHistory>>;

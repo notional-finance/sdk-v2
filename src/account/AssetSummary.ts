@@ -1,40 +1,10 @@
-import { BigNumber } from 'ethers';
-import { gql } from '@apollo/client/core';
-import { System, Market } from '../system';
+import { System } from '../system';
 import { convertBigNumber, xirr } from '../libs/xirr';
-// prettier-ignore
-import {
-  AssetType, TradeHistory, TradeType, TransactionHistory,
-} from '../libs/types';
+import { AssetType, TradeHistory, TransactionHistory } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
-import GraphClient from '../data/GraphClient';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { Asset, Currency } from '../data';
-
-interface TradeHistoryQueryResult {
-  trades: {
-    id: string;
-    blockNumber: number;
-    transactionHash: string;
-    timestamp: number;
-    currency: {
-      id: string;
-    };
-    market: {
-      marketIndex: number;
-      maturity: number;
-      settlementDate: number;
-      marketMaturityLengthSeconds: number;
-    } | null;
-    tradeType: string;
-    netAssetCash: string;
-    netUnderlyingCash: string;
-    netfCash: string;
-    netLiquidityTokens: string | null;
-    maturity: string;
-  }[];
-}
 
 export default class AssetSummary {
   public maturity: number;
@@ -81,84 +51,6 @@ export default class AssetSummary {
     this.maturity = (fCash?.maturity || liquidityToken?.maturity) as number;
     this.currencyId = (fCash?.currencyId || liquidityToken?.currencyId) as number;
     this.currency = System.getSystem().getCurrencyById(this.currencyId);
-  }
-
-  private static tradeHistoryQuery(address: string) {
-    return gql`{
-      trades (
-        where: {account: "${address.toLowerCase()}"},
-        orderBy:blockNumber,
-        orderDirection: asc
-      ) {
-        id
-        blockNumber
-        transactionHash
-        timestamp
-        currency {
-          id
-        }
-        market {
-          marketIndex
-          maturity
-          settlementDate
-          marketMaturityLengthSeconds
-        }
-        tradeType
-        netAssetCash
-        netUnderlyingCash
-        netfCash
-        netLiquidityTokens
-        maturity
-      }
-    }`;
-  }
-
-  public static async fetchTradeHistory(address: string, graphClient: GraphClient): Promise<TradeHistory[]> {
-    const queryResult = await graphClient.queryOrThrow<TradeHistoryQueryResult>(
-      AssetSummary.tradeHistoryQuery(address)
-    );
-
-    return queryResult.trades.map((t) => {
-      const currencyId = Number(t.currency.id);
-      const maturity = BigNumber.from(t.maturity);
-      const currency = System.getSystem().getCurrencyById(currencyId);
-      const underlyingSymbol = currency.underlyingSymbol || currency.assetSymbol;
-      const { assetSymbol } = currency;
-      const netUnderlyingCash = TypedBigNumber.from(
-        t.netUnderlyingCash,
-        BigNumberType.InternalUnderlying,
-        underlyingSymbol
-      );
-      const netfCash = TypedBigNumber.from(t.netfCash, BigNumberType.InternalUnderlying, underlyingSymbol);
-
-      const tradedInterestRate =
-        t.tradeType === TradeType.Transfer
-          ? 0
-          : Market.exchangeToInterestRate(
-              Market.exchangeRate(netfCash, netUnderlyingCash),
-              t.timestamp,
-              maturity.toNumber()
-            );
-
-      return {
-        id: t.id,
-        blockNumber: t.blockNumber,
-        transactionHash: t.transactionHash,
-        blockTime: new Date(t.timestamp * 1000),
-        currencyId: Number(t.currency.id),
-        tradeType: t.tradeType as TradeType,
-        settlementDate: t.market ? BigNumber.from(t.market.settlementDate) : null,
-        maturityLength: t.market ? t.market.marketMaturityLengthSeconds : null,
-        maturity: BigNumber.from(t.maturity),
-        netAssetCash: TypedBigNumber.from(t.netAssetCash, BigNumberType.InternalAsset, assetSymbol),
-        netfCash,
-        netUnderlyingCash,
-        netLiquidityTokens: t.netLiquidityTokens
-          ? TypedBigNumber.from(t.netLiquidityTokens, BigNumberType.LiquidityToken, assetSymbol)
-          : null,
-        tradedInterestRate,
-      };
-    });
   }
 
   public getTransactionHistory(): TransactionHistory[] {

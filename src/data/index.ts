@@ -1,5 +1,6 @@
 import { BigNumber, Contract } from 'ethers';
 import { AssetType, TypedBigNumber } from '..';
+import { Replaced, DeepRequired, Primitive } from '../libs/UtilityTypes';
 import { AssetRateAggregator, ERC20, NTokenERC20, IAggregator } from '../typechain';
 import {
   Asset as _Asset,
@@ -17,24 +18,6 @@ import {
   VaultHistoricalValue as _VaultHistoricalValue,
   TradingEstimate as _TradingEstimate,
 } from './encoding/SystemProto';
-
-type DeepRequired<T, TIgnore> = T extends object | TIgnore
-  ? T extends TIgnore
-    ? T
-    : {
-        readonly [P in keyof T]-?: DeepRequired<T[P], TIgnore>;
-      }
-  : Required<T>;
-
-type Primitive = string | number | bigint | boolean | null | undefined;
-
-type Replaced<T, TReplace, TWith, TKeep = Primitive> = T extends TReplace | TKeep
-  ? T extends TReplace
-    ? TWith | Exclude<T, TReplace>
-    : T
-  : {
-      [P in keyof T]: Replaced<T[P], TReplace, TWith, TKeep>;
-    };
 
 type Rewrite<T> = Replaced<
   Replaced<

@@ -61,7 +61,7 @@ export default class Account extends AccountRefresh {
    */
   public async getBalanceSummary() {
     const [{ balanceSummary }, noteSummary] = await Promise.all([
-      AccountGraphLoader.getBalanceSummary(this.address, this.accountData, this.graphClient),
+      AccountGraphLoader.getBalanceSummary(this.address, this.accountData),
       NOTESummary.build(this, this.graphClient),
     ]);
 
@@ -79,7 +79,7 @@ export default class Account extends AccountRefresh {
       };
     }
 
-    return AccountGraphLoader.getAssetSummary(this.address, this.accountData, this.graphClient);
+    return AccountGraphLoader.getAssetSummary(this.address, this.accountData);
   }
 
   /**

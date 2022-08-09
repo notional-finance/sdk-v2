@@ -159,11 +159,11 @@ export default class Notional extends TransactionBuilder {
   }
 
   public async getAccountBalanceSummaryFromGraph(address: string, accountData: AccountData) {
-    return AccountGraphLoader.getBalanceSummary(address, accountData, this.graphClient);
+    return AccountGraphLoader.getBalanceSummary(address, accountData);
   }
 
   public async getAccountAssetSummaryFromGraph(address: string, accountData: AccountData) {
-    return AccountGraphLoader.getAssetSummary(address, accountData, this.graphClient);
+    return AccountGraphLoader.getAssetSummary(address, accountData);
   }
 
   public async getAccountFromGraph(address: string) {
