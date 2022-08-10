@@ -489,7 +489,7 @@ export default class AccountData {
    *
    * @param collateralId
    * @param debtCurrencyId
-   * @returns ETH denominated liquidation price
+   * @returns Debt denominated liquidation price
    */
   public getLiquidationPrice(collateralId: number, debtCurrencyId: number) {
     const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } =
@@ -537,6 +537,66 @@ export default class AccountData {
 
     // Convert from collateral to debt via ETH. This will be negative if the account is undercollateralized
     return maxExchangeRateDecrease.toETH(false).fromETH(debtCurrencyId, false);
+  }
+
+  public getLiquidationPenalty(collateralId: number, liquidationPrice?: TypedBigNumber) {
+    const { netUnderlyingAvailable } = FreeCollateral.getFreeCollateral(this);
+    const netCollateral = netUnderlyingAvailable.get(collateralId);
+    if (!netCollateral || netCollateral.isNegative()) {
+      return {};
+    }
+
+    // Scale by default liquidation portion
+    const cashBalance = this.cashBalance(collateralId)?.toUnderlying();
+    const nTokenBalance = this.nTokenBalance(collateralId)?.toUnderlying();
+
+    const { liquidationDiscount } = System.getSystem().getETHRate(collateralId);
+    let netCollateralPortion = netCollateral.scale(40, 100);
+    let cashBalancePenalty: TypedBigNumber;
+    let nTokenPenalty = TypedBigNumber.getZeroUnderlying(collateralId);
+
+    // First apply cash balances to the penalty
+    const cashPenaltyRate = liquidationDiscount - 100;
+    if (cashBalance && cashBalance.gte(netCollateralPortion)) {
+      cashBalancePenalty = netCollateralPortion.scale(liquidationDiscount - 100, 100);
+      netCollateralPortion = netCollateralPortion.copy(0);
+    } else if (cashBalance && cashBalance.isPositive()) {
+      cashBalancePenalty = cashBalance.scale(liquidationDiscount - 100, 100);
+      netCollateralPortion = netCollateralPortion.sub(cashBalance);
+    } else {
+      cashBalancePenalty = TypedBigNumber.getZeroUnderlying(collateralId);
+    }
+
+    // Then apply nToken balances to the penalty
+    const nToken = System.getSystem().getNToken(collateralId);
+    let nTokenPenaltyRate = 0;
+    if (nToken) {
+      const { liquidationHaircutPercentage } = nToken;
+      nTokenPenaltyRate = 100 - liquidationHaircutPercentage + cashPenaltyRate;
+
+      if (netCollateralPortion.isPositive() && nTokenBalance) {
+        nTokenPenalty = nTokenBalance.gte(netCollateralPortion)
+          ? netCollateralPortion.scale(nTokenPenaltyRate, 100)
+          : nTokenBalance.scale(nTokenPenaltyRate, 100);
+      }
+    }
+
+    const totalPenalty = cashBalancePenalty.add(nTokenPenalty);
+    const totalPenaltyRate =
+      cashBalancePenalty
+        .scale(cashPenaltyRate, 1)
+        .add(nTokenPenalty.scale(nTokenPenaltyRate, 1))
+        .scale(INTERNAL_TOKEN_PRECISION, totalPenalty)
+        .toNumber() / INTERNAL_TOKEN_PRECISION;
+
+    let totalPenaltyETHValueAtLiquidationPrice: TypedBigNumber | undefined;
+    if (liquidationPrice) {
+      // Liquidation Price is in the debt currency, convert it to ETH
+      const liquidationETHPrice = liquidationPrice.toETH(false).toInternalPrecision();
+      totalPenaltyETHValueAtLiquidationPrice = liquidationETHPrice.scale(totalPenalty, INTERNAL_TOKEN_PRECISION);
+    }
+
+    return { totalPenalty, totalPenaltyRate, totalPenaltyETHValueAtLiquidationPrice };
   }
 
   /**

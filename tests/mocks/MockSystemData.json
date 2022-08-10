@@ -177,6 +177,7 @@
       "mustInvert": false,
       "buffer": 129,
       "haircut": 78,
+      "liquidationDiscount": 104,
       "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
     },
     "2": {
@@ -189,6 +190,7 @@
       "mustInvert": false,
       "buffer": 109,
       "haircut": 92,
+      "liquidationDiscount": 104,
       "latestRate": { "_isBigNumber": true, "_hex": "0x2386F26FC10000" }
     },
     "3": {
@@ -201,6 +203,7 @@
       "mustInvert": false,
       "buffer": 109,
       "haircut": 92,
+      "liquidationDiscount": 104,
       "latestRate": { "_isBigNumber": true, "_hex": "0x2386F26FC10000" }
     },
     "4": {
@@ -213,6 +216,7 @@
       "mustInvert": false,
       "buffer": 129,
       "haircut": 78,
+      "liquidationDiscount": 104,
       "latestRate": { "_isBigNumber": true, "_hex": "0x0101563ecbc2a43df1" }
     },
     "5": {
@@ -225,6 +229,7 @@
       "mustInvert": false,
       "buffer": 129,
       "haircut": 78,
+      "liquidationDiscount": 104,
       "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
     },
     "6": {
@@ -237,6 +242,7 @@
       "mustInvert": false,
       "buffer": 129,
       "haircut": 0,
+      "liquidationDiscount": 104,
       "latestRate": { "_isBigNumber": true, "_hex": "0x0de0b6b3a7640000" }
     }
   },
@@ -298,6 +304,7 @@
       "nTokenSymbol": "nETH",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x44364c5bb000" },
       "pvHaircutPercentage": 90,
+      "liquidationHaircutPercentage": 94,
       "depositShares": [50000000, 50000000],
       "leverageThresholds": [880000000, 880000000],
       "contract": {
@@ -378,6 +385,7 @@
       "nTokenSymbol": "nDAI",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x02386f26fc1000" },
       "pvHaircutPercentage": 85,
+      "liquidationHaircutPercentage": 94,
       "depositShares": [45000000, 40000000, 15000000],
       "leverageThresholds": [880000000, 880000000, 870000000],
       "contract": {
@@ -499,6 +507,7 @@
       "nTokenSymbol": "nUSDC",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x0265e8af393000" },
       "pvHaircutPercentage": 85,
+      "liquidationHaircutPercentage": 94,
       "depositShares": [45000000, 40000000, 15000000],
       "leverageThresholds": [880000000, 880000000, 870000000],
       "contract": {
@@ -620,6 +629,7 @@
       "nTokenSymbol": "nWBTC",
       "incentiveEmissionRate": { "_isBigNumber": true, "_hex": "0x3faa25226000" },
       "pvHaircutPercentage": 90,
+      "liquidationHaircutPercentage": 94,
       "depositShares": [50000000, 50000000],
       "leverageThresholds": [880000000, 880000000],
       "contract": {

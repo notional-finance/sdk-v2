@@ -321,6 +321,18 @@ describe('Account Data', () => {
       const { netETHCollateralWithHaircut, netETHDebtWithBuffer } = account.getFreeCollateral();
       const aggregateFC = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
       expect(aggregateFC.toNumber()).toBeCloseTo(0, -6);
+
+      const { totalPenalty, totalPenaltyRate, totalPenaltyETHValueAtLiquidationPrice } = account.getLiquidationPenalty(
+        1,
+        liquidationPrice!
+      );
+
+      expect(totalPenaltyRate).toBe(4);
+      expect(totalPenalty?.symbol).toBe('ETH');
+      const ethValue = account.cashBalance(1)!.toUnderlying().toFloat() * 0.4 * 0.04;
+      expect(totalPenalty?.toFloat()).toBeCloseTo(ethValue);
+      expect(totalPenaltyETHValueAtLiquidationPrice?.symbol).toBe('ETH');
+      expect(totalPenaltyETHValueAtLiquidationPrice?.toFloat()).toBeCloseTo(totalPenalty!.toFloat());
     });
 
     it('returns null on negative liquidation price', () => {
@@ -404,6 +416,66 @@ describe('Account Data', () => {
       expect(liquidationPrice?.symbol).toBe('DAI');
       // 2x collateral in stables, liquidation price is $0.50
       expect(liquidationPrice?.toNumber()).toBeCloseTo(0.5e8, -6);
+
+      const { totalPenalty, totalPenaltyRate, totalPenaltyETHValueAtLiquidationPrice } = account.getLiquidationPenalty(
+        3,
+        liquidationPrice!
+      );
+
+      expect(totalPenaltyRate).toBe(4);
+      expect(totalPenalty?.symbol).toBe('USDC');
+      const usdcValue = account.cashBalance(3)!.toUnderlying().toFloat() * 0.4 * 0.04;
+      expect(totalPenalty?.toFloat()).toBeCloseTo(usdcValue);
+      expect(totalPenaltyETHValueAtLiquidationPrice?.symbol).toBe('ETH');
+      // The value of the penalty is at $0.50 USD, and the value of USDC will be priced at $0.50
+      expect(totalPenaltyETHValueAtLiquidationPrice?.toUSD().toFloat()).toBeCloseTo(totalPenalty!.toFloat() / 2);
+    });
+
+    it('gets liquidation penalty with nUSDC collateral', () => {
+      const account = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 2,
+            cashBalance: TypedBigNumber.from(0, BigNumberType.InternalAsset, 'cDAI'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nDAI'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+          {
+            currencyId: 3,
+            cashBalance: TypedBigNumber.from(1000e8, BigNumberType.InternalAsset, 'cUSDC'),
+            nTokenBalance: TypedBigNumber.from(5000e8, BigNumberType.nToken, 'nUSDC'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+        ],
+        [
+          {
+            currencyId: 2,
+            maturity: getNowSeconds() + 1000,
+            assetType: AssetType.fCash,
+            notional: TypedBigNumber.from(-100e8 * 0.92, BigNumberType.InternalUnderlying, 'DAI'),
+            settlementDate: getNowSeconds() + 1000,
+          },
+        ],
+        false
+      );
+      const ethRateData: MutableForTesting<ETHRate> = system.getETHRate(2);
+      ethRateData.latestRate = BigNumber.from(ethers.utils.parseUnits('0.01'));
+      const rateProvider = {
+        getETHRate: () => ethRateData,
+      };
+      system.setETHRateProvider(2, rateProvider);
+
+      const liquidationPrice = account.getLiquidationPrice(3, 2);
+      const { totalPenalty, totalPenaltyRate } = account.getLiquidationPenalty(3, liquidationPrice!);
+
+      expect(totalPenaltyRate).toBeCloseTo(8.3847);
+      expect(totalPenalty?.symbol).toBe('USDC');
     });
   });
 

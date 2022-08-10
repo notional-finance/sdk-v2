@@ -213,8 +213,6 @@ export default class FreeCollateral {
     const netFreeCollateral = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
     const netLocal = netUnderlyingAvailable.get(borrowCurrencyId) || TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
 
-    console.log(netFreeCollateral.toExactString());
-    console.log(netLocal.toExactString());
     let additionalBorrowCapacity: TypedBigNumber;
     if (netLocal.isPositive()) {
       if (netLocal.toETH(true).gt(netFreeCollateral)) {

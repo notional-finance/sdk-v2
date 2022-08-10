@@ -275,7 +275,6 @@ export default class AccountGraphLoader {
     const history = await graphClient.queryOrThrow<TransactionHistoryResponse>(TransactionHistoryQuery, {
       id: lowerCaseAddress,
     });
-    console.log(history);
 
     return {
       trades: this.parseTradeHistory(history.trades),
