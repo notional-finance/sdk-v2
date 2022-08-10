@@ -100,9 +100,17 @@ describe('calculates free collateral', () => {
         true
       );
 
+      accountData.updateAsset({
+        currencyId: 3,
+        maturity: getNowSeconds() + 100,
+        assetType: AssetType.fCash,
+        notional: TypedBigNumber.from(-10e8, BigNumberType.InternalUnderlying, 'USDC'),
+        settlementDate: getNowSeconds() + 100,
+      });
+
       const { usedBorrowCapacity, totalBorrowCapacity } = FreeCollateral.getBorrowCapacity(3, accountData);
-      expect(usedBorrowCapacity.toFloat()).toBe(10);
-      expect(totalBorrowCapacity.toFloat()).toBeCloseTo((92 / 109) * 100 - 10);
+      expect(usedBorrowCapacity.toFloat()).toBeCloseTo(20);
+      expect(totalBorrowCapacity.toFloat()).toBeCloseTo((92 / 109) * 100);
       expect(totalBorrowCapacity.symbol).toBe('USDC');
     });
   });
@@ -833,6 +841,7 @@ describe('calculates free collateral', () => {
           mustInvert: false,
           rateDecimalPlaces: 18,
           latestRate: BigNumber.from('100000000000000'),
+          liquidationDiscount: 104,
         }),
       });
 
