@@ -43,30 +43,28 @@ export interface TradeHistoryResponse {
 }
 
 export interface StakedNoteResponse {
-  stakedNoteBalance: {
-    id: string;
-    sNOTEBalance: string;
-    ethAmountJoined: string;
-    noteAmountJoined: string;
-    ethAmountRedeemed: string;
-    noteAmountRedeemed: string;
+  id: string;
+  sNOTEBalance: string;
+  ethAmountJoined: string;
+  noteAmountJoined: string;
+  ethAmountRedeemed: string;
+  noteAmountRedeemed: string;
 
-    stakedNoteChanges: {
-      blockNumber: number;
-      transactionHash: string;
-      timestamp: number;
-      sNOTEAmountBefore: string;
-      sNOTEAmountAfter: string;
-      ethAmountChange: string;
-      noteAmountChange: string;
-    }[];
-  };
+  stakedNoteChanges: {
+    blockNumber: number;
+    transactionHash: string;
+    timestamp: number;
+    sNOTEAmountBefore: string;
+    sNOTEAmountAfter: string;
+    ethAmountChange: string;
+    noteAmountChange: string;
+  }[];
 }
 
 export interface TransactionHistoryResponse {
   trades: TradeHistoryResponse[];
-  balanceHistory: BalanceHistoryResponse[];
-  stakedNoteBalance: StakedNoteResponse;
+  balanceChanges: BalanceHistoryResponse[];
+  stakedNoteBalance: StakedNoteResponse | null;
 }
 
 export const TransactionHistoryQuery = gql`
@@ -93,7 +91,7 @@ export const TransactionHistoryQuery = gql`
       maturity
     }
 
-    balanceHistory(where: { account: $id }, orderBy: blockNumber, orderDirection: asc) {
+    balanceChanges(where: { account: $id }, orderBy: blockNumber, orderDirection: asc) {
       id
       blockNumber
       transactionHash
@@ -113,7 +111,7 @@ export const TransactionHistoryQuery = gql`
       nTokenValueAssetAfter
     }
 
-    stakedNOTEBalance(id: $id) {
+    stakedNoteBalance(id: $id) {
       sNOTEBalance
       ethAmountJoined
       noteAmountJoined

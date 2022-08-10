@@ -212,8 +212,8 @@ export default class AccountGraphLoader {
     });
   }
 
-  private static parseSNOTEHistory(sNOTEHistory: StakedNoteResponse) {
-    if (sNOTEHistory.stakedNoteBalance === null) {
+  private static parseSNOTEHistory(stakedNoteBalance: StakedNoteResponse | null) {
+    if (stakedNoteBalance === null) {
       // Handle the case where the user has not staked
       return {
         transactions: [],
@@ -224,7 +224,7 @@ export default class AccountGraphLoader {
       };
     }
 
-    const history = sNOTEHistory.stakedNoteBalance.stakedNoteChanges
+    const history = stakedNoteBalance.stakedNoteChanges
       .map((r) => ({
         blockNumber: r.blockNumber,
         transactionHash: r.transactionHash,
@@ -238,10 +238,10 @@ export default class AccountGraphLoader {
 
     return {
       transactions: history,
-      ethAmountJoined: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.ethAmountJoined, 'ETH', false),
-      ethAmountRedeemed: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.ethAmountRedeemed, 'ETH', false),
-      noteAmountJoined: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.noteAmountJoined, 'NOTE', false),
-      noteAmountRedeemed: TypedBigNumber.fromBalance(sNOTEHistory.stakedNoteBalance.noteAmountRedeemed, 'NOTE', false),
+      ethAmountJoined: TypedBigNumber.fromBalance(stakedNoteBalance.ethAmountJoined, 'ETH', false),
+      ethAmountRedeemed: TypedBigNumber.fromBalance(stakedNoteBalance.ethAmountRedeemed, 'ETH', false),
+      noteAmountJoined: TypedBigNumber.fromBalance(stakedNoteBalance.noteAmountJoined, 'NOTE', false),
+      noteAmountRedeemed: TypedBigNumber.fromBalance(stakedNoteBalance.noteAmountRedeemed, 'NOTE', false),
     };
   }
 
@@ -275,10 +275,11 @@ export default class AccountGraphLoader {
     const history = await graphClient.queryOrThrow<TransactionHistoryResponse>(TransactionHistoryQuery, {
       id: lowerCaseAddress,
     });
+    console.log(history);
 
     return {
       trades: this.parseTradeHistory(history.trades),
-      balanceHistory: this.parseBalanceHistory(history.balanceHistory),
+      balanceHistory: this.parseBalanceHistory(history.balanceChanges),
       sNOTEHistory: this.parseSNOTEHistory(history.stakedNoteBalance),
     };
   }
