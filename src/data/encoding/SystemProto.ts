@@ -569,6 +569,7 @@ export interface ETHRate {
   buffer?: number;
   haircut?: number;
   latestRate?: SerializedBigNumber;
+  liquidationDiscount?: number;
 }
 
 export function encodeETHRate(message: ETHRate): Uint8Array {
@@ -627,6 +628,13 @@ function _encodeETHRate(message: ETHRate, bb: ByteBuffer): void {
     writeByteBuffer(bb, nested);
     pushByteBuffer(nested);
   }
+
+  // optional int32 liquidationDiscount = 7;
+  let $liquidationDiscount = message.liquidationDiscount;
+  if ($liquidationDiscount !== undefined) {
+    writeVarint32(bb, 56);
+    writeVarint64(bb, intToLong($liquidationDiscount));
+  }
 }
 
 export function decodeETHRate(binary: Uint8Array): ETHRate {
@@ -680,6 +688,12 @@ function _decodeETHRate(bb: ByteBuffer): ETHRate {
         let limit = pushTemporaryLength(bb);
         message.latestRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
+        break;
+      }
+
+      // optional int32 liquidationDiscount = 7;
+      case 7: {
+        message.liquidationDiscount = readVarint32(bb);
         break;
       }
 
@@ -816,6 +830,7 @@ export interface nToken {
   migratedEmissionRate?: SerializedBigNumber;
   integralTotalSupply?: SerializedBigNumber;
   migrationTime?: number;
+  liquidationHaircutPercentage?: number;
 }
 
 export function encodenToken(message: nToken): Uint8Array {
@@ -1003,6 +1018,13 @@ function _encodenToken(message: nToken, bb: ByteBuffer): void {
     writeVarint32(bb, 136);
     writeVarint64(bb, intToLong($migrationTime));
   }
+
+  // optional int32 liquidationHaircutPercentage = 18;
+  let $liquidationHaircutPercentage = message.liquidationHaircutPercentage;
+  if ($liquidationHaircutPercentage !== undefined) {
+    writeVarint32(bb, 144);
+    writeVarint64(bb, intToLong($liquidationHaircutPercentage));
+  }
 }
 
 export function decodenToken(binary: Uint8Array): nToken {
@@ -1160,6 +1182,12 @@ function _decodenToken(bb: ByteBuffer): nToken {
       // optional int32 migrationTime = 17;
       case 17: {
         message.migrationTime = readVarint32(bb);
+        break;
+      }
+
+      // optional int32 liquidationHaircutPercentage = 18;
+      case 18: {
+        message.liquidationHaircutPercentage = readVarint32(bb);
         break;
       }
 
@@ -1948,11 +1976,11 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // repeated VaultHistoricalValue historicalValue = 11;
+  // repeated VaultHistoricalValue historicalValue = 7;
   let array$historicalValue = message.historicalValue;
   if (array$historicalValue !== undefined) {
     for (let value of array$historicalValue) {
-      writeVarint32(bb, 90);
+      writeVarint32(bb, 58);
       let nested = popByteBuffer();
       _encodeVaultHistoricalValue(value, nested);
       writeVarint32(bb, nested.limit);
@@ -1961,10 +1989,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     }
   }
 
-  // optional SerializedTypedBigNumber settlementStrategyTokenValue = 7;
+  // optional SerializedTypedBigNumber settlementStrategyTokenValue = 8;
   let $settlementStrategyTokenValue = message.settlementStrategyTokenValue;
   if ($settlementStrategyTokenValue !== undefined) {
-    writeVarint32(bb, 58);
+    writeVarint32(bb, 66);
     let nested = popByteBuffer();
     _encodeSerializedTypedBigNumber($settlementStrategyTokenValue, nested);
     writeVarint32(bb, nested.limit);
@@ -1972,10 +2000,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedBigNumber settlementRate = 8;
+  // optional SerializedBigNumber settlementRate = 9;
   let $settlementRate = message.settlementRate;
   if ($settlementRate !== undefined) {
-    writeVarint32(bb, 66);
+    writeVarint32(bb, 74);
     let nested = popByteBuffer();
     _encodeSerializedBigNumber($settlementRate, nested);
     writeVarint32(bb, nested.limit);
@@ -1983,10 +2011,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedTypedBigNumber remainingSettledAssetCash = 9;
+  // optional SerializedTypedBigNumber remainingSettledAssetCash = 10;
   let $remainingSettledAssetCash = message.remainingSettledAssetCash;
   if ($remainingSettledAssetCash !== undefined) {
-    writeVarint32(bb, 74);
+    writeVarint32(bb, 82);
     let nested = popByteBuffer();
     _encodeSerializedTypedBigNumber($remainingSettledAssetCash, nested);
     writeVarint32(bb, nested.limit);
@@ -1994,10 +2022,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
+  // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 11;
   let $remainingSettledStrategyTokens = message.remainingSettledStrategyTokens;
   if ($remainingSettledStrategyTokens !== undefined) {
-    writeVarint32(bb, 82);
+    writeVarint32(bb, 90);
     let nested = popByteBuffer();
     _encodeSerializedTypedBigNumber($remainingSettledStrategyTokens, nested);
     writeVarint32(bb, nested.limit);
@@ -2005,10 +2033,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedTypedBigNumber shortfall = 11;
+  // optional SerializedTypedBigNumber shortfall = 12;
   let $shortfall = message.shortfall;
   if ($shortfall !== undefined) {
-    writeVarint32(bb, 90);
+    writeVarint32(bb, 98);
     let nested = popByteBuffer();
     _encodeSerializedTypedBigNumber($shortfall, nested);
     writeVarint32(bb, nested.limit);
@@ -2016,10 +2044,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // optional SerializedTypedBigNumber insolvency = 12;
+  // optional SerializedTypedBigNumber insolvency = 13;
   let $insolvency = message.insolvency;
   if ($insolvency !== undefined) {
-    writeVarint32(bb, 98);
+    writeVarint32(bb, 106);
     let nested = popByteBuffer();
     _encodeSerializedTypedBigNumber($insolvency, nested);
     writeVarint32(bb, nested.limit);
@@ -2027,23 +2055,10 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     pushByteBuffer(nested);
   }
 
-  // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
+  // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 14;
   let array$totalSecondaryfCashBorrowed = message.totalSecondaryfCashBorrowed;
   if (array$totalSecondaryfCashBorrowed !== undefined) {
     for (let value of array$totalSecondaryfCashBorrowed) {
-      writeVarint32(bb, 106);
-      let nested = popByteBuffer();
-      _encodeSerializedTypedBigNumber(value, nested);
-      writeVarint32(bb, nested.limit);
-      writeByteBuffer(bb, nested);
-      pushByteBuffer(nested);
-    }
-  }
-
-  // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
-  let array$totalSecondaryDebtShares = message.totalSecondaryDebtShares;
-  if (array$totalSecondaryDebtShares !== undefined) {
-    for (let value of array$totalSecondaryDebtShares) {
       writeVarint32(bb, 114);
       let nested = popByteBuffer();
       _encodeSerializedTypedBigNumber(value, nested);
@@ -2053,11 +2068,24 @@ function _encodeVaultState(message: VaultState, bb: ByteBuffer): void {
     }
   }
 
-  // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
+  // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 15;
+  let array$totalSecondaryDebtShares = message.totalSecondaryDebtShares;
+  if (array$totalSecondaryDebtShares !== undefined) {
+    for (let value of array$totalSecondaryDebtShares) {
+      writeVarint32(bb, 122);
+      let nested = popByteBuffer();
+      _encodeSerializedTypedBigNumber(value, nested);
+      writeVarint32(bb, nested.limit);
+      writeByteBuffer(bb, nested);
+      pushByteBuffer(nested);
+    }
+  }
+
+  // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 16;
   let array$settlementSecondaryBorrowfCashSnapshot = message.settlementSecondaryBorrowfCashSnapshot;
   if (array$settlementSecondaryBorrowfCashSnapshot !== undefined) {
     for (let value of array$settlementSecondaryBorrowfCashSnapshot) {
-      writeVarint32(bb, 122);
+      writeVarint32(bb, 130);
       let nested = popByteBuffer();
       _encodeSerializedTypedBigNumber(value, nested);
       writeVarint32(bb, nested.limit);
@@ -2125,8 +2153,8 @@ function _decodeVaultState(bb: ByteBuffer): VaultState {
         break;
       }
 
-      // repeated VaultHistoricalValue historicalValue = 11;
-      case 11: {
+      // repeated VaultHistoricalValue historicalValue = 7;
+      case 7: {
         let limit = pushTemporaryLength(bb);
         let values = message.historicalValue || (message.historicalValue = []);
         values.push(_decodeVaultHistoricalValue(bb));
@@ -2134,56 +2162,56 @@ function _decodeVaultState(bb: ByteBuffer): VaultState {
         break;
       }
 
-      // optional SerializedTypedBigNumber settlementStrategyTokenValue = 7;
-      case 7: {
+      // optional SerializedTypedBigNumber settlementStrategyTokenValue = 8;
+      case 8: {
         let limit = pushTemporaryLength(bb);
         message.settlementStrategyTokenValue = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional SerializedBigNumber settlementRate = 8;
-      case 8: {
+      // optional SerializedBigNumber settlementRate = 9;
+      case 9: {
         let limit = pushTemporaryLength(bb);
         message.settlementRate = _decodeSerializedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional SerializedTypedBigNumber remainingSettledAssetCash = 9;
-      case 9: {
+      // optional SerializedTypedBigNumber remainingSettledAssetCash = 10;
+      case 10: {
         let limit = pushTemporaryLength(bb);
         message.remainingSettledAssetCash = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 10;
-      case 10: {
+      // optional SerializedTypedBigNumber remainingSettledStrategyTokens = 11;
+      case 11: {
         let limit = pushTemporaryLength(bb);
         message.remainingSettledStrategyTokens = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional SerializedTypedBigNumber shortfall = 11;
-      case 11: {
+      // optional SerializedTypedBigNumber shortfall = 12;
+      case 12: {
         let limit = pushTemporaryLength(bb);
         message.shortfall = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // optional SerializedTypedBigNumber insolvency = 12;
-      case 12: {
+      // optional SerializedTypedBigNumber insolvency = 13;
+      case 13: {
         let limit = pushTemporaryLength(bb);
         message.insolvency = _decodeSerializedTypedBigNumber(bb);
         bb.limit = limit;
         break;
       }
 
-      // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 13;
-      case 13: {
+      // repeated SerializedTypedBigNumber totalSecondaryfCashBorrowed = 14;
+      case 14: {
         let limit = pushTemporaryLength(bb);
         let values = message.totalSecondaryfCashBorrowed || (message.totalSecondaryfCashBorrowed = []);
         values.push(_decodeSerializedTypedBigNumber(bb));
@@ -2191,8 +2219,8 @@ function _decodeVaultState(bb: ByteBuffer): VaultState {
         break;
       }
 
-      // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 14;
-      case 14: {
+      // repeated SerializedTypedBigNumber totalSecondaryDebtShares = 15;
+      case 15: {
         let limit = pushTemporaryLength(bb);
         let values = message.totalSecondaryDebtShares || (message.totalSecondaryDebtShares = []);
         values.push(_decodeSerializedTypedBigNumber(bb));
@@ -2200,8 +2228,8 @@ function _decodeVaultState(bb: ByteBuffer): VaultState {
         break;
       }
 
-      // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 15;
-      case 15: {
+      // repeated SerializedTypedBigNumber settlementSecondaryBorrowfCashSnapshot = 16;
+      case 16: {
         let limit = pushTemporaryLength(bb);
         let values =
           message.settlementSecondaryBorrowfCashSnapshot || (message.settlementSecondaryBorrowfCashSnapshot = []);

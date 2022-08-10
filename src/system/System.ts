@@ -351,6 +351,7 @@ export default class System {
         buffer: 100,
         haircut: 100,
         latestRate: this.data.StakedNoteParameters.noteETHOraclePrice,
+        liquidationDiscount: 100,
       };
     }
 

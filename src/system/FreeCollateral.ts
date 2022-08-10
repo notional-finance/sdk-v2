@@ -203,35 +203,44 @@ export default class FreeCollateral {
    * @param borrowCurrencyId currency to borrow this asset by
    * @param accountData account data object
    */
-  public static getBorrowCapacity(
-    borrowCurrencyId: number,
-    accountData: AccountData,
-    blockTime = getNowSeconds()
-  ): {
-    usedBorrowCapacity: TypedBigNumber;
-    totalBorrowCapacity: TypedBigNumber;
-  } {
+  public static getBorrowCapacity(borrowCurrencyId: number, accountData: AccountData, blockTime = getNowSeconds()) {
     const accountDataCopy = accountData.copy();
-    const { haircut, buffer } = System.getSystem().getETHRate(borrowCurrencyId);
-    const { netETHCollateralWithHaircut, netUnderlyingAvailable } = this.getFreeCollateral(accountDataCopy, blockTime);
+    const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } = this.getFreeCollateral(
+      accountDataCopy,
+      blockTime
+    );
+    const { buffer } = System.getSystem().getETHRate(borrowCurrencyId);
+    const netFreeCollateral = netETHCollateralWithHaircut.sub(netETHDebtWithBuffer);
     const netLocal = netUnderlyingAvailable.get(borrowCurrencyId) || TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
 
-    // The total borrow capacity is:
-    // netUnderlyingAvailable + netHaircutLocalValueOfOtherCollateral / buffer
-    const adjustedNetLocal = netLocal.isPositive()
-      ? netLocal.scale(haircut, 100)
-      : TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
-    const netRiskAdjustedValueOfOtherCollateral = netETHCollateralWithHaircut
-      .fromETH(borrowCurrencyId)
-      .sub(adjustedNetLocal)
-      .scale(100, buffer);
+    let additionalBorrowCapacity: TypedBigNumber;
+    if (netLocal.isPositive()) {
+      if (netLocal.toETH(true).gt(netFreeCollateral)) {
+        // Take FC down to zero
+        additionalBorrowCapacity = netFreeCollateral.fromETH(borrowCurrencyId, true);
+      } else {
+        // Taking FC down to zero will flip netLocal negative
+        const fcLeftToOffset = netFreeCollateral
+          .sub(netLocal.toETH(true))
+          .fromETH(borrowCurrencyId, false)
+          .scale(100, buffer);
+        additionalBorrowCapacity = netLocal.add(fcLeftToOffset);
+      }
+    } else {
+      additionalBorrowCapacity = netFreeCollateral.fromETH(borrowCurrencyId, false).scale(100, buffer);
+    }
 
-    const totalBorrowCapacity = netLocal.add(netRiskAdjustedValueOfOtherCollateral);
-    const usedBorrowCapacity = netLocal.isNegative()
-      ? netLocal.abs()
-      : TypedBigNumber.getZeroUnderlying(borrowCurrencyId);
+    const cashBalance = accountData.cashBalance(borrowCurrencyId);
+    let usedBorrowCapacity = accountData.portfolio
+      .filter((a) => a.currencyId === borrowCurrencyId && a.notional.isNegative())
+      .reduce((s, a) => s.add(a.notional.abs()), TypedBigNumber.getZeroUnderlying(borrowCurrencyId));
 
-    return { totalBorrowCapacity, usedBorrowCapacity };
+    if (cashBalance?.isNegative()) {
+      usedBorrowCapacity = usedBorrowCapacity.add(cashBalance.toUnderlying(true).abs());
+    }
+
+    const totalBorrowCapacity = additionalBorrowCapacity.add(usedBorrowCapacity);
+    return { totalBorrowCapacity, usedBorrowCapacity, additionalBorrowCapacity };
   }
 
   /**

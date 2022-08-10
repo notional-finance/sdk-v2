@@ -26,6 +26,7 @@ const systemConfigurationQuery = gql`
         mustInvert
         buffer
         haircut
+        liquidationDiscount
       }
       assetExchangeRate {
         rateAdapterAddress
@@ -50,6 +51,7 @@ const systemConfigurationQuery = gql`
         leverageThresholds
         incentiveEmissionRate
         pvHaircutPercentage
+        liquidationHaircutPercentage
       }
       incentiveMigration {
         migrationEmissionRate
