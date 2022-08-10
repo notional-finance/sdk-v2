@@ -23,7 +23,7 @@ describe('System Integration Test', () => {
     notional = await Notional.load(5, provider, 0);
   });
 
-  it.only('loads account data', async () => {
+  it('loads account data', async () => {
     const addr = '0xF1C2dD9bD863f2444086B739383F1043E6b88F69';
     const account = await notional.getAccount(addr);
     await account.accountData?.fetchHistory(addr);
@@ -31,7 +31,7 @@ describe('System Integration Test', () => {
     console.log(account.accountData?.accountHistory);
   });
 
-  it('returns system configuration from the graph', async () => {
+  it.only('returns system configuration from the graph', async () => {
     const graphClient = new GraphClient(mainnetGraphEndpoint, 0, false);
     const { binary, json } = await fetchAndEncodeSystem(
       graphClient,

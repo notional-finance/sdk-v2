@@ -48,6 +48,7 @@ message ETHRate {
     int32 buffer = 4;
     int32 haircut = 5;
     SerializedBigNumber latestRate = 6;
+    int32 liquidationDiscount = 7;
 }
 
 message AssetRate {
@@ -80,6 +81,7 @@ message nToken {
     SerializedBigNumber migratedEmissionRate = 15;
     SerializedBigNumber integralTotalSupply = 16;
     int32 migrationTime = 17;
+    int32 liquidationHaircutPercentage = 18;
 }
 
 message Currency {
