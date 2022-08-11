@@ -20,7 +20,6 @@ describe('System Integration Test', () => {
     );
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     contracts = Notional.getContracts(mainnetAddresses, signer);
-    notional = await Notional.load(5, provider, 0);
   });
 
   it('loads account data', async () => {
