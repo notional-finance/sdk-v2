@@ -104,7 +104,7 @@ const secondSNOTECalls = (
       const ethIndex = 1 - noteIndex;
       return {
         ethBalance: TypedBigNumber.encodeJSON(r.balances[ethIndex], BigNumberType.ExternalUnderlying, 'ETH'),
-        noteBalance: TypedBigNumber.encodeJSON(r.balances[noteIndex], BigNumberType.ExternalUnderlying, 'NOTE'),
+        noteBalance: TypedBigNumber.encodeJSON(r.balances[noteIndex], BigNumberType.NOTE, 'NOTE'),
       };
     },
   },
