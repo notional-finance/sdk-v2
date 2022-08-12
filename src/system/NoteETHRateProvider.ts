@@ -13,6 +13,7 @@ export default class NoteETHRateProvider {
   private _noteUSDPrice: BigNumber = BigNumber.from(0);
 
   private noteRefreshInterval?: NodeJS.Timeout;
+
   private fetch: any;
 
   get noteUSDPrice() {

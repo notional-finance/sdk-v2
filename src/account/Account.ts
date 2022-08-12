@@ -1,4 +1,4 @@
-import { BigNumber, ethers, Overrides, Signer } from 'ethers';
+import { BigNumber, Contract, ethers, Overrides, Signer, utils } from 'ethers';
 import { System } from '../system';
 import { Notional as NotionalTypechain } from '../typechain/Notional';
 import AccountRefresh from './AccountRefresh';
@@ -8,6 +8,8 @@ import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import AccountGraphLoader from './AccountGraphLoader';
 import NOTESummary from './NOTESummary';
+
+const sanctionsInterface = new utils.Interface(['function isSanctioned(address addr) view returns (bool)']);
 
 export default class Account extends AccountRefresh {
   private constructor(
@@ -50,6 +52,11 @@ export default class Account extends AccountRefresh {
       signer = _signer;
     }
 
+    if (System.getSystem().chainId === 1) {
+      const sanctionsOracle = new Contract('0x40C57923924B5c5c5455c48D93317139ADDaC8fb', sanctionsInterface, provider);
+      const isSanctioned = await sanctionsOracle.isSanctioned(address);
+      if (isSanctioned) throw Error('Cannot load sanctioned account');
+    }
     const account = new Account(address, provider, notionalProxy, graphClient, signer);
     await account.refresh();
 
