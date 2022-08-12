@@ -103,7 +103,8 @@ export default class Notional extends TransactionBuilder {
     provider: ethers.providers.Provider,
     refreshDataInterval = CACHE_DATA_REFRESH_INTERVAL,
     dataSourceType = DataSourceType.Cache,
-    skipFetchSetup = false
+    skipFetchSetup = false,
+    configRefreshInterval = DEFAULT_CONFIGURATION_REFRESH_INTERVAL
   ) {
     let addresses: Addresses;
     let graphEndpoint: string;
@@ -149,7 +150,7 @@ export default class Notional extends TransactionBuilder {
       chainId,
       dataSourceType,
       refreshDataInterval,
-      DEFAULT_CONFIGURATION_REFRESH_INTERVAL,
+      configRefreshInterval,
       skipFetchSetup
     );
 

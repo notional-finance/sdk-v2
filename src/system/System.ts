@@ -277,7 +277,7 @@ export default class System {
 
   constructor(
     data: SystemQueryResult,
-    chainId: number,
+    public chainId: number,
     skipFetchSetup: boolean,
     public graphClient: GraphClient,
     private contracts: Contracts,
