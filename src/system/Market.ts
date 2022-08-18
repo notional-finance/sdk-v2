@@ -241,6 +241,10 @@ export default class Market {
     };
   }
 
+  public interestRate(fCashAmount: TypedBigNumber, cashAmount: TypedBigNumber, blockTime = getNowSeconds()) {
+    return Market.exchangeToInterestRate(Market.exchangeRate(fCashAmount, cashAmount), blockTime, this.maturity);
+  }
+
   /**
    * Returns the current market rate.
    *
