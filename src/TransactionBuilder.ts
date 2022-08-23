@@ -176,6 +176,28 @@ export default class TransactionBuilder {
     ]);
   }
 
+  public redeemNTokenDirect(
+    address: string,
+    currencyId: number,
+    tokensToRedeem: TypedBigNumber,
+    sellTokenAssets: boolean,
+    acceptResidualAssets: boolean,
+    overrides = {} as Overrides
+  ) {
+    const currency = System.getSystem().getCurrencyById(currencyId);
+    const nToken = System.getSystem().getNToken(currency.id);
+    tokensToRedeem.check(BigNumberType.nToken, nToken?.nTokenSymbol);
+
+    return this.populateTxnAndGas(address, 'nTokenRedeem', [
+      address,
+      currencyId,
+      tokensToRedeem.n,
+      sellTokenAssets,
+      acceptResidualAssets,
+      overrides,
+    ]);
+  }
+
   /**
    * Claims incentives for the account
    *

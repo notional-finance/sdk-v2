@@ -187,7 +187,7 @@ describe('Cross Currency fCash', () => {
     // There is 2e8 asset cash from the settled vault
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(101.3764e8, -8);
     expect(newVaultAccount.primaryBorrowfCash.toNumber()).toBe(-100e8);
-    expect(newVaultAccount.vaultShares.toNumber()).toBeCloseTo(101.799e8, -7);
+    expect(newVaultAccount.vaultShares.toNumber()).toBeCloseTo(101.799e8, -8);
   });
 
   it('checks borrow capacities do not exceed', () => {
