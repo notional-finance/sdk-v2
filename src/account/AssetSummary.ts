@@ -1,4 +1,4 @@
-import { System } from '../system';
+import { Market, System } from '../system';
 import { convertBigNumber, xirr } from '../libs/xirr';
 import { AssetType, TradeHistory, TransactionHistory } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
@@ -66,6 +66,37 @@ export default class AssetSummary {
 
   public getTransactionHistory(): TransactionHistory[] {
     return AssetSummary.getTransactionHistory(this.history);
+  }
+
+  public getRollFactors(rollfCashAmount: TypedBigNumber) {
+    const markets = System.getSystem().getMarkets(this.currencyId);
+    const matchingMarket = markets.find((m) => m.maturity === this.maturity);
+    const rollMarkets = markets.filter((m) => m.maturity > this.maturity) || [];
+
+    if (!matchingMarket) return [];
+
+    return rollMarkets.map((m) => {
+      // Lend: Cash withdrawn from current market, netCashToAccount is positive
+      // Borrow: Cost to repay into current market, netCashToAccount is negative
+      const { netCashToAccount } = matchingMarket.getCashAmountGivenfCashAmount(rollfCashAmount.neg());
+
+      // Lend: Cash lent to new market, newfCash is positive
+      // Borrow: Cash to borrow from new market, newfCash is negative
+      const newfCash = m.getfCashAmountGivenCashAmount(netCashToAccount.neg());
+
+      const tradeRate = Market.exchangeToInterestRate(
+        Market.exchangeRate(newfCash, netCashToAccount),
+        getNowSeconds(),
+        m.maturity
+      );
+
+      return {
+        tradeRate,
+        netCashToAccount,
+        newfCash,
+        market: m,
+      };
+    });
   }
 
   /**
