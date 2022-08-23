@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const mainnetAddresses = require('../../src/config/goerli.json');
 
-const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2-graft';
+const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2';
 
 describe('System Integration Test', () => {
   let provider: ethers.providers.JsonRpcBatchProvider;

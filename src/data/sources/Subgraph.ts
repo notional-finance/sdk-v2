@@ -58,7 +58,7 @@ const systemConfigurationQuery = gql`
         finalIntegralTotalSupply
         migrationTime
       }
-      strategyVaults {
+      leveragedVaults {
         id
         vaultAddress
         strategy
@@ -167,7 +167,7 @@ interface SystemQueryResult {
       finalIntegralTotalSupply: string;
       migrationTime: string;
     } | null;
-    strategyVaults: {
+    leveragedVaults: {
       id: string;
       vaultAddress: string;
       strategy: string;
@@ -275,7 +275,7 @@ export interface CurrencyConfig {
     integralTotalSupply: BigNumber;
     migrationTime: number;
   } | null;
-  strategyVaults: {
+  leveragedVaults: {
     id: string;
     vaultAddress: string;
     strategy: string;
@@ -448,7 +448,7 @@ export async function getSystemConfig(graphClient: GraphClient): Promise<Currenc
                 },
               }
             : undefined,
-          strategyVaults: c.strategyVaults.map((v) => {
+          leveragedVaults: c.leveragedVaults.map((v) => {
             const symbol = underlyingSymbol(c);
             const secondarySymbols = mapSecondarySymbols(v.secondaryBorrowCurrencies);
 
