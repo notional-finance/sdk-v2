@@ -111,7 +111,7 @@ export async function fetchAndEncodeSystem(
     }, {}),
     vaults: config.reduce((obj, c) => {
       const ret = obj;
-      c.strategyVaults.forEach((v) => {
+      c.leveragedVaults.forEach((v) => {
         ret[v.vaultAddress] = v;
       });
       return ret;
