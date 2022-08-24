@@ -260,4 +260,27 @@ describe('Typed Big Number', () => {
     expect(jpyValue?.symbol).toBe('JPY');
     expect(jpyValue?.type).toBe(BigNumberType.Currency);
   });
+
+  it('toDisplayString', () => {
+    const eth1 = notional.parseInput('-0.05', 'ETH', false);
+    expect(eth1?.toDisplayString()).toBe('-0.050');
+
+    const eth2 = notional.parseInput('-1.05', 'ETH', false);
+    expect(eth2?.toDisplayString()).toBe('-1.050');
+
+    const eth3 = notional.parseInput('1.05', 'ETH', false);
+    expect(eth3?.toDisplayString()).toBe('1.050');
+
+    const eth4 = notional.parseInput('0.05', 'ETH', false);
+    expect(eth4?.toDisplayString()).toBe('0.050');
+
+    const eth5 = notional.parseInput('-0.000', 'ETH', false);
+    expect(eth5?.toDisplayString()).toBe('0.000');
+  });
+
+  it('toDisplayStringWithSymbol', () => {
+    const eth1 = notional.parseInput('-0.05', 'ETH', true);
+    expect(eth1?.toDisplayStringWithSymbol()).toBe('-0.050 ETH');
+    expect(eth1?.toAssetCash(true).toDisplayStringWithSymbol()).toBe('-2.500 cETH');
+  });
 });
