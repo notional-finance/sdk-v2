@@ -18,11 +18,16 @@ export default class AssetSummary {
   }
 
   public get underlyingSymbol() {
-    return this.currency.underlyingSymbol;
+    return this.currency.underlyingSymbol || this.currency.assetSymbol;
   }
 
   public get symbol() {
     return this.currency.assetSymbol;
+  }
+
+  public get market() {
+    const markets = System.getSystem().getMarkets(this.currencyId);
+    return markets.find((m) => m.maturity === this.maturity);
   }
 
   public internalRateOfReturnString(locale = 'en-US', precision = 3) {
@@ -70,7 +75,7 @@ export default class AssetSummary {
 
   public getRollFactors(rollfCashAmount: TypedBigNumber) {
     const markets = System.getSystem().getMarkets(this.currencyId);
-    const matchingMarket = markets.find((m) => m.maturity === this.maturity);
+    const matchingMarket = this.market;
     const rollMarkets = markets.filter((m) => m.maturity > this.maturity) || [];
 
     if (!matchingMarket) return [];

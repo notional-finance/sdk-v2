@@ -458,7 +458,6 @@ export default class TransactionBuilder {
     asset: Asset,
     repayCurrencySymbol: string,
     repayNotionalAmount: TypedBigNumber,
-    depositAmount: TypedBigNumber,
     minLendSlippage: number,
     overrides = {} as Overrides
   ) {
@@ -467,16 +466,12 @@ export default class TransactionBuilder {
     const currency = System.getSystem().getCurrencyBySymbol(repayCurrencySymbol);
     if (currency.id !== asset.currencyId) throw new Error('Incorrect deposit currency for repay');
 
-    return this.lend(
+    return this.batchLend(
       address,
       repayCurrencySymbol,
-      depositAmount,
       repayNotionalAmount,
       currentMarketIndex,
       minLendSlippage,
-      depositAmount.toAssetCash(true).copy(0),
-      false,
-      false,
       overrides
     );
   }
