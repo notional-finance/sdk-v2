@@ -311,6 +311,10 @@ class TypedBigNumber {
     return parseFloat(this.toExactString());
   }
 
+  toDisplayStringWithSymbol(decimalPlaces = 3, locale = 'en-US'): string {
+    return `${this.toDisplayString(decimalPlaces, locale)} ${this.symbol}`;
+  }
+
   toDisplayString(decimalPlaces = 3, locale = 'en-US'): string {
     const exactString = this.toExactString();
     const displayString = parseFloat(exactString).toLocaleString(locale, {
@@ -319,7 +323,7 @@ class TypedBigNumber {
     });
 
     // If the return string is -0.00 or some variant, strip the negative
-    if (displayString.match(/-0\.?[0]*/)) {
+    if (displayString.match(/-0\.?[0]*$/)) {
       return displayString.replace('-', '');
     }
 
