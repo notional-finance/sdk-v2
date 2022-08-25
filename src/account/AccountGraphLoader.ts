@@ -17,7 +17,7 @@ import {
   TransactionHistoryQuery,
   TransactionHistoryResponse,
 } from './queries/TransactionHistory';
-import { VaultAccountResponse } from './queries/VaultAccountQuery';
+import { VaultAccountQuery, VaultAccountResponse } from './queries/VaultAccountQuery';
 import { VaultAccount } from '../vaults';
 import { SecondaryBorrowArray } from '..';
 
@@ -313,7 +313,7 @@ export default class AccountGraphLoader {
     });
   }
 
-  public static async parseVaultAccount(data: VaultAccountResponse) {
+  public static parseVaultAccount(data: VaultAccountResponse) {
     return data.leveragedVaultAccounts.map((v) => {
       const system = System.getSystem();
       const vault = system.getVault(v.leveragedVault.vaultAddress);
@@ -361,7 +361,8 @@ export default class AccountGraphLoader {
           account.hasPortfolioAssetDebt,
           account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency.id) : undefined,
           account.balances.map(AccountGraphLoader.parseBalance),
-          account.portfolio.map(AccountGraphLoader.parseAsset)
+          account.portfolio.map(AccountGraphLoader.parseAsset),
+          AccountGraphLoader.parseVaultAccount(account)
         );
         return accounts.set(account.id, accountData);
       })
@@ -421,6 +422,12 @@ export default class AccountGraphLoader {
     return { tradeHistory, assetSummary };
   }
 
+  public static async loadVaultAccounts(graphClient: GraphClient, address: string) {
+    const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
+    const response = await graphClient.queryOrThrow<VaultAccountResponse>(VaultAccountQuery, { id: lowerCaseAddress });
+    return AccountGraphLoader.parseVaultAccount(response);
+  }
+
   /**
    * Loads a single account
    * @param graphClient
@@ -433,6 +440,7 @@ export default class AccountGraphLoader {
 
     const balances = account.balances.map(AccountGraphLoader.parseBalance);
     const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);
+    const vaultAccounts = AccountGraphLoader.parseVaultAccount(account);
 
     return AccountData.load(
       account.nextSettleTime,
@@ -440,7 +448,8 @@ export default class AccountGraphLoader {
       account.hasPortfolioAssetDebt,
       account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency?.id) : undefined,
       balances,
-      portfolio
+      portfolio,
+      vaultAccounts
     );
   }
 }

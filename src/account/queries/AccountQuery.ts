@@ -25,7 +25,7 @@ export interface BalanceResponse {
   didMigrateIncentives: boolean;
 }
 
-export interface AccountResponse {
+export interface AccountResponse extends VaultAccountResponse {
   id: string;
   nextSettleTime: number;
   hasCashDebt: boolean;
@@ -35,7 +35,6 @@ export interface AccountResponse {
   } | null;
   balances: BalanceResponse[];
   portfolio: AssetResponse[];
-  leveragedVault: VaultAccountResponse[];
 }
 
 export type AccountQueryResponse = { account: AccountResponse };
