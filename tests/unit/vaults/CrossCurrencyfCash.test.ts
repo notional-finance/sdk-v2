@@ -1,10 +1,10 @@
+import { MockCrossCurrencyConfig, MockCrossCurrencyfCash } from '../../mocks/MockCrossCurrencyConfig';
 import { ETHRate } from '../../../src/data';
 import BaseVault from '../../../src/vaults/BaseVault';
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { System } from '../../../src/system';
 import VaultAccount from '../../../src/vaults/VaultAccount';
-import { MockCrossCurrencyConfig, MockCrossCurrencyfCash } from '../../mocks/MockCrossCurrencyConfig';
 import MockSystem, { MutableForTesting } from '../../mocks/MockSystem';
 
 describe('Cross Currency fCash', () => {
