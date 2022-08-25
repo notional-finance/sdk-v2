@@ -414,7 +414,7 @@ export default class System {
   }
 
   public getVaultSymbol(vaultAddress: string, maturity: number) {
-    return this.getVaultSymbol(vaultAddress, maturity);
+    return System.getVaultSymbol(vaultAddress, maturity);
   }
 
   public getDebtShareSymbols(vaultAddress: string, maturity: number) {

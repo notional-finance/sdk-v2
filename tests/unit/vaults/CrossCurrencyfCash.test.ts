@@ -1,5 +1,5 @@
-import { ETHRate } from '../../../lib/data';
-import BaseVault from '../../../lib/vaults/BaseVault';
+import { ETHRate } from '../../../src/data';
+import BaseVault from '../../../src/vaults/BaseVault';
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
 import { System } from '../../../src/system';

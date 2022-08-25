@@ -152,7 +152,7 @@ export default abstract class BaseVault<D, R> {
   }
 
   public getVaultSymbol(maturity: number) {
-    return `${this.vaultAddress}:${maturity}`;
+    return System.getSystem().getVaultSymbol(this.vaultAddress, maturity);
   }
 
   public getLiquidationVaultShareValue(vaultAccount: VaultAccount) {
@@ -175,14 +175,7 @@ export default abstract class BaseVault<D, R> {
   }
 
   public getDebtShareSymbol(index: 0 | 1, maturity: number) {
-    const { secondaryBorrowCurrencies } = this.getVault();
-    if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow currency');
-    if (secondaryBorrowCurrencies[index] !== 0) {
-      const symbol = System.getSystem().getUnderlyingSymbol(secondaryBorrowCurrencies[index]);
-      return `${this.getVaultSymbol(maturity)}:${symbol}`;
-    }
-
-    return undefined;
+    return System.getSystem().getDebtShareSymbol(this.vaultAddress, maturity, index);
   }
 
   public getVaultMarket(maturity: number) {

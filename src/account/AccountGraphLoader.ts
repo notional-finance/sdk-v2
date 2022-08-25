@@ -282,10 +282,18 @@ export default class AccountGraphLoader {
         netPrimaryBorrowfCashChange: t.netPrimaryBorrowfCashChange
           ? TypedBigNumber.fromBalance(t.netPrimaryBorrowfCashChange, primaryBorrowSymbol, true)
           : undefined,
-        vaultSharesBefore: TypedBigNumber.from(t.vaultSharesBefore, BigNumberType.VaultShare, vaultSymbolBefore),
-        vaultSharesAfter: TypedBigNumber.from(t.vaultSharesAfter, BigNumberType.VaultShare, vaultSymbolAfter),
+        vaultSharesBefore: vaultSymbolBefore
+          ? TypedBigNumber.from(t.vaultSharesBefore, BigNumberType.VaultShare, vaultSymbolBefore)
+          : undefined,
+        vaultSharesAfter: vaultSymbolAfter
+          ? TypedBigNumber.from(t.vaultSharesAfter, BigNumberType.VaultShare, vaultSymbolAfter)
+          : undefined,
         netVaultSharesChange: t.netVaultSharesChange
-          ? TypedBigNumber.from(t.netVaultSharesChange, BigNumberType.VaultShare, vaultSymbolAfter || vaultSymbolBefore)
+          ? TypedBigNumber.from(
+              t.netVaultSharesChange,
+              BigNumberType.VaultShare,
+              (vaultSymbolAfter || vaultSymbolBefore)!
+            )
           : undefined,
         secondaryDebtSharesBefore: t.secondaryDebtSharesBefore?.map((s, i) =>
           secondarySymbolsBefore && secondarySymbolsBefore[i] !== undefined
