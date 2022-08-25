@@ -11,6 +11,7 @@ import { BalanceResponse, AssetResponse, AccountQuery, AccountQueryResponse } fr
 import { BatchAccountQuery, BatchAccountResponse } from './queries/BatchAccountQuery';
 import {
   BalanceHistoryResponse,
+  LeveragedVaultHistoryResponse,
   StakedNoteResponse,
   TradeHistoryResponse,
   TransactionHistoryQuery,
@@ -245,6 +246,70 @@ export default class AccountGraphLoader {
     };
   }
 
+  private static parseVaultTradeHistory(vaultTradeHistory: LeveragedVaultHistoryResponse[]) {
+    const system = System.getSystem();
+    return vaultTradeHistory.map((t) => {
+      const vault = system.getVault(t.leveragedVault.vaultAddress);
+      const primaryBorrowSymbol = system.getUnderlyingSymbol(vault.primaryBorrowCurrency);
+      const maturityBefore = t.leveragedVaultMaturityBefore?.maturity;
+      const maturityAfter = t.leveragedVaultMaturityAfter?.maturity;
+      const vaultSymbolBefore = maturityBefore
+        ? system.getVaultSymbol(t.leveragedVault.vaultAddress, maturityBefore)
+        : undefined;
+      const vaultSymbolAfter = maturityAfter
+        ? system.getVaultSymbol(t.leveragedVault.vaultAddress, maturityAfter)
+        : undefined;
+      const secondarySymbolsBefore = maturityBefore
+        ? system.getDebtShareSymbols(vault.vaultAddress, maturityBefore)
+        : undefined;
+      const secondarySymbolsAfter = maturityAfter
+        ? system.getDebtShareSymbols(vault.vaultAddress, maturityAfter)
+        : undefined;
+
+      return {
+        blockNumber: t.blockNumber,
+        transactionHash: t.transactionHash,
+        timestamp: new Date(t.timestamp * 1000),
+        vaultTradeType: t.vaultTradeType,
+        vaultAddress: vault.vaultAddress,
+        maturityBefore,
+        maturityAfter,
+        primaryBorrowfCashBefore: TypedBigNumber.fromBalance(t.primaryBorrowfCashBefore, primaryBorrowSymbol, true),
+        primaryBorrowfCashAfter: TypedBigNumber.fromBalance(t.primaryBorrowfCashAfter, primaryBorrowSymbol, true),
+        netPrimaryBorrowfCashChange: t.netPrimaryBorrowfCashChange
+          ? TypedBigNumber.fromBalance(t.netPrimaryBorrowfCashChange, primaryBorrowSymbol, true)
+          : undefined,
+        vaultSharesBefore: TypedBigNumber.from(t.vaultSharesBefore, BigNumberType.VaultShare, vaultSymbolBefore),
+        vaultSharesAfter: TypedBigNumber.from(t.vaultSharesAfter, BigNumberType.VaultShare, vaultSymbolAfter),
+        netVaultSharesChange: t.netVaultSharesChange
+          ? TypedBigNumber.from(t.netVaultSharesChange, BigNumberType.VaultShare, vaultSymbolAfter || vaultSymbolBefore)
+          : undefined,
+        secondaryDebtSharesBefore: t.secondaryDebtSharesBefore?.map((s, i) =>
+          secondarySymbolsBefore && secondarySymbolsBefore[i] !== undefined
+            ? TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsBefore[i]!)
+            : undefined
+        ),
+        secondaryDebtSharesAfter: t.secondaryDebtSharesAfter?.map((s, i) =>
+          secondarySymbolsAfter && secondarySymbolsAfter[i] !== undefined
+            ? TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsAfter[i]!)
+            : undefined
+        ),
+        netSecondaryDebtSharesChange: t.netSecondaryDebtSharesChange?.map((s, i) => {
+          if (secondarySymbolsAfter && secondarySymbolsAfter[i] !== undefined) {
+            return TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsAfter[i]!);
+          }
+          if (secondarySymbolsBefore && secondarySymbolsBefore[i] !== undefined) {
+            return TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsBefore[i]!);
+          }
+          return undefined;
+        }),
+        netUnderlyingCash: t.netUnderlyingCash
+          ? TypedBigNumber.fromBalance(t.netUnderlyingCash, primaryBorrowSymbol, true)
+          : undefined,
+      };
+    });
+  }
+
   /**
    * Loads multiple accounts in a single query.
    *
@@ -280,6 +345,7 @@ export default class AccountGraphLoader {
       trades: this.parseTradeHistory(history.trades),
       balanceHistory: this.parseBalanceHistory(history.balanceChanges),
       sNOTEHistory: this.parseSNOTEHistory(history.stakedNoteBalance),
+      vaultTradeHistory: this.parseVaultTradeHistory(history.leveragedVaultTrades),
     };
   }
 
