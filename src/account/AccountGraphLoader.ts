@@ -17,6 +17,9 @@ import {
   TransactionHistoryQuery,
   TransactionHistoryResponse,
 } from './queries/TransactionHistory';
+import { VaultAccountResponse } from './queries/VaultAccountQuery';
+import { VaultAccount } from '../vaults';
+import { SecondaryBorrowArray } from '..';
 
 export default class AccountGraphLoader {
   private static parseBalance(balance: BalanceResponse) {
@@ -307,6 +310,37 @@ export default class AccountGraphLoader {
           ? TypedBigNumber.fromBalance(t.netUnderlyingCash, primaryBorrowSymbol, true)
           : undefined,
       };
+    });
+  }
+
+  public static async parseVaultAccount(data: VaultAccountResponse) {
+    return data.leveragedVaultAccounts.map((v) => {
+      const system = System.getSystem();
+      const vault = system.getVault(v.leveragedVault.vaultAddress);
+      const primaryBorrowSymbol = system.getUnderlyingSymbol(vault.primaryBorrowCurrency);
+      const secondarySymbols = system.getDebtShareSymbols(vault.vaultAddress, v.maturity);
+      const secondaryDebtShares: SecondaryBorrowArray = v.secondaryBorrowDebtShares
+        ? [
+            secondarySymbols && secondarySymbols[0]
+              ? TypedBigNumber.from(v.secondaryBorrowDebtShares[0], BigNumberType.DebtShare, secondarySymbols[0])
+              : undefined,
+            secondarySymbols && secondarySymbols[1]
+              ? TypedBigNumber.from(v.secondaryBorrowDebtShares[1], BigNumberType.DebtShare, secondarySymbols[1])
+              : undefined,
+          ]
+        : undefined;
+
+      return new VaultAccount(
+        vault.vaultAddress,
+        v.maturity,
+        TypedBigNumber.from(
+          v.vaultShares,
+          BigNumberType.VaultShare,
+          system.getVaultSymbol(vault.vaultAddress, v.maturity)
+        ),
+        TypedBigNumber.fromBalance(v.primaryBorrowfCash, primaryBorrowSymbol, true),
+        secondaryDebtShares
+      );
     });
   }
 

@@ -9,7 +9,7 @@ export default class VaultAccount {
     return new VaultAccount(
       vaultAddress,
       maturity,
-      TypedBigNumber.from(0, BigNumberType.VaultShare, `${vaultAddress}:${maturity}`),
+      TypedBigNumber.from(0, BigNumberType.VaultShare, System.getSystem().getVaultSymbol(vaultAddress, maturity)),
       TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
       undefined
     );
