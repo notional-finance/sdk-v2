@@ -5,9 +5,9 @@ import { decodeBinary, fetchAndEncodeSystem } from '../../src/data/SystemData';
 
 require('dotenv').config();
 
-const mainnetAddresses = require('../../src/config/goerli.json');
+const mainnetAddresses = require('../../src/config/mainnet.json');
 
-const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2';
+const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-debug';
 
 describe('System Integration Test', () => {
   let provider: ethers.providers.JsonRpcBatchProvider;
@@ -16,7 +16,7 @@ describe('System Integration Test', () => {
 
   beforeEach(async () => {
     provider = new ethers.providers.JsonRpcBatchProvider(
-      `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
+      `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
     );
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     contracts = Notional.getContracts(mainnetAddresses, signer);
