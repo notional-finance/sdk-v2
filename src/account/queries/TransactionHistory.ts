@@ -146,7 +146,7 @@ export const TransactionHistoryQuery = gql`
       ethAmountRedeemed
       noteAmountRedeemed
 
-      stakedNoteChanges {
+      stakedNoteChanges(orderBy: blockNumber, orderDirection: asc) {
         id
         blockNumber
         transactionHash
@@ -158,7 +158,7 @@ export const TransactionHistoryQuery = gql`
       }
     }
 
-    leveragedVaultTrades(where: { account: $id }) {
+    leveragedVaultTrades(where: { account: $id }, orderBy: blockNumber, orderDirection: asc) {
       id
       blockNumber
       transactionHash
