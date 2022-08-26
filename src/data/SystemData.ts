@@ -199,14 +199,14 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
 function _encodeMap(decoded: any) {
   // Coverts records to maps so that we can use .get on them and get type checking
   const mapped = decoded;
-  mapped.USDExchangeRates = new Map(Object.entries(decoded.USDExchangeRates));
+  mapped.USDExchangeRates = new Map(Object.entries(decoded.USDExchangeRates || {}));
   mapped.currencies = new Map(Object.entries(decoded.currencies).map(([k, v]) => [Number(k), v]));
   mapped.ethRateData = new Map(Object.entries(decoded.ethRateData).map(([k, v]) => [Number(k), v]));
   mapped.assetRateData = new Map(Object.entries(decoded.assetRateData).map(([k, v]) => [Number(k), v]));
   mapped.nTokenData = new Map(Object.entries(decoded.nTokenData).map(([k, v]) => [Number(k), v]));
   mapped.cashGroups = new Map(Object.entries(decoded.cashGroups).map(([k, v]) => [Number(k), v]));
-  mapped.vaults = new Map(Object.entries(decoded.vaults));
-  mapped.tradingEstimates = new Map(Object.entries(decoded.tradingEstimates));
+  mapped.vaults = new Map(Object.entries(decoded.vaults || {}));
+  mapped.tradingEstimates = new Map(Object.entries(decoded.tradingEstimates || {}));
   return mapped;
 }
 

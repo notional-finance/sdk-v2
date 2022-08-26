@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client/core';
+import { VaultAccountResponse } from './VaultAccountQuery';
 
 export interface AssetResponse {
   currency: {
@@ -24,7 +25,7 @@ export interface BalanceResponse {
   didMigrateIncentives: boolean;
 }
 
-export interface AccountResponse {
+export interface AccountResponse extends VaultAccountResponse {
   id: string;
   nextSettleTime: number;
   hasCashDebt: boolean;
@@ -69,6 +70,15 @@ export const AccountQuery = gql`
         maturity
         assetType
         notional
+      }
+      leveragedVaultAccounts: leveragedVaults {
+        leveragedVault {
+          vaultAddress
+        }
+        maturity
+        vaultShares
+        primaryBorrowfCash
+        secondaryBorrowDebtShares
       }
     }
   }

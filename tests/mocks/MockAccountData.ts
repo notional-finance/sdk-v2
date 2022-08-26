@@ -21,6 +21,7 @@ export default class MockAccountData extends AccountData {
       bitmapCurrencyId,
       accountBalances,
       _portfolio,
+      [],
       isCopy,
       accountHistory
     );

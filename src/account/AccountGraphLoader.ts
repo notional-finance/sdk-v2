@@ -11,11 +11,15 @@ import { BalanceResponse, AssetResponse, AccountQuery, AccountQueryResponse } fr
 import { BatchAccountQuery, BatchAccountResponse } from './queries/BatchAccountQuery';
 import {
   BalanceHistoryResponse,
+  LeveragedVaultHistoryResponse,
   StakedNoteResponse,
   TradeHistoryResponse,
   TransactionHistoryQuery,
   TransactionHistoryResponse,
 } from './queries/TransactionHistory';
+import { VaultAccountQuery, VaultAccountResponse } from './queries/VaultAccountQuery';
+import { VaultAccount } from '../vaults';
+import { SecondaryBorrowArray } from '..';
 
 export default class AccountGraphLoader {
   private static parseBalance(balance: BalanceResponse) {
@@ -245,6 +249,109 @@ export default class AccountGraphLoader {
     };
   }
 
+  private static parseVaultTradeHistory(vaultTradeHistory: LeveragedVaultHistoryResponse[]) {
+    const system = System.getSystem();
+    return vaultTradeHistory.map((t) => {
+      const vault = system.getVault(t.leveragedVault.vaultAddress);
+      const primaryBorrowSymbol = system.getUnderlyingSymbol(vault.primaryBorrowCurrency);
+      const maturityBefore = t.leveragedVaultMaturityBefore?.maturity;
+      const maturityAfter = t.leveragedVaultMaturityAfter?.maturity;
+      const vaultSymbolBefore = maturityBefore
+        ? system.getVaultSymbol(t.leveragedVault.vaultAddress, maturityBefore)
+        : undefined;
+      const vaultSymbolAfter = maturityAfter
+        ? system.getVaultSymbol(t.leveragedVault.vaultAddress, maturityAfter)
+        : undefined;
+      const secondarySymbolsBefore = maturityBefore
+        ? system.getDebtShareSymbols(vault.vaultAddress, maturityBefore)
+        : undefined;
+      const secondarySymbolsAfter = maturityAfter
+        ? system.getDebtShareSymbols(vault.vaultAddress, maturityAfter)
+        : undefined;
+
+      return {
+        blockNumber: t.blockNumber,
+        transactionHash: t.transactionHash,
+        timestamp: new Date(t.timestamp * 1000),
+        vaultTradeType: t.vaultTradeType,
+        vaultAddress: vault.vaultAddress,
+        maturityBefore,
+        maturityAfter,
+        primaryBorrowfCashBefore: TypedBigNumber.fromBalance(t.primaryBorrowfCashBefore, primaryBorrowSymbol, true),
+        primaryBorrowfCashAfter: TypedBigNumber.fromBalance(t.primaryBorrowfCashAfter, primaryBorrowSymbol, true),
+        netPrimaryBorrowfCashChange: t.netPrimaryBorrowfCashChange
+          ? TypedBigNumber.fromBalance(t.netPrimaryBorrowfCashChange, primaryBorrowSymbol, true)
+          : undefined,
+        vaultSharesBefore: vaultSymbolBefore
+          ? TypedBigNumber.from(t.vaultSharesBefore, BigNumberType.VaultShare, vaultSymbolBefore)
+          : undefined,
+        vaultSharesAfter: vaultSymbolAfter
+          ? TypedBigNumber.from(t.vaultSharesAfter, BigNumberType.VaultShare, vaultSymbolAfter)
+          : undefined,
+        netVaultSharesChange: t.netVaultSharesChange
+          ? TypedBigNumber.from(
+              t.netVaultSharesChange,
+              BigNumberType.VaultShare,
+              (vaultSymbolAfter || vaultSymbolBefore)!
+            )
+          : undefined,
+        secondaryDebtSharesBefore: t.secondaryDebtSharesBefore?.map((s, i) =>
+          secondarySymbolsBefore && secondarySymbolsBefore[i] !== undefined
+            ? TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsBefore[i]!)
+            : undefined
+        ),
+        secondaryDebtSharesAfter: t.secondaryDebtSharesAfter?.map((s, i) =>
+          secondarySymbolsAfter && secondarySymbolsAfter[i] !== undefined
+            ? TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsAfter[i]!)
+            : undefined
+        ),
+        netSecondaryDebtSharesChange: t.netSecondaryDebtSharesChange?.map((s, i) => {
+          if (secondarySymbolsAfter && secondarySymbolsAfter[i] !== undefined) {
+            return TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsAfter[i]!);
+          }
+          if (secondarySymbolsBefore && secondarySymbolsBefore[i] !== undefined) {
+            return TypedBigNumber.from(s, BigNumberType.DebtShare, secondarySymbolsBefore[i]!);
+          }
+          return undefined;
+        }),
+        netUnderlyingCash: t.netUnderlyingCash
+          ? TypedBigNumber.fromBalance(t.netUnderlyingCash, primaryBorrowSymbol, true)
+          : undefined,
+      };
+    });
+  }
+
+  public static parseVaultAccount(data: VaultAccountResponse) {
+    return data.leveragedVaultAccounts.map((v) => {
+      const system = System.getSystem();
+      const vault = system.getVault(v.leveragedVault.vaultAddress);
+      const primaryBorrowSymbol = system.getUnderlyingSymbol(vault.primaryBorrowCurrency);
+      const secondarySymbols = system.getDebtShareSymbols(vault.vaultAddress, v.maturity);
+      const secondaryDebtShares: SecondaryBorrowArray = v.secondaryBorrowDebtShares
+        ? [
+            secondarySymbols && secondarySymbols[0]
+              ? TypedBigNumber.from(v.secondaryBorrowDebtShares[0], BigNumberType.DebtShare, secondarySymbols[0])
+              : undefined,
+            secondarySymbols && secondarySymbols[1]
+              ? TypedBigNumber.from(v.secondaryBorrowDebtShares[1], BigNumberType.DebtShare, secondarySymbols[1])
+              : undefined,
+          ]
+        : undefined;
+
+      return new VaultAccount(
+        vault.vaultAddress,
+        v.maturity,
+        TypedBigNumber.from(
+          v.vaultShares,
+          BigNumberType.VaultShare,
+          system.getVaultSymbol(vault.vaultAddress, v.maturity)
+        ),
+        TypedBigNumber.fromBalance(v.primaryBorrowfCash, primaryBorrowSymbol, true),
+        secondaryDebtShares
+      );
+    });
+  }
+
   /**
    * Loads multiple accounts in a single query.
    *
@@ -262,7 +369,8 @@ export default class AccountGraphLoader {
           account.hasPortfolioAssetDebt,
           account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency.id) : undefined,
           account.balances.map(AccountGraphLoader.parseBalance),
-          account.portfolio.map(AccountGraphLoader.parseAsset)
+          account.portfolio.map(AccountGraphLoader.parseAsset),
+          AccountGraphLoader.parseVaultAccount(account)
         );
         return accounts.set(account.id, accountData);
       })
@@ -280,6 +388,7 @@ export default class AccountGraphLoader {
       trades: this.parseTradeHistory(history.trades),
       balanceHistory: this.parseBalanceHistory(history.balanceChanges),
       sNOTEHistory: this.parseSNOTEHistory(history.stakedNoteBalance),
+      vaultTradeHistory: this.parseVaultTradeHistory(history.leveragedVaultTrades),
     };
   }
 
@@ -321,6 +430,12 @@ export default class AccountGraphLoader {
     return { tradeHistory, assetSummary };
   }
 
+  public static async loadVaultAccounts(graphClient: GraphClient, address: string) {
+    const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
+    const response = await graphClient.queryOrThrow<VaultAccountResponse>(VaultAccountQuery, { id: lowerCaseAddress });
+    return AccountGraphLoader.parseVaultAccount(response);
+  }
+
   /**
    * Loads a single account
    * @param graphClient
@@ -333,6 +448,7 @@ export default class AccountGraphLoader {
 
     const balances = account.balances.map(AccountGraphLoader.parseBalance);
     const portfolio = account.portfolio.map(AccountGraphLoader.parseAsset);
+    const vaultAccounts = AccountGraphLoader.parseVaultAccount(account);
 
     return AccountData.load(
       account.nextSettleTime,
@@ -340,7 +456,8 @@ export default class AccountGraphLoader {
       account.hasPortfolioAssetDebt,
       account.assetBitmapCurrency?.id ? Number(account.assetBitmapCurrency?.id) : undefined,
       balances,
-      portfolio
+      portfolio,
+      vaultAccounts
     );
   }
 }

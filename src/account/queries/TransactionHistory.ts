@@ -61,10 +61,38 @@ export interface StakedNoteResponse {
   }[];
 }
 
+export interface LeveragedVaultHistoryResponse {
+  id: string;
+  blockNumber: number;
+  transactionHash: string;
+  timestamp: number;
+  vaultTradeType: string;
+  leveragedVault: {
+    vaultAddress: string;
+  };
+  leveragedVaultMaturityBefore: {
+    maturity: number;
+  } | null;
+  leveragedVaultMaturityAfter: {
+    maturity: number;
+  } | null;
+  primaryBorrowfCashBefore: string;
+  primaryBorrowfCashAfter: string;
+  netPrimaryBorrowfCashChange: string | null;
+  vaultSharesBefore: string;
+  vaultSharesAfter: string;
+  netVaultSharesChange: string | null;
+  secondaryDebtSharesBefore: string[] | null;
+  secondaryDebtSharesAfter: string[] | null;
+  netSecondaryDebtSharesChange: string[] | null;
+  netUnderlyingCash: string | null;
+}
+
 export interface TransactionHistoryResponse {
   trades: TradeHistoryResponse[];
   balanceChanges: BalanceHistoryResponse[];
   stakedNoteBalance: StakedNoteResponse | null;
+  leveragedVaultTrades: LeveragedVaultHistoryResponse[];
 }
 
 export const TransactionHistoryQuery = gql`
@@ -118,7 +146,7 @@ export const TransactionHistoryQuery = gql`
       ethAmountRedeemed
       noteAmountRedeemed
 
-      stakedNoteChanges {
+      stakedNoteChanges(orderBy: blockNumber, orderDirection: asc) {
         id
         blockNumber
         transactionHash
@@ -128,6 +156,33 @@ export const TransactionHistoryQuery = gql`
         ethAmountChange
         noteAmountChange
       }
+    }
+
+    leveragedVaultTrades(where: { account: $id }, orderBy: blockNumber, orderDirection: asc) {
+      id
+      blockNumber
+      transactionHash
+      timestamp
+      vaultTradeType
+      leveragedVault {
+        vaultAddress
+      }
+      leveragedVaultMaturityBefore {
+        maturity
+      }
+      leveragedVaultMaturityAfter {
+        maturity
+      }
+      primaryBorrowfCashBefore
+      primaryBorrowfCashAfter
+      netPrimaryBorrowfCashChange
+      vaultSharesBefore
+      vaultSharesAfter
+      netVaultSharesChange
+      secondaryDebtSharesBefore
+      secondaryDebtSharesAfter
+      netSecondaryDebtSharesChange
+      netUnderlyingCash
     }
   }
 `;

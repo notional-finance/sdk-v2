@@ -11,6 +11,8 @@ import { WalletBalance } from '../libs/types';
 import { ETHER_CURRENCY_ID } from '../config/constants';
 import { ERC20 } from '../typechain/ERC20';
 import TypedBigNumber from '../libs/TypedBigNumber';
+import GraphClient from '../data/GraphClient';
+import AccountGraphLoader from './AccountGraphLoader';
 
 const { AddressZero, MaxUint256 } = ethers.constants;
 
@@ -95,7 +97,8 @@ export default abstract class AccountRefresh {
   constructor(
     public address: string,
     protected provider: ethers.providers.JsonRpcBatchProvider,
-    protected notionalProxy: NotionalTypechain
+    protected notionalProxy: NotionalTypechain,
+    protected graphClient: GraphClient
   ) {}
 
   /**
@@ -120,7 +123,10 @@ export default abstract class AccountRefresh {
 
   public async refreshAccountData() {
     try {
-      const data = await this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r));
+      const vaultAccounts = await AccountGraphLoader.loadVaultAccounts(this.graphClient, this.address);
+      const data = await this.notionalProxy
+        .getAccount(this.address)
+        .then((r) => AccountData.loadFromBlockchain(r, vaultAccounts));
       await data.fetchHistory(this.address);
       this._accountData = data;
     } catch (e) {
@@ -140,8 +146,9 @@ export default abstract class AccountRefresh {
    * Refreshes both the Notional account data as well as the Account's wallet data
    */
   public async refresh() {
+    const vaultAccounts = await AccountGraphLoader.loadVaultAccounts(this.graphClient, this.address);
     const [accountResult, block] = await Promise.all([
-      this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r)),
+      this.notionalProxy.getAccount(this.address).then((r) => AccountData.loadFromBlockchain(r, vaultAccounts)),
       this.provider.getBlock('latest'),
       this.refreshWalletBalances(),
     ]);

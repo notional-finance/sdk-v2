@@ -35,6 +35,15 @@ export const BatchAccountQuery = gql`
         assetType
         notional
       }
+      leveragedVaults {
+        leveragedVault {
+          vaultAddress
+        }
+        maturity
+        vaultShares
+        primaryBorrowfCash
+        secondaryBorrowDebtShares
+      }
     }
   }
 `;

@@ -7,15 +7,17 @@ import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import AccountGraphLoader from './AccountGraphLoader';
 import NOTESummary from './NOTESummary';
+import GraphClient from '../data/GraphClient';
 
 export default class Account extends AccountRefresh {
   private constructor(
     address: string,
     provider: ethers.providers.JsonRpcBatchProvider,
     notionalProxy: NotionalTypechain,
+    graphClient: GraphClient,
     public signer?: Signer
   ) {
-    super(address, provider, notionalProxy);
+    super(address, provider, notionalProxy, graphClient);
   }
 
   /**
@@ -26,7 +28,12 @@ export default class Account extends AccountRefresh {
    * @param system
    * @returns
    */
-  public static async load(_signer: string | Signer, provider: ethers.providers.JsonRpcBatchProvider, system: System) {
+  public static async load(
+    _signer: string | Signer,
+    provider: ethers.providers.JsonRpcBatchProvider,
+    graphClient: GraphClient,
+    system: System
+  ) {
     let address: string;
     let notionalProxy = system.getNotionalProxy();
     let signer: Signer | undefined;
@@ -43,7 +50,7 @@ export default class Account extends AccountRefresh {
       signer = _signer;
     }
 
-    const account = new Account(address, provider, notionalProxy, signer);
+    const account = new Account(address, provider, notionalProxy, graphClient, signer);
     await account.refresh();
 
     return account;

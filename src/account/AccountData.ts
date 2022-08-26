@@ -15,6 +15,7 @@ import AccountGraphLoader from './AccountGraphLoader';
 import AssetSummary from './AssetSummary';
 import BalanceSummary from './BalanceSummary';
 import NOTESummary from './NOTESummary';
+import { VaultAccount } from '../vaults';
 
 interface AssetResult {
   currencyId: BigNumber;
@@ -55,6 +56,7 @@ export default class AccountData {
     public bitmapCurrencyId: number | undefined,
     _accountBalances: Balance[],
     private _portfolio: Asset[],
+    public vaultAccounts: VaultAccount[],
     public isCopy: boolean,
     public accountHistory?: AccountHistory
   ) {
@@ -156,7 +158,7 @@ export default class AccountData {
    */
   public static copyAccountData(accountData?: AccountData) {
     if (!accountData) {
-      return new AccountData(0, false, false, undefined, [], [], true);
+      return new AccountData(0, false, false, undefined, [], [], [], true);
     }
 
     return new AccountData(
@@ -166,6 +168,7 @@ export default class AccountData {
       accountData.bitmapCurrencyId,
       accountData.accountBalances.map((b) => ({ ...b })),
       accountData.portfolio.map((a) => ({ ...a })),
+      accountData.vaultAccounts,
       true,
       accountData.accountHistory
     );
@@ -219,7 +222,10 @@ export default class AccountData {
       });
   }
 
-  public static async loadFromBlockchain(result: GetAccountResult): Promise<AccountData> {
+  public static async loadFromBlockchain(
+    result: GetAccountResult,
+    vaultAccounts: VaultAccount[]
+  ): Promise<AccountData> {
     const portfolio = AccountData.parsePortfolioFromBlockchain(result.portfolio);
     const balances = AccountData.parseBalancesFromBlockchain(result.accountBalances);
 
@@ -233,7 +239,8 @@ export default class AccountData {
       result.accountContext.hasDebt === '0x01' || result.accountContext.hasDebt === '0x03',
       bitmapCurrencyId,
       balances,
-      portfolio
+      portfolio,
+      vaultAccounts
     );
   }
 
@@ -243,7 +250,8 @@ export default class AccountData {
     hasAssetDebt: boolean,
     bitmapCurrencyId: number | undefined,
     balances: Balance[],
-    portfolio: Asset[]
+    portfolio: Asset[],
+    vaultAccounts: VaultAccount[]
   ): Promise<AccountData> {
     const system = System.getSystem();
 
@@ -262,7 +270,16 @@ export default class AccountData {
       AccountData._updateBalance(balances, asset.currencyId, assetCash, undefined, bitmapCurrencyId);
     }
 
-    return new AccountData(nextSettleTime, hasCashDebt, hasAssetDebt, bitmapCurrencyId, balances, portfolio, false);
+    return new AccountData(
+      nextSettleTime,
+      hasCashDebt,
+      hasAssetDebt,
+      bitmapCurrencyId,
+      balances,
+      portfolio,
+      vaultAccounts,
+      false
+    );
   }
 
   public async fetchHistory(address: string) {

@@ -409,6 +409,29 @@ export default class System {
     return this.getAllVaults(onlyActive).filter((v) => v.primaryBorrowCurrency === currencyId);
   }
 
+  public static getVaultSymbol(vaultAddress: string, maturity: number) {
+    return `${vaultAddress}:${maturity}`;
+  }
+
+  public getVaultSymbol(vaultAddress: string, maturity: number) {
+    return System.getVaultSymbol(vaultAddress, maturity);
+  }
+
+  public getDebtShareSymbols(vaultAddress: string, maturity: number) {
+    return [this.getDebtShareSymbol(vaultAddress, maturity, 0), this.getDebtShareSymbol(vaultAddress, maturity, 1)];
+  }
+
+  public getDebtShareSymbol(vaultAddress: string, maturity: number, index: 0 | 1) {
+    const { secondaryBorrowCurrencies } = this.getVault(vaultAddress);
+    if (!secondaryBorrowCurrencies) throw Error('Invalid secondary borrow currency');
+    if (secondaryBorrowCurrencies[index] !== 0) {
+      const symbol = this.getUnderlyingSymbol(secondaryBorrowCurrencies[index]);
+      return `${this.getVaultSymbol(vaultAddress, maturity)}:${symbol}`;
+    }
+
+    return undefined;
+  }
+
   public getVault(vaultAddress: string) {
     const vault = this.data.vaults.get(vaultAddress);
     if (!vault) throw Error(`Vault at ${vaultAddress} not found`);

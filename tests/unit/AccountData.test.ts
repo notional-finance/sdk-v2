@@ -192,7 +192,7 @@ describe('Account Data', () => {
 
     system.setSettlementRate(2, maturity.toNumber(), BigNumber.from('250000000000000000000000000'));
 
-    AccountData.loadFromBlockchain(accountResult)
+    AccountData.loadFromBlockchain(accountResult, [])
       .then((a) => {
         expect(a.cashBalance(2)?.toExactString()).toEqual('40000.0');
         expect(a.portfolio.length).toEqual(0);
