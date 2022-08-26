@@ -195,8 +195,6 @@ export default abstract class BaseVault<D, R> {
   }
 
   public getLeverageRatio(vaultAccount: VaultAccount) {
-    if (vaultAccount.primaryBorrowfCash.isZero()) return null;
-
     const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
     // Minimum leverage ratio is 1
@@ -341,7 +339,63 @@ export default abstract class BaseVault<D, R> {
     };
   }
 
-  public simulateExitPreMaturity(
+  public getExitParamsFromLeverageRatio(
+    vaultAccount: VaultAccount,
+    leverageRatio: number,
+    slippageBuffer: number,
+    blockTime = getNowSeconds(),
+    precision = BASIS_POINT * 50
+  ) {
+    if (leverageRatio < RATE_PRECISION) throw new Error('Leverage Ratio below 1');
+    const currentLeverageRatio = this.getLeverageRatio(vaultAccount);
+    if (currentLeverageRatio === null || leverageRatio > currentLeverageRatio)
+      throw new Error('Leverage Ratio above current');
+    const { minAccountBorrowSize } = this.getVault();
+    let fCashLendMultiple = leverageRatio;
+    let fCashToLend: TypedBigNumber;
+    const tempVaultAccount = VaultAccount.copy(vaultAccount);
+    let actualLeverageRatio = 0;
+    let delta = 0;
+    let iters = 0;
+
+    do {
+      const assetValue = this.getCashValueOfShares(tempVaultAccount).toUnderlying();
+      // Given the net asset value, in order to achieve the target leverage
+      // ratio we must reduce debt outstanding to this figure:
+      //  debtOutstanding / (assetValue - debtOutstanding) + 1 = leverageRatio
+      //  =>
+      //  ((leverageRatio - 1) * assetValue) / leverageRatio = debtOutstanding
+      const targetDebtOutstanding = assetValue.scale(leverageRatio - RATE_PRECISION, leverageRatio).neg();
+
+      fCashToLend = targetDebtOutstanding.abs().lt(minAccountBorrowSize)
+        ? vaultAccount.primaryBorrowfCash.neg()
+        : // We scale this lend amount by a multiple because assetValue will decrease as a result of
+          // selling tokens to lend
+          targetDebtOutstanding.sub(vaultAccount.primaryBorrowfCash).scale(fCashLendMultiple, RATE_PRECISION);
+
+      const { newVaultAccount } = this.simulateExitPreMaturityGivenRepayment(
+        vaultAccount,
+        fCashToLend,
+        slippageBuffer,
+        blockTime
+      );
+      actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
+      // If this is the case then the account is going to exit in full
+      if (actualLeverageRatio === RATE_PRECISION) break;
+      delta = leverageRatio - actualLeverageRatio;
+      if (Math.abs(delta) < precision) break;
+
+      // The delta adjustment was decided empirically, not sure if this is correct for all vaults
+      fCashLendMultiple = Math.floor(fCashLendMultiple - delta * 2);
+      iters += 1;
+    } while (iters < 10);
+
+    if (Math.abs(delta) > precision) throw Error('Failed to converge');
+
+    return this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime);
+  }
+
+  public simulateExitPreMaturityGivenRepayment(
     vaultAccount: VaultAccount,
     fCashToLend: TypedBigNumber,
     slippageBuffer: number,
@@ -354,9 +408,11 @@ export default abstract class BaseVault<D, R> {
 
     const newVaultAccount = VaultAccount.copy(vaultAccount);
     const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(fCashToLend, blockTime);
+    const { assetCash } = vaultAccount.getPoolShare();
     const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
       newVaultAccount,
-      costToLend.neg(),
+      // Asset cash from the vault will be used to offset lending
+      costToLend.neg().add(assetCash.toUnderlying()),
       slippageBuffer,
       blockTime
     );
@@ -368,6 +424,34 @@ export default abstract class BaseVault<D, R> {
 
     return {
       costToLend: costToLend.neg(),
+      vaultSharesToRedeemAtCost,
+      redeemParams,
+      newVaultAccount,
+    };
+  }
+
+  public simulateExitPreMaturityGivenWithdraw(
+    vaultAccount: VaultAccount,
+    amountWithdrawn: TypedBigNumber,
+    slippageBuffer: number,
+    blockTime = getNowSeconds()
+  ) {
+    const vaultState = this.getVaultState(vaultAccount.maturity);
+    if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Exit, in Settlement');
+
+    const newVaultAccount = VaultAccount.copy(vaultAccount);
+    const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
+      newVaultAccount,
+      amountWithdrawn,
+      slippageBuffer,
+      blockTime
+    );
+
+    const vaultSharesToRedeemAtCost = vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
+    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg());
+    newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid);
+
+    return {
       vaultSharesToRedeemAtCost,
       redeemParams,
       newVaultAccount,

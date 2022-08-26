@@ -68,7 +68,7 @@ describe('Cross Currency fCash', () => {
     expect(crossCurrency.encodeDepositParams(depositParams)).toBeDefined();
   });
 
-  it('gets redeem parameters', () => {
+  it('gets redeem parameters given repayment', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
     vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
     vaultAccount.updateVaultShares(
@@ -76,7 +76,7 @@ describe('Cross Currency fCash', () => {
     );
     const { strategyTokens: strategyTokensBefore } = vaultAccount.getPoolShare();
 
-    const { costToLend, newVaultAccount, redeemParams } = crossCurrency.simulateExitPreMaturity(
+    const { costToLend, newVaultAccount, redeemParams } = crossCurrency.simulateExitPreMaturityGivenRepayment(
       vaultAccount,
       TypedBigNumber.fromBalance(100e8, 'DAI', true),
       0.0025
@@ -203,18 +203,19 @@ describe('Cross Currency fCash', () => {
     }).toThrow('Exceeds max primary borrow capacity');
   });
 
-  it('simulates exiting a vault', () => {
+  it('simulates exiting a vault given repayment', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
     vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
     vaultAccount.updateVaultShares(
       TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
     );
 
-    const { costToLend, vaultSharesToRedeemAtCost, newVaultAccount } = crossCurrency.simulateExitPreMaturity(
-      vaultAccount,
-      TypedBigNumber.fromBalance(100e8, 'DAI', true),
-      0.0025
-    );
+    const { costToLend, vaultSharesToRedeemAtCost, newVaultAccount } =
+      crossCurrency.simulateExitPreMaturityGivenRepayment(
+        vaultAccount,
+        TypedBigNumber.fromBalance(100e8, 'DAI', true),
+        0.0025
+      );
 
     expect(costToLend.toNumber()).toBeLessThan(100e8);
     expect(costToLend.toNumber()).toBeGreaterThan(98.5e8);
@@ -233,6 +234,37 @@ describe('Cross Currency fCash', () => {
     expect(newVaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
     expect(newVaultAccount.vaultShares.isZero()).toBeTruthy();
     expect(amountRedeemed.toNumber()).toBeCloseTo(2e8);
+  });
+
+  it('simulates exiting a vault given withdraw', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+    );
+
+    const { vaultSharesToRedeemAtCost, newVaultAccount } = crossCurrency.simulateExitPreMaturityGivenWithdraw(
+      vaultAccount,
+      TypedBigNumber.fromBalance(10e8, 'DAI', true),
+      0.0025
+    );
+    expect(vaultSharesToRedeemAtCost.toFloat()).toBeCloseTo(10, 1);
+    expect(newVaultAccount.primaryBorrowfCash.eq(vaultAccount.primaryBorrowfCash)).toBeTruthy();
+    expect(newVaultAccount.vaultShares.lt(vaultAccount.vaultShares)).toBeTruthy();
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)).toBeGreaterThan(
+      crossCurrency.getLeverageRatio(vaultAccount)
+    );
+  });
+
+  it('simulates exiting a vault given target leverage ratio', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-1000e8, 'DAI', true));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(125531171880, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+    );
+
+    const { newVaultAccount } = crossCurrency.getExitParamsFromLeverageRatio(vaultAccount, 4.0e9, 0.0025);
+    expect(crossCurrency.getLeverageRatio(newVaultAccount)).toBeCloseTo(4.0e9, -7);
   });
 
   it('fails when attempting to roll a vault that is not allowed to', () => {
