@@ -51,7 +51,7 @@ export default class Account extends AccountRefresh {
     }
 
     const account = new Account(address, provider, notionalProxy, graphClient, signer);
-    await account.refresh();
+    await account.refreshAccountData();
 
     return account;
   }
@@ -117,44 +117,6 @@ export default class Account extends AccountRefresh {
       ),
       cashBalanceApplied: netCashRequiredInternal,
     };
-  }
-
-  /**
-   * Determines if the account has sufficient cash to complete a given trade
-   *
-   * @param symbol symbol of cash denomination
-   * @param netCashRequiredInternal the total amount of positive cash required to complete the transaction
-   * @param useCashBalance true if internal cash balances should be used to net off against the total (default: true)
-   * @returns
-   */
-  public hasSufficientCash(symbol: string, netCashRequiredInternal: TypedBigNumber, useCashBalance = true) {
-    const walletBalance = this.walletBalanceBySymbol(symbol);
-
-    // Net cash required cannot be negative, this would result in negative account balances
-    if (!walletBalance || netCashRequiredInternal.isNegative()) return false;
-    if (useCashBalance) {
-      const { depositAmount } = this.getNetCashAmount(symbol, netCashRequiredInternal);
-      return walletBalance.balance.gte(depositAmount);
-    }
-
-    const netCashNativeAmount = walletBalance.isUnderlying
-      ? netCashRequiredInternal.toUnderlying()
-      : netCashRequiredInternal.toAssetCash();
-
-    return walletBalance.balance.gte(netCashNativeAmount.toExternalPrecision());
-  }
-
-  /**
-   * Checks if the account has sufficient allowance for the deposit amount
-   *
-   * @param symbol
-   * @param depositAmount
-   * @returns
-   */
-  public hasAllowance(symbol: string, depositAmount: TypedBigNumber) {
-    const walletBalance = this.walletBalanceBySymbol(symbol);
-    if (!walletBalance || depositAmount.isNegative()) return false;
-    return walletBalance.allowance.gte(depositAmount);
   }
 
   /**

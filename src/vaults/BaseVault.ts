@@ -554,6 +554,8 @@ export default abstract class BaseVault<D, R> {
     precision = BASIS_POINT * 50
   ) {
     let depositMultiple = leverageRatio;
+    // TODO: this should include the existing valuation and this should
+    // work for roll vault positions as well
     let valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
     let actualLeverageRatio = 0;
     let delta = 0;
@@ -627,7 +629,7 @@ export default abstract class BaseVault<D, R> {
     maturity: number,
     vaultSharesToRedeem: TypedBigNumber,
     fCashToLend: TypedBigNumber,
-    minLendRate: number,
+    minLendRate: number, // todo: set this inside
     slippageBuffer: number,
     receiver?: string
   ) {
@@ -654,7 +656,7 @@ export default abstract class BaseVault<D, R> {
     account: string,
     maturity: number,
     fCashToBorrow: TypedBigNumber,
-    minLendRate: number,
+    minLendRate: number, // set this inside
     maxBorrowRate: number,
     slippageBuffer: number
   ) {

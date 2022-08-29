@@ -2,7 +2,7 @@ import { ReturnsBreakdown, StakedNoteHistory, TransactionHistory, TypedBigNumber
 import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID, STAKED_NOTE_CURRENCY_ID } from '../config/constants';
 import { getNowSeconds } from '../libs/utils';
 import { StakedNote } from '../staking';
-import { NTokenValue } from '../system';
+import { NTokenValue, System } from '../system';
 import Account from './Account';
 import AccountData from './AccountData';
 
@@ -12,10 +12,12 @@ export default class NOTESummary {
     if (!accountData.accountHistory) {
       await accountData.fetchHistory(account.address);
     }
+    const noteBalance = await System.getSystem().getNOTE().balanceOf(account.address);
+    const sNoteBalance = await System.getSystem().getStakedNote().balanceOf(account.address);
 
     return new NOTESummary(
-      account.walletBalanceBySymbol('NOTE')?.balance || TypedBigNumber.fromBalance(0, 'NOTE', false),
-      account.walletBalanceBySymbol('sNOTE')?.balance || TypedBigNumber.fromBalance(0, 'sNOTE', false),
+      TypedBigNumber.fromBalance(noteBalance, 'NOTE', false),
+      TypedBigNumber.fromBalance(sNoteBalance, 'sNOTE', false),
       accountData,
       accountData.accountHistory!.sNOTEHistory
     );
