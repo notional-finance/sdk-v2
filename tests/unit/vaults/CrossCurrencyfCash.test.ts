@@ -291,7 +291,7 @@ describe('Cross Currency fCash', () => {
   it('simulates entering a vault given leverage ratio', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
     const depositAmount = TypedBigNumber.fromBalance(25e8, 'DAI', true);
-    const { fCashToBorrow, strategyTokens } = crossCurrency.getfCashBorrowFromLeverageRatio(
+    const fCashToBorrow = crossCurrency.getfCashBorrowFromLeverageRatio(
       vaultAccount.maturity,
       depositAmount,
       6e9,
@@ -305,16 +305,41 @@ describe('Cross Currency fCash', () => {
       depositAmount,
       0.0025
     );
-    const { strategyTokens: finalStrategyTokens } = newVaultAccount.getPoolShare();
-
-    expect(Math.abs(finalStrategyTokens.sub(strategyTokens).toNumber())).toBeLessThan(5000);
     expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(6.0);
+  });
+
+  it('simulates entering a vault given leverage ratio with an existing account', () => {
+    const depositAmount = TypedBigNumber.fromBalance(25e8, 'DAI', true);
+    const { newVaultAccount: vaultAccount } = crossCurrency.simulateEnter(
+      VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity),
+      maturity,
+      TypedBigNumber.fromBalance(-100e8, 'DAI', true),
+      depositAmount,
+      0.0025
+    );
+
+    const fCashToBorrow = crossCurrency.getfCashBorrowFromLeverageRatio(
+      vaultAccount.maturity,
+      depositAmount,
+      6e9,
+      0.025,
+      vaultAccount
+    );
+
+    const { newVaultAccount: finalVaultAccount } = crossCurrency.simulateEnter(
+      vaultAccount,
+      maturity,
+      fCashToBorrow,
+      depositAmount,
+      0.0025
+    );
+    expect(crossCurrency.getLeverageRatio(finalVaultAccount) / RATE_PRECISION).toBeCloseTo(6.0);
   });
 
   it('calculates liquidation thresholds', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
     const depositAmount = TypedBigNumber.fromBalance(100e8, 'DAI', true);
-    const { fCashToBorrow } = crossCurrency.getfCashBorrowFromLeverageRatio(
+    const fCashToBorrow = crossCurrency.getfCashBorrowFromLeverageRatio(
       vaultAccount.maturity,
       depositAmount,
       4.7e9,

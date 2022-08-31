@@ -559,13 +559,18 @@ export default abstract class BaseVault<D, R> {
     depositAmount: TypedBigNumber,
     leverageRatio: number,
     slippageBuffer: number,
+    _vaultAccount?: VaultAccount,
     blockTime = getNowSeconds(),
     precision = BASIS_POINT * 50
   ) {
     let depositMultiple = leverageRatio;
-    // TODO: this should include the existing valuation and this should
-    // work for roll vault positions as well
-    let valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
+    const vaultAccount = _vaultAccount ?? VaultAccount.emptyVaultAccount(this.vaultAddress, maturity);
+    // This is an initial guess of the valuation
+    let valuation = this.getCashValueOfShares(vaultAccount)
+      .toUnderlying()
+      .add(vaultAccount.primaryBorrowfCash)
+      .add(depositAmount)
+      .scale(depositMultiple, RATE_PRECISION);
     let actualLeverageRatio = 0;
     let delta = 0;
     let fCashToBorrow: TypedBigNumber;
@@ -578,26 +583,32 @@ export default abstract class BaseVault<D, R> {
       const borrowedCash = requiredDeposit.sub(depositAmount);
       const fees = this.assessVaultFees(maturity, borrowedCash, blockTime);
       fCashToBorrow = this.getVaultMarket(maturity).getfCashAmountGivenCashAmount(borrowedCash.add(fees), blockTime);
+      const { newVaultAccount } = this.simulateEnter(
+        vaultAccount,
+        maturity,
+        fCashToBorrow,
+        depositAmount,
+        slippageBuffer,
+        blockTime
+      );
 
-      // TODO: this needs to use the actual vault account
-      const debtOutstanding = fCashToBorrow.toAssetCash().neg();
-      actualLeverageRatio =
-        debtOutstanding.scale(RATE_PRECISION, valuation.toAssetCash().sub(debtOutstanding)).toNumber() + RATE_PRECISION;
+      actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
       delta = leverageRatio - actualLeverageRatio;
       if (Math.abs(delta) < precision) break;
 
       // Only adjust by half of the delta, otherwise we will overshoot and fail to converge
       depositMultiple = Math.floor(depositMultiple + delta / 2);
-      valuation = depositAmount.scale(depositMultiple, RATE_PRECISION);
+      valuation = this.getCashValueOfShares(newVaultAccount)
+        .toUnderlying()
+        .add(newVaultAccount.primaryBorrowfCash)
+        .add(depositAmount)
+        .scale(depositMultiple, RATE_PRECISION);
       iters += 1;
     } while (iters < 10);
 
     if (Math.abs(delta) > precision) throw Error('Failed to converge');
 
-    return {
-      fCashToBorrow,
-      strategyTokens: this.getStrategyTokensFromValue(maturity, valuation, blockTime),
-    };
+    return fCashToBorrow;
   }
 
   public async populateEnterTransaction(
