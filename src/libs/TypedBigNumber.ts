@@ -8,7 +8,6 @@ import {
   STAKED_NOTE_CURRENCY_ID,
 } from '../config/constants';
 import { System, NTokenValue } from '../system';
-import { StakedNote } from '../staking';
 
 export enum BigNumberType {
   ExternalUnderlying = 'External Underlying',
@@ -56,7 +55,7 @@ class TypedBigNumber {
     // we can still convert between internal and external precision as well as
     // do all the formatting methods.
     if (this._decimalsOverride) return BigNumber.from(10).pow(this._decimalsOverride);
-    if (this.currencyId === STAKED_NOTE_CURRENCY_ID) return StakedNote.BPT_PRECISION;
+    if (this.currencyId === STAKED_NOTE_CURRENCY_ID) return ethers.constants.WeiPerEther;
     if (this.currencyId === NOTE_CURRENCY_ID) return BigNumber.from(INTERNAL_TOKEN_PRECISION);
 
     const currency = System.getSystem().getCurrencyById(this.currencyId);
