@@ -1,5 +1,4 @@
 import { Market, System } from '../system';
-import { convertBigNumber, xirr } from '../libs/xirr';
 import { AssetType, TradeHistory, TransactionHistory } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
@@ -30,13 +29,6 @@ export default class AssetSummary {
     return markets.find((m) => m.maturity === this.maturity);
   }
 
-  public internalRateOfReturnString(locale = 'en-US', precision = 3) {
-    return `${this.irr.toLocaleString(locale, {
-      maximumFractionDigits: precision,
-      minimumFractionDigits: precision,
-    })}%`;
-  }
-
   public mostRecentTradedRate() {
     if (this.history.length === 0) return undefined;
     return this.history[this.history.length - 1].tradedInterestRate;
@@ -46,8 +38,6 @@ export default class AssetSummary {
     public assetKey: string,
     public underlyingInternalPV: TypedBigNumber,
     public fCashValue: TypedBigNumber,
-    public underlyingInternalProfitLoss: TypedBigNumber,
-    public irr: number,
     public history: TradeHistory[],
     public fCash?: Asset,
     public liquidityToken?: Asset
@@ -118,7 +108,7 @@ export default class AssetSummary {
    * Builds a summary of a portfolio given the current account portfolio and the trade history.
    * @param accountData
    */
-  public static build(accountData: AccountData, currentTime = getNowSeconds()) {
+  public static build(accountData: AccountData) {
     const system = System.getSystem();
     // Reduce portfolio to combine fCash and liquidity tokens at the same maturity, if liquidity tokens
     // exist. This makes it easier to reason about.
@@ -151,13 +141,6 @@ export default class AssetSummary {
       .map((assetKey) => {
         // Returns the trade history for each asset key
         const filteredHistory = accountData.getAssetHistory(assetKey);
-
-        // Add historical cash flows to the object
-        const cashFlows = filteredHistory.map((h) => ({
-          amount: convertBigNumber(h.netUnderlyingCash.n),
-          date: h.blockTime,
-        }));
-
         const { liquidityToken, fCash } = assetsReduced[assetKey];
         const currency = system.getCurrencyById(liquidityToken?.currencyId || (fCash?.currencyId as number));
         const underlyingSymbol = system.getUnderlyingSymbol(currency.id);
@@ -168,37 +151,7 @@ export default class AssetSummary {
           fCash
         );
 
-        // Add the current value of the asset as the final cash flow
-        cashFlows.push({
-          amount: convertBigNumber(underlyingInternalPV.n),
-          date: new Date(currentTime * 1000),
-        });
-
-        let irr: number;
-        try {
-          irr = cashFlows.length > 1 ? xirr(cashFlows) : 0;
-        } catch (e) {
-          console.error(e);
-          // If the xirr calculation fails then leave as a zero, this can happen when the time frame is too short
-          irr = 0;
-        }
-        const underlyingInternalProfitLoss = filteredHistory
-          .reduce(
-            (s, h) => s.add(h.netUnderlyingCash),
-            TypedBigNumber.from(0, BigNumberType.InternalUnderlying, underlyingSymbol)
-          )
-          .add(underlyingInternalPV);
-
-        return new AssetSummary(
-          assetKey,
-          underlyingInternalPV,
-          fCashValue,
-          underlyingInternalProfitLoss,
-          irr,
-          filteredHistory,
-          fCash,
-          liquidityToken
-        );
+        return new AssetSummary(assetKey, underlyingInternalPV, fCashValue, filteredHistory, fCash, liquidityToken);
       })
       .sort((a, b) => a.assetKey.localeCompare(b.assetKey, 'en'));
   }
