@@ -177,7 +177,7 @@ export default class Notional extends TransactionBuilder {
   public parseInput(input: string, symbol: string, isInternal: boolean) {
     const bnType = TypedBigNumber.getType(symbol, isInternal);
     let decimalPlaces: number;
-    if (isInternal) {
+    if (isInternal || symbol === 'NOTE') {
       decimalPlaces = INTERNAL_TOKEN_DECIMAL_PLACES;
     } else if (symbol === 'WETH' || symbol === 'sNOTE') {
       // This is External WETH or sNOTE (neither are in System as currencies)

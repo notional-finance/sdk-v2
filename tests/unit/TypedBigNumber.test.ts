@@ -224,6 +224,13 @@ describe('Typed Big Number', () => {
     expect(snote?.symbol).toBe('sNOTE');
   });
 
+  it('properly converts NOTE and sNOTE balances to USD', () => {
+    const note = notional.parseInput('1', 'NOTE', false);
+    const snote = notional.parseInput('1', 'sNOTE', false);
+    expect(note?.toUSD().toDisplayStringWithSymbol()).toBe('1.000 USD');
+    expect(snote?.toUSD().toDisplayStringWithSymbol()).toBe('0.136 USD');
+  });
+
   it('properly converts underlying and asset values for NonMintable tokens', () => {
     const nonMintable = notional.parseInput('1', 'NOMINT', false);
     expect(nonMintable?.isAssetCash()).toBeTruthy();

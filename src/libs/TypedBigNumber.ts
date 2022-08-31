@@ -8,6 +8,7 @@ import {
   STAKED_NOTE_CURRENCY_ID,
 } from '../config/constants';
 import { System, NTokenValue } from '../system';
+import { StakedNote } from '../staking';
 
 export enum BigNumberType {
   ExternalUnderlying = 'External Underlying',
@@ -18,6 +19,7 @@ export enum BigNumberType {
   nToken = 'nToken',
   NOTE = 'NOTE',
   sNOTE = 'Staked NOTE',
+  sNOTEInternal = 'Staked NOTE (Internal)',
   Currency = 'Currency',
   VaultShare = 'VaultShare',
   StrategyToken = 'StrategyToken',
@@ -54,6 +56,8 @@ class TypedBigNumber {
     // we can still convert between internal and external precision as well as
     // do all the formatting methods.
     if (this._decimalsOverride) return BigNumber.from(10).pow(this._decimalsOverride);
+    if (this.currencyId === STAKED_NOTE_CURRENCY_ID) return StakedNote.BPT_PRECISION;
+    if (this.currencyId === NOTE_CURRENCY_ID) return BigNumber.from(INTERNAL_TOKEN_PRECISION);
 
     const currency = System.getSystem().getCurrencyById(this.currencyId);
     const decimals = this.isUnderlying()
@@ -279,6 +283,7 @@ class TypedBigNumber {
       this.type === BigNumberType.InternalAsset ||
       this.type === BigNumberType.LiquidityToken ||
       this.type === BigNumberType.NOTE ||
+      this.type === BigNumberType.sNOTEInternal ||
       this.type === BigNumberType.nToken ||
       this.type === BigNumberType.Currency ||
       this.type === BigNumberType.VaultShare ||
@@ -381,11 +386,11 @@ class TypedBigNumber {
   }
 
   toUnderlying(internalPrecision: boolean = this.isInternalPrecision(), overrideRate?: BigNumber): TypedBigNumber {
-    if (this.isNOTE() || this.isStakedNOTE()) {
+    if (this.isNOTE()) {
       // NOTE does not convert to underlying, just returns itself
       return this;
     }
-    if (this.isUnderlying()) {
+    if (this.isUnderlying() || this.isStakedNOTE()) {
       return internalPrecision ? this.toInternalPrecision() : this.toExternalPrecision();
     }
     if (this.isNonMintable()) {
@@ -437,6 +442,8 @@ class TypedBigNumber {
       newType = BigNumberType.InternalAsset;
     } else if (this.type === BigNumberType.ExternalUnderlying) {
       newType = BigNumberType.InternalUnderlying;
+    } else if (this.type === BigNumberType.sNOTE) {
+      newType = BigNumberType.sNOTEInternal;
     } else {
       throw TypeError('Unknown external precision type');
     }
