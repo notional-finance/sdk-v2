@@ -311,6 +311,11 @@ class TypedBigNumber {
     return parseFloat(this.toExactString());
   }
 
+  toDisplayStringWithfCashSymbol(decimalPlaces = 3, locale = 'en-US'): string {
+    this.checkType(BigNumberType.InternalUnderlying);
+    return `${this.toDisplayString(decimalPlaces, locale)} f${this.symbol}`;
+  }
+
   toDisplayStringWithSymbol(decimalPlaces = 3, locale = 'en-US'): string {
     return `${this.toDisplayString(decimalPlaces, locale)} ${this.symbol}`;
   }

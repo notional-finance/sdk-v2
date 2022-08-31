@@ -283,4 +283,13 @@ describe('Typed Big Number', () => {
     expect(eth1?.toDisplayStringWithSymbol()).toBe('-0.050 ETH');
     expect(eth1?.toAssetCash(true).toDisplayStringWithSymbol()).toBe('-2.500 cETH');
   });
+
+  it('toDisplayStringWithfCashSymbol', () => {
+    const cETH = notional.parseInput('-0.05', 'cETH', true);
+    const ETH = notional.parseInput('-0.05', 'ETH', true);
+    expect(() => {
+      cETH?.toDisplayStringWithfCashSymbol(3);
+    }).toThrow();
+    expect(ETH?.toDisplayStringWithfCashSymbol()).toBe('-0.050 fETH');
+  });
 });
