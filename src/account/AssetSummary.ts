@@ -83,24 +83,33 @@ export default class AssetSummary {
     return rollMarkets.map((m) => {
       // Lend: Cash withdrawn from current market, netCashToAccount is positive
       // Borrow: Cost to repay into current market, netCashToAccount is negative
-      const { netCashToAccount } = matchingMarket.getCashAmountGivenfCashAmount(rollfCashAmount.neg());
+      try {
+        const { netCashToAccount } = matchingMarket.getCashAmountGivenfCashAmount(rollfCashAmount.neg());
 
-      // Lend: Cash lent to new market, newfCash is positive
-      // Borrow: Cash to borrow from new market, newfCash is negative
-      const newfCash = m.getfCashAmountGivenCashAmount(netCashToAccount.neg());
+        // Lend: Cash lent to new market, newfCash is positive
+        // Borrow: Cash to borrow from new market, newfCash is negative
+        const newfCash = m.getfCashAmountGivenCashAmount(netCashToAccount.neg());
 
-      const tradeRate = Market.exchangeToInterestRate(
-        Market.exchangeRate(newfCash, netCashToAccount),
-        getNowSeconds(),
-        m.maturity
-      );
+        const tradeRate = Market.exchangeToInterestRate(
+          Market.exchangeRate(newfCash, netCashToAccount),
+          getNowSeconds(),
+          m.maturity
+        );
 
-      return {
-        tradeRate,
-        netCashToAccount,
-        newfCash,
-        market: m,
-      };
+        return {
+          tradeRate,
+          netCashToAccount,
+          newfCash,
+          market: m,
+        };
+      } catch {
+        return {
+          tradeRate: undefined,
+          netCashToAccount: undefined,
+          newfCash: undefined,
+          market: m,
+        };
+      }
     });
   }
 
