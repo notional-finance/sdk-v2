@@ -1,10 +1,9 @@
 import { Balance, BalanceHistory, NTokenStatus, ReturnsBreakdown, TransactionHistory } from '../libs/types';
-import { getNowSeconds } from '../libs/utils';
-import { xirr, CashFlow, convertBigNumber } from '../libs/xirr';
 import AccountData from './AccountData';
 import { System, FreeCollateral, NTokenValue } from '../system';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { Currency, nToken } from '../data';
+import { RATE_PRECISION } from '../config/constants';
 
 export default class BalanceSummary {
   private currency: Currency;
@@ -77,15 +76,8 @@ export default class BalanceSummary {
   }
 
   public get cTokenYieldDisplayString() {
-    return BalanceSummary.formatYieldRate(this.cTokenYield);
-  }
-
-  public get nTokenYieldDisplayString() {
-    return BalanceSummary.formatYieldRate(this.nTokenYield);
-  }
-
-  public get totalYieldDisplayString() {
-    return BalanceSummary.formatYieldRate(this.nTokenTotalYield);
+    const cTokenYield = System.getSystem().getCashGroup(this.currencyId).blockSupplyRate / RATE_PRECISION;
+    return BalanceSummary.formatYieldRate(cTokenYield);
   }
 
   public get assetCashBalanceDisplayString() {
@@ -193,9 +185,6 @@ export default class BalanceSummary {
     public nTokenValueUnderlying: TypedBigNumber | undefined,
     public claimableIncentives: TypedBigNumber,
     public history: BalanceHistory[],
-    public cTokenYield: number,
-    public nTokenYield: number,
-    public nTokenTotalYield: number,
     public maxWithdrawValueAssetCash: TypedBigNumber
   ) {
     const system = System.getSystem();
@@ -203,7 +192,7 @@ export default class BalanceSummary {
     this.nToken = system.getNToken(this.currencyId);
   }
 
-  public static build(accountData: AccountData, currentTime = getNowSeconds()) {
+  public static build(accountData: AccountData) {
     const system = System.getSystem();
     const { netETHCollateralWithHaircut, netETHDebtWithBuffer, netUnderlyingAvailable } =
       FreeCollateral.getFreeCollateral(accountData);
@@ -213,34 +202,6 @@ export default class BalanceSummary {
       accountData.accountBalances
         .map((v) => {
           const filteredHistory = accountData.getBalanceHistory(v.currencyId);
-          const cashBalanceCashFlows = BalanceSummary.getCashBalanceCashFlows(
-            v.cashBalance,
-            filteredHistory,
-            currentTime
-          );
-
-          const nTokenCashFlows = v.nTokenBalance
-            ? BalanceSummary.getNTokenCashFlows(v.currencyId, v.nTokenBalance, filteredHistory, currentTime)
-            : [];
-
-          const nTokenAssetCashFlows = v.nTokenBalance
-            ? BalanceSummary.getNTokenAssetCashFlows(v.currencyId, v.nTokenBalance, filteredHistory, currentTime)
-            : [];
-
-          let cTokenYield = 0;
-          let nTokenTotalYield = 0;
-          let nTokenTradingYield = 0;
-          try {
-            cTokenYield = cashBalanceCashFlows.length === 0 ? 0 : xirr(cashBalanceCashFlows);
-            nTokenTotalYield = nTokenCashFlows.length === 0 ? 0 : xirr(nTokenCashFlows);
-            // To get the yield from trading fees on the nToken we denominate the cash flows in asset cash
-            // and get the rate of return denominated in asset cash terms. This what the nToken accrues in asset cash
-            // fees from trading
-            nTokenTradingYield = nTokenAssetCashFlows.length === 0 ? 0 : xirr(nTokenAssetCashFlows);
-          } catch (error) {
-            // If xirr throws an error just log it to the console
-            console.error(error);
-          }
 
           const claimableIncentives = v.nTokenBalance
             ? NTokenValue.getClaimableIncentives(v.currencyId, v.nTokenBalance, v.lastClaimTime, v.accountIncentiveDebt)
@@ -269,9 +230,6 @@ export default class BalanceSummary {
               : undefined,
             claimableIncentives,
             filteredHistory,
-            cTokenYield,
-            nTokenTradingYield,
-            nTokenTotalYield,
             maxWithdrawValueAssetCash
           );
         })
@@ -279,94 +237,6 @@ export default class BalanceSummary {
         .filter((b) => !b.assetCashBalance.isZero() || (b.nTokenBalance && b.nTokenBalance.isPositive()))
         .sort((a, b) => a.currencyId - b.currencyId)
     );
-  }
-
-  private static getCashBalanceCashFlows(
-    currentCashBalance: TypedBigNumber,
-    balanceHistory: BalanceHistory[],
-    currentTime: number
-  ) {
-    if (currentCashBalance.isZero()) return [];
-
-    const cashFlows = BalanceSummary.parseCashFlows(
-      balanceHistory.map((h) => ({
-        before: h.assetCashValueUnderlyingBefore,
-        after: h.assetCashValueUnderlyingAfter,
-        blockTime: h.blockTime,
-      }))
-    );
-
-    cashFlows.push({
-      amount: convertBigNumber(currentCashBalance.toUnderlying().n),
-      date: new Date(currentTime * 1000),
-    });
-
-    return cashFlows;
-  }
-
-  private static getNTokenCashFlows(
-    currencyId: number,
-    currentNTokenBalance: TypedBigNumber,
-    balanceHistory: BalanceHistory[],
-    currentTime: number
-  ) {
-    if (currentNTokenBalance.isZero()) return [];
-
-    const cashFlows = BalanceSummary.parseCashFlows(
-      balanceHistory.map((h) => ({
-        before: h.nTokenValueUnderlyingBefore!,
-        after: h.nTokenValueUnderlyingAfter!,
-        blockTime: h.blockTime,
-      }))
-    );
-
-    cashFlows.push({
-      amount: convertBigNumber(
-        NTokenValue.convertNTokenToInternalAsset(currencyId, currentNTokenBalance, false).toUnderlying().n
-      ),
-      date: new Date(currentTime * 1000),
-    });
-
-    return cashFlows;
-  }
-
-  private static getNTokenAssetCashFlows(
-    currencyId: number,
-    currentNTokenBalance: TypedBigNumber,
-    balanceHistory: BalanceHistory[],
-    currentTime: number
-  ) {
-    if (currentNTokenBalance.isZero()) return [];
-
-    const cashFlows = BalanceSummary.parseCashFlows(
-      balanceHistory.map((h) => ({
-        before: h.nTokenValueAssetBefore!,
-        after: h.nTokenValueAssetAfter!,
-        blockTime: h.blockTime,
-      }))
-    );
-
-    cashFlows.push({
-      amount: convertBigNumber(NTokenValue.convertNTokenToInternalAsset(currencyId, currentNTokenBalance, false).n),
-      date: new Date(currentTime * 1000),
-    });
-
-    return cashFlows;
-  }
-
-  private static parseCashFlows(history: { before: TypedBigNumber; after: TypedBigNumber; blockTime: Date }[]) {
-    return history.reduce((cashFlows, h) => {
-      // If the cash value is cleared to zero we reset the cash flow so that we don't accumulate
-      // across withdraws
-      if (h.after.isZero()) return [];
-      const netCash = h.before.sub(h.after);
-
-      // No Change in net cash, no need to push a cash flow
-      if (netCash.isZero()) return cashFlows;
-
-      cashFlows.push({ amount: convertBigNumber(netCash.n), date: h.blockTime });
-      return cashFlows;
-    }, [] as CashFlow[]);
   }
 
   /**

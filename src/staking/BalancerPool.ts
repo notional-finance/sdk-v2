@@ -136,6 +136,12 @@ export default class BalancerPool {
     return ethRatio.mul(BalancerPool.BPT_PRECISION).div(noteRatio);
   }
 
+  public static getStakedNOTEExchangeRate() {
+    const { ethValue, noteValue } = this.getStakedNOTEPoolValue();
+    const { sNOTETotalSupply } = System.getSystem().getStakedNoteParameters();
+    return ethValue.add(noteValue.toETH(false)).scale(this.BPT_PRECISION, sNOTETotalSupply);
+  }
+
   public static getStakedNOTEPoolValue() {
     const {
       ethBalance,

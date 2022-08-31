@@ -224,6 +224,13 @@ describe('Typed Big Number', () => {
     expect(snote?.symbol).toBe('sNOTE');
   });
 
+  it('properly converts NOTE and sNOTE balances to USD', () => {
+    const note = notional.parseInput('1', 'NOTE', false);
+    const snote = notional.parseInput('1', 'sNOTE', false);
+    expect(note?.toUSD().toDisplayStringWithSymbol()).toBe('1.000 USD');
+    expect(snote?.toUSD().toDisplayStringWithSymbol()).toBe('0.136 USD');
+  });
+
   it('properly converts underlying and asset values for NonMintable tokens', () => {
     const nonMintable = notional.parseInput('1', 'NOMINT', false);
     expect(nonMintable?.isAssetCash()).toBeTruthy();
@@ -282,5 +289,14 @@ describe('Typed Big Number', () => {
     const eth1 = notional.parseInput('-0.05', 'ETH', true);
     expect(eth1?.toDisplayStringWithSymbol()).toBe('-0.050 ETH');
     expect(eth1?.toAssetCash(true).toDisplayStringWithSymbol()).toBe('-2.500 cETH');
+  });
+
+  it('toDisplayStringWithfCashSymbol', () => {
+    const cETH = notional.parseInput('-0.05', 'cETH', true);
+    const ETH = notional.parseInput('-0.05', 'ETH', true);
+    expect(() => {
+      cETH?.toDisplayStringWithfCashSymbol(3);
+    }).toThrow();
+    expect(ETH?.toDisplayStringWithfCashSymbol()).toBe('-0.050 fETH');
   });
 });

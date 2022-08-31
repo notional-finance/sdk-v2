@@ -3,7 +3,12 @@ import { BigNumber, ethers } from 'ethers';
 import EventEmitter from 'eventemitter3';
 import { AssetType, Contracts, IncentiveMigration, SettlementMarket } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
-import { DEFAULT_DATA_REFRESH_INTERVAL, ETHER_CURRENCY_ID, NOTE_CURRENCY_ID } from '../config/constants';
+import {
+  DEFAULT_DATA_REFRESH_INTERVAL,
+  ETHER_CURRENCY_ID,
+  NOTE_CURRENCY_ID,
+  STAKED_NOTE_CURRENCY_ID,
+} from '../config/constants';
 
 import { ERC20 } from '../typechain/ERC20';
 import GraphClient from '../data/GraphClient';
@@ -13,6 +18,7 @@ import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { fetchAndDecodeSystem } from '../data/SystemData';
 import { Asset, Currency, SystemData, nToken, ETHRate, TradingEstimate, VaultState } from '../data';
 import { IAggregator } from '../typechain';
+import { StakedNote } from '../staking';
 
 export enum SystemEvents {
   CONFIGURATION_UPDATE = 'CONFIGURATION_UPDATE',
@@ -316,6 +322,8 @@ export default class System {
       let currencyId: number;
       if (symbol === 'NOTE') {
         currencyId = NOTE_CURRENCY_ID;
+      } else if (symbol === 'sNOTE') {
+        currencyId = STAKED_NOTE_CURRENCY_ID;
       } else {
         ({ id: currencyId } = this.getCurrencyBySymbol(symbol));
       }
@@ -351,6 +359,18 @@ export default class System {
         buffer: 100,
         haircut: 100,
         latestRate: this.data.StakedNoteParameters.noteETHOraclePrice,
+        liquidationDiscount: 100,
+      };
+    }
+    if (currencyId === STAKED_NOTE_CURRENCY_ID) {
+      return {
+        rateOracle: null as unknown as IAggregator,
+        // sNOTE/ETH Rate is always in 18 decimal places
+        rateDecimalPlaces: 18,
+        mustInvert: false,
+        buffer: 100,
+        haircut: 100,
+        latestRate: StakedNote.getStakedNOTEExchangeRate().n,
         liquidationDiscount: 100,
       };
     }

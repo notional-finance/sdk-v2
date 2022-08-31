@@ -389,37 +389,37 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
   }
 
   public getStrategyTokensGivenDeposit(
-    vaultAccount: VaultAccount,
+    maturity: number,
     depositAmount: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
   ) {
     const { buyEstimate, depositParams } = this._getDepositParameters(
-      vaultAccount.maturity,
+      maturity,
       depositAmount,
       slippageBuffer,
       blockTime
     );
-    const lendfCash = this.getLendMarket(vaultAccount.maturity).getfCashAmountGivenCashAmount(
+    const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
       buyEstimate.toInternalPrecision().neg(),
       blockTime
     );
 
     return {
-      strategyTokens: this.fCashToStrategyTokens(lendfCash, vaultAccount.maturity),
+      strategyTokens: this.fCashToStrategyTokens(lendfCash, maturity),
       secondaryfCashBorrowed: undefined,
       depositParams,
     };
   }
 
   public getRedeemGivenStrategyTokens(
-    vaultAccount: VaultAccount,
+    maturity: number,
     strategyTokens: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
   ) {
     const { buyEstimate, redeemParams } = this._getRedeemParameters(
-      vaultAccount.maturity,
+      maturity,
       strategyTokens,
       slippageBuffer,
       blockTime
@@ -434,12 +434,12 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
   }
 
   public getDepositGivenStrategyTokens(
-    vaultAccount: VaultAccount,
+    maturity: number,
     strategyTokens: TypedBigNumber,
     slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
-    const market = this.getLendMarket(vaultAccount.maturity);
+    const market = this.getLendMarket(maturity);
     const fCash = this.strategyTokensTofCash(strategyTokens);
     const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCash, blockTime);
 
@@ -474,12 +474,12 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
   }
 
   public getStrategyTokensGivenRedeem(
-    vaultAccount: VaultAccount,
+    maturity: number,
     redeemAmount: TypedBigNumber,
     slippageBuffer: number,
     blockTime?: number
   ) {
-    const market = this.getLendMarket(vaultAccount.maturity);
+    const market = this.getLendMarket(maturity);
     const { sellEstimate } = TradeHandler.getSellEstimate(
       System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
       redeemAmount.toExternalPrecision()
@@ -488,14 +488,14 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
       lendfCash,
       sellEstimate.toInternalPrecision(),
-      vaultAccount.maturity,
+      maturity,
       slippageBuffer * RATE_PRECISION,
       blockTime
     );
 
     const minPurchaseAmount = TradeHandler.applySlippage(redeemAmount.toExternalPrecision(), -slippageBuffer).n;
     return {
-      strategyTokens: this.fCashToStrategyTokens(lendfCash.neg(), vaultAccount.maturity),
+      strategyTokens: this.fCashToStrategyTokens(lendfCash.neg(), maturity),
       secondaryfCashRepaid: undefined,
       redeemParams: {
         minPurchaseAmount,
