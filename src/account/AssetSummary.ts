@@ -65,6 +65,7 @@ export default class AssetSummary {
       timestampMS: h.blockTime.getTime(),
       transactionHash: h.transactionHash,
       amount: h.netUnderlyingCash,
+      maturity: h.maturity.toNumber(),
       rate: h.tradedInterestRate,
     }));
   }

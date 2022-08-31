@@ -219,6 +219,7 @@ export interface TransactionHistory {
   timestampMS: number;
   transactionHash: string;
   amount: TypedBigNumber;
+  maturity?: number;
   rate?: number;
 }
 
