@@ -229,3 +229,16 @@ export interface ReserveData {
   reserveBuffer: TypedBigNumber;
   treasuryBalance: TypedBigNumber;
 }
+
+export enum CollateralActionType {
+  ASSET_CASH,
+  NTOKEN,
+  LEND_FCASH,
+}
+
+export interface CollateralAction {
+  type: CollateralActionType;
+  marketKey?: string;
+  amount?: TypedBigNumber;
+  minLendSlippage?: number;
+}

@@ -7,7 +7,16 @@ import {
   MAX_PORTFOLIO_ASSETS,
 } from '../config/constants';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
-import { AssetType, Balance, BalanceHistory, TradeHistory, TransactionHistory, AccountHistory } from '../libs/types';
+import {
+  AssetType,
+  Balance,
+  BalanceHistory,
+  TradeHistory,
+  TransactionHistory,
+  AccountHistory,
+  CollateralAction,
+  CollateralActionType,
+} from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
 import { Asset } from '../data';
 import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
@@ -294,13 +303,14 @@ export default class AccountData {
    * @param netCashChange
    * @param netNTokenChange
    */
-  public updateBalance(currencyId: number, netCashChange: TypedBigNumber, netNTokenChange?: TypedBigNumber) {
+  public updateBalance(currencyId: number, netCashChange?: TypedBigNumber, netNTokenChange?: TypedBigNumber) {
     if (!this.isCopy) throw Error('Cannot update balances on non copy');
+    const { assetSymbol } = System.getSystem().getCurrencyById(currencyId);
     // eslint-disable-next-line no-underscore-dangle
     this.accountBalances = AccountData._updateBalance(
       this.accountBalances,
       currencyId,
-      netCashChange,
+      netCashChange || TypedBigNumber.fromBalance(0, assetSymbol, true),
       netNTokenChange,
       this.bitmapCurrencyId
     );
@@ -321,6 +331,34 @@ export default class AccountData {
 
     // Do this to ensure that there is a balance slot set for the asset
     this.updateBalance(asset.currencyId, TypedBigNumber.from(0, BigNumberType.InternalAsset, assetSymbol));
+  }
+
+  public updateCollateralAction(collateralAction: CollateralAction) {
+    const { amount } = collateralAction;
+    if (!amount) return;
+
+    const { currencyId } = amount;
+    const assetCash = amount.toAssetCash(true);
+    if (collateralAction.type === CollateralActionType.ASSET_CASH) {
+      this.updateBalance(currencyId, assetCash);
+    } else if (collateralAction.type === CollateralActionType.NTOKEN) {
+      const nTokensMinted = NTokenValue.getNTokensToMint(currencyId, assetCash);
+      this.updateBalance(currencyId, assetCash.copy(0), nTokensMinted);
+    } else if (collateralAction.type === CollateralActionType.LEND_FCASH) {
+      const m = System.getSystem()
+        .getMarkets(currencyId)
+        .find((m) => m.marketKey === collateralAction.marketKey);
+      const fCashAmount = m?.getfCashAmountGivenCashAmount(amount.toUnderlying(true).neg());
+      if (!m || !fCashAmount || fCashAmount.isZero()) throw Error('Unable to apply lend collateral action');
+
+      this.updateAsset({
+        currencyId,
+        maturity: m.maturity,
+        assetType: AssetType.fCash,
+        notional: fCashAmount,
+        settlementDate: m.maturity,
+      });
+    }
   }
 
   /**
