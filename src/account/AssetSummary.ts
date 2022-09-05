@@ -29,6 +29,10 @@ export default class AssetSummary {
     return markets.find((m) => m.maturity === this.maturity);
   }
 
+  public get hashKey() {
+    return `${this.assetKey}:${this.fCash?.notional.toString()}:${this.liquidityToken?.notional.toString()}`;
+  }
+
   public mostRecentTradedRate() {
     if (this.history.length === 0) return undefined;
     return this.history[this.history.length - 1].tradedInterestRate;
