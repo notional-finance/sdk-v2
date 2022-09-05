@@ -9,7 +9,7 @@ import {
   CollateralActionType,
 } from './libs/types';
 import { getNowSeconds, populateTxnAndGas } from './libs/utils';
-import { Asset, Currency } from './data';
+import { Asset } from './data';
 import { System, Market, CashGroup } from './system';
 
 export default class TransactionBuilder {
@@ -276,7 +276,7 @@ export default class TransactionBuilder {
     overrides = {} as Overrides
   ) {
     const borrowCurrency = System.getSystem().getCurrencyBySymbol(borrowCurrencySymbol);
-    const borrowOverrides = overrides;
+    let txnOverrides = overrides;
     borrowfCashAmount.check(
       BigNumberType.InternalUnderlying,
       borrowCurrency.underlyingSymbol || borrowCurrency.assetSymbol
@@ -292,14 +292,12 @@ export default class TransactionBuilder {
         throw Error('Collateral action amount must be defined and positive');
       }
 
-      const isUnderlying = collateralAction.amount.isUnderlying();
       const isNToken = collateralAction.type === CollateralActionType.NTOKEN;
-      let actionType: DepositActionType;
-      if (isUnderlying && isNToken) {
-        actionType = isNToken ? DepositActionType.DepositUnderlyingAndMintNToken : DepositActionType.DepositUnderlying;
-      } else {
-        actionType = isNToken ? DepositActionType.DepositAssetAndMintNToken : DepositActionType.DepositAsset;
-      }
+      const { actionType, overrides: depositOverrides } = this.getDepositAction(
+        collateralAction.amount,
+        isNToken,
+        overrides
+      );
 
       collateralParams = {
         actionType,
@@ -310,6 +308,7 @@ export default class TransactionBuilder {
         redeemToUnderlying: false,
         trades: [],
       };
+      txnOverrides = depositOverrides;
     } else if (collateralAction) {
       // This is a lending action
       const { amount, minLendSlippage, marketKey } = collateralAction;
@@ -317,8 +316,7 @@ export default class TransactionBuilder {
         throw Error('Collateral action amount must be defined and positive');
       }
 
-      const isUnderlying = amount.isUnderlying();
-      const actionType = isUnderlying ? DepositActionType.DepositUnderlying : DepositActionType.DepositAsset;
+      const { actionType, overrides: lendOverrides } = this.getDepositAction(amount, false, overrides);
       const lendMarketIndex = System.getSystem()
         .getMarkets(amount.currencyId)
         .find((m) => m.marketKey === marketKey)?.marketIndex;
@@ -330,9 +328,10 @@ export default class TransactionBuilder {
         depositActionAmount: amount.n,
         withdrawAmountInternalPrecision: BigNumber.from(0),
         withdrawEntireCashBalance: true,
-        redeemToUnderlying: isUnderlying,
+        redeemToUnderlying: amount.isUnderlying(),
         trades: [this.encodeTradeType(TradeActionType.Lend, lendMarketIndex, amount, minLendSlippage || 0, 0)],
       };
+      txnOverrides = lendOverrides;
     }
 
     const actions: BatchBalanceAndTradeAction[] = [];
@@ -364,7 +363,7 @@ export default class TransactionBuilder {
     // Ensure that currency ids are sorted
     actions.sort((a, b) => Number(a.currencyId) - Number(b.currencyId));
 
-    return this.populateTxnAndGas(address, 'batchBalanceAndTradeAction', [address, actions, borrowOverrides]);
+    return this.populateTxnAndGas(address, 'batchBalanceAndTradeAction', [address, actions, txnOverrides]);
   }
 
   /**
@@ -398,14 +397,7 @@ export default class TransactionBuilder {
     lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
     withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.assetSymbol);
 
-    const { actionType, overrides: lendOverrides } = this.getDepositAction(
-      lendCurrencySymbol,
-      currency,
-      depositAmount,
-      false,
-      overrides
-    );
-
+    const { actionType, overrides: lendOverrides } = this.getDepositAction(depositAmount, false, overrides);
     const lendAction = {
       actionType,
       currencyId: currency.id,
@@ -714,14 +706,9 @@ export default class TransactionBuilder {
   }
 
   // Internal
-  private getDepositAction(
-    symbol: string,
-    currency: Currency,
-    amount: TypedBigNumber,
-    mintNToken: boolean,
-    overrides: Overrides
-  ) {
-    const isUnderlying = currency.underlyingSymbol === symbol;
+  private getDepositAction(amount: TypedBigNumber, mintNToken: boolean, overrides: Overrides) {
+    const currency = System.getSystem().getCurrencyBySymbol(amount.symbol);
+    const isUnderlying = amount.isUnderlying();
     if (isUnderlying && currency.tokenType === TokenType.cETH) {
       amount.check(BigNumberType.ExternalUnderlying, 'ETH');
       return {
