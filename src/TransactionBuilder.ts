@@ -1,14 +1,54 @@
 import { Overrides, ethers, BigNumber, BytesLike } from 'ethers';
 import TypedBigNumber, { BigNumberType } from './libs/TypedBigNumber';
-import { DepositActionType, TokenType, BatchBalanceAndTradeAction, TradeActionType } from './libs/types';
+import {
+  DepositActionType,
+  TokenType,
+  BatchBalanceAndTradeAction,
+  TradeActionType,
+  CollateralAction,
+  CollateralActionType,
+} from './libs/types';
 import { getNowSeconds, populateTxnAndGas } from './libs/utils';
-import { Asset, Currency } from './data';
+import { Asset } from './data';
 import { System, Market, CashGroup } from './system';
 
 export default class TransactionBuilder {
   private async populateTxnAndGas(msgSender: string, methodName: string, methodArgs: any[]) {
     const proxy = System.getSystem().getNotionalProxy();
     return populateTxnAndGas(proxy, msgSender, methodName, methodArgs);
+  }
+
+  public depositCollateralAction(address: string, collateralAction: CollateralAction, overrides = {} as Overrides) {
+    const { amount } = collateralAction;
+    if (!amount || !amount.isPositive()) {
+      throw Error('Collateral action amount must be defined and positive');
+    }
+
+    if (collateralAction.type === CollateralActionType.ASSET_CASH) {
+      return this.deposit(address, amount.symbol, amount.toExternalPrecision(), false, overrides);
+    }
+    if (collateralAction.type === CollateralActionType.NTOKEN) {
+      return this.mintNToken(address, amount.symbol, amount.toExternalPrecision(), false, overrides);
+    }
+    if (collateralAction.type === CollateralActionType.LEND_FCASH) {
+      const m = System.getSystem()
+        .getMarkets(amount.currencyId)
+        .find((m) => m.marketKey === collateralAction.marketKey);
+      const marketIndex = m?.marketIndex;
+      if (!marketIndex) throw Error('Unable to complete lend collateral action');
+
+      // TODO: change this if it is ETH
+      return this.batchLend(
+        address,
+        amount.symbol,
+        amount.toInternalPrecision(),
+        marketIndex,
+        collateralAction.minLendSlippage || 0,
+        overrides
+      );
+    }
+
+    throw Error('Unknown deposit collateral action');
   }
 
   /**
@@ -219,7 +259,7 @@ export default class TransactionBuilder {
    * @param withdrawAmountInternalPrecision how much to withdraw from the borrow currency
    * @param withdrawEntireCashBalance  true if the account will withdraw the entire cash balance
    * @param redeemToUnderlying  true if will redeem the cash to underlying asset
-   * @param collateral a list of collateral types to deposit
+   * @param collateralAction a given collateral action
    * @param overrides
    * @returns
    */
@@ -232,60 +272,98 @@ export default class TransactionBuilder {
     withdrawAmountInternalPrecision: TypedBigNumber,
     withdrawEntireCashBalance: boolean,
     redeemToUnderlying: boolean,
-    collateral: {
-      symbol: string;
-      amount: TypedBigNumber;
-      mintNToken: boolean;
-    }[],
+    collateralAction?: CollateralAction,
     overrides = {} as Overrides
   ) {
-    const actions: BatchBalanceAndTradeAction[] = [];
     const borrowCurrency = System.getSystem().getCurrencyBySymbol(borrowCurrencySymbol);
-    let borrowOverrides = overrides;
+    let txnOverrides = overrides;
     borrowfCashAmount.check(
       BigNumberType.InternalUnderlying,
       borrowCurrency.underlyingSymbol || borrowCurrency.assetSymbol
     );
     withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, borrowCurrency.assetSymbol);
 
-    collateral
-      .filter((c) => !c.amount.isZero())
-      .forEach((c) => {
-        const collateralCurrency = System.getSystem().getCurrencyBySymbol(c.symbol);
-        const { actionType: collateralActionType, overrides: depositOverrides } = this.getDepositAction(
-          c.symbol,
-          collateralCurrency,
-          c.amount,
-          c.mintNToken,
-          borrowOverrides
-        );
-        borrowOverrides = depositOverrides;
+    let collateralParams: BatchBalanceAndTradeAction | undefined;
+    if (
+      collateralAction?.type === CollateralActionType.ASSET_CASH ||
+      collateralAction?.type === CollateralActionType.NTOKEN
+    ) {
+      if (!collateralAction.amount || !collateralAction.amount.isPositive()) {
+        throw Error('Collateral action amount must be defined and positive');
+      }
 
-        actions.push({
-          actionType: collateralActionType,
-          currencyId: collateralCurrency.id,
-          depositActionAmount: c.amount.n,
-          withdrawAmountInternalPrecision: BigNumber.from(0),
-          withdrawEntireCashBalance: false,
-          redeemToUnderlying: false,
-          trades: [],
-        });
+      const isNToken = collateralAction.type === CollateralActionType.NTOKEN;
+      const { actionType, overrides: depositOverrides } = this.getDepositAction(
+        collateralAction.amount,
+        isNToken,
+        overrides
+      );
+
+      collateralParams = {
+        actionType,
+        currencyId: collateralAction.amount.currencyId,
+        depositActionAmount: collateralAction.amount.n,
+        withdrawAmountInternalPrecision: BigNumber.from(0),
+        withdrawEntireCashBalance: false,
+        redeemToUnderlying: false,
+        trades: [],
+      };
+      txnOverrides = depositOverrides;
+    } else if (collateralAction) {
+      // This is a lending action
+      const { amount, minLendSlippage, marketKey } = collateralAction;
+      if (!amount || !amount.isPositive()) {
+        throw Error('Collateral action amount must be defined and positive');
+      }
+
+      const { actionType, overrides: lendOverrides } = this.getDepositAction(amount, false, overrides);
+      const lendMarketIndex = System.getSystem()
+        .getMarkets(amount.currencyId)
+        .find((m) => m.marketKey === marketKey)?.marketIndex;
+      if (!lendMarketIndex) throw Error('Unable to complete lend fCash collateral action');
+
+      collateralParams = {
+        actionType,
+        currencyId: amount.currencyId,
+        depositActionAmount: amount.n,
+        withdrawAmountInternalPrecision: BigNumber.from(0),
+        withdrawEntireCashBalance: true,
+        redeemToUnderlying: amount.isUnderlying(),
+        trades: [this.encodeTradeType(TradeActionType.Lend, lendMarketIndex, amount, minLendSlippage || 0, 0)],
+      };
+      txnOverrides = lendOverrides;
+    }
+
+    const actions: BatchBalanceAndTradeAction[] = [];
+    // If the borrow currency is the same as the collateral currency then merge the actions
+    if (borrowCurrency.id === collateralAction?.amount?.currencyId && collateralParams) {
+      // Deposit params don't change for the borrow action, but borrow withdraw parameters should
+      // override the default collateral withdraw parameters
+      collateralParams.withdrawAmountInternalPrecision = withdrawAmountInternalPrecision.n;
+      collateralParams.withdrawEntireCashBalance = withdrawEntireCashBalance;
+      collateralParams.redeemToUnderlying = redeemToUnderlying;
+      collateralParams.trades.push(
+        this.encodeTradeType(TradeActionType.Borrow, marketIndex, borrowfCashAmount.abs(), 0, maxSlippage)
+      );
+      actions.push(collateralParams);
+    } else {
+      actions.push({
+        actionType: DepositActionType.None,
+        currencyId: borrowCurrency.id,
+        depositActionAmount: BigNumber.from(0),
+        withdrawAmountInternalPrecision: withdrawAmountInternalPrecision.n,
+        withdrawEntireCashBalance,
+        redeemToUnderlying,
+        trades: [this.encodeTradeType(TradeActionType.Borrow, marketIndex, borrowfCashAmount.abs(), 0, maxSlippage)],
       });
 
-    actions.push({
-      actionType: DepositActionType.None,
-      currencyId: borrowCurrency.id,
-      depositActionAmount: BigNumber.from(0),
-      withdrawAmountInternalPrecision: withdrawAmountInternalPrecision.n,
-      withdrawEntireCashBalance,
-      redeemToUnderlying,
-      trades: [this.encodeTradeType(TradeActionType.Borrow, marketIndex, borrowfCashAmount.abs(), 0, maxSlippage)],
-    });
+      if (collateralParams) actions.push(collateralParams);
+    }
 
     // Ensure that currency ids are sorted
     actions.sort((a, b) => Number(a.currencyId) - Number(b.currencyId));
 
-    return this.populateTxnAndGas(address, 'batchBalanceAndTradeAction', [address, actions, borrowOverrides]);
+    return this.populateTxnAndGas(address, 'batchBalanceAndTradeAction', [address, actions, txnOverrides]);
   }
 
   /**
@@ -319,14 +397,7 @@ export default class TransactionBuilder {
     lendfCashAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
     withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.assetSymbol);
 
-    const { actionType, overrides: lendOverrides } = this.getDepositAction(
-      lendCurrencySymbol,
-      currency,
-      depositAmount,
-      false,
-      overrides
-    );
-
+    const { actionType, overrides: lendOverrides } = this.getDepositAction(depositAmount, false, overrides);
     const lendAction = {
       actionType,
       currencyId: currency.id,
@@ -635,14 +706,9 @@ export default class TransactionBuilder {
   }
 
   // Internal
-  private getDepositAction(
-    symbol: string,
-    currency: Currency,
-    amount: TypedBigNumber,
-    mintNToken: boolean,
-    overrides: Overrides
-  ) {
-    const isUnderlying = currency.underlyingSymbol === symbol;
+  private getDepositAction(amount: TypedBigNumber, mintNToken: boolean, overrides: Overrides) {
+    const currency = System.getSystem().getCurrencyBySymbol(amount.symbol);
+    const isUnderlying = amount.isUnderlying();
     if (isUnderlying && currency.tokenType === TokenType.cETH) {
       amount.check(BigNumberType.ExternalUnderlying, 'ETH');
       return {

@@ -10,6 +10,10 @@ export default class BalanceSummary {
 
   private nToken?: nToken;
 
+  public get hashKey() {
+    return `${this.currencyId}:${this.assetCashBalance.toString()}:${this.nTokenBalance?.toString()}`;
+  }
+
   public get underlyingSymbol() {
     return this.currency.underlyingSymbol || this.currency.assetSymbol;
   }

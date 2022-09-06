@@ -1,7 +1,7 @@
 import { BigNumber, ethers } from 'ethers';
 import { AccountData } from '../../src/account';
 import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
-import { AssetType } from '../../src/libs/types';
+import { AssetType, CollateralActionType } from '../../src/libs/types';
 import MockSystem, { MutableForTesting } from '../mocks/MockSystem';
 import { FreeCollateral, System } from '../../src/system';
 import { getNowSeconds } from '../../src/libs/utils';
@@ -526,5 +526,65 @@ describe('Account Data', () => {
     expect(totals.get(2)?.totalDebts.toFloat()).toBeCloseTo(100);
     expect(totals.get(3)?.totalAssets.toFloat()).toBeCloseTo(119.833);
     expect(totals.get(3)?.totalDebts.toFloat()).toBeCloseTo(150);
+  });
+
+  describe('updates based on collateral actions', () => {
+    it('updates on asset cash action', () => {
+      const accountData = AccountData.emptyAccountData();
+      accountData.updateCollateralAction({
+        type: CollateralActionType.ASSET_CASH,
+        amount: TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      });
+
+      expect(accountData.cashBalance(2)?.toFloat()).toBe(5000);
+
+      accountData.updateCollateralAction({
+        type: CollateralActionType.ASSET_CASH,
+        amount: TypedBigNumber.fromBalance(100e8, 'cDAI', true),
+      });
+
+      expect(accountData.cashBalance(2)?.toFloat()).toBe(5100);
+    });
+
+    it('updates on ntoken action', () => {
+      const accountData = AccountData.emptyAccountData();
+      accountData.updateCollateralAction({
+        type: CollateralActionType.NTOKEN,
+        amount: TypedBigNumber.fromBalance(100e8, 'DAI', true),
+      });
+
+      expect(accountData.nTokenBalance(2)?.toFloat()).toBeCloseTo(5026, 0);
+
+      accountData.updateCollateralAction({
+        type: CollateralActionType.NTOKEN,
+        amount: TypedBigNumber.fromBalance(100e8, 'cDAI', true),
+      });
+
+      expect(accountData.nTokenBalance(2)?.toFloat()).toBeCloseTo(5127, 0);
+    });
+
+    it('updates on lend fcash action', () => {
+      const accountData = AccountData.emptyAccountData();
+      const market = System.getSystem().getMarkets(2)[0];
+      accountData.updateCollateralAction({
+        type: CollateralActionType.LEND_FCASH,
+        amount: TypedBigNumber.fromBalance(100e8, 'DAI', true),
+        marketKey: market.marketKey,
+      });
+
+      expect(accountData.portfolio[0].currencyId).toBe(2);
+      expect(accountData.portfolio[0].maturity).toBe(market.maturity);
+      expect(accountData.portfolio[0].notional.toFloat()).toBeCloseTo(100, 0);
+
+      accountData.updateCollateralAction({
+        type: CollateralActionType.LEND_FCASH,
+        amount: TypedBigNumber.fromBalance(5000e8, 'cDAI', true),
+        marketKey: market.marketKey,
+      });
+
+      expect(accountData.portfolio[0].currencyId).toBe(2);
+      expect(accountData.portfolio[0].maturity).toBe(market.maturity);
+      expect(accountData.portfolio[0].notional.toFloat()).toBeCloseTo(200, 0);
+    });
   });
 });

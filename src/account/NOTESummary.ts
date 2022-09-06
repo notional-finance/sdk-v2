@@ -7,6 +7,10 @@ import Account from './Account';
 import AccountData from './AccountData';
 
 export default class NOTESummary {
+  public get hashKey() {
+    return `${this.NOTEBalance.toString()}:${this.sNOTEBalance.toString()}`;
+  }
+
   public static async build(account: Account) {
     const accountData = account.accountData || AccountData.emptyAccountData();
     if (!accountData.accountHistory) {
