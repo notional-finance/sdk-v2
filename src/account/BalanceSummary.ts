@@ -1,3 +1,4 @@
+import { utils } from 'ethers';
 import { Balance, BalanceHistory, NTokenStatus, ReturnsBreakdown, TransactionHistory } from '../libs/types';
 import AccountData from './AccountData';
 import { System, FreeCollateral, NTokenValue } from '../system';
@@ -11,7 +12,7 @@ export default class BalanceSummary {
   private nToken?: nToken;
 
   public get hashKey() {
-    return `${this.currencyId}:${this.assetCashBalance.toString()}:${this.nTokenBalance?.toString()}`;
+    return utils.id(`${this.currencyId}:${this.assetCashBalance.toString()}:${this.nTokenBalance?.toString()}`);
   }
 
   public get underlyingSymbol() {

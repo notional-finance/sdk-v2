@@ -1,3 +1,4 @@
+import { utils } from 'ethers';
 import { ReturnsBreakdown, StakedNoteHistory, TransactionHistory, TypedBigNumber } from '..';
 import { INTERNAL_TOKEN_PRECISION, NOTE_CURRENCY_ID, STAKED_NOTE_CURRENCY_ID } from '../config/constants';
 import { getNowSeconds } from '../libs/utils';
@@ -8,7 +9,7 @@ import AccountData from './AccountData';
 
 export default class NOTESummary {
   public get hashKey() {
-    return `${this.NOTEBalance.toString()}:${this.sNOTEBalance.toString()}`;
+    return utils.id(`${this.NOTEBalance.toString()}:${this.sNOTEBalance.toString()}`);
   }
 
   public static async build(account: Account) {

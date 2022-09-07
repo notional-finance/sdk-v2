@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { getNowSeconds } from '../libs/utils';
 import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR, MAX_MARKET_PROPORTION } from '../config/constants';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
@@ -21,6 +21,20 @@ export default class Market {
     oracleRate: 0,
     previousTradeTime: 0,
   };
+
+  public get hashKey() {
+    return utils.id(
+      [
+        this.marketKey,
+        this._market.totalfCash.toString(),
+        this._market.totalAssetCash.toString(),
+        this._market.totalLiquidity.toString(),
+        this._market.lastImpliedRate,
+        this._market.oracleRate,
+        this._market.previousTradeTime,
+      ].join(':')
+    );
+  }
 
   public get market(): MarketData {
     return this._market;
