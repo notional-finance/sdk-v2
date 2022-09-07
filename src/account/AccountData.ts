@@ -141,6 +141,10 @@ export default class AccountData {
       .sort((a, b) => a.timestampMS - b.timestampMS);
   }
 
+  public get hashKey() {
+    return this.getHash();
+  }
+
   public getHash() {
     // Gets a rough hash of the account data object to detect if it has changed
     return utils.id(

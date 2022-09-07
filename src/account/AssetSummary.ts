@@ -1,3 +1,4 @@
+import { utils } from 'ethers';
 import { Market, System } from '../system';
 import { AssetType, TradeHistory, TransactionHistory } from '../libs/types';
 import { getNowSeconds } from '../libs/utils';
@@ -30,7 +31,7 @@ export default class AssetSummary {
   }
 
   public get hashKey() {
-    return `${this.assetKey}:${this.fCash?.notional.toString()}:${this.liquidityToken?.notional.toString()}`;
+    return utils.id(`${this.assetKey}:${this.fCash?.notional.toString()}:${this.liquidityToken?.notional.toString()}`);
   }
 
   public mostRecentTradedRate() {
