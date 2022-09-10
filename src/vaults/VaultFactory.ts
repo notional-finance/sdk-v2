@@ -1,6 +1,6 @@
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import BaseVault from './BaseVault';
-import CrossCurrencyfCash from './strategy/CrossCurrencyfCash';
+import CrossCurrencyfCash from './strategy/notional/CrossCurrencyfCash';
 
 interface BaseVaultInstantiable<D, R> {
   new (vaultAddress: string): BaseVault<D, R>;

@@ -1,11 +1,11 @@
 import { BigNumber, Contract, utils } from 'ethers';
-import TypedBigNumber, { BigNumberType } from '../../libs/TypedBigNumber';
-import BaseVault, { LiquidationThreshold, LiquidationThresholdType } from '../BaseVault';
-import VaultAccount from '../VaultAccount';
-import { CashGroup, Market, System } from '../../system';
-import { getNowSeconds } from '../../libs/utils';
-import TradeHandler, { DexId } from '../../trading/TradeHandler';
-import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../config/constants';
+import TypedBigNumber, { BigNumberType } from '../../../libs/TypedBigNumber';
+import BaseVault, { LiquidationThreshold, LiquidationThresholdType } from '../../BaseVault';
+import VaultAccount from '../../VaultAccount';
+import { CashGroup, Market, System } from '../../../system';
+import { getNowSeconds } from '../../../libs/utils';
+import TradeHandler, { DexId } from '../../../trading/TradeHandler';
+import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../../config/constants';
 
 interface DepositParams {
   minPurchaseAmount: BigNumber;
