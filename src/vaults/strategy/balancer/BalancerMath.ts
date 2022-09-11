@@ -1,86 +1,20 @@
-import { BigNumber, ethers } from 'ethers';
+import FixedPoint from './FixedPoint';
 
-export class FixedPoint {
-  private _1 = FixedPoint.from(1);
-  public static ONE = FixedPoint.from(ethers.constants.WeiPerEther);
-
-  constructor(public n: BigNumber) {}
-
-  public static from(v: any) {
-    return new FixedPoint(BigNumber.from(v));
-  }
-
-  public add(b: FixedPoint) {
-    return new FixedPoint(this.n.add(b.n));
-  }
-
-  public sub(b: FixedPoint) {
-    return new FixedPoint(this.n.sub(b.n));
-  }
-
-  public mul(b: FixedPoint) {
-    return new FixedPoint(this.n.mul(b.n));
-  }
-
-  public div(b: FixedPoint) {
-    return new FixedPoint(this.n.div(b.n));
-  }
-
-  public lt(b: FixedPoint) {
-    return this.n.lt(b.n);
-  }
-
-  public lte(b: FixedPoint) {
-    return this.n.lte(b.n);
-  }
-
-  public gt(b: FixedPoint) {
-    return this.n.gt(b.n);
-  }
-
-  public isZero() {
-    return this.n.isZero;
-  }
-
-  public mulUp(b: FixedPoint) {
-    const product = this.mul(b);
-    return product.isZero() ? product : product.sub(this._1).div(FixedPoint.ONE).add(this._1);
-  }
-
-  public mulDown(b: FixedPoint) {
-    return this.mul(b).div(FixedPoint.ONE);
-  }
-
-  public divUp(b: FixedPoint) {
-    return this.isZero() ? this : this.mul(FixedPoint.ONE).sub(this._1).div(b).add(this._1);
-  }
-
-  public divDown(b: FixedPoint) {
-    return this.isZero() ? this : this.mul(FixedPoint.ONE).div(b);
-  }
-
-  public complement() {
-    return this.lt(FixedPoint.ONE) ? FixedPoint.ONE.sub(this) : FixedPoint.from(0);
-  }
-}
-
-export class BalancerStableMath extends FixedPoint {
+export default class BalancerStableMath extends FixedPoint {
   private static _AMP_PRECISION = FixedPoint.from(1e3);
 
   private static _calculateInvariant(amplificationParameter: FixedPoint, balances: FixedPoint[], roundUp: boolean) {
     const numTokens = FixedPoint.from(balances.length);
-    const sum = balances.reduce((s, b) => {
-      return s.add(b);
-    }, FixedPoint.from(0));
+    const sum = balances.reduce((s, b) => s.add(b), FixedPoint.from(0));
     if (sum.isZero()) return sum;
 
     let prevInvariant = FixedPoint.from(0);
     let invariant = sum;
     const ampTimesTotal = amplificationParameter.mul(numTokens);
 
-    for (let i = 0; i < 255; i++) {
+    for (let i = 0; i < 255; i += 1) {
       let P_D = balances[0].mul(numTokens);
-      for (let j = 1; j < balances.length; j++) {
+      for (let j = 1; j < balances.length; j += 1) {
         P_D = roundUp
           ? P_D.mul(balances[j]).mul(numTokens).divUp(invariant)
           : P_D.mul(balances[j]).mul(numTokens).divDown(invariant);
@@ -121,12 +55,10 @@ export class BalancerStableMath extends FixedPoint {
   ) {
     const balancesLength = FixedPoint.from(balances.length);
     const ampTimesTotal = amplificationParameter.mul(balancesLength);
-    let sum = balances.reduce((s, b) => {
-      return s.add(b);
-    }, FixedPoint.from(0));
+    let sum = balances.reduce((s, b) => s.add(b), FixedPoint.from(0));
 
     let P_D = balances[0].mul(balancesLength);
-    for (let j = 1; j < balances.length; j++) {
+    for (let j = 1; j < balances.length; j += 1) {
       P_D = P_D.mul(balances[j]).mul(balancesLength).divDown(invariant);
     }
 
@@ -139,7 +71,7 @@ export class BalancerStableMath extends FixedPoint {
     let prevTokenBalance = FixedPoint.from(0);
     let tokenBalance = inv2.add(c).divUp(invariant.add(b));
 
-    for (let i = 0; i < 255; i++) {
+    for (let i = 0; i < 255; i += 1) {
       prevTokenBalance = tokenBalance;
       // prettier-ignore
       tokenBalance = tokenBalance.mul(tokenBalance).add(c).divUp(
@@ -149,7 +81,8 @@ export class BalancerStableMath extends FixedPoint {
       if (tokenBalance.gt(prevTokenBalance)) {
         if (tokenBalance.sub(prevTokenBalance).lte(FixedPoint.from(1))) {
           return tokenBalance;
-        } else if (prevTokenBalance.sub(tokenBalance).lte(FixedPoint.from(1))) {
+        }
+        if (prevTokenBalance.sub(tokenBalance).lte(FixedPoint.from(1))) {
           return tokenBalance;
         }
       }
@@ -175,9 +108,7 @@ export class BalancerStableMath extends FixedPoint {
       tokenIndex
     );
     const amountOutWithoutFee = balances[tokenIndex].sub(newBalanceTokenIndex);
-    const sumBalances = balances.reduce((s, b) => {
-      return s.add(b);
-    }, FixedPoint.from(0));
+    const sumBalances = balances.reduce((s, b) => s.add(b), FixedPoint.from(0));
 
     // Excess balance being withdrawn as a result of virtual swaps, requires swap fees
     const currentWeight = balances[tokenIndex].divDown(sumBalances);
@@ -197,9 +128,7 @@ export class BalancerStableMath extends FixedPoint {
     swapFeePercentage: FixedPoint,
     currentInvariant: FixedPoint
   ) {
-    const sumBalances = balances.reduce((s, b) => {
-      return s.add(b);
-    }, FixedPoint.from(0));
+    const sumBalances = balances.reduce((s, b) => s.add(b), FixedPoint.from(0));
 
     let invariantRatioWithFees = FixedPoint.from(0);
     const balanceRatiosWithFee = balances.map((b, i) => {
@@ -229,9 +158,8 @@ export class BalancerStableMath extends FixedPoint {
     // Invariant must increase or we don't mint BPT
     if (invariantRatio.gt(FixedPoint.ONE)) {
       return bptTotalSupply.mulDown(invariantRatio.sub(FixedPoint.ONE));
-    } else {
-      return FixedPoint.from(0);
     }
+    return FixedPoint.from(0);
   }
 
   public static calcOutGivenIn(

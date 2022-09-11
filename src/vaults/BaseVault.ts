@@ -3,7 +3,7 @@ import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR 
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup } from '../system';
-import { doBinarySearchApprox } from './Approximation';
+import doBinarySearchApprox from './Approximation';
 import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
 
@@ -289,8 +289,8 @@ export default abstract class BaseVault<D, R> extends AbstractStrategy<D, R> {
     // prettier-ignore
     const fCashToLend = doBinarySearchApprox(
       leverageRatio,
-      calculationFunction,
       leverageRatio,
+      calculationFunction,
       precision,
       // Need a custom adjustment here
       (m, d) => Math.floor(m - d * 2)
@@ -496,7 +496,7 @@ export default abstract class BaseVault<D, R> extends AbstractStrategy<D, R> {
       };
     };
 
-    return doBinarySearchApprox(leverageRatio, calculationFunction, leverageRatio, precision);
+    return doBinarySearchApprox(leverageRatio, leverageRatio, calculationFunction, precision);
   }
 
   public async populateEnterTransaction(

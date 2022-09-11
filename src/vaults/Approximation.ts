@@ -1,8 +1,10 @@
-export function doBinarySearchApprox<T>(
+import { BASIS_POINT } from '../config/constants';
+
+export default function doBinarySearchApprox<T>(
   initialMultiple: number,
-  calculationFunction: (multiple: number) => { actualMultiple: number; breakLoop: boolean; value: T },
   target: number,
-  requiredPrecision: number,
+  calculationFunction: (multiple: number) => { actualMultiple: number; breakLoop: boolean; value: T },
+  requiredPrecision = 50 * BASIS_POINT,
   loopAdjustment = (m: number, d: number) => Math.floor(m + d / 2),
   maxIter = 10
 ) {
