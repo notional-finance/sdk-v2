@@ -52,6 +52,23 @@ export abstract class BaseBalancerStablePool extends BaseVault<DepositParams, Re
 
   protected abstract getUnderlyingOut(BPTIn: FixedPoint): TypedBigNumber;
 
+  public getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber {
+    const { strategyTokens } = vaultAccount.getPoolShare();
+    const oneBPTValue = this.getBPTValue();
+    const accountValue = strategyTokens.scale(oneBPTValue.n, FixedPoint.ONE.n).n;
+
+    // This is in 8 decimal precision
+    return TypedBigNumber.fromBalance(accountValue, this.getPrimaryBorrowSymbol(), true);
+  }
+
+  public getStrategyTokensFromValue(maturity: number, valuation: TypedBigNumber, _blockTime?: number) {
+    const oneBPTValue = this.getBPTValue();
+    const tokens = valuation.scale(FixedPoint.ONE.n, oneBPTValue.n).n;
+
+    // This is in 8 decimal precision
+    return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
+  }
+
   public getDepositParameters(
     _maturity: number,
     _depositAmount: TypedBigNumber,

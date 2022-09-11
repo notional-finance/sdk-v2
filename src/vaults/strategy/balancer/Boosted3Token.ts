@@ -1,5 +1,5 @@
 import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
-import TypedBigNumber, { BigNumberType } from '../../../libs/TypedBigNumber';
+import TypedBigNumber from '../../../libs/TypedBigNumber';
 import { LiquidationThreshold } from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
@@ -22,23 +22,6 @@ export default class BalancerBoosted3Token extends BaseBalancerStablePool {
 
   public getLiquidationThresholds(_: VaultAccount, __: number): Array<LiquidationThreshold> {
     return [];
-  }
-
-  public getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber {
-    const { strategyTokens } = vaultAccount.getPoolShare();
-    const oneBPTValue = this.getBPTValue();
-    const accountValue = strategyTokens.scale(oneBPTValue.n, FixedPoint.ONE.n).n;
-
-    // This is in 8 decimal precision
-    return TypedBigNumber.fromBalance(accountValue, this.getPrimaryBorrowSymbol(), true);
-  }
-
-  public getStrategyTokensFromValue(maturity: number, valuation: TypedBigNumber, _blockTime?: number) {
-    const oneBPTValue = this.getBPTValue();
-    const tokens = valuation.scale(FixedPoint.ONE.n, oneBPTValue.n).n;
-
-    // This is in 8 decimal precision
-    return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }
 
   protected getBPTValue(amountIn: FixedPoint = FixedPoint.ONE) {
