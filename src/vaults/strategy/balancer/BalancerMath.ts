@@ -1,6 +1,6 @@
 import { BigNumber, ethers } from 'ethers';
 
-class FixedPoint {
+export class FixedPoint {
   private _1 = FixedPoint.from(1);
   public static ONE = FixedPoint.from(ethers.constants.WeiPerEther);
 

@@ -1,9 +1,9 @@
 import { utils } from 'ethers';
 import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
-import { SecondaryBorrowArray } from '../data';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup } from '../system';
+import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
 
 export enum LiquidationThresholdType {
@@ -20,7 +20,7 @@ export interface LiquidationThreshold {
   collateralCurrencyId?: number;
 }
 
-export default abstract class BaseVault<D, R> {
+export default abstract class BaseVault<D, R> extends AbstractStrategy<D, R> {
   public static collateralToLeverageRatio(collateralRatio: number): number {
     return Math.floor((RATE_PRECISION / collateralRatio) * RATE_PRECISION) + RATE_PRECISION;
   }
@@ -28,10 +28,6 @@ export default abstract class BaseVault<D, R> {
   public static leverageToCollateralRatio(leverageRatio: number): number {
     return Math.floor((RATE_PRECISION / (leverageRatio - RATE_PRECISION)) * RATE_PRECISION);
   }
-
-  abstract readonly depositTuple: string;
-
-  abstract readonly redeemTuple: string;
 
   public encodeDepositParams(depositParams: D) {
     return utils.defaultAbiCoder.encode([this.depositTuple], [depositParams]);
@@ -41,111 +37,9 @@ export default abstract class BaseVault<D, R> {
     return utils.defaultAbiCoder.encode([this.redeemTuple], [redeemParams]);
   }
 
-  constructor(public vaultAddress: string) {}
-
-  public abstract initializeVault(): Promise<void>;
-
-  public abstract getLiquidationThresholds(vaultAccount: VaultAccount, blockTime: number): Array<LiquidationThreshold>;
-
-  public abstract getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber;
-
-  public abstract getStrategyTokensFromValue(
-    maturity: number,
-    valuation: TypedBigNumber,
-    blockTime?: number
-  ): TypedBigNumber;
-
-  public abstract getDepositParameters(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): D;
-
-  public abstract getDepositParametersExact(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): Promise<D>;
-
-  public abstract getRedeemParametersExact(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): Promise<R>;
-
-  public abstract getSlippageForDeposit(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    strategyTokens: TypedBigNumber,
-    params: D,
-    blockTime?: number
-  ): { likelySlippage: number; worstCaseSlippage: number };
-
-  public abstract getRedeemParameters(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): R;
-
-  public abstract getSlippageForRedeem(
-    maturity: number,
-    redeemAmount: TypedBigNumber,
-    strategyTokens: TypedBigNumber,
-    params: R,
-    blockTime?: number
-  ): { likelySlippage: number; worstCaseSlippage: number };
-
-  public abstract getDepositGivenStrategyTokens(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    requiredDeposit: TypedBigNumber;
-    secondaryfCashBorrowed: SecondaryBorrowArray;
-    depositParams: D;
-  };
-
-  public abstract getStrategyTokensGivenDeposit(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    strategyTokens: TypedBigNumber;
-    secondaryfCashBorrowed: SecondaryBorrowArray;
-    depositParams: D;
-  };
-
-  public abstract getRedeemGivenStrategyTokens(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    amountRedeemed: TypedBigNumber;
-    secondaryfCashRepaid: SecondaryBorrowArray;
-    redeemParams: R;
-  };
-
-  public abstract getStrategyTokensGivenRedeem(
-    maturity: number,
-    redeemAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    strategyTokens: TypedBigNumber;
-    secondaryfCashRepaid: SecondaryBorrowArray;
-    redeemParams: R;
-  };
+  constructor(public vaultAddress: string) {
+    super();
+  }
 
   public getVaultState(maturity: number) {
     return System.getSystem().getVaultState(this.vaultAddress, maturity);
@@ -157,6 +51,10 @@ export default abstract class BaseVault<D, R> {
 
   public getVaultSymbol(maturity: number) {
     return System.getSystem().getVaultSymbol(this.vaultAddress, maturity);
+  }
+
+  public getPrimaryBorrowSymbol() {
+    return System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
   }
 
   public getLiquidationVaultShareValue(vaultAccount: VaultAccount) {
