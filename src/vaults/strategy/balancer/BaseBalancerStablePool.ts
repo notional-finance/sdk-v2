@@ -142,7 +142,9 @@ export abstract class BaseBalancerStablePool extends BaseVault<DepositParams, Re
     _?: VaultAccount
   ) {
     // Convert deposit amount to 18 decimals
-    const tokenAmountIn = FixedPoint.from(depositAmount.scale(FixedPoint.ONE.n, depositAmount.decimals).n);
+    const tokenAmountIn = FixedPoint.from(
+      depositAmount.toInternalPrecision().scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n
+    );
     const bptOut = this.getBPTOut(tokenAmountIn);
 
     return {
@@ -217,7 +219,9 @@ export abstract class BaseBalancerStablePool extends BaseVault<DepositParams, Re
     _vaultAccount?: VaultAccount
   ) {
     const RP = FixedPoint.from(RATE_PRECISION);
-    const redeemAmountFP = FixedPoint.from(redeemAmount.scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n);
+    const redeemAmountFP = FixedPoint.from(
+      redeemAmount.toInternalPrecision().scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n
+    );
     // redeemAmount / oneBPTValue = 1 bpt
     const initialMultiple = redeemAmountFP.mul(RP).div(this.getBPTValue()).n.toNumber();
 

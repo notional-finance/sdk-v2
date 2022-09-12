@@ -15,31 +15,26 @@ export default class BalancerStableMath extends FixedPoint {
     for (let i = 0; i < 255; i += 1) {
       let P_D = balances[0].mul(numTokens);
       for (let j = 1; j < balances.length; j += 1) {
-        P_D = roundUp
-          ? P_D.mul(balances[j]).mul(numTokens).divUp(invariant)
-          : P_D.mul(balances[j]).mul(numTokens).divDown(invariant);
+        P_D = P_D.mul(balances[j]).mul(numTokens).divNoScale(invariant, roundUp);
       }
 
       prevInvariant = invariant;
       // prettier-ignore
       const invariantNum = numTokens.mul(invariant).mul(invariant).add(
-        roundUp ?
-          ampTimesTotal.mul(sum).mul(P_D).divUp(this._AMP_PRECISION) :
-          ampTimesTotal.mul(sum).mul(P_D).divDown(this._AMP_PRECISION)
+          ampTimesTotal.mul(sum).mul(P_D).divNoScale(this._AMP_PRECISION, roundUp)
       )
       // prettier-ignore
-      const invariantDenom = numTokens.add(FixedPoint.from(1)).mul(invariant).add(
-        !roundUp ?
-          ampTimesTotal.sub(this._AMP_PRECISION).mul(P_D).divUp(this._AMP_PRECISION) :
-          ampTimesTotal.sub(this._AMP_PRECISION).mul(P_D).divDown(this._AMP_PRECISION)
+      const invariantDenom = numTokens.add(FixedPoint._1).mul(invariant).add(
+          ampTimesTotal.sub(this._AMP_PRECISION).mul(P_D).divNoScale(this._AMP_PRECISION, !roundUp)
       )
-      invariant = roundUp ? invariantNum.divUp(invariantDenom) : invariantNum.divDown(invariantDenom);
+      invariant = invariantNum.divNoScale(invariantDenom, roundUp);
+
 
       if (invariant.gt(prevInvariant)) {
-        if (invariant.sub(prevInvariant).lte(FixedPoint.from(1))) {
+        if (invariant.sub(prevInvariant).lte(FixedPoint._1)) {
           return invariant;
         }
-      } else if (prevInvariant.sub(invariant).lte(FixedPoint.from(1))) {
+      } else if (prevInvariant.sub(invariant).lte(FixedPoint._1)) {
         return invariant;
       }
     }
