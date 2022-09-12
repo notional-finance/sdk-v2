@@ -1,7 +1,7 @@
 import { BigNumber, ethers } from 'ethers';
 
 export default class FixedPoint {
-  private _1 = FixedPoint.from(1);
+  private static _1 = FixedPoint.from(1);
 
   public static ONE = FixedPoint.from(ethers.constants.WeiPerEther);
 
@@ -45,7 +45,7 @@ export default class FixedPoint {
 
   public mulUp(b: FixedPoint) {
     const product = this.mul(b);
-    return product.isZero() ? product : product.sub(this._1).div(FixedPoint.ONE).add(this._1);
+    return product.isZero() ? product : product.sub(FixedPoint._1).div(FixedPoint.ONE).add(FixedPoint._1);
   }
 
   public mulDown(b: FixedPoint) {
@@ -53,7 +53,7 @@ export default class FixedPoint {
   }
 
   public divUp(b: FixedPoint) {
-    return this.isZero() ? this : this.mul(FixedPoint.ONE).sub(this._1).div(b).add(this._1);
+    return this.isZero() ? this : this.mul(FixedPoint.ONE).sub(FixedPoint._1).div(b).add(FixedPoint._1);
   }
 
   public divDown(b: FixedPoint) {
