@@ -19,7 +19,7 @@ import TypedBigNumber from '../../src/libs/TypedBigNumber';
 const ERC20ABI = require('../../src/abi/ERC20.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
-const forkedBlockNumber = 15516500;
+const forkedBlockNumber = 15521384;
 const wstETH_ETH_PoolID = '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080';
 
 describe('balancer vault test', () => {
@@ -81,6 +81,8 @@ describe('balancer vault test', () => {
 
     await weth.connect(wethWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
 
+    console.log('bpool address', balancerPool.address);
+    console.log('bpool assets', assets);
     const swapFeePercentage = FixedPoint.from(await balancerPool.getSwapFeePercentage());
     const totalSupply = FixedPoint.from(await balancerPool.totalSupply());
     const { value } = await balancerPool.getAmplificationParameter();
@@ -132,6 +134,12 @@ describe('balancer vault test', () => {
       fromInternalBalance: false,
     });
 
+    const invariantAfter = FixedPoint.from(await balancerPool.getLatest(2));
+    const { balances: balancesAfter } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID);
+    console.log(`
+    invariant after: ${invariantAfter.n.toString()}
+    balances after: ${balancesAfter.map((b) => b.toString())}}
+    `);
     console.log(ethers.utils.formatUnits(await balancerPool.balanceOf(wethWhale.address), 18));
     console.log(strategyTokens.toExactString());
   });

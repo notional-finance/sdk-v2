@@ -31,6 +31,16 @@ export default class MetaStable2Token extends BaseBalancerStablePool {
     const amountsIn = new Array<FixedPoint>(balances.length).fill(FixedPoint.from(0));
     amountsIn[primaryTokenIndex] = tokenAmountIn;
 
+    console.log(`
+    amp: ${amplificationParameter.n.toString()}
+    balances: ${balances.map((b) => b.n.toString())}
+    primaryTokenIndex: ${primaryTokenIndex}
+    totalSupply: ${totalSupply.n.toString()}
+    invariant: ${invariant.n.toString()}
+    swapFeePercentage: ${swapFeePercentage.n.toString()}
+    amountsIn: ${amountsIn.map((b) => b.n.toString())}
+    `);
+
     return BalancerStableMath.calcBptOutGivenExactTokensIn(
       amplificationParameter,
       balances,

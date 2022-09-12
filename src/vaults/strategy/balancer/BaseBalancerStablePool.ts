@@ -146,6 +146,10 @@ export abstract class BaseBalancerStablePool extends BaseVault<DepositParams, Re
       depositAmount.toInternalPrecision().scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n
     );
     const bptOut = this.getBPTOut(tokenAmountIn);
+    console.log(`
+      token amount in: ${tokenAmountIn.n.toString()}
+      bpt out: ${bptOut.n.toString()}
+    `);
 
     return {
       strategyTokens: this.convertBPTToStrategyTokens(bptOut, maturity),

@@ -29,6 +29,13 @@ export default class BalancerStableMath extends FixedPoint {
       )
       invariant = invariantNum.divNoScale(invariantDenom, roundUp);
 
+      console.log(`
+      P_D:            ${P_D.n.toString()}
+      invariantNum:   ${invariantNum.n.toString()}
+      invariantDenom: ${invariantDenom.n.toString()}
+      prev:      ${prevInvariant.n.toString()}
+      invariant: ${invariant.n.toString()}
+      `);
 
       if (invariant.gt(prevInvariant)) {
         if (invariant.sub(prevInvariant).lte(FixedPoint._1)) {
@@ -128,6 +135,10 @@ export default class BalancerStableMath extends FixedPoint {
     let invariantRatioWithFees = FixedPoint.from(0);
     const balanceRatiosWithFee = balances.map((b, i) => {
       const currentWeight = b.divDown(sumBalances);
+      console.log(`
+      balance:        ${b.n.toString()}
+      current weight: ${currentWeight.n.toString()}
+      `);
       const balanceRatioWithFee = b.add(amountsIn[i]).divDown(b);
       invariantRatioWithFees = invariantRatioWithFees.add(balanceRatioWithFee.mulDown(currentWeight));
       return balanceRatioWithFee;
@@ -149,9 +160,23 @@ export default class BalancerStableMath extends FixedPoint {
     // Get current and new invariants given swap fees
     const newInvariant = this._calculateInvariant(amp, newBalances, false);
     const invariantRatio = newInvariant.divDown(currentInvariant);
+    console.log(`
+      sumBalances: ${sumBalances.n.toString()}
+      invariantRatioWithFees: ${invariantRatioWithFees.n.toString()}
+      currentInvariant:       ${currentInvariant.n.toString()}
+      newInvariant:           ${newInvariant.n.toString()}
+      invariantRatio:         ${invariantRatio.n.toString()}
+      balanceRatios: ${balanceRatiosWithFee.map((b) => b.n.toString())}
+      newBalances:   ${newBalances.map((b) => b.n.toString())}
+      oldBalances:   ${balances.map((b) => b.n.toString())}
+    `);
 
     // Invariant must increase or we don't mint BPT
     if (invariantRatio.gt(FixedPoint.ONE)) {
+      console.log(`
+        bpt supply: ${bptTotalSupply.n.toString()}
+        invariant ratio - 1: ${invariantRatio.sub(FixedPoint.ONE).n.toString()}
+      `);
       return bptTotalSupply.mulDown(invariantRatio.sub(FixedPoint.ONE));
     }
     return FixedPoint.from(0);
