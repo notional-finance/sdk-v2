@@ -30,6 +30,7 @@ describe('balancer vault test', () => {
   let assets: string[];
   let balances: BigNumber[];
   let weth: ERC20;
+  let wstETH: ERC20;
 
   const system = new MockSystem();
   System.overrideSystem(system);
@@ -74,16 +75,15 @@ describe('balancer vault test', () => {
       signer
     ) as BalancerVault;
     const [address] = await balancerVault.getPool(wstETH_ETH_PoolID);
-    ({ tokens: assets, balances } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID));
 
     balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerPool;
     wethWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
+    ({ tokens: assets, balances } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID));
     weth = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
+    wstETH = (await ethers.getContractAt(ERC20ABI, assets[0])) as ERC20;
 
     await weth.connect(wethWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
 
-    console.log('bpool address', balancerPool.address);
-    console.log('bpool assets', assets);
     const swapFeePercentage = FixedPoint.from(await balancerPool.getSwapFeePercentage());
     const totalSupply = FixedPoint.from(await balancerPool.totalSupply());
     const { value } = await balancerPool.getAmplificationParameter();
@@ -91,7 +91,7 @@ describe('balancer vault test', () => {
     const invariant = BalancerStableMath.calculateInvariant(
       amplificationParameter,
       balances.map((b) => FixedPoint.from(b)),
-      true
+      false
     );
     const [pairPrice, bptPrice] = (
       await balancerPool.getTimeWeightedAverage([
@@ -110,7 +110,8 @@ describe('balancer vault test', () => {
 
     metaStable.poolContext = {
       amplificationParameter,
-      balances: balances.map((b) => FixedPoint.from(b)),
+      balances: balances.map(FixedPoint.from),
+      //balances: [FixedPoint.from('71935374566357235978189'), FixedPoint.from('29996344722843367615841')],
       primaryTokenIndex: 1,
       tokenOutIndex: 0,
       totalSupply,
@@ -124,22 +125,22 @@ describe('balancer vault test', () => {
   it('calculates the appropriate bpt when joining', async () => {
     const { strategyTokens } = metaStable.getStrategyTokensGivenDeposit(
       100,
-      TypedBigNumber.fromBalance(10e8, 'ETH', true),
+      TypedBigNumber.fromBalance(100e8, 'ETH', true),
       0
     );
 
     const userData = ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256[]', 'uint256'],
-      [1, [ethers.utils.parseEther('0'), ethers.utils.parseEther('10')], 0]
+      [1, [ethers.utils.parseEther('0'), ethers.utils.parseEther('100')], 0]
     );
     await balancerVault.connect(wethWhale).joinPool(wstETH_ETH_PoolID, wethWhale.address, wethWhale.address, {
       assets,
-      maxAmountsIn: [ethers.utils.parseEther('10000'), ethers.utils.parseEther('100000')],
+      maxAmountsIn: [ethers.utils.parseEther('0'), ethers.utils.parseEther('100')],
       userData,
       fromInternalBalance: false,
     });
 
-    const invariantAfter = FixedPoint.from(await balancerPool.getLatest(2));
+    const invariantAfter = FixedPoint.from(await balancerPool.getLastInvariant());
     const { balances: balancesAfter } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID);
     console.log(`
     invariant after: ${invariantAfter.n.toString()}
@@ -147,7 +148,10 @@ describe('balancer vault test', () => {
     `);
     console.log(ethers.utils.formatUnits(await balancerPool.balanceOf(wethWhale.address), 18));
     console.log(strategyTokens.toExactString());
+    console.log(await wstETH.balanceOf(wethWhale.address));
   });
 
+  // −0.002822928523841216
+  // −3.788725085793369041
   // it('calculates the appropriate tokens out when exiting', () => {});
 });
