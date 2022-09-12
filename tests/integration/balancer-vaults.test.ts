@@ -15,6 +15,7 @@ import { VaultConfig } from '../../src/data';
 import FixedPoint from '../../src/vaults/strategy/balancer/FixedPoint';
 import { BASIS_POINT } from '../../src/config/constants';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
+import BalancerStableMath from '../../src/vaults/strategy/balancer/BalancerStableMath';
 
 const ERC20ABI = require('../../src/abi/ERC20.json');
 const poolABI = require('../../src/abi/BalancerPool.json');
@@ -87,7 +88,11 @@ describe('balancer vault test', () => {
     const totalSupply = FixedPoint.from(await balancerPool.totalSupply());
     const { value } = await balancerPool.getAmplificationParameter();
     const amplificationParameter = FixedPoint.from(value);
-    const invariant = FixedPoint.from(await balancerPool.getLatest(2));
+    const invariant = BalancerStableMath.calculateInvariant(
+      amplificationParameter,
+      balances.map((b) => FixedPoint.from(b)),
+      true
+    );
     const [pairPrice, bptPrice] = (
       await balancerPool.getTimeWeightedAverage([
         {

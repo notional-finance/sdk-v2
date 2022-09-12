@@ -3,7 +3,7 @@ import FixedPoint from './FixedPoint';
 export default class BalancerStableMath extends FixedPoint {
   private static _AMP_PRECISION = FixedPoint.from(1e3);
 
-  private static _calculateInvariant(amplificationParameter: FixedPoint, balances: FixedPoint[], roundUp: boolean) {
+  public static calculateInvariant(amplificationParameter: FixedPoint, balances: FixedPoint[], roundUp: boolean) {
     const numTokens = FixedPoint.from(balances.length);
     const sum = balances.reduce((s, b) => s.add(b), FixedPoint.from(0));
     if (sum.isZero()) return sum;
@@ -158,7 +158,7 @@ export default class BalancerStableMath extends FixedPoint {
     });
 
     // Get current and new invariants given swap fees
-    const newInvariant = this._calculateInvariant(amp, newBalances, false);
+    const newInvariant = this.calculateInvariant(amp, newBalances, false);
     const invariantRatio = newInvariant.divDown(currentInvariant);
     console.log(`
       sumBalances: ${sumBalances.n.toString()}

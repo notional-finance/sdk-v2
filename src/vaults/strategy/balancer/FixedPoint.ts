@@ -63,7 +63,7 @@ export default class FixedPoint {
   public divNoScale(b: FixedPoint, roundUp: boolean) {
     if (roundUp) {
       if (this.isZero()) return this;
-      return FixedPoint._1.add(this.sub(FixedPoint._1)).div(b);
+      return FixedPoint._1.add(this.sub(FixedPoint._1).div(b));
     } else {
       return this.div(b);
     }
