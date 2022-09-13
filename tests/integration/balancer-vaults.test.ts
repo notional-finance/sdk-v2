@@ -7,7 +7,7 @@ import {
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 import { getAccount, setChainState } from './utils';
-import { BalancerPool, BalancerVault, ERC20 } from '../../src/typechain';
+import { BalancerStablePool, BalancerVault, ERC20 } from '../../src/typechain';
 import MetaStable2Token from '../../src/vaults/strategy/balancer/MetaStable2Token';
 import MockSystem from '../mocks/MockSystem';
 import { System } from '../../src/system';
@@ -18,14 +18,14 @@ import TypedBigNumber from '../../src/libs/TypedBigNumber';
 import BalancerStableMath from '../../src/vaults/strategy/balancer/BalancerStableMath';
 
 const ERC20ABI = require('../../src/abi/ERC20.json');
-const poolABI = require('../../src/abi/BalancerPool.json');
+const poolABI = require('../../src/abi/BalancerStablePool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
 const forkedBlockNumber = 15521384;
 const wstETH_ETH_PoolID = '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080';
 
 describe('balancer vault test', () => {
   let balancerVault: BalancerVault;
-  let balancerPool: BalancerPool;
+  let balancerPool: BalancerStablePool;
   let wethWhale: SignerWithAddress;
   let assets: string[];
   let balances: BigNumber[];
@@ -76,7 +76,7 @@ describe('balancer vault test', () => {
     const [address] = await balancerVault.getPool(wstETH_ETH_PoolID);
     ({ tokens: assets, balances } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID));
 
-    balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerPool;
+    balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerStablePool;
     wethWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
     weth = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
 
@@ -85,14 +85,14 @@ describe('balancer vault test', () => {
     console.log('bpool address', balancerPool.address);
     console.log('bpool assets', assets);
     const swapFeePercentage = FixedPoint.from(await balancerPool.getSwapFeePercentage());
+    const scalingFactors = await balancerPool.getScalingFactors();
+    const scaledBalances = balances.map((b, i) =>
+      FixedPoint.from(b).mul(FixedPoint.from(scalingFactors[i])).div(FixedPoint.ONE)
+    );
     const totalSupply = FixedPoint.from(await balancerPool.totalSupply());
     const { value } = await balancerPool.getAmplificationParameter();
     const amplificationParameter = FixedPoint.from(value);
-    const invariant = BalancerStableMath.calculateInvariant(
-      amplificationParameter,
-      balances.map((b) => FixedPoint.from(b)),
-      true
-    );
+    const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, scaledBalances, true);
     const [pairPrice, bptPrice] = (
       await balancerPool.getTimeWeightedAverage([
         {
@@ -110,7 +110,7 @@ describe('balancer vault test', () => {
 
     metaStable.poolContext = {
       amplificationParameter,
-      balances: balances.map((b) => FixedPoint.from(b)),
+      balances: scaledBalances,
       primaryTokenIndex: 1,
       tokenOutIndex: 0,
       totalSupply,
@@ -134,12 +134,12 @@ describe('balancer vault test', () => {
     );
     await balancerVault.connect(wethWhale).joinPool(wstETH_ETH_PoolID, wethWhale.address, wethWhale.address, {
       assets,
-      maxAmountsIn: [ethers.utils.parseEther('10000'), ethers.utils.parseEther('100000')],
+      maxAmountsIn: [ethers.utils.parseEther('0'), ethers.utils.parseEther('10')],
       userData,
       fromInternalBalance: false,
     });
 
-    const invariantAfter = FixedPoint.from(await balancerPool.getLatest(2));
+    const invariantAfter = FixedPoint.from((await balancerPool.getLastInvariant())[0]);
     const { balances: balancesAfter } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID);
     console.log(`
     invariant after: ${invariantAfter.n.toString()}

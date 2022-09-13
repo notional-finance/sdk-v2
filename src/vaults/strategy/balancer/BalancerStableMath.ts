@@ -61,32 +61,32 @@ export default class BalancerStableMath extends FixedPoint {
 
     let P_D = balances[0].mul(balancesLength);
     for (let j = 1; j < balances.length; j += 1) {
-      P_D = P_D.mul(balances[j]).mul(balancesLength).divDown(invariant);
+      P_D = P_D.mul(balances[j]).mul(balancesLength).divNoScale(invariant, false);
     }
 
     sum = sum.sub(balances[tokenIndex]);
 
     const inv2 = invariant.mul(invariant);
-    const c = inv2.divUp(ampTimesTotal.mul(P_D)).mul(this._AMP_PRECISION).mul(balances[tokenIndex]);
-    const b = sum.add(invariant.divDown(ampTimesTotal).mul(this._AMP_PRECISION));
+    const c = inv2.divNoScale(ampTimesTotal.mul(P_D), true).mul(this._AMP_PRECISION).mul(balances[tokenIndex]);
+    const b = sum.add(invariant.divNoScale(ampTimesTotal, false).mul(this._AMP_PRECISION));
 
     let prevTokenBalance = FixedPoint.from(0);
-    let tokenBalance = inv2.add(c).divUp(invariant.add(b));
+    let tokenBalance = inv2.add(c).divNoScale(invariant.add(b), true);
 
     for (let i = 0; i < 255; i += 1) {
       prevTokenBalance = tokenBalance;
       // prettier-ignore
-      tokenBalance = tokenBalance.mul(tokenBalance).add(c).divUp(
-        tokenBalance.mul(FixedPoint.from(2)).add(b).sub(invariant)
+      tokenBalance = tokenBalance.mul(tokenBalance).add(c).divNoScale(
+        tokenBalance.mul(FixedPoint.from(2)).add(b).sub(invariant),
+        true
       )
 
       if (tokenBalance.gt(prevTokenBalance)) {
         if (tokenBalance.sub(prevTokenBalance).lte(FixedPoint.from(1))) {
           return tokenBalance;
         }
-        if (prevTokenBalance.sub(tokenBalance).lte(FixedPoint.from(1))) {
-          return tokenBalance;
-        }
+      } else if (prevTokenBalance.sub(tokenBalance).lte(FixedPoint.from(1))) {
+        return tokenBalance;
       }
     }
 
@@ -130,6 +130,15 @@ export default class BalancerStableMath extends FixedPoint {
     swapFeePercentage: FixedPoint,
     currentInvariant: FixedPoint
   ) {
+    console.log(`
+    amp: ${amp.n.toString()}
+    balances:   ${balances.map((b) => b.n.toString())}
+    amountsIn:   ${amountsIn.map((b) => b.n.toString())}
+    bptTotalSupply: ${bptTotalSupply.n.toString()}
+    swapFeePercentage: ${swapFeePercentage.n.toString()}
+    currentInvariant: ${currentInvariant.n.toString()}
+    `);
+
     const sumBalances = balances.reduce((s, b) => s.add(b), FixedPoint.from(0));
 
     let invariantRatioWithFees = FixedPoint.from(0);
@@ -200,5 +209,57 @@ export default class BalancerStableMath extends FixedPoint {
     );
     _balances[tokenIndexIn] = _balances[tokenIndexIn].sub(tokenAmountIn);
     return _balances[tokenIndexOut].sub(finalBalanceOut).sub(FixedPoint.from(1));
+  }
+
+  // The amplification parameter equals: A n^(n-1)
+  public static calcDueTokenProtocolSwapFeeAmount(
+    amplificationParameter: FixedPoint,
+    balances: FixedPoint[],
+    lastInvariant: FixedPoint,
+    tokenIndex: number,
+    protocolSwapFeePercentage: FixedPoint
+  ) {
+    /**************************************************************************************************************
+      // oneTokenSwapFee - polynomial equation to solve                                                            //
+      // af = fee amount to calculate in one token                                                                 //
+      // bf = balance of fee token                                                                                 //
+      // f = bf - af (finalBalanceFeeToken)                                                                        //
+      // D = old invariant                                            D                     D^(n+1)                //
+      // A = amplification coefficient               f^2 + ( S - ----------  - D) * f -  ------------- = 0         //
+      // n = number of tokens                                    (A * n^n)               A * n^2n * P              //
+      // S = sum of final balances but f                                                                           //
+      // P = product of final balances but f                                                                       //
+      **************************************************************************************************************/
+
+    // Protocol swap fee amount, so we round down overall.
+
+    const finalBalanceFeeToken = this._getTokenBalanceGivenInvariantAndAllOtherBalances(
+      amplificationParameter,
+      balances,
+      lastInvariant,
+      tokenIndex
+    );
+
+    console.log(`
+    amplificationParameter: ${amplificationParameter.n.toString()}
+    balances: ${balances.map((b) => b.n.toString())}
+    lastInvariant: ${lastInvariant.n.toString()}
+    tokenIndex: ${tokenIndex}
+    finalBalanceFeeToken: ${finalBalanceFeeToken.n.toString()}
+    `);
+
+    if (balances[tokenIndex].lte(finalBalanceFeeToken)) {
+      // This shouldn't happen outside of rounding errors, but have this safeguard nonetheless to prevent the Pool
+      // from entering a locked state in which joins and exits revert while computing accumulated swap fees.
+      console.log(`
+      balances[tokenIndex]: ${balances[tokenIndex].n.toString()}
+      finalBalanceFeeToken: ${finalBalanceFeeToken.n.toString()}
+      `);
+      return FixedPoint.from(0);
+    }
+
+    // Result is rounded down
+    const accumulatedTokenSwapFees = balances[tokenIndex].sub(finalBalanceFeeToken);
+    return accumulatedTokenSwapFees.mulDown(protocolSwapFeePercentage).divDown(FixedPoint.ONE);
   }
 }
