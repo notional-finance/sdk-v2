@@ -39,7 +39,11 @@ export abstract class BaseBalancerStablePool extends BaseVault<DepositParams, Re
     'tuple(uint32 minSecondaryLendRate, uint256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
 
   protected convertBPTToStrategyTokens(bptAmount: FixedPoint, maturity: number) {
-    return TypedBigNumber.from(bptAmount.n, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
+    return TypedBigNumber.from(
+      bptAmount.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n,
+      BigNumberType.StrategyToken,
+      this.getVaultSymbol(maturity)
+    );
   }
 
   protected convertStrategyTokensToBPT(strategyTokens: TypedBigNumber) {
