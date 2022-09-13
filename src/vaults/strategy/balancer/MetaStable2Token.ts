@@ -34,7 +34,7 @@ export default class MetaStable2Token extends BaseBalancerStablePool {
     const dueProtocolFeeAmounts = this.getDueProtocolFeeAmounts(
       amplificationParameter,
       invariant,
-      balances.map((b, i) => b.add(amountsIn[i])),
+      balances,
       swapFeePercentage
     );
     const balancesWithoutFees = balances.map((b, i) => b.sub(dueProtocolFeeAmounts[i]));
