@@ -641,12 +641,13 @@ export default class AccountData {
     }
 
     const totalPenalty = cashBalancePenalty.add(nTokenPenalty);
-    const totalPenaltyRate =
-      cashBalancePenalty
-        .scale(cashPenaltyRate, 1)
-        .add(nTokenPenalty.scale(nTokenPenaltyRate, 1))
-        .scale(INTERNAL_TOKEN_PRECISION, totalPenalty)
-        .toNumber() / INTERNAL_TOKEN_PRECISION;
+    const totalPenaltyRate = totalPenalty.isZero()
+      ? 0
+      : cashBalancePenalty
+          .scale(cashPenaltyRate, 1)
+          .add(nTokenPenalty.scale(nTokenPenaltyRate, 1))
+          .scale(INTERNAL_TOKEN_PRECISION, totalPenalty)
+          .toNumber() / INTERNAL_TOKEN_PRECISION;
 
     let totalPenaltyETHValueAtLiquidationPrice: TypedBigNumber | undefined;
     if (liquidationPrice) {
