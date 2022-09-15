@@ -66,6 +66,10 @@ class TypedBigNumber {
     return decimals;
   }
 
+  get hashKey() {
+    return utils.id([this.type, this.n.toString(), this._isWETH, this.symbol].join(':'));
+  }
+
   private constructor(
     public n: BigNumber,
     public type: BigNumberType,

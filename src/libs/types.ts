@@ -240,5 +240,6 @@ export interface CollateralAction {
   type: CollateralActionType;
   marketKey?: string;
   amount?: TypedBigNumber;
+  fCashAmount?: TypedBigNumber;
   minLendSlippage?: number;
 }

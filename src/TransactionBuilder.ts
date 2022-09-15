@@ -19,7 +19,7 @@ export default class TransactionBuilder {
   }
 
   public depositCollateralAction(address: string, collateralAction: CollateralAction, overrides = {} as Overrides) {
-    const { amount } = collateralAction;
+    const { amount, fCashAmount } = collateralAction;
     if (!amount || !amount.isPositive()) {
       throw Error('Collateral action amount must be defined and positive');
     }
@@ -31,17 +31,33 @@ export default class TransactionBuilder {
       return this.mintNToken(address, amount.symbol, amount.toExternalPrecision(), false, overrides);
     }
     if (collateralAction.type === CollateralActionType.LEND_FCASH) {
+      if (!fCashAmount || !fCashAmount.isPositive()) {
+        throw Error('fCash amount must be defined and positive');
+      }
+
       const m = System.getSystem()
         .getMarkets(amount.currencyId)
         .find((m) => m.marketKey === collateralAction.marketKey);
       const marketIndex = m?.marketIndex;
       if (!marketIndex) throw Error('Unable to complete lend collateral action');
 
-      // TODO: change this if it is ETH
+      if (amount.symbol === 'ETH') {
+        return this.lend(
+          address,
+          'ETH',
+          amount,
+          fCashAmount,
+          marketIndex,
+          collateralAction.minLendSlippage || 0,
+          TypedBigNumber.fromBalance(0, 'cETH', true),
+          true, // withdraw entire cash balance
+          true // redeem to underlying
+        );
+      }
       return this.batchLend(
         address,
         amount.symbol,
-        amount.toInternalPrecision(),
+        fCashAmount.toInternalPrecision(),
         marketIndex,
         collateralAction.minLendSlippage || 0,
         overrides
@@ -311,8 +327,8 @@ export default class TransactionBuilder {
       txnOverrides = depositOverrides;
     } else if (collateralAction) {
       // This is a lending action
-      const { amount, minLendSlippage, marketKey } = collateralAction;
-      if (!amount || !amount.isPositive()) {
+      const { amount, minLendSlippage, marketKey, fCashAmount } = collateralAction;
+      if (!amount || !amount.isPositive() || !fCashAmount || !fCashAmount.isPositive()) {
         throw Error('Collateral action amount must be defined and positive');
       }
 
@@ -329,7 +345,7 @@ export default class TransactionBuilder {
         withdrawAmountInternalPrecision: BigNumber.from(0),
         withdrawEntireCashBalance: true,
         redeemToUnderlying: amount.isUnderlying(),
-        trades: [this.encodeTradeType(TradeActionType.Lend, lendMarketIndex, amount, minLendSlippage || 0, 0)],
+        trades: [this.encodeTradeType(TradeActionType.Lend, lendMarketIndex, fCashAmount, minLendSlippage || 0, 0)],
       };
       txnOverrides = lendOverrides;
     }
