@@ -33,6 +33,65 @@ describe('Account Data', () => {
     false
   );
 
+  describe('hashKey', () => {
+    let testAcct1: MockAccountData;
+
+    beforeEach(() => {
+      testAcct1 = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+        ],
+        [],
+        false
+      );
+    });
+    it('should return different hash keys for an account with different balances', () => {
+      const prevHash = testAcct1.hashKey;
+      testAcct1.accountBalances[0].cashBalance = TypedBigNumber.from(5001e8, BigNumberType.InternalAsset, 'cETH');
+      const newHash = testAcct1.hashKey;
+      expect(prevHash).not.toEqual(newHash);
+    });
+    it('should return different hash keys for an account with different portfolios', () => {
+      const prevHash = testAcct1.hashKey;
+      const asset1 = {
+        currencyId: 1,
+        maturity: getNowSeconds() + 1000,
+        assetType: AssetType.fCash,
+        notional: TypedBigNumber.from(100e8, BigNumberType.InternalUnderlying, 'ETH'),
+        settlementDate: getNowSeconds() + 1000,
+      };
+      const testAccount2 = new MockAccountData(
+        0,
+        false,
+        false,
+        undefined,
+        [
+          {
+            currencyId: 1,
+            cashBalance: TypedBigNumber.from(5000e8, BigNumberType.InternalAsset, 'cETH'),
+            nTokenBalance: TypedBigNumber.from(0, BigNumberType.nToken, 'nETH'),
+            lastClaimTime: BigNumber.from(0),
+            accountIncentiveDebt: BigNumber.from(0),
+          },
+        ],
+        [asset1],
+        false
+      );
+      const newHash = testAccount2.hashKey;
+      expect(prevHash).not.toEqual(newHash);
+    });
+  });
+
   it('creates a zero cash balance entry if required on construction', () => {
     const mockAccount = new MockAccountData(
       0,

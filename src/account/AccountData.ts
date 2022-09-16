@@ -153,8 +153,8 @@ export default class AccountData {
         this.hasCashDebt.toString(),
         this.hasAssetDebt.toString(),
         this.bitmapCurrencyId?.toString() || '',
-        this.accountBalances.toString(),
-        this.portfolio.toString(),
+        JSON.stringify(this.accountBalances),
+        JSON.stringify(this.portfolio),
         this.isCopy.toString(),
       ].join(':')
     );
