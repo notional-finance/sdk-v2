@@ -514,7 +514,13 @@ export default class TransactionBuilder {
       withdrawEntireCashBalance: false,
       redeemToUnderlying: false,
       trades: [
-        this.encodeTradeType(TradeActionType.Lend, currentMarketIndex, amountToRoll.abs(), minLendSlippage, 0),
+        this.encodeTradeType(
+          TradeActionType.Lend,
+          currentMarketIndex,
+          amountToRoll.abs(),
+          Math.max(minLendSlippage, 0),
+          0
+        ),
         this.encodeTradeType(TradeActionType.Borrow, rollToMarketIndex, borrowfCashAmount.abs(), 0, maxBorrowSlippage),
       ],
     };
@@ -546,12 +552,30 @@ export default class TransactionBuilder {
     repayCurrencySymbol: string,
     repayNotionalAmount: TypedBigNumber,
     minLendSlippage: number,
+    depositAmount?: TypedBigNumber,
     overrides = {} as Overrides
   ) {
     if (asset.notional.isPositive() || asset.maturity < getNowSeconds()) throw new Error('Cannot repay borrow asset');
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
     const currency = System.getSystem().getCurrencyBySymbol(repayCurrencySymbol);
     if (currency.id !== asset.currencyId) throw new Error('Incorrect deposit currency for repay');
+
+    if (repayCurrencySymbol === 'ETH') {
+      if (!depositAmount) throw Error('Deposit amount must be specified for ETH repayment');
+
+      return this.lend(
+        address,
+        'ETH',
+        depositAmount,
+        repayNotionalAmount,
+        currentMarketIndex,
+        minLendSlippage,
+        TypedBigNumber.fromBalance(0, 'cETH', true),
+        // On repayment we don't withdraw residuals just in case
+        false, // withdraw entire cash balance
+        false // redeem to underlying
+      );
+    }
 
     return this.batchLend(
       address,
@@ -666,7 +690,7 @@ export default class TransactionBuilder {
       redeemToUnderlying: false,
       trades: [
         this.encodeTradeType(TradeActionType.Borrow, currentMarketIndex, amountToRoll, 0, maxBorrowSlippage),
-        this.encodeTradeType(TradeActionType.Lend, rollToMarketIndex, lendfCashAmount, minLendSlippage, 0),
+        this.encodeTradeType(TradeActionType.Lend, rollToMarketIndex, lendfCashAmount, Math.max(minLendSlippage, 0), 0),
       ],
     };
 
@@ -697,6 +721,7 @@ export default class TransactionBuilder {
     asset: Asset,
     withdrawNotionalAmount: TypedBigNumber,
     maxBorrowSlippage: number,
+    withdrawAmountInternalPrecision: TypedBigNumber,
     withdrawEntireCashBalance: boolean,
     redeemToUnderlying: boolean,
     overrides = {} as Overrides
@@ -705,12 +730,13 @@ export default class TransactionBuilder {
     const currentMarketIndex = CashGroup.getMarketIndexForMaturity(asset.maturity);
     const currency = System.getSystem().getCurrencyById(asset.currencyId);
     withdrawNotionalAmount.check(BigNumberType.InternalUnderlying, currency.underlyingSymbol || currency.assetSymbol);
+    withdrawAmountInternalPrecision.check(BigNumberType.InternalAsset, currency.assetSymbol);
 
     const withdrawLendAction = {
       actionType: DepositActionType.None,
       currencyId: asset.currencyId,
       depositActionAmount: BigNumber.from(0),
-      withdrawAmountInternalPrecision: BigNumber.from(0),
+      withdrawAmountInternalPrecision: withdrawAmountInternalPrecision.n,
       withdrawEntireCashBalance,
       redeemToUnderlying,
       trades: [
