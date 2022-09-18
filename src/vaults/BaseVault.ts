@@ -162,6 +162,12 @@ export default abstract class BaseVault<D, R> {
   public getLiquidationVaultShareValue(vaultAccount: VaultAccount) {
     // Liquidation exchange rate is the exchange rate where the value of the vault shares
     // is below the minimum required collateral ratio of the borrowed currency
+    if (vaultAccount.vaultShares.isZero()) {
+      return {
+        liquidationVaultSharesValue: vaultAccount.primaryBorrowfCash.copy(0),
+        perShareValue: vaultAccount.primaryBorrowfCash.copy(0),
+      };
+    }
 
     // minCollateralRatio = (vaultShares - debtOutstanding) / debtOutstanding
     // minCollateralRatio * debtOutstanding + debtOutstanding = vaultShares
@@ -201,6 +207,8 @@ export default abstract class BaseVault<D, R> {
   public getLeverageRatio(vaultAccount: VaultAccount) {
     const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
+    if (netAssetValue.isZero()) return RATE_PRECISION;
+
     // Minimum leverage ratio is 1
     return debtOutstanding.scale(RATE_PRECISION, netAssetValue.n).toNumber() + RATE_PRECISION;
   }

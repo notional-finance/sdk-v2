@@ -97,6 +97,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     vaultAccount: VaultAccount,
     blockTime = getNowSeconds()
   ): Array<LiquidationThreshold> {
+    if (vaultAccount.maturity === 0) return [];
+
     const thresholds = new Array<LiquidationThreshold>();
     const { perShareValue } = this.getLiquidationVaultShareValue(vaultAccount);
     const lendCurrencySymbol = System.getSystem().getUnderlyingSymbol(this.lendCurrencyId);
