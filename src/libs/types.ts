@@ -243,3 +243,8 @@ export interface CollateralAction {
   fCashAmount?: TypedBigNumber;
   minLendSlippage?: number;
 }
+
+export interface VaultReturn {
+  [k: string]: number;
+  timestamp: number;
+}
