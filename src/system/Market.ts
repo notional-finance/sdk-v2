@@ -22,6 +22,18 @@ export default class Market {
     previousTradeTime: 0,
   };
 
+  public static parseCurrencyId(marketKey: string) {
+    return Number(marketKey.split(':')[0]);
+  }
+
+  public static parseMarketIndex(marketKey: string) {
+    return Number(marketKey.split(':')[1]);
+  }
+
+  public static parseMaturity(marketKey: string) {
+    return Number(marketKey.split(':')[2]);
+  }
+
   public get hashKey() {
     return utils.id(
       [
