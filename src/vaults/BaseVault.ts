@@ -1,9 +1,10 @@
 import { utils } from 'ethers';
 import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
-import { SecondaryBorrowArray } from '../data';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup } from '../system';
+import doBinarySearchApprox from './Approximation';
+import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
 
 export enum LiquidationThresholdType {
@@ -20,7 +21,7 @@ export interface LiquidationThreshold {
   collateralCurrencyId?: number;
 }
 
-export default abstract class BaseVault<D, R> {
+export default abstract class BaseVault<D, R> extends AbstractStrategy<D, R> {
   public static collateralToLeverageRatio(collateralRatio: number): number {
     return Math.floor((RATE_PRECISION / collateralRatio) * RATE_PRECISION) + RATE_PRECISION;
   }
@@ -28,10 +29,6 @@ export default abstract class BaseVault<D, R> {
   public static leverageToCollateralRatio(leverageRatio: number): number {
     return Math.floor((RATE_PRECISION / (leverageRatio - RATE_PRECISION)) * RATE_PRECISION);
   }
-
-  abstract readonly depositTuple: string;
-
-  abstract readonly redeemTuple: string;
 
   public encodeDepositParams(depositParams: D) {
     return utils.defaultAbiCoder.encode([this.depositTuple], [depositParams]);
@@ -41,111 +38,9 @@ export default abstract class BaseVault<D, R> {
     return utils.defaultAbiCoder.encode([this.redeemTuple], [redeemParams]);
   }
 
-  constructor(public vaultAddress: string) {}
-
-  public abstract initializeVault(): Promise<void>;
-
-  public abstract getLiquidationThresholds(vaultAccount: VaultAccount, blockTime: number): Array<LiquidationThreshold>;
-
-  public abstract getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber;
-
-  public abstract getStrategyTokensFromValue(
-    maturity: number,
-    valuation: TypedBigNumber,
-    blockTime?: number
-  ): TypedBigNumber;
-
-  public abstract getDepositParameters(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): D;
-
-  public abstract getDepositParametersExact(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): Promise<D>;
-
-  public abstract getRedeemParametersExact(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): Promise<R>;
-
-  public abstract getSlippageForDeposit(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    strategyTokens: TypedBigNumber,
-    params: D,
-    blockTime?: number
-  ): { likelySlippage: number; worstCaseSlippage: number };
-
-  public abstract getRedeemParameters(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ): R;
-
-  public abstract getSlippageForRedeem(
-    maturity: number,
-    redeemAmount: TypedBigNumber,
-    strategyTokens: TypedBigNumber,
-    params: R,
-    blockTime?: number
-  ): { likelySlippage: number; worstCaseSlippage: number };
-
-  public abstract getDepositGivenStrategyTokens(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    requiredDeposit: TypedBigNumber;
-    secondaryfCashBorrowed: SecondaryBorrowArray;
-    depositParams: D;
-  };
-
-  public abstract getStrategyTokensGivenDeposit(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    strategyTokens: TypedBigNumber;
-    secondaryfCashBorrowed: SecondaryBorrowArray;
-    depositParams: D;
-  };
-
-  public abstract getRedeemGivenStrategyTokens(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    amountRedeemed: TypedBigNumber;
-    secondaryfCashRepaid: SecondaryBorrowArray;
-    redeemParams: R;
-  };
-
-  public abstract getStrategyTokensGivenRedeem(
-    maturity: number,
-    redeemAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
-    vaultAccount?: VaultAccount
-  ): {
-    strategyTokens: TypedBigNumber;
-    secondaryfCashRepaid: SecondaryBorrowArray;
-    redeemParams: R;
-  };
+  constructor(public vaultAddress: string) {
+    super();
+  }
 
   public getVaultState(maturity: number) {
     return System.getSystem().getVaultState(this.vaultAddress, maturity);
@@ -157,6 +52,10 @@ export default abstract class BaseVault<D, R> {
 
   public getVaultSymbol(maturity: number) {
     return System.getSystem().getVaultSymbol(this.vaultAddress, maturity);
+  }
+
+  public getPrimaryBorrowSymbol() {
+    return System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
   }
 
   public getLiquidationVaultShareValue(vaultAccount: VaultAccount) {
@@ -363,14 +262,9 @@ export default abstract class BaseVault<D, R> {
     if (currentLeverageRatio === null || leverageRatio > currentLeverageRatio)
       throw new Error('Leverage Ratio above current');
     const { minAccountBorrowSize } = this.getVault();
-    let fCashLendMultiple = leverageRatio;
-    let fCashToLend: TypedBigNumber;
     const tempVaultAccount = VaultAccount.copy(vaultAccount);
-    let actualLeverageRatio = 0;
-    let delta = 0;
-    let iters = 0;
 
-    do {
+    const calculationFunction = (multiple: number) => {
       const assetValue = this.getCashValueOfShares(tempVaultAccount).toUnderlying();
       // Given the net asset value, in order to achieve the target leverage
       // ratio we must reduce debt outstanding to this figure:
@@ -379,11 +273,11 @@ export default abstract class BaseVault<D, R> {
       //  ((leverageRatio - 1) * assetValue) / leverageRatio = debtOutstanding
       const targetDebtOutstanding = assetValue.scale(leverageRatio - RATE_PRECISION, leverageRatio).neg();
 
-      fCashToLend = targetDebtOutstanding.abs().lt(minAccountBorrowSize)
+      const fCashToLend = targetDebtOutstanding.abs().lt(minAccountBorrowSize)
         ? vaultAccount.primaryBorrowfCash.neg()
         : // We scale this lend amount by a multiple because assetValue will decrease as a result of
           // selling tokens to lend
-          targetDebtOutstanding.sub(vaultAccount.primaryBorrowfCash).scale(fCashLendMultiple, RATE_PRECISION);
+          targetDebtOutstanding.sub(vaultAccount.primaryBorrowfCash).scale(multiple, RATE_PRECISION);
 
       const { newVaultAccount } = this.simulateExitPreMaturityGivenRepayment(
         vaultAccount,
@@ -391,19 +285,24 @@ export default abstract class BaseVault<D, R> {
         slippageBuffer,
         blockTime
       );
-      actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
-      // If this is the case then the account is going to exit in full
-      if (actualLeverageRatio === RATE_PRECISION) break;
-      delta = leverageRatio - actualLeverageRatio;
-      if (Math.abs(delta) < precision) break;
+      const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
 
-      // The delta adjustment was decided empirically, not sure if this is correct for all vaults
-      fCashLendMultiple = Math.floor(fCashLendMultiple - delta * 2);
-      iters += 1;
-    } while (iters < 10);
+      return {
+        actualMultiple: actualLeverageRatio,
+        breakLoop: actualLeverageRatio === RATE_PRECISION,
+        value: fCashToLend,
+      };
+    };
 
-    if (Math.abs(delta) > precision) throw Error('Failed to converge');
-
+    // prettier-ignore
+    const fCashToLend = doBinarySearchApprox(
+      leverageRatio,
+      leverageRatio,
+      calculationFunction,
+      precision,
+      // Need a custom adjustment here
+      (m, d) => Math.floor(m - d * 2)
+    );
     return this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime);
   }
 
@@ -571,26 +470,22 @@ export default abstract class BaseVault<D, R> {
     blockTime = getNowSeconds(),
     precision = BASIS_POINT * 50
   ) {
-    let depositMultiple = leverageRatio;
     const vaultAccount = _vaultAccount ?? VaultAccount.emptyVaultAccount(this.vaultAddress, maturity);
-    // This is an initial guess of the valuation
-    let valuation = this.getCashValueOfShares(vaultAccount)
-      .toUnderlying()
-      .add(vaultAccount.primaryBorrowfCash)
-      .add(depositAmount)
-      .scale(depositMultiple, RATE_PRECISION);
-    let actualLeverageRatio = 0;
-    let delta = 0;
-    let fCashToBorrow: TypedBigNumber;
-    let strategyTokens: TypedBigNumber;
-    let iters = 0;
-
-    do {
-      strategyTokens = this.getStrategyTokensFromValue(maturity, valuation, blockTime);
+    const calculationFunction = (depositMultiple: number) => {
+      const valuation = this.getCashValueOfShares(vaultAccount)
+        .toUnderlying()
+        .add(vaultAccount.primaryBorrowfCash)
+        .add(depositAmount)
+        .scale(depositMultiple, RATE_PRECISION);
+      const strategyTokens = this.getStrategyTokensFromValue(maturity, valuation, blockTime);
       const { requiredDeposit } = this.getDepositGivenStrategyTokens(maturity, strategyTokens, slippageBuffer);
       const borrowedCash = requiredDeposit.sub(depositAmount);
       const fees = this.assessVaultFees(maturity, borrowedCash, blockTime);
-      fCashToBorrow = this.getVaultMarket(maturity).getfCashAmountGivenCashAmount(borrowedCash.add(fees), blockTime);
+      const fCashToBorrow = this.getVaultMarket(maturity).getfCashAmountGivenCashAmount(
+        borrowedCash.add(fees),
+        blockTime
+      );
+
       const { newVaultAccount } = this.simulateEnter(
         vaultAccount,
         maturity,
@@ -600,23 +495,16 @@ export default abstract class BaseVault<D, R> {
         blockTime
       );
 
-      actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
-      delta = leverageRatio - actualLeverageRatio;
-      if (Math.abs(delta) < precision) break;
+      const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
 
-      // Only adjust by half of the delta, otherwise we will overshoot and fail to converge
-      depositMultiple = Math.floor(depositMultiple + delta / 2);
-      valuation = this.getCashValueOfShares(newVaultAccount)
-        .toUnderlying()
-        .add(newVaultAccount.primaryBorrowfCash)
-        .add(depositAmount)
-        .scale(depositMultiple, RATE_PRECISION);
-      iters += 1;
-    } while (iters < 10);
+      return {
+        actualMultiple: actualLeverageRatio,
+        breakLoop: false,
+        value: fCashToBorrow,
+      };
+    };
 
-    if (Math.abs(delta) > precision) throw Error('Failed to converge');
-
-    return fCashToBorrow;
+    return doBinarySearchApprox(leverageRatio, leverageRatio, calculationFunction, precision);
   }
 
   public async populateEnterTransaction(

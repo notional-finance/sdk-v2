@@ -2,7 +2,7 @@ import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import { fetch as crossFetch } from 'cross-fetch';
 import { System } from '../system';
 import BaseVault from './BaseVault';
-import CrossCurrencyfCash from './strategy/CrossCurrencyfCash';
+import CrossCurrencyfCash from './strategy/notional/CrossCurrencyfCash';
 import { VaultReturn } from '../libs/types';
 
 interface BaseVaultInstantiable<D, R> {
