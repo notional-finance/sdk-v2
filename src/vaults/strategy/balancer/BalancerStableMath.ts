@@ -219,7 +219,7 @@ export default class BalancerStableMath extends FixedPoint {
     tokenIndex: number,
     protocolSwapFeePercentage: FixedPoint
   ) {
-    /**************************************************************************************************************
+    /** ************************************************************************************************************
       // oneTokenSwapFee - polynomial equation to solve                                                            //
       // af = fee amount to calculate in one token                                                                 //
       // bf = balance of fee token                                                                                 //
@@ -229,7 +229,7 @@ export default class BalancerStableMath extends FixedPoint {
       // n = number of tokens                                    (A * n^n)               A * n^2n * P              //
       // S = sum of final balances but f                                                                           //
       // P = product of final balances but f                                                                       //
-      **************************************************************************************************************/
+      ************************************************************************************************************* */
 
     // Protocol swap fee amount, so we round down overall.
 

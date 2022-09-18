@@ -4,6 +4,8 @@ import { System } from '../system';
 import BaseVault from './BaseVault';
 import CrossCurrencyfCash from './strategy/notional/CrossCurrencyfCash';
 import { VaultReturn } from '../libs/types';
+import MetaStable2TokenAura from './strategy/balancer/MetaStable2TokenAura';
+import Boosted3TokenAuraVault from './strategy/balancer/Boosted3TokenAuraVault';
 
 interface BaseVaultInstantiable<D, R> {
   new (vaultAddress: string): BaseVault<D, R>;
@@ -11,10 +13,17 @@ interface BaseVaultInstantiable<D, R> {
 }
 
 export default class VaultFactory {
-  private static names = ['CrossCurrencyfCash', 'SimpleStrategyVault'];
+  private static names = [
+    'CrossCurrencyfCash',
+    'SimpleStrategyVault',
+    'MetaStable2TokenAura',
+    'Boosted3TokenAuraVault',
+  ];
 
   private static nameToClass: Record<string, any> = {
     CrossCurrencyfCash,
+    MetaStable2TokenAura,
+    Boosted3TokenAuraVault,
   };
 
   private static idsToNames = this.names.reduce((m, n: string) => {

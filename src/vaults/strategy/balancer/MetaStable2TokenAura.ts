@@ -6,7 +6,7 @@ import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
-export default class MetaStable2Token extends BaseBalancerStablePool {
+export default class MetaStable2TokenAura extends BaseBalancerStablePool {
   public poolContext?: PoolContext;
 
   public oraclePrice?: FixedPoint;
@@ -87,7 +87,7 @@ export default class MetaStable2Token extends BaseBalancerStablePool {
     // The protocol fee is charged using the token with the highest balance in the pool.
     let chosenTokenIndex = 0;
     let maxBalance = balances[0];
-    for (let i = 1; i < numTokens; ++i) {
+    for (let i = 1; i < numTokens; i += 1) {
       const currentBalance = balances[i];
       if (currentBalance.gt(maxBalance)) {
         chosenTokenIndex = i;

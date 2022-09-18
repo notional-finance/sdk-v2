@@ -8,7 +8,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 import { getAccount, setChainState } from './utils';
 import { BalancerStablePool, BalancerVault, ERC20 } from '../../src/typechain';
-import MetaStable2Token from '../../src/vaults/strategy/balancer/MetaStable2Token';
+import MetaStable2TokenAura from '../../src/vaults/strategy/balancer/MetaStable2TokenAura';
 import MockSystem from '../mocks/MockSystem';
 import { System } from '../../src/system';
 import { VaultConfig } from '../../src/data';
@@ -20,8 +20,9 @@ import BalancerStableMath from '../../src/vaults/strategy/balancer/BalancerStabl
 const ERC20ABI = require('../../src/abi/ERC20.json');
 const poolABI = require('../../src/abi/BalancerStablePool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
+
 const forkedBlockNumber = 15521384;
-const wstETH_ETH_PoolID = '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080';
+const poolID = '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080';
 
 describe('balancer vault test', () => {
   let balancerVault: BalancerVault;
@@ -62,7 +63,7 @@ describe('balancer vault test', () => {
     allowsReentrancy: true,
     vaultStates: [],
   };
-  const metaStable = new MetaStable2Token(vault.vaultAddress);
+  const metaStable = new MetaStable2TokenAura(vault.vaultAddress);
 
   system.setVault(vault);
 
@@ -74,11 +75,11 @@ describe('balancer vault test', () => {
       BalancerVaultABI,
       signer
     ) as BalancerVault;
-    const [address] = await balancerVault.getPool(wstETH_ETH_PoolID);
+    const [address] = await balancerVault.getPool(poolID);
 
     balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerStablePool;
     wethWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
-    ({ tokens: assets, balances } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID));
+    ({ tokens: assets, balances } = await balancerVault.getPoolTokens(poolID));
     weth = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
     wstETH = (await ethers.getContractAt(ERC20ABI, assets[0])) as ERC20;
 
@@ -132,7 +133,7 @@ describe('balancer vault test', () => {
       ['uint256', 'uint256[]', 'uint256'],
       [1, [ethers.utils.parseEther('0'), ethers.utils.parseEther('10')], 0]
     );
-    await balancerVault.connect(wethWhale).joinPool(wstETH_ETH_PoolID, wethWhale.address, wethWhale.address, {
+    await balancerVault.connect(wethWhale).joinPool(poolID, wethWhale.address, wethWhale.address, {
       assets,
       maxAmountsIn: [ethers.utils.parseEther('0'), ethers.utils.parseEther('10')],
       userData,
@@ -140,7 +141,7 @@ describe('balancer vault test', () => {
     });
 
     const invariantAfter = FixedPoint.from((await balancerPool.getLastInvariant())[0]);
-    const { balances: balancesAfter } = await balancerVault.getPoolTokens(wstETH_ETH_PoolID);
+    const { balances: balancesAfter } = await balancerVault.getPoolTokens(poolID);
     console.log(`
     invariant after: ${invariantAfter.n.toString()}
     balances after: ${balancesAfter.map((b) => b.toString())}}

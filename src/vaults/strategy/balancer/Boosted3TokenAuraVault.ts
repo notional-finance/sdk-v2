@@ -6,7 +6,7 @@ import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
-export default class BalancerBoosted3Token extends BaseBalancerStablePool {
+export default class Boosted3TokenAuraVault extends BaseBalancerStablePool {
   public underlyingPoolContext?: PoolContext;
 
   public basePoolContext?: PoolContext;

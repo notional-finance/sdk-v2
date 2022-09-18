@@ -64,9 +64,8 @@ export default class FixedPoint {
     if (roundUp) {
       if (this.isZero()) return this;
       return FixedPoint._1.add(this.sub(FixedPoint._1).div(b));
-    } else {
-      return this.div(b);
     }
+    return this.div(b);
   }
 
   public complement() {
