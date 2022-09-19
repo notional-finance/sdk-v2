@@ -28,7 +28,7 @@ export async function fetchAndEncodeSystem(
   const { blockNumber, results } = await getBlockchainData(provider, contracts, config);
   const network = await provider.getNetwork();
   const networkName = network.name === 'homestead' ? 'mainnet' : network.name;
-  const block = await provider.getBlock(blockNumber.toNumber());
+  const block = await provider.getBlock(blockNumber);
   // Only refresh exchange rates if a value is not provided
   const usdExchangeRates = _usdExchangeRates ?? (await getUSDPriceData(exchangeRateApiKey, skipFetchSetup));
   // Currently hardcoded to mainnet
