@@ -155,6 +155,7 @@ export default class AccountData {
         this.bitmapCurrencyId?.toString() || '',
         JSON.stringify(this.accountBalances),
         JSON.stringify(this.portfolio),
+        JSON.stringify(this.vaultAccounts),
         this.isCopy.toString(),
       ].join(':')
     );

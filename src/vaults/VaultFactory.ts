@@ -6,6 +6,7 @@ import CrossCurrencyfCash from './strategy/notional/CrossCurrencyfCash';
 import { VaultReturn } from '../libs/types';
 import MetaStable2TokenAura from './strategy/balancer/MetaStable2TokenAura';
 import Boosted3TokenAuraVault from './strategy/balancer/Boosted3TokenAuraVault';
+import { RATE_PRECISION } from '../config/constants';
 
 interface BaseVaultInstantiable<D, R> {
   new (vaultAddress: string): BaseVault<D, R>;
@@ -60,5 +61,35 @@ export default class VaultFactory {
       : `https://system-cache-dev.notional-finance.workers.dev/v2/mainnet/vault-returns/${vaultAddress}`;
 
     return _fetch(returnsURL).then((r) => r.json());
+  }
+
+  public static calculateAverageReturns(vaultReturns: VaultReturn[], sinceTime: number) {
+    if (vaultReturns.length === 0) throw Error('No vault returns');
+    const accumulators = Array.from(Object.keys(vaultReturns[0]))
+      .filter((h) => h !== 'timestamp')
+      .reduce((acc, h) => {
+        acc.set(h, [0, 0]);
+        return acc;
+      }, new Map<string, [number, number]>());
+
+    vaultReturns
+      .filter((row) => row.timestamp >= sinceTime)
+      .forEach((row) => {
+        Array.from(Object.keys(row))
+          .filter((k) => k !== 'timestamp')
+          .forEach((h) => {
+            const [sum, count] = accumulators.get(h)!;
+            accumulators.set(h, [sum + row[h], count + 1]);
+          });
+      });
+
+    const returnDrivers = Array.from(accumulators.entries()).map(([source, [sum, count]]) => ({
+      source,
+      avg: Math.floor((sum * RATE_PRECISION) / (count * 100)),
+    }));
+
+    const totalReturns = returnDrivers.reduce((s, r) => s + r.avg, 0);
+
+    return { returnDrivers, totalReturns };
   }
 }
