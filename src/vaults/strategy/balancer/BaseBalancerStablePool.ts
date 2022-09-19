@@ -25,7 +25,6 @@ export interface PoolContext {
   tokenOutIndex: number;
   totalSupply: FixedPoint;
   swapFeePercentage: FixedPoint;
-  invariant: FixedPoint;
 }
 
 export abstract class BaseBalancerStablePool<I> extends BaseVault<DepositParams, RedeemParams, I> {

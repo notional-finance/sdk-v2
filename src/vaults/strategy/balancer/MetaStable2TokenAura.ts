@@ -9,7 +9,8 @@ import FixedPoint from './FixedPoint';
 
 interface InitParams {
   poolContext: PoolContext;
-  oraclePrice: FixedPoint;
+  bptPrice: FixedPoint;
+  pairPrice: FixedPoint;
 }
 
 export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitParams> {
@@ -18,7 +19,10 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   }
 
   public get oraclePrice() {
-    return this.initParams.oraclePrice;
+    if (this.initParams.poolContext.primaryTokenIndex === 0) {
+      return this.initParams.bptPrice;
+    }
+    return this.initParams.bptPrice.mul(FixedPoint.ONE).div(this.initParams.pairPrice);
   }
 
   public initVaultParams() {
@@ -35,8 +39,8 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   }
 
   protected getBPTOut(tokenAmountIn: FixedPoint) {
-    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, invariant, swapFeePercentage } =
-      this.poolContext;
+    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, swapFeePercentage } = this.poolContext;
+    const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
     const amountsIn = new Array<FixedPoint>(balances.length).fill(FixedPoint.from(0));
     amountsIn[primaryTokenIndex] = tokenAmountIn;
 
@@ -120,8 +124,8 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   }
 
   protected getUnderlyingOut(BPTIn: FixedPoint) {
-    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, invariant, swapFeePercentage } =
-      this.poolContext;
+    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, swapFeePercentage } = this.poolContext;
+    const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
 
     const tokensOut = BalancerStableMath.calcTokenOutGivenExactBptIn(
       amplificationParameter,

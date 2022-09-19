@@ -38,7 +38,8 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
   protected getBPTValue(amountIn: FixedPoint = FixedPoint.ONE) {
     // Valuation is done on the base pool since this is the token the vault holds
     if (!this.basePoolContext) throw Error('Not Initialized');
-    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, invariant } = this.basePoolContext;
+    const { amplificationParameter, balances, primaryTokenIndex, totalSupply } = this.basePoolContext;
+    const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
 
     return BalancerStableMath.calcTokenOutGivenExactBptIn(
       amplificationParameter,
@@ -56,8 +57,8 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
     let linearPoolBPT: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex, invariant } =
-        this.underlyingPoolContext;
+      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.underlyingPoolContext;
+      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
       linearPoolBPT = BalancerStableMath.calcOutGivenIn(
         amplificationParameter,
         balances,
@@ -70,7 +71,8 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
     let boostedBPT: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex, invariant } = this.basePoolContext;
+      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.basePoolContext;
+      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
       boostedBPT = BalancerStableMath.calcOutGivenIn(
         amplificationParameter,
         balances,
@@ -89,7 +91,8 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
     let linearPoolBPT: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex, invariant } = this.basePoolContext;
+      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.basePoolContext;
+      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
       linearPoolBPT = BalancerStableMath.calcOutGivenIn(
         amplificationParameter,
         balances,
@@ -102,8 +105,8 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
     let underlyingTokensOut: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex, invariant } =
-        this.underlyingPoolContext;
+      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.underlyingPoolContext;
+      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
       underlyingTokensOut = BalancerStableMath.calcOutGivenIn(
         amplificationParameter,
         balances,

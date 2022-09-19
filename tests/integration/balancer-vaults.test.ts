@@ -15,7 +15,6 @@ import { VaultConfig } from '../../src/data';
 import FixedPoint from '../../src/vaults/strategy/balancer/FixedPoint';
 import { BASIS_POINT } from '../../src/config/constants';
 import TypedBigNumber from '../../src/libs/TypedBigNumber';
-import BalancerStableMath from '../../src/vaults/strategy/balancer/BalancerStableMath';
 
 const ERC20ABI = require('../../src/abi/ERC20.json');
 const poolABI = require('../../src/abi/BalancerStablePool.json');
@@ -93,7 +92,6 @@ describe('balancer vault test', () => {
     const totalSupply = FixedPoint.from(await balancerPool.totalSupply());
     const { value } = await balancerPool.getAmplificationParameter();
     const amplificationParameter = FixedPoint.from(value);
-    const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, scaledBalances, true);
     const [pairPrice, bptPrice] = (
       await balancerPool.getTimeWeightedAverage([
         {
@@ -116,10 +114,7 @@ describe('balancer vault test', () => {
       tokenOutIndex: 0,
       totalSupply,
       swapFeePercentage,
-      invariant,
     };
-
-    metaStable.oraclePrice = bptPrice.mul(FixedPoint.ONE).div(pairPrice);
   });
 
   it('calculates the appropriate bpt when joining', async () => {
