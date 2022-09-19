@@ -1,4 +1,5 @@
 import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
+import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
 import { LiquidationThreshold } from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
@@ -6,18 +7,28 @@ import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
-export default class Boosted3TokenAuraVault extends BaseBalancerStablePool {
-  public underlyingPoolContext?: PoolContext;
+interface InitParams {
+  underlyingPoolContext: PoolContext;
+  basePoolContext: PoolContext;
+}
 
-  public basePoolContext?: PoolContext;
+export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitParams> {
+  public get underlyingPoolContext() {
+    return this.initParams.underlyingPoolContext;
+  }
+
+  public get basePoolContext() {
+    return this.initParams.basePoolContext;
+  }
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
 
   readonly redeemTuple: string =
     'tuple(uint32 minSecondaryLendRate, uint256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
 
-  public async initializeVault() {
+  public initVaultParams() {
     // Get relevant context and set pool context
+    return [] as AggregateCall[];
   }
 
   public getLiquidationThresholds(_: VaultAccount, __: number): Array<LiquidationThreshold> {

@@ -1,14 +1,22 @@
 import { SecondaryBorrowArray } from '../../data';
+import { AggregateCall } from '../../data/Multicall';
 import TypedBigNumber from '../../libs/TypedBigNumber';
 import { LiquidationThreshold } from '../BaseVault';
 import VaultAccount from '../VaultAccount';
 
-export default abstract class AbstractStrategy<D, R> {
+export default abstract class AbstractStrategy<D, R, I> {
   abstract readonly depositTuple: string;
 
   abstract readonly redeemTuple: string;
 
-  public abstract initializeVault(): Promise<void>;
+  protected _initParams: I | undefined;
+
+  public get initParams() {
+    if (!this._initParams) throw Error('Vault not initialized');
+    return this._initParams;
+  }
+
+  public abstract initVaultParams(): AggregateCall[];
 
   public abstract getLiquidationThresholds(vaultAccount: VaultAccount, blockTime: number): Array<LiquidationThreshold>;
 

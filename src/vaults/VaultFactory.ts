@@ -1,5 +1,6 @@
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import { fetch as crossFetch } from 'cross-fetch';
+import { providers } from 'ethers';
 import { System } from '../system';
 import BaseVault from './BaseVault';
 import CrossCurrencyfCash from './strategy/notional/CrossCurrencyfCash';
@@ -8,8 +9,8 @@ import MetaStable2TokenAura from './strategy/balancer/MetaStable2TokenAura';
 import Boosted3TokenAuraVault from './strategy/balancer/Boosted3TokenAuraVault';
 import { RATE_PRECISION } from '../config/constants';
 
-interface BaseVaultInstantiable<D, R> {
-  new (vaultAddress: string): BaseVault<D, R>;
+interface BaseVaultInstantiable<D, R, I> {
+  new (vaultAddress: string, initParams?: I): BaseVault<D, R, I>;
   initializeVault(): Promise<void>;
 }
 
@@ -37,17 +38,30 @@ export default class VaultFactory {
     return this.idsToNames.get(strategyId);
   }
 
-  public static resolveBaseVaultClass<D, R>(strategyId: string): BaseVaultInstantiable<D, R> {
+  public static resolveBaseVaultClass<D, R, I>(strategyId: string): BaseVaultInstantiable<D, R, I> {
     const name = this.resolveStrategyName(strategyId);
     if (!name) throw Error('Unknown strategy');
     return this.nameToClass[name];
   }
 
-  public static async buildVault<D, R>(strategyId: string, vaultAddress: string) {
-    const BaseVaultClass = this.resolveBaseVaultClass<D, R>(strategyId);
+  public static async buildVaultFromCache<D, R, I>(strategyId: string, vaultAddress: string, initParams: I) {
+    const BaseVaultClass = this.resolveBaseVaultClass<D, R, I>(strategyId);
+    return new BaseVaultClass(vaultAddress, initParams);
+  }
+
+  public static async buildVault<D, R, I>(
+    strategyId: string,
+    vaultAddress: string,
+    provider: providers.JsonRpcProvider
+  ) {
+    const BaseVaultClass = this.resolveBaseVaultClass<D, R, I>(strategyId);
     const vaultInstance = new BaseVaultClass(vaultAddress);
-    await vaultInstance.initializeVault();
-    return vaultInstance;
+    const { blockNumber, initParams } = await vaultInstance.initializeVault(provider);
+    return {
+      blockNumber,
+      vaultInstance,
+      initParams,
+    };
   }
 
   public static async fetchVaultReturns(vaultAddress: string, maturity?: number): Promise<VaultReturn[]> {

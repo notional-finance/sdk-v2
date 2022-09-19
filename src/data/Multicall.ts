@@ -24,7 +24,11 @@ export interface AggregateCall {
   transform?: (result: any) => any;
 }
 
-export async function aggregate(calls: AggregateCall[], provider: providers.Provider, multicall?: Multicall2) {
+export async function aggregate<T = Record<string, any>>(
+  calls: AggregateCall[],
+  provider: providers.Provider,
+  multicall?: Multicall2
+) {
   if (!multicall) {
     const network = await provider.getNetwork();
     const networkName = network.name === 'homestead' ? 'mainnet' : network.name;
@@ -48,7 +52,7 @@ export async function aggregate(calls: AggregateCall[], provider: providers.Prov
     // eslint-disable-next-line no-param-reassign
     obj[key] = transform ? transform(decoded) : decoded;
     return obj;
-  }, {});
+  }, {} as T);
 
   return { blockNumber, results };
 }

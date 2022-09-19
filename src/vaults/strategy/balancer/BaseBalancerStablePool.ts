@@ -28,11 +28,7 @@ export interface PoolContext {
   invariant: FixedPoint;
 }
 
-export abstract class BaseBalancerStablePool extends BaseVault<DepositParams, RedeemParams> {
-  public underlyingPoolContext?: PoolContext;
-
-  public basePoolContext?: PoolContext;
-
+export abstract class BaseBalancerStablePool<I> extends BaseVault<DepositParams, RedeemParams, I> {
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
 
   readonly redeemTuple: string =

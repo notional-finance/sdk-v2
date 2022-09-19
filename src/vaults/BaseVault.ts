@@ -1,5 +1,6 @@
-import { utils } from 'ethers';
+import { providers, utils } from 'ethers';
 import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
+import { aggregate } from '../data/Multicall';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup } from '../system';
@@ -21,7 +22,7 @@ export interface LiquidationThreshold {
   collateralCurrencyId?: number;
 }
 
-export default abstract class BaseVault<D, R> extends AbstractStrategy<D, R> {
+export default abstract class BaseVault<D, R, I> extends AbstractStrategy<D, R, I> {
   public static collateralToLeverageRatio(collateralRatio: number): number {
     return Math.floor((RATE_PRECISION / collateralRatio) * RATE_PRECISION) + RATE_PRECISION;
   }
@@ -38,8 +39,16 @@ export default abstract class BaseVault<D, R> extends AbstractStrategy<D, R> {
     return utils.defaultAbiCoder.encode([this.redeemTuple], [redeemParams]);
   }
 
-  constructor(public vaultAddress: string) {
+  constructor(public vaultAddress: string, initParams?: I) {
     super();
+    this._initParams = initParams;
+  }
+
+  public async initializeVault(provider: providers.Provider) {
+    const initParamCalls = this.initVaultParams();
+    const { blockNumber, results: initParams } = await aggregate<I>(initParamCalls, provider);
+    this._initParams = initParams;
+    return { blockNumber, initParams };
   }
 
   public getVaultState(maturity: number) {

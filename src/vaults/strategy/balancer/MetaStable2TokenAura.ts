@@ -1,4 +1,5 @@
 import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
+import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
 import { LiquidationThreshold } from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
@@ -6,13 +7,23 @@ import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
-export default class MetaStable2TokenAura extends BaseBalancerStablePool {
-  public poolContext?: PoolContext;
+interface InitParams {
+  poolContext: PoolContext;
+  oraclePrice: FixedPoint;
+}
 
-  public oraclePrice?: FixedPoint;
+export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitParams> {
+  public get poolContext() {
+    return this.initParams.poolContext;
+  }
 
-  public async initializeVault() {
+  public get oraclePrice() {
+    return this.initParams.oraclePrice;
+  }
+
+  public initVaultParams() {
     // Get relevant context and set pool context
+    return [] as AggregateCall[];
   }
 
   public getLiquidationThresholds(_: VaultAccount, __: number): Array<LiquidationThreshold> {
@@ -20,12 +31,10 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool {
   }
 
   protected getBPTValue(amountIn: FixedPoint = FixedPoint.ONE): FixedPoint {
-    if (!this.oraclePrice) throw Error('Not Initialized');
     return this.oraclePrice.mul(amountIn).div(FixedPoint.ONE);
   }
 
   protected getBPTOut(tokenAmountIn: FixedPoint) {
-    if (!this.poolContext) throw Error('Not Initialized');
     const { amplificationParameter, balances, primaryTokenIndex, totalSupply, invariant, swapFeePercentage } =
       this.poolContext;
     const amountsIn = new Array<FixedPoint>(balances.length).fill(FixedPoint.from(0));
@@ -70,7 +79,6 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool {
     balances: FixedPoint[],
     protocolSwapFeePercentage: FixedPoint
   ) {
-    if (!this.poolContext) throw Error('Not Initialized');
     // Initialize with zeros
     const numTokens = this.poolContext.balances.length;
     const dueProtocolFeeAmounts = new Array<FixedPoint>(numTokens).fill(FixedPoint.from(0));
@@ -112,7 +120,6 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool {
   }
 
   protected getUnderlyingOut(BPTIn: FixedPoint) {
-    if (!this.poolContext) throw Error('Not Initialized');
     const { amplificationParameter, balances, primaryTokenIndex, totalSupply, invariant, swapFeePercentage } =
       this.poolContext;
 
