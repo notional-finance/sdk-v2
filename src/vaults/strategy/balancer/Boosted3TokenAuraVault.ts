@@ -9,13 +9,11 @@ import FixedPoint from './FixedPoint';
 
 interface InitParams {
   underlyingPoolContext: PoolContext;
-  underlyingPoolBalances: FixedPoint[];
   underlyingPoolScalingFactors: FixedPoint[];
   underlyingPoolAmp: FixedPoint;
   underlyingPoolFee: FixedPoint;
   underlyingTotalSupply: FixedPoint;
   basePoolContext: PoolContext;
-  basePoolBalances: FixedPoint[];
   basePoolScalingFactors: FixedPoint[];
   basePoolAmp: FixedPoint;
   basePoolFee: FixedPoint;
@@ -24,13 +22,13 @@ interface InitParams {
 
 export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitParams> {
   public get basePoolBalances() {
-    return this.initParams.basePoolBalances.map((b, i) =>
+    return this.initParams.basePoolContext.balances.map((b, i) =>
       FixedPoint.from(b).mul(FixedPoint.from(this.initParams.basePoolScalingFactors[i])).div(FixedPoint.ONE)
     );
   }
 
   public get underlyingPoolBalances() {
-    return this.initParams.underlyingPoolBalances.map((b, i) =>
+    return this.initParams.underlyingPoolContext.balances.map((b, i) =>
       FixedPoint.from(b).mul(FixedPoint.from(this.initParams.underlyingPoolScalingFactors[i])).div(FixedPoint.ONE)
     );
   }

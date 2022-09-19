@@ -15,7 +15,6 @@ const BalancerStablePoolABI = require('../../../abi/BalancerStablePool.json');
 
 interface InitParams {
   poolContext: PoolContext;
-  balances: FixedPoint[];
   scalingFactors: FixedPoint[];
   amplificationParameter: FixedPoint;
   totalSupply: FixedPoint;
@@ -36,7 +35,7 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   }
 
   public get balances() {
-    return this.initParams.balances.map((b, i) =>
+    return this.initParams.poolContext.balances.map((b, i) =>
       FixedPoint.from(b).mul(FixedPoint.from(this.initParams.scalingFactors[i])).div(FixedPoint.ONE)
     );
   }
@@ -51,12 +50,23 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
         method: 'getStrategyContext',
         args: [],
         key: 'poolContext',
-        transform: (r: Awaited<ReturnType<typeof vaultContract.getStrategyContext>>) => ({
-          poolAddress: r.poolContext.basePool.pool,
-          poolId: r.poolContext.basePool.poolId,
-          primaryTokenIndex: r.poolContext.primaryIndex,
-          tokenOutIndex: r.poolContext.secondaryIndex,
-        }),
+        transform: (r: Awaited<ReturnType<typeof vaultContract.getStrategyContext>>) => {
+          const balances = [
+            FixedPoint.from(
+              r.poolContext.primaryIndex === 0 ? r.poolContext.primaryBalance : r.poolContext.secondaryBalance
+            ),
+            FixedPoint.from(
+              r.poolContext.primaryIndex === 1 ? r.poolContext.primaryBalance : r.poolContext.secondaryBalance
+            ),
+          ];
+          return {
+            poolAddress: r.poolContext.basePool.pool,
+            poolId: r.poolContext.basePool.poolId,
+            primaryTokenIndex: r.poolContext.primaryIndex,
+            tokenOutIndex: r.poolContext.secondaryIndex,
+            balances,
+          };
+        },
       },
       {
         stage: 1,
@@ -71,7 +81,7 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
         method: 'getSwapFeePercentage',
         key: 'swapFeePercentage',
-        transform: ([r]: Awaited<ReturnType<BalancerStablePool['functions']['getSwapFeePercentage']>>) =>
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getSwapFeePercentage']>>) =>
           FixedPoint.from(r),
       },
       {
@@ -79,12 +89,12 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
         method: 'totalSupply',
         key: 'totalSupply',
-        transform: ([r]: Awaited<ReturnType<BalancerStablePool['functions']['totalSupply']>>) => FixedPoint.from(r),
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['totalSupply']>>) => FixedPoint.from(r),
       },
       {
         stage: 1,
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-        method: 'scalingFactors',
+        method: 'getScalingFactors',
         key: 'scalingFactors',
         transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getScalingFactors']>>) =>
           r.map(FixedPoint.from),
@@ -95,29 +105,23 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
         method: 'getTimeWeightedAverage',
         key: 'oracleContext',
         args: [
-          {
-            variable: 0, // Pair Price
-            secs: 3600,
-            ago: 0,
-          },
-          {
-            variable: 1, // BPT Price
-            secs: 3600,
-            ago: 0,
-          },
+          [
+            {
+              variable: 0, // Pair Price
+              secs: 3600,
+              ago: 0,
+            },
+            {
+              variable: 1, // BPT Price
+              secs: 3600,
+              ago: 0,
+            },
+          ],
         ],
         transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
           pairPrice: FixedPoint.from(r[0]),
           bptPrice: FixedPoint.from(r[1]),
         }),
-      },
-      {
-        stage: 1,
-        target: this.BalancerVault,
-        method: 'getPoolTokens',
-        args: (r) => [r.poolContext.poolId],
-        key: 'balances',
-        transform: (r: Awaited<ReturnType<typeof this.BalancerVault.getPoolTokens>>) => r.balances.map(FixedPoint.from),
       },
     ] as AggregateCall[];
   }
