@@ -149,17 +149,6 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
     );
     const balancesWithoutFees = balances.map((b, i) => b.sub(dueProtocolFeeAmounts[i]));
 
-    console.log(`
-    amp: ${amplificationParameter.n.toString()}
-    balances: ${balances.map((b) => b.n.toString())}
-    balancesWithoutFees: ${balancesWithoutFees.map((b) => b.n.toString())}
-    primaryTokenIndex: ${primaryTokenIndex}
-    totalSupply: ${totalSupply.n.toString()}
-    invariant: ${invariant.n.toString()}
-    swapFeePercentage: ${swapFeePercentage.n.toString()}
-    amountsIn: ${amountsIn.map((b) => b.n.toString())}
-    `);
-
     return BalancerStableMath.calcBptOutGivenExactTokensIn(
       amplificationParameter,
       balancesWithoutFees,
@@ -212,10 +201,6 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
       chosenTokenIndex,
       protocolSwapFeePercentage
     );
-
-    console.log(`
-    dueProtocolFeeAmounts[chosenTokenIndex]: ${dueProtocolFeeAmounts[chosenTokenIndex].n.toString()}
-    `);
 
     return dueProtocolFeeAmounts;
   }

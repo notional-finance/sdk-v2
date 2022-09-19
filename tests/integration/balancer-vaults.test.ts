@@ -1,3 +1,4 @@
+import { expect } from 'chai';
 import {
   BigNumber,
   Contract,
@@ -30,7 +31,6 @@ describe('balancer vault test', () => {
   let assets: string[];
   let balances: BigNumber[];
   let weth: ERC20;
-  let wstETH: ERC20;
 
   const system = new MockSystem();
   System.overrideSystem(system);
@@ -80,7 +80,6 @@ describe('balancer vault test', () => {
     wethWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
     ({ tokens: assets, balances } = await balancerVault.getPoolTokens(poolID));
     weth = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
-    wstETH = (await ethers.getContractAt(ERC20ABI, assets[0])) as ERC20;
 
     await weth.connect(wethWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
 
@@ -142,15 +141,8 @@ describe('balancer vault test', () => {
       fromInternalBalance: false,
     });
 
-    const invariantAfter = FixedPoint.from((await balancerPool.getLastInvariant())[0]);
-    const { balances: balancesAfter } = await balancerVault.getPoolTokens(poolID);
-    console.log(`
-    invariant after: ${invariantAfter.n.toString()}
-    balances after: ${balancesAfter.map((b) => b.toString())}}
-    `);
-    console.log(ethers.utils.formatUnits(await balancerPool.balanceOf(wethWhale.address), 18));
-    console.log(strategyTokens.toExactString());
-    console.log(await wstETH.balanceOf(wethWhale.address));
+    const bptMinted = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(wethWhale.address), 18));
+    expect(strategyTokens.toFloat()).to.be.closeTo(bptMinted, 0.005);
   });
 
   // −0.002822928523841216
