@@ -1,33 +1,125 @@
+import { Contract } from 'ethers';
 import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
 import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
+import { BalancerStablePool } from '../../../typechain/BalancerStablePool';
+import { MetaStable2Token } from '../../../typechain/MetaStable2Token';
 import { LiquidationThreshold } from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
+const MetaStable2TokenAuraABI = require('../../../abi/MetaStable2Token.json');
+const BalancerStablePoolABI = require('../../../abi/BalancerStablePool.json');
+
 interface InitParams {
   poolContext: PoolContext;
-  bptPrice: FixedPoint;
-  pairPrice: FixedPoint;
+  balances: FixedPoint[];
+  scalingFactors: FixedPoint[];
+  amplificationParameter: FixedPoint;
+  totalSupply: FixedPoint;
+  swapFeePercentage: FixedPoint;
+  oracleContext: {
+    bptPrice: FixedPoint;
+    pairPrice: FixedPoint;
+  };
 }
 
 export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitParams> {
-  public get poolContext() {
-    return this.initParams.poolContext;
-  }
-
   public get oraclePrice() {
     if (this.initParams.poolContext.primaryTokenIndex === 0) {
-      return this.initParams.bptPrice;
+      return this.initParams.oracleContext.bptPrice;
     }
-    return this.initParams.bptPrice.mul(FixedPoint.ONE).div(this.initParams.pairPrice);
+    const { bptPrice, pairPrice } = this.initParams.oracleContext;
+    return bptPrice.mul(FixedPoint.ONE).div(pairPrice);
+  }
+
+  public get balances() {
+    return this.initParams.balances.map((b, i) =>
+      FixedPoint.from(b).mul(FixedPoint.from(this.initParams.scalingFactors[i])).div(FixedPoint.ONE)
+    );
   }
 
   public initVaultParams() {
     // Get relevant context and set pool context
-    return [] as AggregateCall[];
+    const vaultContract = new Contract(this.vaultAddress, MetaStable2TokenAuraABI) as MetaStable2Token;
+    return [
+      {
+        stage: 0,
+        target: vaultContract,
+        method: 'getStrategyContext',
+        args: [],
+        key: 'poolContext',
+        transform: (r: Awaited<ReturnType<typeof vaultContract.getStrategyContext>>) => ({
+          poolAddress: r.poolContext.basePool.pool,
+          poolId: r.poolContext.basePool.poolId,
+          primaryTokenIndex: r.poolContext.primaryIndex,
+          tokenOutIndex: r.poolContext.secondaryIndex,
+        }),
+      },
+      {
+        stage: 1,
+        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+        method: 'getAmplificationParameter',
+        key: 'amplificationParameter',
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getAmplificationParameter']>>) =>
+          FixedPoint.from(r.value),
+      },
+      {
+        stage: 1,
+        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+        method: 'getSwapFeePercentage',
+        key: 'swapFeePercentage',
+        transform: ([r]: Awaited<ReturnType<BalancerStablePool['functions']['getSwapFeePercentage']>>) =>
+          FixedPoint.from(r),
+      },
+      {
+        stage: 1,
+        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+        method: 'totalSupply',
+        key: 'totalSupply',
+        transform: ([r]: Awaited<ReturnType<BalancerStablePool['functions']['totalSupply']>>) => FixedPoint.from(r),
+      },
+      {
+        stage: 1,
+        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+        method: 'scalingFactors',
+        key: 'scalingFactors',
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getScalingFactors']>>) =>
+          r.map(FixedPoint.from),
+      },
+      {
+        stage: 1,
+        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+        method: 'getTimeWeightedAverage',
+        key: 'oracleContext',
+        args: [
+          {
+            variable: 0, // Pair Price
+            secs: 3600,
+            ago: 0,
+          },
+          {
+            variable: 1, // BPT Price
+            secs: 3600,
+            ago: 0,
+          },
+        ],
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
+          pairPrice: FixedPoint.from(r[0]),
+          bptPrice: FixedPoint.from(r[1]),
+        }),
+      },
+      {
+        stage: 1,
+        target: this.BalancerVault,
+        method: 'getPoolTokens',
+        args: (r) => [r.poolContext.poolId],
+        key: 'balances',
+        transform: (r: Awaited<ReturnType<typeof this.BalancerVault.getPoolTokens>>) => r.balances.map(FixedPoint.from),
+      },
+    ] as AggregateCall[];
   }
 
   public getLiquidationThresholds(_: VaultAccount, __: number): Array<LiquidationThreshold> {
@@ -39,9 +131,11 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   }
 
   protected getBPTOut(tokenAmountIn: FixedPoint) {
-    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, swapFeePercentage } = this.poolContext;
+    const { amplificationParameter, poolContext, totalSupply, swapFeePercentage } = this.initParams;
+    const { primaryTokenIndex } = poolContext;
+    const { balances } = this;
     const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
-    const amountsIn = new Array<FixedPoint>(balances.length).fill(FixedPoint.from(0));
+    const amountsIn = new Array<FixedPoint>(this.balances.length).fill(FixedPoint.from(0));
     amountsIn[primaryTokenIndex] = tokenAmountIn;
 
     const dueProtocolFeeAmounts = this.getDueProtocolFeeAmounts(
@@ -84,7 +178,7 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
     protocolSwapFeePercentage: FixedPoint
   ) {
     // Initialize with zeros
-    const numTokens = this.poolContext.balances.length;
+    const numTokens = this.balances.length;
     const dueProtocolFeeAmounts = new Array<FixedPoint>(numTokens).fill(FixedPoint.from(0));
 
     // Early return if the protocol swap fee percentage is zero, saving gas.
@@ -124,13 +218,14 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   }
 
   protected getUnderlyingOut(BPTIn: FixedPoint) {
-    const { amplificationParameter, balances, primaryTokenIndex, totalSupply, swapFeePercentage } = this.poolContext;
+    const { amplificationParameter, poolContext, totalSupply, swapFeePercentage } = this.initParams;
+    const { balances } = this;
     const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
 
     const tokensOut = BalancerStableMath.calcTokenOutGivenExactBptIn(
       amplificationParameter,
       balances,
-      primaryTokenIndex,
+      poolContext.primaryTokenIndex,
       BPTIn,
       totalSupply,
       swapFeePercentage,

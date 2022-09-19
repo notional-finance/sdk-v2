@@ -1,10 +1,13 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, Contract } from 'ethers';
 import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../../config/constants';
 import TypedBigNumber, { BigNumberType } from '../../../libs/TypedBigNumber';
+import { BalancerVault } from '../../../typechain';
 import doBinarySearchApprox from '../../Approximation';
 import BaseVault from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
 import FixedPoint from './FixedPoint';
+
+const BalancerVaultABI = require('../../../abi/BalancerVault.json');
 
 export interface DepositParams {
   minBPT: BigNumber;
@@ -19,15 +22,15 @@ export interface RedeemParams {
 }
 
 export interface PoolContext {
-  amplificationParameter: FixedPoint;
-  balances: FixedPoint[];
+  poolAddress: string;
+  poolId: string;
   primaryTokenIndex: number;
   tokenOutIndex: number;
-  totalSupply: FixedPoint;
-  swapFeePercentage: FixedPoint;
 }
 
 export abstract class BaseBalancerStablePool<I> extends BaseVault<DepositParams, RedeemParams, I> {
+  BalancerVault = new Contract('0xBA12222222228d8Ba445958a75a0704d566BF2C8', BalancerVaultABI) as BalancerVault;
+
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
 
   readonly redeemTuple: string =

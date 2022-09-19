@@ -9,16 +9,30 @@ import FixedPoint from './FixedPoint';
 
 interface InitParams {
   underlyingPoolContext: PoolContext;
+  underlyingPoolBalances: FixedPoint[];
+  underlyingPoolScalingFactors: FixedPoint[];
+  underlyingPoolAmp: FixedPoint;
+  underlyingPoolFee: FixedPoint;
+  underlyingTotalSupply: FixedPoint;
   basePoolContext: PoolContext;
+  basePoolBalances: FixedPoint[];
+  basePoolScalingFactors: FixedPoint[];
+  basePoolAmp: FixedPoint;
+  basePoolFee: FixedPoint;
+  basePoolTotalSupply: FixedPoint;
 }
 
 export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitParams> {
-  public get underlyingPoolContext() {
-    return this.initParams.underlyingPoolContext;
+  public get basePoolBalances() {
+    return this.initParams.basePoolBalances.map((b, i) =>
+      FixedPoint.from(b).mul(FixedPoint.from(this.initParams.basePoolScalingFactors[i])).div(FixedPoint.ONE)
+    );
   }
 
-  public get basePoolContext() {
-    return this.initParams.basePoolContext;
+  public get underlyingPoolBalances() {
+    return this.initParams.underlyingPoolBalances.map((b, i) =>
+      FixedPoint.from(b).mul(FixedPoint.from(this.initParams.underlyingPoolScalingFactors[i])).div(FixedPoint.ONE)
+    );
   }
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
@@ -37,33 +51,33 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
   protected getBPTValue(amountIn: FixedPoint = FixedPoint.ONE) {
     // Valuation is done on the base pool since this is the token the vault holds
-    if (!this.basePoolContext) throw Error('Not Initialized');
-    const { amplificationParameter, balances, primaryTokenIndex, totalSupply } = this.basePoolContext;
-    const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
+    const { basePoolAmp, basePoolContext, basePoolTotalSupply } = this.initParams;
+    const { primaryTokenIndex } = basePoolContext;
+    const balances = this.basePoolBalances;
+    const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
 
     return BalancerStableMath.calcTokenOutGivenExactBptIn(
-      amplificationParameter,
+      basePoolAmp,
       balances,
       primaryTokenIndex,
       amountIn,
-      totalSupply,
+      basePoolTotalSupply,
       FixedPoint.from(0), // swap fee percentage set to zero
       invariant
     );
   }
 
   protected getBPTOut(tokenAmountIn: FixedPoint) {
-    if (!this.underlyingPoolContext || !this.basePoolContext) throw Error('Not Initialized');
-
     let linearPoolBPT: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.underlyingPoolContext;
-      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
+      const { underlyingPoolAmp, underlyingPoolContext } = this.initParams;
+      const balances = this.underlyingPoolBalances;
+      const invariant = BalancerStableMath.calculateInvariant(underlyingPoolAmp, balances, true);
       linearPoolBPT = BalancerStableMath.calcOutGivenIn(
-        amplificationParameter,
+        underlyingPoolAmp,
         balances,
-        primaryTokenIndex,
-        tokenOutIndex,
+        underlyingPoolContext.primaryTokenIndex,
+        underlyingPoolContext.tokenOutIndex,
         tokenAmountIn,
         invariant
       );
@@ -71,13 +85,14 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
     let boostedBPT: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.basePoolContext;
-      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
+      const { basePoolAmp, basePoolContext } = this.initParams;
+      const balances = this.basePoolBalances;
+      const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
       boostedBPT = BalancerStableMath.calcOutGivenIn(
-        amplificationParameter,
+        basePoolAmp,
         balances,
-        primaryTokenIndex,
-        tokenOutIndex,
+        basePoolContext.primaryTokenIndex,
+        basePoolContext.tokenOutIndex,
         linearPoolBPT,
         invariant
       );
@@ -87,17 +102,16 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
   }
 
   protected getUnderlyingOut(BPTIn: FixedPoint) {
-    if (!this.underlyingPoolContext || !this.basePoolContext) throw Error('Not Initialized');
-
     let linearPoolBPT: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.basePoolContext;
-      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
+      const { basePoolAmp, basePoolContext } = this.initParams;
+      const balances = this.basePoolBalances;
+      const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
       linearPoolBPT = BalancerStableMath.calcOutGivenIn(
-        amplificationParameter,
+        basePoolAmp,
         balances,
-        tokenOutIndex,
-        primaryTokenIndex,
+        basePoolContext.tokenOutIndex,
+        basePoolContext.primaryTokenIndex,
         BPTIn,
         invariant
       );
@@ -105,13 +119,14 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
     let underlyingTokensOut: FixedPoint;
     {
-      const { amplificationParameter, balances, primaryTokenIndex, tokenOutIndex } = this.underlyingPoolContext;
-      const invariant = BalancerStableMath.calculateInvariant(amplificationParameter, balances, true);
+      const { underlyingPoolAmp, underlyingPoolContext } = this.initParams;
+      const balances = this.underlyingPoolBalances;
+      const invariant = BalancerStableMath.calculateInvariant(underlyingPoolAmp, balances, true);
       underlyingTokensOut = BalancerStableMath.calcOutGivenIn(
-        amplificationParameter,
+        underlyingPoolAmp,
         balances,
-        tokenOutIndex,
-        primaryTokenIndex,
+        underlyingPoolContext.tokenOutIndex,
+        underlyingPoolContext.primaryTokenIndex,
         linearPoolBPT,
         invariant
       );

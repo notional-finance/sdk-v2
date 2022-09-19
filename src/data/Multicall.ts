@@ -85,7 +85,9 @@ export async function aggregate<T extends Record<string, any>>(
   let blockNumber = 0;
 
   const stages = Array.from(groupedStages.keys()).sort();
-  for (let s of stages) {
+  // eslint-disable-next-line no-restricted-syntax
+  for (const s of stages) {
+    // eslint-disable-next-line no-await-in-loop
     const { blockNum, results } = await executeStage<T>(groupedStages.get(s)!, aggregateResults, multicall);
     aggregateResults = results;
     blockNumber = blockNum;
