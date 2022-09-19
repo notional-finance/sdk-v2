@@ -36,12 +36,11 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
 
   public get balances() {
     return this.initParams.poolContext.balances.map((b, i) =>
-      FixedPoint.from(b).mul(FixedPoint.from(this.initParams.scalingFactors[i])).div(FixedPoint.ONE)
+      b.mul(this.initParams.scalingFactors[i]).div(FixedPoint.ONE)
     );
   }
 
   public initVaultParams() {
-    // Get relevant context and set pool context
     const vaultContract = new Contract(this.vaultAddress, MetaStable2TokenAuraABI) as MetaStable2Token;
     return [
       {

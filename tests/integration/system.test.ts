@@ -2,12 +2,13 @@ import { BigNumber, ethers, VoidSigner } from 'ethers';
 import Notional, { Contracts } from '../../src';
 import GraphClient from '../../src/data/GraphClient';
 import { decodeBinary, fetchAndEncodeSystem } from '../../src/data/SystemData';
+import { VaultFactory } from '../../src/vaults';
 
 require('dotenv').config();
 
-const mainnetAddresses = require('../../src/config/mainnet.json');
+const mainnetAddresses = require('../../src/config/goerli.json');
 
-const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/mainnet-debug';
+const mainnetGraphEndpoint = 'https://api.thegraph.com/subgraphs/name/notional-finance/goerli-v2';
 
 describe('System Integration Test', () => {
   let provider: ethers.providers.JsonRpcBatchProvider;
@@ -16,7 +17,7 @@ describe('System Integration Test', () => {
 
   beforeEach(async () => {
     provider = new ethers.providers.JsonRpcBatchProvider(
-      `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
+      `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
     );
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     contracts = Notional.getContracts(mainnetAddresses, signer);
@@ -43,5 +44,14 @@ describe('System Integration Test', () => {
 
     decodeBinary(binary, provider);
     console.log(json);
+  });
+
+  it('initializes the meta stable vault', async () => {
+    const { initParams } = await VaultFactory.buildVault(
+      '0x77721081',
+      '0xE767769b639Af18dbeDc5FB534E263fF7BE43456',
+      provider
+    );
+    console.log(initParams);
   });
 });

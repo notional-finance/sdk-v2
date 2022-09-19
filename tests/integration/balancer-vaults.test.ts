@@ -62,7 +62,7 @@ describe('balancer vault test', () => {
     allowsReentrancy: true,
     vaultStates: [],
   };
-  const metaStable = new MetaStable2TokenAura(vault.vaultAddress);
+  let metaStable: MetaStable2TokenAura;
 
   system.setVault(vault);
 
@@ -86,9 +86,6 @@ describe('balancer vault test', () => {
 
     const swapFeePercentage = FixedPoint.from(await balancerPool.getSwapFeePercentage());
     const scalingFactors = await balancerPool.getScalingFactors();
-    const scaledBalances = balances.map((b, i) =>
-      FixedPoint.from(b).mul(FixedPoint.from(scalingFactors[i])).div(FixedPoint.ONE)
-    );
     const totalSupply = FixedPoint.from(await balancerPool.totalSupply());
     const { value } = await balancerPool.getAmplificationParameter();
     const amplificationParameter = FixedPoint.from(value);
@@ -107,14 +104,24 @@ describe('balancer vault test', () => {
       ])
     ).map(FixedPoint.from);
 
-    metaStable.poolContext = {
+    const initParams: typeof metaStable.initParams = {
+      poolContext: {
+        poolAddress: address,
+        poolId: poolID,
+        primaryTokenIndex: 1,
+        tokenOutIndex: 0,
+        balances: balances.map(FixedPoint.from),
+      },
+      scalingFactors: scalingFactors.map(FixedPoint.from),
       amplificationParameter,
-      balances: scaledBalances,
-      primaryTokenIndex: 1,
-      tokenOutIndex: 0,
-      totalSupply,
       swapFeePercentage,
+      totalSupply,
+      oracleContext: {
+        bptPrice,
+        pairPrice,
+      },
     };
+    metaStable = new MetaStable2TokenAura(vault.vaultAddress, initParams);
   });
 
   it('calculates the appropriate bpt when joining', async () => {

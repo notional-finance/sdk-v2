@@ -1,11 +1,15 @@
 import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
 import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
+// import { Contract } from 'ethers';
+// import { Boosted3TokenAura } from '../../../typechain/Boosted3TokenAura';
 import { LiquidationThreshold } from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
+
+// const Boosted3TokenAuraVaultABI = require('../../../abi/Boosted3TokenAuraVault.json');
 
 interface InitParams {
   underlyingPoolContext: PoolContext;
@@ -23,13 +27,13 @@ interface InitParams {
 export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitParams> {
   public get basePoolBalances() {
     return this.initParams.basePoolContext.balances.map((b, i) =>
-      FixedPoint.from(b).mul(FixedPoint.from(this.initParams.basePoolScalingFactors[i])).div(FixedPoint.ONE)
+      b.mul(this.initParams.basePoolScalingFactors[i]).div(FixedPoint.ONE)
     );
   }
 
   public get underlyingPoolBalances() {
     return this.initParams.underlyingPoolContext.balances.map((b, i) =>
-      FixedPoint.from(b).mul(FixedPoint.from(this.initParams.underlyingPoolScalingFactors[i])).div(FixedPoint.ONE)
+      b.mul(this.initParams.underlyingPoolScalingFactors[i]).div(FixedPoint.ONE)
     );
   }
 
