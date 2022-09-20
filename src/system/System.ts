@@ -475,12 +475,6 @@ export default class System {
     return state;
   }
 
-  public async getVaultReturns<T = Record<string, number>>(vaultAddress: string, maturity: number): Promise<T> {
-    const resp = await fetch(`${this.cacheUrl}/vault-returns/${vaultAddress}/${maturity}`);
-    if (!resp.ok) throw Error('Could not find vault returns');
-    return resp.json();
-  }
-
   /** Trading Estimation Data * */
   private _getTokenAddressForTradingEstimation(symbol: string | number) {
     if (symbol === 'ETH' || symbol === ETHER_CURRENCY_ID) {

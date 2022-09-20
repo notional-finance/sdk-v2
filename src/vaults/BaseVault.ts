@@ -8,21 +8,7 @@ import doBinarySearchApprox from './Approximation';
 import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
 
-export enum LiquidationThresholdType {
-  exchangeRate,
-  fCashInterestRate,
-}
-
-export interface LiquidationThreshold {
-  name: string;
-  type: LiquidationThresholdType;
-  rate?: number;
-  ethExchangeRate?: TypedBigNumber;
-  debtCurrencyId?: number;
-  collateralCurrencyId?: number;
-}
-
-export default abstract class BaseVault<D, R, I> extends AbstractStrategy<D, R, I> {
+export default abstract class BaseVault<D, R, I extends Record<string, any>> extends AbstractStrategy<D, R, I> {
   public static collateralToLeverageRatio(collateralRatio: number): number {
     return Math.floor((RATE_PRECISION / collateralRatio) * RATE_PRECISION) + RATE_PRECISION;
   }

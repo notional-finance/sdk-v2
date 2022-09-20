@@ -1,7 +1,7 @@
 import { SecondaryBorrowArray } from '../../data';
 import { AggregateCall } from '../../data/Multicall';
 import TypedBigNumber from '../../libs/TypedBigNumber';
-import { LiquidationThreshold } from '../BaseVault';
+import { LiquidationThreshold } from '../../libs/types';
 import VaultAccount from '../VaultAccount';
 
 export default abstract class AbstractStrategy<D, R, I> {

@@ -29,7 +29,11 @@ export interface PoolContext {
   balances: FixedPoint[];
 }
 
-export abstract class BaseBalancerStablePool<I> extends BaseVault<DepositParams, RedeemParams, I> {
+export abstract class BaseBalancerStablePool<I extends Record<string, any>> extends BaseVault<
+  DepositParams,
+  RedeemParams,
+  I
+> {
   BalancerVault = new Contract('0xBA12222222228d8Ba445958a75a0704d566BF2C8', BalancerVaultABI) as BalancerVault;
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';

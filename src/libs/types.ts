@@ -248,3 +248,17 @@ export interface VaultReturn {
   [k: string]: number;
   timestamp: number;
 }
+
+export enum LiquidationThresholdType {
+  exchangeRate,
+  fCashInterestRate,
+}
+
+export interface LiquidationThreshold {
+  name: string;
+  type: LiquidationThresholdType;
+  rate?: number;
+  ethExchangeRate?: TypedBigNumber;
+  debtCurrencyId?: number;
+  collateralCurrencyId?: number;
+}

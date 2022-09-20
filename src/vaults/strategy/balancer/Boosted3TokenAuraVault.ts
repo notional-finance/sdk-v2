@@ -1,9 +1,9 @@
 import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
 import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
+import { LiquidationThreshold } from '../../../libs/types';
 // import { Contract } from 'ethers';
 // import { Boosted3TokenAura } from '../../../typechain/Boosted3TokenAura';
-import { LiquidationThreshold } from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
