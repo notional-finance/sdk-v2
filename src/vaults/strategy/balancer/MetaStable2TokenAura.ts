@@ -221,7 +221,7 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
     );
 
     return TypedBigNumber.fromBalance(
-      tokensOut.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE),
+      tokensOut.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n,
       this.getPrimaryBorrowSymbol(),
       true
     );
