@@ -1,9 +1,10 @@
 import { providers, utils } from 'ethers';
+import { VaultConfig } from '..';
 import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION, SECONDS_IN_YEAR } from '../config/constants';
 import { aggregate } from '../data/Multicall';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
-import { System, CashGroup } from '../system';
+import { System, CashGroup, Market } from '../system';
 import doBinarySearchApprox from './Approximation';
 import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
@@ -130,20 +131,38 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   }
 
   // Operations
-  public getDepositedCashFromBorrow(maturity: number, fCashToBorrow: TypedBigNumber, blockTime = getNowSeconds()) {
-    const market = this.getVaultMarket(maturity);
+  public static getDepositedCashFromBorrow(
+    market: Market,
+    vault: VaultConfig,
+    fCashToBorrow: TypedBigNumber,
+    blockTime = getNowSeconds()
+  ) {
     const { netCashToAccount: cashToBorrow } = market.getCashAmountGivenfCashAmount(fCashToBorrow, blockTime);
-    const assessedFee = this.assessVaultFees(maturity, cashToBorrow, blockTime);
+    const assessedFee = BaseVault.assessVaultFees(market.maturity, vault, cashToBorrow, blockTime);
     return {
       cashToVault: cashToBorrow.sub(assessedFee),
       assessedFee,
     };
   }
 
-  public assessVaultFees(maturity: number, cashBorrowed: TypedBigNumber, blockTime = getNowSeconds()) {
-    const annualizedFeeRate = this.getVault().feeRateBasisPoints;
+  public static assessVaultFees(
+    maturity: number,
+    vault: VaultConfig,
+    cashBorrowed: TypedBigNumber,
+    blockTime = getNowSeconds()
+  ) {
+    const annualizedFeeRate = vault.feeRateBasisPoints;
     const feeRate = Math.floor(annualizedFeeRate * ((maturity - blockTime) / SECONDS_IN_YEAR));
     return cashBorrowed.scale(feeRate, RATE_PRECISION);
+  }
+
+  public getDepositedCashFromBorrow(maturity: number, fCashToBorrow: TypedBigNumber, blockTime = getNowSeconds()) {
+    const market = this.getVaultMarket(maturity);
+    return BaseVault.getDepositedCashFromBorrow(market, this.getVault(), fCashToBorrow, blockTime);
+  }
+
+  public assessVaultFees(maturity: number, cashBorrowed: TypedBigNumber, blockTime = getNowSeconds()) {
+    return BaseVault.assessVaultFees(maturity, this.getVault(), cashBorrowed, blockTime);
   }
 
   public checkBorrowCapacity(fCashToBorrow: TypedBigNumber) {
