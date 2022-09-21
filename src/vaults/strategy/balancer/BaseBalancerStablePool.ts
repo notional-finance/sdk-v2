@@ -58,8 +58,17 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }
 
-  protected convertStrategyTokensToBPT(strategyTokens: TypedBigNumber) {
+  protected convertStrategyTokensToBPT(strategyTokens: TypedBigNumber, simulatedStrategyTokens?: TypedBigNumber) {
+    // If there are simulated strategy tokens, assume they are 1-1 with BPTs because there
+    // will be no BPT compounding during the simulation
     const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
+    if (simulatedStrategyTokens) {
+      const totalStrategyTokens = totalStrategyTokensGlobal.add(FixedPoint.from(simulatedStrategyTokens.n));
+      const simulatedBPT = FixedPoint.from(simulatedStrategyTokens.n)
+        .mul(FixedPoint.ONE)
+        .div(FixedPoint.from(INTERNAL_TOKEN_PRECISION));
+      return totalBPTHeld.add(simulatedBPT).mul(FixedPoint.from(strategyTokens.n)).div(totalStrategyTokens);
+    }
     return totalBPTHeld.mul(FixedPoint.from(strategyTokens.n)).div(totalStrategyTokensGlobal);
   }
 
@@ -72,10 +81,16 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
   public getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber {
     const { strategyTokens } = vaultAccount.getPoolShare();
     const oneBPTValue = this.getBPTValue();
-    const accountValue = strategyTokens.scale(oneBPTValue.n, FixedPoint.ONE.n).n;
-
+    const simulatedStrategyTokens = vaultAccount.getSimulatedStrategyTokens();
+    const bptClaim = this.convertStrategyTokensToBPT(strategyTokens, simulatedStrategyTokens);
     // This is in 8 decimal precision
-    return TypedBigNumber.fromBalance(accountValue, this.getPrimaryBorrowSymbol(), true);
+    const accountValue = bptClaim
+      .mul(oneBPTValue)
+      .mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION))
+      .div(FixedPoint.ONE)
+      .div(FixedPoint.ONE);
+
+    return TypedBigNumber.fromBalance(accountValue.n, this.getPrimaryBorrowSymbol(), true);
   }
 
   public getStrategyTokensFromValue(maturity: number, valuation: TypedBigNumber, _blockTime?: number) {
@@ -195,7 +210,9 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     blockTime?: number,
     _vaultAccount?: VaultAccount
   ) {
-    const bptIn = this.convertStrategyTokensToBPT(strategyTokens);
+    // In this case, all strategy tokens are "simulated" in that they are additional tokens
+    // added to the pool
+    const bptIn = this.convertStrategyTokensToBPT(strategyTokens, strategyTokens);
     const RP = FixedPoint.from(RATE_PRECISION);
     // 1 bpt * oneBPTValue = depositAmount
     const initialMultiple = this.getBPTValue().mul(RP).div(FixedPoint.ONE).n.toNumber();

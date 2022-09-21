@@ -511,17 +511,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       );
 
       const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
-      console.log(`
-      calculation:
-        target valuation: ${valuation.toExactString()}
-        deposit amount: ${depositAmount.toExactString()}
-        deposit multiple: ${depositMultiple / RATE_PRECISION}
-        cash to borrow: ${borrowedCash.add(fees).toExactString()}
-        actual leverage ratio: ${actualLeverageRatio / RATE_PRECISION}
-        target leverage ratio: ${leverageRatio / RATE_PRECISION}
-        primary borrow fCash: ${newVaultAccount.primaryBorrowfCash.toExactString()}
-      `);
-
       return {
         actualMultiple: actualLeverageRatio,
         breakLoop: false,

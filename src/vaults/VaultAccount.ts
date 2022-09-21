@@ -54,6 +54,12 @@ export default class VaultAccount {
     return System.getVaultSymbol(this.vaultAddress, this.maturity);
   }
 
+  public getSimulatedStrategyTokens() {
+    if (!this._simulatedVaultState) return undefined;
+    const { totalStrategyTokens } = System.getSystem().getVaultState(this.vaultAddress, this.maturity);
+    return this._simulatedVaultState.totalStrategyTokens.sub(totalStrategyTokens);
+  }
+
   public getDebtShareSymbol(index: 0 | 1) {
     return System.getSystem().getDebtShareSymbol(this.vaultAddress, this.maturity, index);
   }
