@@ -7,13 +7,13 @@ import { BalancerStablePool } from '../../../typechain/BalancerStablePool';
 import { MetaStable2Token } from '../../../typechain/MetaStable2Token';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
-import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
+import { BaseBalancerStablePool, BaseBalancerStablePoolInitParams, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
 const MetaStable2TokenAuraABI = require('../../../abi/MetaStable2Token.json');
 const BalancerStablePoolABI = require('../../../abi/BalancerStablePool.json');
 
-interface InitParams {
+interface InitParams extends BaseBalancerStablePoolInitParams {
   poolContext: PoolContext;
   scalingFactors: FixedPoint[];
   amplificationParameter: FixedPoint;
@@ -64,6 +64,8 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
             primaryTokenIndex: r.poolContext.primaryIndex,
             tokenOutIndex: r.poolContext.secondaryIndex,
             balances,
+            totalStrategyTokensGlobal: FixedPoint.from(r.baseStrategy.vaultState.totalStrategyTokenGlobal),
+            totalBPTHeld: FixedPoint.from(r.baseStrategy.totalBPTHeld),
           };
         },
       },

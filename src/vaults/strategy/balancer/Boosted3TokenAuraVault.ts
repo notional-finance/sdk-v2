@@ -6,12 +6,12 @@ import { LiquidationThreshold } from '../../../libs/types';
 // import { Boosted3TokenAura } from '../../../typechain/Boosted3TokenAura';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
-import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
+import { BaseBalancerStablePool, BaseBalancerStablePoolInitParams, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
 // const Boosted3TokenAuraVaultABI = require('../../../abi/Boosted3TokenAuraVault.json');
 
-interface InitParams {
+interface InitParams extends BaseBalancerStablePoolInitParams {
   underlyingPoolContext: PoolContext;
   underlyingPoolScalingFactors: FixedPoint[];
   underlyingPoolAmp: FixedPoint;
