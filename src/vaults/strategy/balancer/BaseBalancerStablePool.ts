@@ -30,8 +30,10 @@ export interface PoolContext {
 }
 
 export interface BaseBalancerStablePoolInitParams extends Record<string, any> {
-  totalStrategyTokensGlobal: FixedPoint;
-  totalBPTHeld: FixedPoint;
+  strategyContext: {
+    totalStrategyTokensGlobal: FixedPoint;
+    totalBPTHeld: FixedPoint;
+  };
 }
 
 export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolInitParams> extends BaseVault<
@@ -47,18 +49,18 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     'tuple(uint32 minSecondaryLendRate, uint256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
 
   protected convertBPTToStrategyTokens(bptAmount: FixedPoint, maturity: number) {
-    const tokens = this.initParams.totalBPTHeld.isZero()
+    const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
+    const tokens = totalBPTHeld.isZero()
       ? bptAmount.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n
       : // bptAmount * totalStrategyTokensGlobal / totalBPTHeld
-        this.initParams.totalStrategyTokensGlobal.mul(bptAmount).div(this.initParams.totalBPTHeld);
+        totalStrategyTokensGlobal.mul(bptAmount).div(totalBPTHeld);
 
     return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }
 
   protected convertStrategyTokensToBPT(strategyTokens: TypedBigNumber) {
-    return this.initParams.totalBPTHeld
-      .mul(FixedPoint.from(strategyTokens.n))
-      .div(this.initParams.totalStrategyTokensGlobal);
+    const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
+    return totalBPTHeld.mul(FixedPoint.from(strategyTokens.n)).div(totalStrategyTokensGlobal);
   }
 
   protected abstract getBPTValue(amountIn?: FixedPoint): FixedPoint;

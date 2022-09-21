@@ -48,6 +48,17 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
         target: vaultContract,
         method: 'getStrategyContext',
         args: [],
+        key: 'strategyContext',
+        transform: (r: Awaited<ReturnType<typeof vaultContract.getStrategyContext>>) => ({
+          totalStrategyTokensGlobal: FixedPoint.from(r.baseStrategy.vaultState.totalStrategyTokenGlobal),
+          totalBPTHeld: FixedPoint.from(r.baseStrategy.totalBPTHeld),
+        }),
+      },
+      {
+        stage: 0,
+        target: vaultContract,
+        method: 'getStrategyContext',
+        args: [],
         key: 'poolContext',
         transform: (r: Awaited<ReturnType<typeof vaultContract.getStrategyContext>>) => {
           const balances = [
