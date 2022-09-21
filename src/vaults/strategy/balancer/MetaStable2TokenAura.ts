@@ -114,7 +114,7 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
       {
         stage: 1,
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-        //method: 'getTimeWeightedAverage',
+        // method: 'getTimeWeightedAverage',
         method: 'getLatest',
         key: 'oracleContext',
         args: [
