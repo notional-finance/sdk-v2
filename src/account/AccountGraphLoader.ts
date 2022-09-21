@@ -262,12 +262,14 @@ export default class AccountGraphLoader {
       const vaultSymbolAfter = maturityAfter
         ? system.getVaultSymbol(t.leveragedVault.vaultAddress, maturityAfter)
         : undefined;
-      const secondarySymbolsBefore = maturityBefore
-        ? system.getDebtShareSymbols(vault.vaultAddress, maturityBefore)
-        : undefined;
-      const secondarySymbolsAfter = maturityAfter
-        ? system.getDebtShareSymbols(vault.vaultAddress, maturityAfter)
-        : undefined;
+      const secondarySymbolsBefore =
+        maturityBefore && t.secondaryDebtSharesBefore
+          ? system.getDebtShareSymbols(vault.vaultAddress, maturityBefore)
+          : undefined;
+      const secondarySymbolsAfter =
+        maturityAfter && t.secondaryDebtSharesAfter
+          ? system.getDebtShareSymbols(vault.vaultAddress, maturityAfter)
+          : undefined;
 
       return {
         blockNumber: t.blockNumber,
@@ -323,10 +325,13 @@ export default class AccountGraphLoader {
 
   public static parseVaultAccount(data: VaultAccountResponse) {
     return data.leveragedVaultAccounts.map((v) => {
+      console.log('parse vault account', v);
       const system = System.getSystem();
       const vault = system.getVault(v.leveragedVault.vaultAddress);
       const primaryBorrowSymbol = system.getUnderlyingSymbol(vault.primaryBorrowCurrency);
-      const secondarySymbols = system.getDebtShareSymbols(vault.vaultAddress, v.maturity);
+      const secondarySymbols = v.secondaryBorrowDebtShares
+        ? system.getDebtShareSymbols(vault.vaultAddress, v.maturity)
+        : undefined;
       const secondaryDebtShares: SecondaryBorrowArray = v.secondaryBorrowDebtShares
         ? [
             secondarySymbols && secondarySymbols[0]
