@@ -114,25 +114,31 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
       {
         stage: 1,
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-        method: 'getTimeWeightedAverage',
+        //method: 'getTimeWeightedAverage',
+        method: 'getLatest',
         key: 'oracleContext',
         args: [
-          [
-            {
-              variable: 0, // Pair Price
-              secs: 3600,
-              ago: 0,
-            },
-            {
-              variable: 1, // BPT Price
-              secs: 3600,
-              ago: 0,
-            },
-          ],
+          0,
+          // [
+          //   {
+          //     variable: 0, // Pair Price
+          //     secs: 3600,
+          //     ago: 0,
+          //   },
+          //   {
+          //     variable: 1, // BPT Price
+          //     secs: 3600,
+          //     ago: 0,
+          //   },
+          // ],
         ],
-        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
-          pairPrice: FixedPoint.from(r[0]),
-          bptPrice: FixedPoint.from(r[1]),
+        // transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
+        //   pairPrice: FixedPoint.from(r[0]),
+        //   bptPrice: FixedPoint.from(r[1]),
+        // }),
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getLatest']>>) => ({
+          pairPrice: FixedPoint.from(r),
+          bptPrice: FixedPoint.from(r),
         }),
       },
     ] as AggregateCall[];
