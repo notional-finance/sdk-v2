@@ -87,8 +87,8 @@ export default class VaultAccount {
     totalStrategyTokens?: TypedBigNumber;
   }) {
     this._simulatedVaultState = {
-      ...updates,
       ...this.getVaultState(),
+      ...updates,
     };
   }
 

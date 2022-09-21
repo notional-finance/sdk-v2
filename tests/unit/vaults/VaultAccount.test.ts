@@ -113,7 +113,6 @@ describe('Test Vault Account', () => {
   });
 
   it('it gets pool shares properly', () => {
-    // TODO: update this test
     const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity - SECONDS_IN_QUARTER);
     vaultAccount.updateVaultShares(
       TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
@@ -123,6 +122,63 @@ describe('Test Vault Account', () => {
     const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
     expect(assetCash.toNumber()).toBe(5000e8);
     expect(strategyTokens.toNumber()).toBe(90e8);
+  });
+
+  it('it gets pool shares properly under simulation', () => {
+    // Assert that the system state does not change
+    const vaultStateBefore = system.getVaultState(vault.vaultAddress, maturity + SECONDS_IN_QUARTER);
+    expect(vaultStateBefore.totalVaultShares.isZero()).toBeTruthy();
+    expect(vaultStateBefore.totalStrategyTokens.isZero()).toBeTruthy();
+    expect(vaultStateBefore.totalPrimaryfCashBorrowed.isZero()).toBeTruthy();
+
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity + SECONDS_IN_QUARTER);
+    // Ensure that the simulation persists over two calls
+    vaultAccount.addStrategyTokens(
+      TypedBigNumber.from(50e8, BigNumberType.StrategyToken, vaultAccount.vaultSymbol),
+      true
+    );
+    vaultAccount.addStrategyTokens(
+      TypedBigNumber.from(50e8, BigNumberType.StrategyToken, vaultAccount.vaultSymbol),
+      true
+    );
+
+    const updatedVaultState = vaultAccount.getVaultState();
+    const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
+    expect(assetCash.toNumber()).toBe(0);
+    expect(strategyTokens.toNumber()).toBe(100e8);
+    expect(updatedVaultState.totalVaultShares.toNumber()).toBe(100e8);
+    expect(updatedVaultState.totalStrategyTokens.toNumber()).toBe(100e8);
+
+    // Assert that the system state does not change
+    const vaultStateAfter = system.getVaultState(vault.vaultAddress, maturity + SECONDS_IN_QUARTER);
+    expect(vaultStateAfter.totalVaultShares.isZero()).toBeTruthy();
+    expect(vaultStateAfter.totalStrategyTokens.isZero()).toBeTruthy();
+    expect(vaultStateAfter.totalPrimaryfCashBorrowed.isZero()).toBeTruthy();
+  });
+
+  it('it adds primary borrows under simulation', () => {
+    // Assert that the system state does not change
+    const vaultStateBefore = system.getVaultState(vault.vaultAddress, maturity + SECONDS_IN_QUARTER);
+    expect(vaultStateBefore.totalVaultShares.isZero()).toBeTruthy();
+    expect(vaultStateBefore.totalStrategyTokens.isZero()).toBeTruthy();
+    expect(vaultStateBefore.totalPrimaryfCashBorrowed.isZero()).toBeTruthy();
+
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity + SECONDS_IN_QUARTER);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), true);
+
+    const updatedVaultState = vaultAccount.getVaultState();
+    const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
+    expect(assetCash.toNumber()).toBe(0);
+    expect(strategyTokens.toNumber()).toBe(0);
+    expect(updatedVaultState.totalVaultShares.toNumber()).toBe(0);
+    expect(updatedVaultState.totalStrategyTokens.toNumber()).toBe(0);
+    expect(updatedVaultState.totalPrimaryfCashBorrowed.toNumber()).toBe(-100e8);
+
+    // Assert that the system state does not change
+    const vaultStateAfter = system.getVaultState(vault.vaultAddress, maturity + SECONDS_IN_QUARTER);
+    expect(vaultStateAfter.totalVaultShares.isZero()).toBeTruthy();
+    expect(vaultStateAfter.totalStrategyTokens.isZero()).toBeTruthy();
+    expect(vaultStateAfter.totalPrimaryfCashBorrowed.isZero()).toBeTruthy();
   });
 
   it('it fails on invalid secondary debt', () => {

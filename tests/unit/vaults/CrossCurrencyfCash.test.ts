@@ -29,7 +29,7 @@ describe('Cross Currency fCash', () => {
   it('gets strategy token value', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
-    vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol));
+    vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol), false);
     const value = crossCurrency.getStrategyTokenValue(vaultAccount);
     expect(value.symbol).toBe('DAI');
     expect(value.toNumber()).toBeLessThan(100e8);
@@ -39,7 +39,7 @@ describe('Cross Currency fCash', () => {
   it('gets value from strategy token', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
-    vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol));
+    vaultAccount.addStrategyTokens(TypedBigNumber.from(100e8, BigNumberType.StrategyToken, vaultSymbol), false);
     const value = crossCurrency.getStrategyTokenValue(vaultAccount);
     const strategyTokens = crossCurrency.getStrategyTokensFromValue(maturity, value);
     expect(strategyTokens.toNumber()).toBeCloseTo(100e8, -3);
@@ -70,9 +70,10 @@ describe('Cross Currency fCash', () => {
 
   it('gets redeem parameters given repayment', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), false);
     vaultAccount.updateVaultShares(
-      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
     );
     const { strategyTokens: strategyTokensBefore } = vaultAccount.getPoolShare();
 
@@ -152,9 +153,10 @@ describe('Cross Currency fCash', () => {
 
   it('simulates entering a vault with matching shares', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), false);
     vaultAccount.updateVaultShares(
-      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
     );
 
     const fCashToBorrow = TypedBigNumber.fromBalance(-100e8, 'DAI', true);
@@ -174,8 +176,11 @@ describe('Cross Currency fCash', () => {
 
   it('simulates entering a vault with settled shares', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
+    );
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'), false);
     const { assessedFee, totalCashDeposit, newVaultAccount } = crossCurrency.simulateEnter(
       vaultAccount,
       maturity,
@@ -205,9 +210,10 @@ describe('Cross Currency fCash', () => {
 
   it('simulates exiting a vault given repayment', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), false);
     vaultAccount.updateVaultShares(
-      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
     );
 
     const { costToLend, vaultSharesToRedeemAtCost, newVaultAccount } =
@@ -228,8 +234,11 @@ describe('Cross Currency fCash', () => {
 
   it('simulates exiting a vault with settled shares', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
+    );
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'), false);
     const { amountRedeemed, newVaultAccount } = crossCurrency.simulateExitPostMaturity(vaultAccount, 0.0025);
     expect(newVaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
     expect(newVaultAccount.vaultShares.isZero()).toBeTruthy();
@@ -238,9 +247,10 @@ describe('Cross Currency fCash', () => {
 
   it('simulates exiting a vault given withdraw', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), false);
     vaultAccount.updateVaultShares(
-      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+      TypedBigNumber.from(12553117188, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
     );
 
     const { vaultSharesToRedeemAtCost, newVaultAccount } = crossCurrency.simulateExitPreMaturityGivenWithdraw(
@@ -258,9 +268,10 @@ describe('Cross Currency fCash', () => {
 
   it('simulates exiting a vault given target leverage ratio', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-1000e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-1000e8, 'DAI', true), false);
     vaultAccount.updateVaultShares(
-      TypedBigNumber.from(125531171880, BigNumberType.VaultShare, vaultAccount.vaultSymbol)
+      TypedBigNumber.from(125531171880, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
     );
 
     const { newVaultAccount } = crossCurrency.getExitParamsFromLeverageRatio(vaultAccount, 4.0e9, 0.0025);
