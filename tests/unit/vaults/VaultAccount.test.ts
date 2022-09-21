@@ -39,17 +39,17 @@ describe('Test Vault Account', () => {
   it('it does not allow vault shares to be negative', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100, BigNumberType.VaultShare, vaultSymbol));
+    vaultAccount.updateVaultShares(TypedBigNumber.from(100, BigNumberType.VaultShare, vaultSymbol), false);
     expect(vaultAccount.vaultShares.toNumber()).toBe(100);
 
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100, BigNumberType.VaultShare, vaultSymbol));
+    vaultAccount.updateVaultShares(TypedBigNumber.from(100, BigNumberType.VaultShare, vaultSymbol), false);
     expect(vaultAccount.vaultShares.toNumber()).toBe(200);
 
-    vaultAccount.updateVaultShares(TypedBigNumber.from(-50, BigNumberType.VaultShare, vaultSymbol));
+    vaultAccount.updateVaultShares(TypedBigNumber.from(-50, BigNumberType.VaultShare, vaultSymbol), false);
     expect(vaultAccount.vaultShares.toNumber()).toBe(150);
 
     expect(() => {
-      vaultAccount.updateVaultShares(TypedBigNumber.from(-200, BigNumberType.VaultShare, vaultSymbol));
+      vaultAccount.updateVaultShares(TypedBigNumber.from(-200, BigNumberType.VaultShare, vaultSymbol), false);
     }).toThrow();
   });
 
@@ -57,21 +57,21 @@ describe('Test Vault Account', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress);
     vaultAccount.updateMaturity(maturity);
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), false);
     expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-100e8);
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-500e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-500e8, 'DAI', true), false);
     expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-600e8);
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(200e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(200e8, 'DAI', true), false);
     expect(vaultAccount.primaryBorrowfCash.toNumber()).toBe(-400e8);
 
     expect(() => {
-      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(500e8, 'DAI', true));
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(500e8, 'DAI', true), false);
     }).toThrow();
 
     expect(() => {
-      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(100e8, 'USDC', true));
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(100e8, 'USDC', true), false);
     }).toThrow();
   });
 
@@ -80,13 +80,13 @@ describe('Test Vault Account', () => {
     vaultAccount.updateMaturity(maturity);
 
     expect(() => {
-      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-99e8, 'DAI', true));
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-99e8, 'DAI', true), false);
     }).toThrow();
 
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true));
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-100e8, 'DAI', true), false);
 
     expect(() => {
-      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(1e8, 'DAI', true));
+      vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(1e8, 'DAI', true), false);
     }).toThrow();
   });
 
@@ -94,14 +94,17 @@ describe('Test Vault Account', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress);
     vaultAccount.updateMaturity(maturity - SECONDS_IN_QUARTER);
     expect(() => {
-      vaultAccount.addStrategyTokens(TypedBigNumber.from(100, BigNumberType.StrategyToken, vaultAccount.vaultSymbol));
+      vaultAccount.addStrategyTokens(
+        TypedBigNumber.from(100, BigNumberType.StrategyToken, vaultAccount.vaultSymbol),
+        false
+      );
     }).toThrow();
   });
 
   it('it adds strategy tokens proportionally', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
     const tokens = TypedBigNumber.from(1e8, BigNumberType.StrategyToken, vaultAccount.vaultSymbol);
-    vaultAccount.addStrategyTokens(tokens);
+    vaultAccount.addStrategyTokens(tokens, false);
     const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
 
     expect(vaultAccount.vaultShares.toNumber()).toBe(1e8);
@@ -110,8 +113,12 @@ describe('Test Vault Account', () => {
   });
 
   it('it gets pool shares properly', () => {
+    // TODO: update this test
     const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity - SECONDS_IN_QUARTER);
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
+    );
 
     const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
     expect(assetCash.toNumber()).toBe(5000e8);
@@ -120,17 +127,17 @@ describe('Test Vault Account', () => {
 
   it('it fails on invalid secondary debt', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity);
-    vaultAccount.addSecondaryDebtShares(undefined);
-    vaultAccount.addSecondaryDebtShares([undefined, undefined]);
+    vaultAccount.addSecondaryDebtShares(undefined, false);
+    vaultAccount.addSecondaryDebtShares([undefined, undefined], false);
 
     expect(() => {
-      vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(100, 'ETH', true)]);
+      vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(100, 'ETH', true)], false);
     }).toThrow();
   });
 
   it('it calculates secondary debt owed properly', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity);
-    vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-1e8, 'ETH', true)]);
+    vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-1e8, 'ETH', true)], false);
     expect(vaultAccount.getSecondaryDebtOwed()[0]?.toNumber()).toBe(-1e8);
     expect(vaultAccount.getSecondaryDebtOwed()[0]?.symbol).toBe('ETH');
     expect(vaultAccount.getSecondaryDebtOwed()[1]).toBeUndefined();
@@ -139,8 +146,11 @@ describe('Test Vault Account', () => {
   it('it calculates settlement in a single currency', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, maturity - SECONDS_IN_QUARTER);
     const { vaultSymbol } = vaultAccount;
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
+    );
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'), false);
     const { assetCash, strategyTokens } = vaultAccount.settleVaultAccount();
 
     expect(assetCash.toNumber()).toBe(100e8);
@@ -165,9 +175,12 @@ describe('Test Vault Account', () => {
   it('it calculates settlement with secondary borrows', () => {
     const vaultAccount = VaultAccount.emptyVaultAccount(vault2.vaultAddress, maturity - SECONDS_IN_QUARTER);
     const { vaultSymbol } = vaultAccount;
-    vaultAccount.updateVaultShares(TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol));
-    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'));
-    vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-0.01e8, 'ETH', true)]);
+    vaultAccount.updateVaultShares(
+      TypedBigNumber.from(100e8, BigNumberType.VaultShare, vaultAccount.vaultSymbol),
+      false
+    );
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.from(-100e8, BigNumberType.InternalUnderlying, 'DAI'), false);
+    vaultAccount.addSecondaryDebtShares([TypedBigNumber.fromBalance(-0.01e8, 'ETH', true)], false);
     const { assetCash, strategyTokens } = vaultAccount.settleVaultAccount();
 
     expect(assetCash.toNumber()).toBe(0);

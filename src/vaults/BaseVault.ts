@@ -208,7 +208,8 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
       newVaultAccount.updateMaturity(maturity);
       newVaultAccount.addStrategyTokens(
-        TypedBigNumber.from(strategyTokens.n, BigNumberType.StrategyToken, newVaultAccount.vaultSymbol)
+        TypedBigNumber.from(strategyTokens.n, BigNumberType.StrategyToken, newVaultAccount.vaultSymbol),
+        true
       );
       totalCashDeposit = totalCashDeposit.add(assetCash.toUnderlying());
     } else if (vaultAccount.maturity === 0) {
@@ -231,9 +232,9 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
         throw Error('Exceeds max secondary borrow capacity');
     }
 
-    newVaultAccount.updatePrimaryBorrowfCash(fCashToBorrow);
-    newVaultAccount.addStrategyTokens(strategyTokens);
-    newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed);
+    newVaultAccount.updatePrimaryBorrowfCash(fCashToBorrow, true);
+    newVaultAccount.addStrategyTokens(strategyTokens, true);
+    newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed, true);
 
     return {
       assessedFee,
@@ -343,9 +344,9 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     );
 
     const vaultSharesToRedeemAtCost = vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
-    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg());
-    newVaultAccount.updatePrimaryBorrowfCash(fCashToLend);
-    newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid);
+    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg(), true);
+    newVaultAccount.updatePrimaryBorrowfCash(fCashToLend, true);
+    newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid, true);
 
     return {
       costToLend: costToLend.neg(),
@@ -373,8 +374,8 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     );
 
     const vaultSharesToRedeemAtCost = vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
-    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg());
-    newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid);
+    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg(), true);
+    newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid, true);
 
     return {
       vaultSharesToRedeemAtCost,
@@ -399,7 +400,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     const newVaultAccount = VaultAccount.emptyVaultAccount(this.vaultAddress);
     newVaultAccount.updateMaturity(newMaturity);
     const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
-    newVaultAccount.addStrategyTokens(strategyTokens);
+    newVaultAccount.addStrategyTokens(strategyTokens, true);
 
     const { netCashToAccount } = vaultMarket.getCashAmountGivenfCashAmount(
       vaultAccount.primaryBorrowfCash.neg(),
@@ -436,8 +437,8 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
 
       // TODO: does this always work?
       depositParams = _depositParams;
-      newVaultAccount.addStrategyTokens(strategyTokens);
-      newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed);
+      newVaultAccount.addStrategyTokens(strategyTokens, true);
+      newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed, true);
 
       if (secondaryfCashBorrowed) {
         const [debtOwedOne, debtOwedTwo] = vaultAccount.getSecondaryDebtOwed();
@@ -510,6 +511,16 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       );
 
       const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
+      console.log(`
+      calculation:
+        target valuation: ${valuation.toExactString()}
+        deposit amount: ${depositAmount.toExactString()}
+        deposit multiple: ${depositMultiple / RATE_PRECISION}
+        cash to borrow: ${borrowedCash.add(fees).toExactString()}
+        actual leverage ratio: ${actualLeverageRatio / RATE_PRECISION}
+        target leverage ratio: ${leverageRatio / RATE_PRECISION}
+        primary borrow fCash: ${newVaultAccount.primaryBorrowfCash.toExactString()}
+      `);
 
       return {
         actualMultiple: actualLeverageRatio,
