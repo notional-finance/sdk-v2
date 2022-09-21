@@ -12,11 +12,8 @@ import FixedPoint from './FixedPoint';
 // const Boosted3TokenAuraVaultABI = require('../../../abi/Boosted3TokenAuraVault.json');
 
 interface InitParams {
-  underlyingPoolContext: PoolContext;
   underlyingPoolScalingFactors: FixedPoint[];
-  underlyingPoolAmp: FixedPoint;
   underlyingPoolFee: FixedPoint;
-  underlyingTotalSupply: FixedPoint;
   basePoolContext: PoolContext;
   basePoolScalingFactors: FixedPoint[];
   basePoolAmp: FixedPoint;
@@ -31,11 +28,11 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
     );
   }
 
-  public get underlyingPoolBalances() {
+  /*public get underlyingPoolBalances() {
     return this.initParams.underlyingPoolContext.balances.map((b, i) =>
       b.mul(this.initParams.underlyingPoolScalingFactors[i]).div(FixedPoint.ONE)
     );
-  }
+  }*/
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
 
@@ -70,7 +67,8 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
   }
 
   protected getBPTOut(tokenAmountIn: FixedPoint) {
-    let linearPoolBPT: FixedPoint;
+    /*let linearPoolBPT: FixedPoint;
+    
     {
       const { underlyingPoolAmp, underlyingPoolContext } = this.initParams;
       const balances = this.underlyingPoolBalances;
@@ -83,9 +81,9 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
         tokenAmountIn,
         invariant
       );
-    }
+    } */
 
-    let boostedBPT: FixedPoint;
+    /*let boostedBPT: FixedPoint;
     {
       const { basePoolAmp, basePoolContext } = this.initParams;
       const balances = this.basePoolBalances;
@@ -98,13 +96,13 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
         linearPoolBPT,
         invariant
       );
-    }
+    }*/
 
-    return boostedBPT;
+    return tokenAmountIn;
   }
 
   protected getUnderlyingOut(BPTIn: FixedPoint) {
-    let linearPoolBPT: FixedPoint;
+    /*let linearPoolBPT: FixedPoint;
     {
       const { basePoolAmp, basePoolContext } = this.initParams;
       const balances = this.basePoolBalances;
@@ -132,10 +130,10 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
         linearPoolBPT,
         invariant
       );
-    }
+    }*/
 
     return TypedBigNumber.fromBalance(
-      underlyingTokensOut.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE),
+      BPTIn.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE),
       this.getPrimaryBorrowSymbol(),
       true
     );
