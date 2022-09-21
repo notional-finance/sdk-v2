@@ -1,10 +1,9 @@
 import { BigNumber } from 'ethers';
 import { CashGroup, Market, System } from '../system';
 import GraphClient from '../data/GraphClient';
-import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds } from '../libs/utils';
 import AccountData from './AccountData';
-import { AssetType, BalanceHistory, TradeType } from '../libs/types';
+import { AssetType, BalanceHistory, TradeType, AccountHistory } from '../libs/types';
 import BalanceSummary from './BalanceSummary';
 import AssetSummary from './AssetSummary';
 import { BalanceResponse, AssetResponse, AccountQuery, AccountQueryResponse } from './queries/AccountQuery';
@@ -19,7 +18,7 @@ import {
 } from './queries/TransactionHistory';
 import { VaultAccountQuery, VaultAccountResponse } from './queries/VaultAccountQuery';
 import { VaultAccount } from '../vaults';
-import { SecondaryBorrowArray } from '..';
+import { BigNumberType, SecondaryBorrowArray, TypedBigNumber } from '..';
 
 export default class AccountGraphLoader {
   private static parseBalance(balance: BalanceResponse) {
@@ -274,7 +273,7 @@ export default class AccountGraphLoader {
       return {
         blockNumber: t.blockNumber,
         transactionHash: t.transactionHash,
-        timestamp: new Date(t.timestamp * 1000),
+        blockTime: new Date(t.timestamp * 1000),
         vaultTradeType: t.vaultTradeType,
         vaultAddress: vault.vaultAddress,
         maturityBefore,
@@ -283,7 +282,7 @@ export default class AccountGraphLoader {
         primaryBorrowfCashAfter: TypedBigNumber.fromBalance(t.primaryBorrowfCashAfter, primaryBorrowSymbol, true),
         netPrimaryBorrowfCashChange: t.netPrimaryBorrowfCashChange
           ? TypedBigNumber.fromBalance(t.netPrimaryBorrowfCashChange, primaryBorrowSymbol, true)
-          : undefined,
+          : TypedBigNumber.fromBalance(0, primaryBorrowSymbol, true),
         vaultSharesBefore: vaultSymbolBefore
           ? TypedBigNumber.from(t.vaultSharesBefore, BigNumberType.VaultShare, vaultSymbolBefore)
           : undefined,
@@ -318,14 +317,13 @@ export default class AccountGraphLoader {
         }),
         netUnderlyingCash: t.netUnderlyingCash
           ? TypedBigNumber.fromBalance(t.netUnderlyingCash, primaryBorrowSymbol, true)
-          : undefined,
+          : TypedBigNumber.fromBalance(0, primaryBorrowSymbol, true),
       };
     });
   }
 
   public static parseVaultAccount(data: VaultAccountResponse) {
     return data.leveragedVaultAccounts.map((v) => {
-      console.log('parse vault account', v);
       const system = System.getSystem();
       const vault = system.getVault(v.leveragedVault.vaultAddress);
       const primaryBorrowSymbol = system.getUnderlyingSymbol(vault.primaryBorrowCurrency);
@@ -383,7 +381,7 @@ export default class AccountGraphLoader {
     return accounts;
   }
 
-  public static async loadTransactionHistory(address: string, graphClient: GraphClient) {
+  public static async loadTransactionHistory(address: string, graphClient: GraphClient): Promise<AccountHistory> {
     const lowerCaseAddress = address.toLowerCase(); // Account id in subgraph is in lower case.
     const history = await graphClient.queryOrThrow<TransactionHistoryResponse>(TransactionHistoryQuery, {
       id: lowerCaseAddress,
