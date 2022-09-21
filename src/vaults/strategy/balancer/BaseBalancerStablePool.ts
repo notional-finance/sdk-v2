@@ -107,9 +107,10 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     _slippageBuffer: number,
     _blockTime?: number
   ) {
+    // TODO: need to get minBPT
     return {
       minBPT: BigNumber.from(0),
-      tradeData: '',
+      tradeData: '0x',
     };
   }
 
@@ -128,11 +129,12 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     _slippageBuffer: number,
     _blockTime?: number
   ) {
+    // TODO: need to get min primary and secondary, also specify trade
     return {
       minSecondaryLendRate: 0, // TODO: should this be here?
       minPrimary: BigNumber.from(0),
       minSecondary: BigNumber.from(0),
-      secondaryTradeParams: '',
+      secondaryTradeParams: '0x',
     };
   }
 

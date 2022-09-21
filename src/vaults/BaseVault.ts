@@ -495,11 +495,14 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       const strategyTokens = this.getStrategyTokensFromValue(maturity, valuation, blockTime);
       const { requiredDeposit } = this.getDepositGivenStrategyTokens(maturity, strategyTokens, slippageBuffer);
       const borrowedCash = requiredDeposit.sub(depositAmount);
-      const fees = this.assessVaultFees(maturity, borrowedCash, blockTime);
-      const fCashToBorrow = this.getVaultMarket(maturity).getfCashAmountGivenCashAmount(
-        borrowedCash.add(fees),
-        blockTime
-      );
+
+      // If borrowed cash is negative then floor it at zero
+      const fees = borrowedCash.isPositive()
+        ? this.assessVaultFees(maturity, borrowedCash, blockTime)
+        : borrowedCash.copy(0);
+      const fCashToBorrow = borrowedCash.isPositive()
+        ? this.getVaultMarket(maturity).getfCashAmountGivenCashAmount(borrowedCash.add(fees), blockTime)
+        : borrowedCash.copy(0);
 
       const { newVaultAccount } = this.simulateEnter(
         vaultAccount,
@@ -536,7 +539,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     fCashToBorrow.check(BigNumberType.InternalUnderlying, underlyingSymbol);
     const overrides = underlyingSymbol === 'ETH' ? { value: depositAmount.n } : {};
     const { cashToVault } = this.getDepositedCashFromBorrow(maturity, fCashToBorrow);
-    const totalDepositAmount = cashToVault.add(depositAmount);
+    const totalDepositAmount = cashToVault.toExternalPrecision().add(depositAmount);
     const depositParams = await this.getDepositParametersExact(maturity, totalDepositAmount, slippageBuffer);
 
     return populateTxnAndGas(notional, account, 'enterVault', [
@@ -544,7 +547,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       this.vaultAddress,
       depositAmount.toExternalPrecision().n,
       maturity,
-      fCashToBorrow.n,
+      fCashToBorrow.neg().n,
       maxBorrowRate,
       this.encodeDepositParams(depositParams),
       overrides,
