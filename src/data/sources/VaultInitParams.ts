@@ -1,7 +1,7 @@
 import { providers } from 'ethers';
 import { VaultFactory } from '../../vaults';
 
-export async function getVaultInitParams(
+export default async function getVaultInitParams(
   vaults: {
     strategy: string;
     vaultAddress: string;

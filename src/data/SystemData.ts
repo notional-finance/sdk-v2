@@ -15,7 +15,7 @@ import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
 import ERC20ABI from '../abi/ERC20.json';
 import nTokenERC20ABI from '../abi/nTokenERC20.json';
 import Notional from '..';
-import { getVaultInitParams } from './sources/VaultInitParams';
+import getVaultInitParams from './sources/VaultInitParams';
 import FixedPoint from '../vaults/strategy/balancer/FixedPoint';
 
 export async function fetchAndEncodeSystem(
