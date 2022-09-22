@@ -53,7 +53,7 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     const tokens = totalBPTHeld.isZero()
       ? bptAmount.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n
       : // bptAmount * totalStrategyTokensGlobal / totalBPTHeld
-        totalStrategyTokensGlobal.mul(bptAmount).div(totalBPTHeld);
+        totalStrategyTokensGlobal.mul(bptAmount).div(totalBPTHeld).n;
 
     return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }

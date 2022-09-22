@@ -8,6 +8,9 @@ export default class FixedPoint {
   constructor(public n: BigNumber) {}
 
   public static from(v: any) {
+    if (v instanceof BigNumber) {
+      return new FixedPoint(v);
+    }
     return new FixedPoint(BigNumber.from(v));
   }
 
