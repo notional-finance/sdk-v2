@@ -1,13 +1,13 @@
 import FixedPoint from './FixedPoint';
 
-type Params = {
+export type BalancerLinearParams = {
   fee: FixedPoint;
   lowerTarget: FixedPoint;
   upperTarget: FixedPoint;
 };
 
 export default class BalancerLinearMath extends FixedPoint {
-  public static calculateInvariant(nominalMainBalance: FixedPoint, wrappedBalance: FixedPoint) {
+  public static calcInvariant(nominalMainBalance: FixedPoint, wrappedBalance: FixedPoint) {
     return nominalMainBalance.add(wrappedBalance);
   }
 
@@ -16,7 +16,7 @@ export default class BalancerLinearMath extends FixedPoint {
     mainBalance: FixedPoint,
     wrappedBalance: FixedPoint,
     bptSupply: FixedPoint,
-    params: Params
+    params: BalancerLinearParams
   ) {
     // Amount out, so we round down overall.
 
@@ -30,21 +30,21 @@ export default class BalancerLinearMath extends FixedPoint {
     const previousNominalMain = this._toNominal(mainBalance, params);
     const afterNominalMain = this._toNominal(mainBalance.add(mainIn), params);
     const deltaNominalMain = afterNominalMain.sub(previousNominalMain);
-    const invariant = this._calcInvariant(previousNominalMain, wrappedBalance);
-    return bptSupply.mul(deltaNominalMain).divDownNoScale(invariant);
+    const invariant = this.calcInvariant(previousNominalMain, wrappedBalance);
+    return bptSupply.mul(deltaNominalMain).divNoScale(invariant, false);
   }
 
-  private static _toNominal(real: FixedPoint, params: Params) {
+  private static _toNominal(real: FixedPoint, params: BalancerLinearParams) {
     // Fees are always rounded down: either direction would work but we need to be consistent, and rounding down
     // uses less gas.
 
-    if (real < params.lowerTarget) {
-      const fees = (params.lowerTarget - real).mulDown(params.fee);
+    if (real.lt(params.lowerTarget)) {
+      const fees = params.lowerTarget.sub(real).mulDown(params.fee);
       return real.sub(fees);
-    } else if (real <= params.upperTarget) {
+    } else if (real.lte(params.upperTarget)) {
       return real;
     } else {
-      const fees = (real - params.upperTarget).mulDown(params.fee);
+      const fees = real.sub(params.upperTarget).mulDown(params.fee);
       return real.sub(fees);
     }
   }

@@ -30,8 +30,9 @@ describe('balancer Boosted vault test', () => {
   let balancerPool: BalancerBoostedPool;
   let daiLinearPool: BalancerLinearPool;
   let daiWhale: SignerWithAddress;
-  let assets: string[];
-  let balances: BigNumber[];
+  let baseAssets: string[];
+  let baseBalances: BigNumber[];
+  let underlyingBalances: BigNumber[];
   let dai: ERC20;
 
   const system = new MockSystem();
@@ -74,21 +75,34 @@ describe('balancer Boosted vault test', () => {
 
     balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerBoostedPool;
     daiWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
-    ({ tokens: assets, balances } = await balancerVault.getPoolTokens(poolID));
-    daiLinearPool = (await ethers.getContractAt(linearPoolABI, assets[2])) as BalancerLinearPool;
+    ({ tokens: baseAssets, balances: baseBalances } = await balancerVault.getPoolTokens(poolID));
+    daiLinearPool = (await ethers.getContractAt(linearPoolABI, baseAssets[2])) as BalancerLinearPool;
+    ({ balances: underlyingBalances } = await balancerVault.getPoolTokens(await daiLinearPool.getPoolId()));
     dai = (await ethers.getContractAt(ERC20ABI, await daiLinearPool.getMainToken())) as ERC20;
 
     await dai.connect(daiWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
 
+    const { lowerTarget, upperTarget } = await daiLinearPool.getTargets();
+
     const initParams: typeof boosted.initParams = {
+      underlyingPoolContext: {
+        mainTokenIndex: (await daiLinearPool.getMainIndex()).toNumber(),
+        wrappedTokenIndex: (await daiLinearPool.getWrappedIndex()).toNumber(),
+        balances: underlyingBalances.map(FixedPoint.from),
+      },
       underlyingPoolScalingFactors: (await daiLinearPool.getScalingFactors()).map(FixedPoint.from),
-      underlyingPoolFee: FixedPoint.from(await daiLinearPool.getSwapFeePercentage()),
+      underlyingPoolTotalSupply: FixedPoint.from(await daiLinearPool.getVirtualSupply()),
+      underlyingPoolParams: {
+        fee: FixedPoint.from(await daiLinearPool.getSwapFeePercentage()),
+        lowerTarget: FixedPoint.from(lowerTarget),
+        upperTarget: FixedPoint.from(upperTarget),
+      },
       basePoolContext: {
         poolAddress: address,
         poolId: poolID,
         primaryTokenIndex: 1,
         tokenOutIndex: 0,
-        balances: balances.map(FixedPoint.from),
+        balances: baseBalances.map(FixedPoint.from),
       },
       basePoolScalingFactors: (await balancerPool.getScalingFactors()).map(FixedPoint.from),
       basePoolAmp: FixedPoint.from((await balancerPool.getAmplificationParameter()).value),
@@ -98,5 +112,13 @@ describe('balancer Boosted vault test', () => {
     boosted = new Boosted3TokenAuraVault(vault.vaultAddress, initParams);
   });
 
-  it('calculates the appropriate bpt when joining', async () => {});
+  it('calculates the appropriate bpt when joining', async () => {
+    const { strategyTokens } = boosted.getStrategyTokensGivenDeposit(
+      100,
+      TypedBigNumber.fromBalance(1000e8, 'DAI', true),
+      0
+    );
+
+    console.log(strategyTokens.toString());
+  });
 });
