@@ -96,4 +96,5 @@ export interface SystemData {
   cashGroups: Map<number, CashGroupData>;
   vaults: Map<string, VaultConfig>;
   tradingEstimates: Map<string, TradingEstimate>;
+  initVaultParams: Map<string, string>;
 }

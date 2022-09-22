@@ -16,6 +16,7 @@ import ERC20ABI from '../abi/ERC20.json';
 import nTokenERC20ABI from '../abi/nTokenERC20.json';
 import Notional from '..';
 import { getVaultInitParams } from './sources/VaultInitParams';
+import FixedPoint from '../vaults/strategy/balancer/FixedPoint';
 
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
@@ -166,12 +167,15 @@ export async function fetchSystem(
   return result;
 }
 
-function _decodeValue(val: any, provider: ethers.providers.Provider) {
+export function decodeValue(val: any, provider?: ethers.providers.Provider) {
   if (typeof val !== 'object') {
     return val;
   }
   if (Object.prototype.hasOwnProperty.call(val, '_isBigNumber') && val._isBigNumber) {
     return BigNumber.from(val);
+  }
+  if (Object.prototype.hasOwnProperty.call(val, '_isFixedPoint') && val._isFixedPoint) {
+    return FixedPoint.from(val._hex);
   }
   if (Object.prototype.hasOwnProperty.call(val, '_isTypedBigNumber') && val._isTypedBigNumber) {
     return TypedBigNumber.fromObject(val);
@@ -184,13 +188,13 @@ function _decodeValue(val: any, provider: ethers.providers.Provider) {
     return undefined;
   }
   if (Array.isArray(val)) {
-    return val.map((v) => _decodeValue(v, provider));
+    return val.map((v) => decodeValue(v, provider));
   }
 
   // This is an object, recurse through it to decode nested properties
   const newVal = val;
   Object.keys(newVal).forEach((key) => {
-    const decoded = _decodeValue(newVal[key], provider);
+    const decoded = decodeValue(newVal[key], provider);
     if (key === 'underlyingContract' && decoded === undefined) {
       delete newVal[key];
     } else {
@@ -211,11 +215,12 @@ function _encodeMap(decoded: any) {
   mapped.cashGroups = new Map(Object.entries(decoded.cashGroups).map(([k, v]) => [Number(k), v]));
   mapped.vaults = new Map(Object.entries(decoded.vaults || {}));
   mapped.tradingEstimates = new Map(Object.entries(decoded.tradingEstimates || {}));
+  mapped.initVaultParams = new Map(Object.entries(decoded.initVaultParams || {}));
   return mapped;
 }
 
 export function decodeJSON(json: any, provider: ethers.providers.Provider): SystemData {
-  return _encodeMap(_decodeValue(json, provider));
+  return _encodeMap(decodeValue(json, provider));
 }
 
 export function decodeBinary(binary: Uint8Array, provider: ethers.providers.Provider): SystemData {

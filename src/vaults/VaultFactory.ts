@@ -8,6 +8,7 @@ import { VaultReturn } from '../libs/types';
 import MetaStable2TokenAura from './strategy/balancer/MetaStable2TokenAura';
 import Boosted3TokenAuraVault from './strategy/balancer/Boosted3TokenAuraVault';
 import { RATE_PRECISION } from '../config/constants';
+import { decodeValue } from '../data/SystemData';
 
 interface BaseVaultInstantiable<D, R, I extends Record<string, any>> {
   new (vaultAddress: string, initParams?: I): BaseVault<D, R, I>;
@@ -46,13 +47,15 @@ export default class VaultFactory {
     return this.nameToClass[name];
   }
 
-  public static async buildVaultFromCache<D, R, I extends Record<string, any>>(
-    strategyId: string,
-    vaultAddress: string,
-    initParams: I
-  ) {
-    const BaseVaultClass = this.resolveBaseVaultClass<D, R, I>(strategyId);
-    return new BaseVaultClass(vaultAddress, initParams);
+  public static buildVaultFromCache<D, R, I extends Record<string, any>>(strategyId: string, vaultAddress: string) {
+    const initParamsJSON = System.getSystem().getVaultJSONParams(vaultAddress);
+    try {
+      const initParams = decodeValue(JSON.parse(initParamsJSON));
+      const BaseVaultClass = this.resolveBaseVaultClass<D, R, I>(strategyId);
+      return new BaseVaultClass(vaultAddress, initParams);
+    } catch {
+      throw Error(`Unable to parse init params for ${vaultAddress}`);
+    }
   }
 
   public static async buildVault<D, R, I extends Record<string, any>>(
