@@ -71,4 +71,11 @@ export default class FixedPoint {
   public complement() {
     return this.lt(FixedPoint.ONE) ? FixedPoint.ONE.sub(this) : FixedPoint.from(0);
   }
+
+  public toJSON() {
+    return {
+      _isFixedPoint: true,
+      _hex: this.n.toHexString(),
+    };
+  }
 }

@@ -269,7 +269,6 @@ export default class AccountGraphLoader {
         maturityAfter && t.secondaryDebtSharesAfter
           ? system.getDebtShareSymbols(vault.vaultAddress, maturityAfter)
           : undefined;
-      console.log('inside parsing', t.netPrimaryBorrowfCashChange);
 
       return {
         blockNumber: t.blockNumber,

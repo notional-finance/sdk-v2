@@ -15,6 +15,7 @@ import AssetRateAggregatorABI from '../abi/AssetRateAggregator.json';
 import ERC20ABI from '../abi/ERC20.json';
 import nTokenERC20ABI from '../abi/nTokenERC20.json';
 import Notional from '..';
+import { getVaultInitParams } from './sources/VaultInitParams';
 
 export async function fetchAndEncodeSystem(
   graphClient: GraphClient,
@@ -44,6 +45,14 @@ export async function fetchAndEncodeSystem(
     };
     return o;
   }, {});
+  const vaults = config.reduce((obj, c) => {
+    const ret = obj;
+    c.leveragedVaults.forEach((v) => {
+      ret[v.vaultAddress] = v;
+    });
+    return ret;
+  }, {});
+  const initVaultParams = await getVaultInitParams(Object.values(vaults), provider);
 
   const systemObject: _SystemData = {
     network: networkName,
@@ -109,13 +118,8 @@ export async function fetchAndEncodeSystem(
       }
       return ret;
     }, {}),
-    vaults: config.reduce((obj, c) => {
-      const ret = obj;
-      c.leveragedVaults.forEach((v) => {
-        ret[v.vaultAddress] = v;
-      });
-      return ret;
-    }, {}),
+    vaults,
+    initVaultParams,
   };
 
   const binary = encodeSystemData(systemObject);
