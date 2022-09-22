@@ -471,6 +471,16 @@
                     "type": "uint32"
                   },
                   {
+                    "internalType": "uint32",
+                    "name": "emergencySettlementSlippageLimitPercent",
+                    "type": "uint32"
+                  },
+                  {
+                    "internalType": "uint32",
+                    "name": "maxRewardTradeSlippageLimitPercent",
+                    "type": "uint32"
+                  },
+                  {
                     "internalType": "uint16",
                     "name": "maxBalancerPoolShare",
                     "type": "uint16"
@@ -496,9 +506,14 @@
                     "type": "uint16"
                   },
                   {
-                    "internalType": "uint256",
-                    "name": "maxRewardTradeSlippageLimitPercent",
-                    "type": "uint256"
+                    "internalType": "uint16",
+                    "name": "oraclePriceDeviationLimitPercent",
+                    "type": "uint16"
+                  },
+                  {
+                    "internalType": "uint16",
+                    "name": "balancerPoolSlippageLimitPercent",
+                    "type": "uint16"
                   }
                 ],
                 "internalType": "struct StrategyVaultSettings",
@@ -583,6 +598,16 @@
                 "type": "uint32"
               },
               {
+                "internalType": "uint32",
+                "name": "emergencySettlementSlippageLimitPercent",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint32",
+                "name": "maxRewardTradeSlippageLimitPercent",
+                "type": "uint32"
+              },
+              {
                 "internalType": "uint16",
                 "name": "maxBalancerPoolShare",
                 "type": "uint16"
@@ -608,9 +633,14 @@
                 "type": "uint16"
               },
               {
-                "internalType": "uint256",
-                "name": "maxRewardTradeSlippageLimitPercent",
-                "type": "uint256"
+                "internalType": "uint16",
+                "name": "oraclePriceDeviationLimitPercent",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "balancerPoolSlippageLimitPercent",
+                "type": "uint16"
               }
             ],
             "internalType": "struct StrategyVaultSettings",
@@ -777,6 +807,16 @@
             "type": "uint32"
           },
           {
+            "internalType": "uint32",
+            "name": "emergencySettlementSlippageLimitPercent",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxRewardTradeSlippageLimitPercent",
+            "type": "uint32"
+          },
+          {
             "internalType": "uint16",
             "name": "maxBalancerPoolShare",
             "type": "uint16"
@@ -802,9 +842,14 @@
             "type": "uint16"
           },
           {
-            "internalType": "uint256",
-            "name": "maxRewardTradeSlippageLimitPercent",
-            "type": "uint256"
+            "internalType": "uint16",
+            "name": "oraclePriceDeviationLimitPercent",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "balancerPoolSlippageLimitPercent",
+            "type": "uint16"
           }
         ],
         "internalType": "struct StrategyVaultSettings",
