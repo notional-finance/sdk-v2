@@ -521,7 +521,15 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       };
     };
 
-    return doBinarySearchApprox(leverageRatio, leverageRatio, calculationFunction, precision);
+    // The initial multiple should be based on the account's current leverage ratio if
+    // it is already set
+    let initialMultiple = leverageRatio;
+    if (_vaultAccount) {
+      const currentLeverageRatio = this.getLeverageRatio(_vaultAccount);
+      initialMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / leverageRatio);
+    }
+
+    return doBinarySearchApprox(initialMultiple, leverageRatio, calculationFunction, precision);
   }
 
   public async populateEnterTransaction(
