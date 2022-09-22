@@ -136,7 +136,7 @@ export default class AccountData {
       const rate =
         v.maturityAfter && !v.netPrimaryBorrowfCashChange.isZero() && !v.netUnderlyingCash.isZero()
           ? Market.exchangeToInterestRate(
-              Market.exchangeRate(v.netPrimaryBorrowfCashChange, v.netUnderlyingCash),
+              Market.exchangeRate(v.netPrimaryBorrowfCashChange, v.netUnderlyingCash.toInternalPrecision()),
               v.blockTime.getTime() / 1000,
               v.maturityAfter
             )

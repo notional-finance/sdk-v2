@@ -269,6 +269,7 @@ export default class AccountGraphLoader {
         maturityAfter && t.secondaryDebtSharesAfter
           ? system.getDebtShareSymbols(vault.vaultAddress, maturityAfter)
           : undefined;
+      console.log('inside parsing', t.netPrimaryBorrowfCashChange);
 
       return {
         blockNumber: t.blockNumber,
@@ -316,8 +317,8 @@ export default class AccountGraphLoader {
           return undefined;
         }),
         netUnderlyingCash: t.netUnderlyingCash
-          ? TypedBigNumber.fromBalance(t.netUnderlyingCash, primaryBorrowSymbol, true)
-          : TypedBigNumber.fromBalance(0, primaryBorrowSymbol, true),
+          ? TypedBigNumber.fromBalance(t.netUnderlyingCash, primaryBorrowSymbol, false)
+          : TypedBigNumber.fromBalance(0, primaryBorrowSymbol, false),
       };
     });
   }
