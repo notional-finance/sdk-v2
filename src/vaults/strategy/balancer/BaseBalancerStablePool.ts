@@ -154,6 +154,8 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
     );
     const bptOut = this.getBPTOut(tokenAmountIn);
 
+    console.log(`bptOut = ${bptOut.n.toString()}`);
+
     return {
       strategyTokens: this.convertBPTToStrategyTokens(bptOut, maturity),
       secondaryfCashBorrowed: undefined,

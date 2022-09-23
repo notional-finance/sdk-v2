@@ -74,11 +74,13 @@ describe('balancer Boosted vault test', () => {
     const [address] = await balancerVault.getPool(poolID);
 
     balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerBoostedPool;
-    daiWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
+    daiWhale = await getAccount('0x5d38b4e4783e34e2301a2a36c39a03c45798c4dd');
     ({ tokens: baseAssets, balances: baseBalances } = await balancerVault.getPoolTokens(poolID));
     daiLinearPool = (await ethers.getContractAt(linearPoolABI, baseAssets[2])) as BalancerLinearPool;
     ({ balances: underlyingBalances } = await balancerVault.getPoolTokens(await daiLinearPool.getPoolId()));
     dai = (await ethers.getContractAt(ERC20ABI, await daiLinearPool.getMainToken())) as ERC20;
+
+    console.log(`baseBalances = ${baseBalances.map((b) => b.toString())}`);
 
     await dai.connect(daiWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
 
@@ -100,9 +102,11 @@ describe('balancer Boosted vault test', () => {
       basePoolContext: {
         poolAddress: address,
         poolId: poolID,
-        primaryTokenIndex: 1,
-        tokenOutIndex: 0,
+        primaryTokenIndex: 2, // DAI linear pool
+        tokenOutIndex: 1, // Boosted pool BPT
         balances: baseBalances.map(FixedPoint.from),
+        secondaryTokenIndex: 0, // USDT linear pool
+        tertiaryTokenIndex: 3, // USDC linear pool
       },
       basePoolScalingFactors: (await balancerPool.getScalingFactors()).map(FixedPoint.from),
       basePoolAmp: FixedPoint.from((await balancerPool.getAmplificationParameter()).value),
@@ -120,5 +124,94 @@ describe('balancer Boosted vault test', () => {
     );
 
     console.log(strategyTokens.toString());
+
+    await balancerVault.connect(daiWhale).swap(
+      {
+        poolId: await daiLinearPool.getPoolId(),
+        kind: 0,
+        assetIn: dai.address,
+        assetOut: daiLinearPool.address,
+        amount: ethers.utils.parseEther('1000'),
+        userData: [],
+      },
+      {
+        sender: daiWhale.address,
+        fromInternalBalance: false,
+        recipient: daiWhale.address,
+        toInternalBalance: false,
+      },
+      0,
+      Date.now() + 20000
+    );
+
+    console.log(
+      balancerVault.connect(daiWhale).interface.encodeFunctionData('swap', [
+        {
+          poolId: await daiLinearPool.getPoolId(),
+          kind: 0,
+          assetIn: dai.address,
+          assetOut: daiLinearPool.address,
+          amount: ethers.utils.parseEther('1000'),
+          userData: [],
+        },
+        {
+          sender: daiWhale.address,
+          fromInternalBalance: false,
+          recipient: daiWhale.address,
+          toInternalBalance: false,
+        },
+        0,
+        Date.now() + 20000,
+      ])
+    );
+
+    const linearBptMinted = parseFloat(ethers.utils.formatUnits(await daiLinearPool.balanceOf(daiWhale.address), 18));
+    console.log(linearBptMinted);
+
+    const bptAmountBefore = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(daiWhale.address), 18));
+    console.log(`before = ${bptAmountBefore.toString()}`);
+
+    await balancerVault.connect(daiWhale).swap(
+      {
+        poolId: poolID,
+        kind: 0,
+        assetIn: daiLinearPool.address,
+        assetOut: balancerPool.address,
+        amount: await daiLinearPool.balanceOf(daiWhale.address),
+        userData: [],
+      },
+      {
+        sender: daiWhale.address,
+        fromInternalBalance: false,
+        recipient: daiWhale.address,
+        toInternalBalance: false,
+      },
+      0,
+      Date.now() + 20000
+    );
+
+    console.log(
+      balancerVault.connect(daiWhale).interface.encodeFunctionData('swap', [
+        {
+          poolId: poolID,
+          kind: 0,
+          assetIn: daiLinearPool.address,
+          assetOut: balancerPool.address,
+          amount: BigNumber.from('988832741440624222166'),
+          userData: [],
+        },
+        {
+          sender: daiWhale.address,
+          fromInternalBalance: false,
+          recipient: daiWhale.address,
+          toInternalBalance: false,
+        },
+        0,
+        Date.now() + 20000,
+      ])
+    );
+
+    const bptMinted = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(daiWhale.address), 18));
+    console.log(bptMinted);
   });
 });
