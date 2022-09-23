@@ -1,6 +1,6 @@
 {
   "name": "@notional-finance/sdk-v2",
-  "version": "0.6.0-beta.30",
+  "version": "0.6.0-beta.31",
   "description": "Notional Finance SDK V2",
   "author": "Jeff Wu <jeff@notional.finance>",
   "homepage": "https://notional.finance",
@@ -25,7 +25,7 @@
     "fork:up": "cd ../subgraph-v2 && ./start.sh",
     "fork:down": "cd ../subgraph-v2 && docker-compose down",
     "test:unit": "yarn run build && yarn run jest --selectProjects unit --coverage",
-    "test:fork": "npx hardhat test --no-compile tests/integration/balancer-vaults.test.ts",
+    "test:fork": "npx hardhat test --no-compile tests/integration/system.test.ts",
     "test:integration": "yarn run build && yarn run testenv:up && yarn run jest --selectProjects integration && yarn run testenv:down",
     "test": "yarn run build && yarn run testenv:up && yarn run jest && yarn run testenv:down"
   },

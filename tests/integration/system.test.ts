@@ -36,7 +36,7 @@ describe('System Integration Test', () => {
 
   it.only('returns system configuration from the graph', async () => {
     const graphClient = new GraphClient(mainnetGraphEndpoint, 0, false);
-    const { binary, json } = await fetchAndEncodeSystem(
+    const { binary } = await fetchAndEncodeSystem(
       graphClient,
       provider,
       contracts,
@@ -46,13 +46,13 @@ describe('System Integration Test', () => {
     );
 
     const initData = decodeBinary(binary, provider);
-    console.log(json);
+    // console.log(json);
 
     const system = new System('', {} as GraphClient, {} as Contracts, provider, 0, 'goerli', false, initData);
     console.log(system.lastUpdateTimestamp);
     const metaVault = VaultFactory.buildVaultFromCache('0x77721081', '0xe767769b639af18dbedc5fb534e263ff7be43456');
 
-    console.log(metaVault.initParams);
+    console.log(metaVault.initParams.strategyContext.totalStrategyTokensGlobal.n.toString());
   });
 
   it('initializes the meta stable vault', async () => {

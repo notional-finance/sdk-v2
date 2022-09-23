@@ -31,6 +31,7 @@ describe('balancer vault test', () => {
   let assets: string[];
   let balances: BigNumber[];
   let weth: ERC20;
+  let wstETH: ERC20;
 
   const system = new MockSystem();
   System.overrideSystem(system);
@@ -79,6 +80,7 @@ describe('balancer vault test', () => {
     balancerPool = (await ethers.getContractAt(poolABI, address)) as BalancerStablePool;
     wethWhale = await getAccount('0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e');
     ({ tokens: assets, balances } = await balancerVault.getPoolTokens(poolID));
+    wstETH = (await ethers.getContractAt(ERC20ABI, assets[0])) as ERC20;
     weth = (await ethers.getContractAt(ERC20ABI, assets[1])) as ERC20;
 
     await weth.connect(wethWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
@@ -104,6 +106,10 @@ describe('balancer vault test', () => {
     ).map(FixedPoint.from);
 
     const initParams: typeof metaStable.initParams = {
+      strategyContext: {
+        totalBPTHeld: FixedPoint.from(0),
+        totalStrategyTokensGlobal: FixedPoint.from(0),
+      },
       poolContext: {
         poolAddress: address,
         poolId: poolID,
@@ -129,7 +135,6 @@ describe('balancer vault test', () => {
       TypedBigNumber.fromBalance(10e8, 'ETH', true),
       0
     );
-
     const userData = ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256[]', 'uint256'],
       [1, [ethers.utils.parseEther('0'), ethers.utils.parseEther('10')], 0]
@@ -140,12 +145,25 @@ describe('balancer vault test', () => {
       userData,
       fromInternalBalance: false,
     });
-
-    const bptMinted = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(wethWhale.address), 18));
+    const bptBalance = await balancerPool.balanceOf(wethWhale.address);
+    const bptMinted = parseFloat(ethers.utils.formatUnits(bptBalance, 18));
     expect(strategyTokens.toFloat()).to.be.closeTo(bptMinted, 0.005);
+    const { amountRedeemed } = metaStable.getRedeemGivenStrategyTokens(100, strategyTokens, 0);
+    const wethBalanceBefore = await weth.balanceOf(wethWhale.address);
+    const ethBalanceBefore = await wethWhale.getBalance();
+    const exitData = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256', 'uint256'], [0, bptBalance, 1]);
+    await balancerVault.connect(wethWhale).exitPool(poolID, wethWhale.address, wethWhale.address, {
+      assets,
+      minAmountsOut: [ethers.utils.parseEther('0'), ethers.utils.parseEther('9.8')],
+      userData: exitData,
+      toInternalBalance: false,
+    });
+    console.log('wsteth balance', await wstETH.balanceOf(wethWhale.address));
+    console.log('weth balance', wethBalanceBefore.sub(await weth.balanceOf(wethWhale.address)));
+    console.log('eth balance', ethBalanceBefore.sub(await wethWhale.getBalance()));
+    console.log('bpt balance', await balancerPool.balanceOf(wethWhale.address));
+    console.log(amountRedeemed.toExactString());
   });
 
-  // −0.002822928523841216
-  // −3.788725085793369041
-  // it('calculates the appropriate tokens out when exiting', () => {});
+  it('calculates the value of tokens out when exiting', () => {});
 });
