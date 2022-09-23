@@ -233,19 +233,19 @@ describe('calculates interest rate risk', () => {
     ];
 
     accountData.updateAsset(
-      // ETH leverage on nToken
+      // USDC leverage on nToken
       {
         currencyId: 3,
         maturity,
         assetType: AssetType.fCash,
-        notional: TypedBigNumber.fromBalance(-85e8, 'USDC', true),
+        notional: TypedBigNumber.fromBalance(-83e8, 'USDC', true),
         settlementDate: maturity,
       }
     );
 
     const risk = InterestRateRisk.calculateInterestRateRisk(accountData, blockTime);
     expect(risk.get(3)?.upperLiquidationInterestRate).toBe(null);
-    expect(risk.get(3)?.lowerLiquidationInterestRate).toBeCloseTo(0.109e9, -8);
+    expect(risk.get(3)?.lowerLiquidationInterestRate).toBeCloseTo(0.029e9, -8);
   });
 
   it('finds liquidation rates, cross maturity, undercollateralized', () => {

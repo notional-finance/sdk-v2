@@ -1,5 +1,4 @@
 import { BigNumber, BigNumberish, BytesLike } from 'ethers';
-import TypedBigNumber from './TypedBigNumber';
 import { BalancerPool } from '../typechain/BalancerPool';
 import { BalancerVault } from '../typechain/BalancerVault';
 import { ERC20 } from '../typechain/ERC20';
@@ -9,6 +8,7 @@ import { SNOTE } from '../typechain/SNOTE';
 import { TreasuryManager } from '../typechain/TreasuryManager';
 import { Notional as NotionalProxyTypechain } from '../typechain/Notional';
 import { ExchangeV3 } from '../typechain/ExchangeV3';
+import { TypedBigNumber } from '..';
 
 export enum NTokenStatus {
   NoNToken = 'NoNToken',
@@ -167,10 +167,28 @@ export interface StakedNoteHistory {
   }[];
 }
 
+export interface VaultTradeHistory {
+  blockNumber: number;
+  transactionHash: string;
+  blockTime: Date;
+  vaultTradeType: string;
+  vaultAddress: string;
+  maturityBefore: number | undefined;
+  maturityAfter: number | undefined;
+  primaryBorrowfCashBefore: TypedBigNumber | undefined;
+  primaryBorrowfCashAfter: TypedBigNumber | undefined;
+  netPrimaryBorrowfCashChange: TypedBigNumber;
+  vaultSharesBefore: TypedBigNumber | undefined;
+  vaultSharesAfter: TypedBigNumber | undefined;
+  netVaultSharesChange: TypedBigNumber | undefined;
+  netUnderlyingCash: TypedBigNumber;
+}
+
 export type AccountHistory = {
   trades: TradeHistory[];
   balanceHistory: BalanceHistory[];
   sNOTEHistory: StakedNoteHistory;
+  vaultTradeHistory: VaultTradeHistory[];
 };
 
 export interface IncentiveFactors {
@@ -242,4 +260,23 @@ export interface CollateralAction {
   amount?: TypedBigNumber;
   fCashAmount?: TypedBigNumber;
   minLendSlippage?: number;
+}
+
+export interface VaultReturn {
+  [k: string]: number;
+  timestamp: number;
+}
+
+export enum LiquidationThresholdType {
+  exchangeRate,
+  fCashInterestRate,
+}
+
+export interface LiquidationThreshold {
+  name: string;
+  type: LiquidationThresholdType;
+  rate?: number;
+  ethExchangeRate?: TypedBigNumber;
+  debtCurrencyId?: number;
+  collateralCurrencyId?: number;
 }

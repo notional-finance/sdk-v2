@@ -458,6 +458,14 @@ export default class System {
     return vault;
   }
 
+  public getVaultJSONParams(vaultAddress: string) {
+    // This just returns the raw JSON string from initVaultParams for use
+    // in the VaultFactory
+    const vaultParams = this.data.initVaultParams.get(vaultAddress);
+    if (!vaultParams) throw Error(`Vault at ${vaultAddress} not found`);
+    return vaultParams;
+  }
+
   public getVaultState(vaultAddress: string, maturity: number) {
     const vault = this.getVault(vaultAddress);
     const state = vault.vaultStates?.find((s) => s.maturity === maturity);
@@ -473,12 +481,6 @@ export default class System {
     }
 
     return state;
-  }
-
-  public async getVaultReturns<T = Record<string, number>>(vaultAddress: string, maturity: number): Promise<T> {
-    const resp = await fetch(`${this.cacheUrl}/vault-returns/${vaultAddress}/${maturity}`);
-    if (!resp.ok) throw Error('Could not find vault returns');
-    return resp.json();
   }
 
   /** Trading Estimation Data * */

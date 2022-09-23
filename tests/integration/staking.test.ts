@@ -102,6 +102,7 @@ describe('staking test', () => {
       sNOTEBptBalance: BigNumber.from(totalSupply),
       swapFee: ethers.utils.parseEther('0.005'),
       sNOTETotalSupply: TypedBigNumber.fromBalance(totalSupply, 'sNOTE', false),
+      noteETHOraclePrice: BigNumber.from(0),
     });
   });
 
@@ -126,6 +127,7 @@ describe('staking test', () => {
       sNOTEBptBalance: BigNumber.from(totalSupply),
       swapFee: ethers.utils.parseEther('0.005'),
       sNOTETotalSupply: TypedBigNumber.fromBalance(totalSupply, 'sNOTE', false),
+      noteETHOraclePrice: BigNumber.from(0),
     });
   }
 

@@ -60,6 +60,7 @@ describe('Balance Summary', () => {
         trades: [],
         balanceHistory: tradeHistory,
         sNOTEHistory: {} as StakedNoteHistory,
+        vaultTradeHistory: [],
       }
     );
     const summary = BalanceSummary.build(data)[0];
@@ -95,6 +96,7 @@ describe('Balance Summary', () => {
         trades: [],
         balanceHistory: tradeHistory,
         sNOTEHistory: {} as StakedNoteHistory,
+        vaultTradeHistory: [],
       }
     );
     const summary = BalanceSummary.build(data)[0];

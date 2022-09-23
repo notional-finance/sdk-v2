@@ -8,3 +8,4 @@ export default Notional;
 export * from './libs/types';
 export * from './data/index';
 export { FreeCollateral, TypedBigNumber, BigNumberType, SystemEvents, Account, AccountData };
+export { VaultFactory, VaultAccount, BaseVault } from './vaults/index';

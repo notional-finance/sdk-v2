@@ -19,7 +19,7 @@ import {
 } from '../libs/types';
 import { assetTypeNum, convertAssetType, getNowSeconds, hasMatured } from '../libs/utils';
 import { Asset } from '../data';
-import { System, CashGroup, FreeCollateral, NTokenValue } from '../system';
+import { System, CashGroup, FreeCollateral, NTokenValue, Market } from '../system';
 import AccountGraphLoader from './AccountGraphLoader';
 import AssetSummary from './AssetSummary';
 import BalanceSummary from './BalanceSummary';
@@ -131,10 +131,33 @@ export default class AccountData {
     }));
   }
 
+  public getVaultHistory(): TransactionHistory[] {
+    return (this.accountHistory?.vaultTradeHistory || []).map((v) => {
+      const rate =
+        v.maturityAfter && !v.netPrimaryBorrowfCashChange.isZero() && !v.netUnderlyingCash.isZero()
+          ? Market.exchangeToInterestRate(
+              Market.exchangeRate(v.netPrimaryBorrowfCashChange, v.netUnderlyingCash.toInternalPrecision()),
+              v.blockTime.getTime() / 1000,
+              v.maturityAfter
+            )
+          : undefined;
+      return {
+        currencyId: v.netUnderlyingCash.currencyId,
+        txnType: v.vaultTradeType,
+        timestampMS: v.blockTime.getTime(),
+        transactionHash: v.transactionHash,
+        amount: v.netUnderlyingCash,
+        maturity: v.maturityAfter,
+        rate,
+      };
+    });
+  }
+
   public getFullTransactionHistory(filterStartTime?: number): TransactionHistory[] {
     const fullHistory = BalanceSummary.getTransactionHistory(this.getBalanceHistory())
       .concat(AssetSummary.getTransactionHistory(this.getAssetHistory()))
-      .concat(NOTESummary.getTransactionHistory(this.accountHistory?.sNOTEHistory));
+      .concat(NOTESummary.getTransactionHistory(this.accountHistory?.sNOTEHistory))
+      .concat(this.getVaultHistory());
 
     return fullHistory
       .filter((h) => (filterStartTime ? h.timestampMS >= filterStartTime : true))
@@ -155,6 +178,7 @@ export default class AccountData {
         this.bitmapCurrencyId?.toString() || '',
         JSON.stringify(this.accountBalances),
         JSON.stringify(this.portfolio),
+        JSON.stringify(this.vaultAccounts),
         this.isCopy.toString(),
       ].join(':')
     );
