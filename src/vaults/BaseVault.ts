@@ -570,7 +570,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       receiver ?? account,
       vaultSharesToRedeem.n,
       fCashToLend.n,
-      minLendRate,
+      Math.max(minLendRate, 0),
       this.encodeRedeemParams(redeemParams),
     ]);
   }
@@ -613,10 +613,10 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     return populateTxnAndGas(notional, account, 'rollVaultPosition', [
       account,
       this.vaultAddress,
-      fCashToBorrow.n,
+      fCashToBorrow.neg().n,
       newMaturity,
       depositAmount.n,
-      minLendRate,
+      Math.max(minLendRate, 0),
       maxBorrowRate,
       this.encodeDepositParams(depositParams),
     ]);
