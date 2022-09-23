@@ -173,7 +173,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     try {
       // netCashToAccount is negative here
       const { netCashToAccount } = vaultMarket.getCashAmountGivenfCashAmount(fCashDebtToRepay.neg(), blockTime);
-      costToLend = netCashToAccount.sub(assetCash);
+      costToLend = netCashToAccount.toAssetCash().sub(assetCash);
     } catch {
       // If unable to lend then the cost to lend is at 0% interest
       costToLend = fCashDebtToRepay.toAssetCash();

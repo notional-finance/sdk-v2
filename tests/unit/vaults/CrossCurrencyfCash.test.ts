@@ -3,10 +3,11 @@ import { ETHRate } from '../../../src/data';
 import BaseVault from '../../../src/vaults/BaseVault';
 import { BigNumberType, TypedBigNumber } from '../../../src';
 import { RATE_PRECISION, SECONDS_IN_DAY, SECONDS_IN_QUARTER } from '../../../src/config/constants';
-import { System } from '../../../src/system';
+import { System, CashGroup } from '../../../src/system';
 import VaultAccount from '../../../src/vaults/VaultAccount';
 import MockSystem, { MutableForTesting } from '../../mocks/MockSystem';
 import CrossCurrencyfCash from '../../../src/vaults/strategy/notional/CrossCurrencyfCash';
+import { getNowSeconds } from '../../../src/libs/utils';
 
 describe('Cross Currency fCash', () => {
   const system = new MockSystem();
@@ -20,6 +21,7 @@ describe('Cross Currency fCash', () => {
   const { vault, vaultSymbol } = MockCrossCurrencyConfig(maturity);
   const crossCurrency = new CrossCurrencyfCash(vault.vaultAddress, { lendCurrencyId: 3 });
   system.setVault(vault);
+  const blockTime = CashGroup.getTimeReference(getNowSeconds());
 
   it('calculates collateral ratios from leverage ratios and vice versa', () => {
     const leverageRatio = BaseVault.collateralToLeverageRatio(0.2e9);
@@ -54,7 +56,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       fCashToBorrow,
       TypedBigNumber.fromBalance(25_000e8, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
     const { strategyTokens } = newVaultAccount.getPoolShare();
 
@@ -62,7 +65,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       totalCashDeposit,
       strategyTokens,
-      depositParams
+      depositParams,
+      blockTime
     );
     expect(likelySlippage).toBeLessThan(worstCaseSlippage);
     expect(crossCurrency.encodeDepositParams(depositParams)).toBeDefined();
@@ -77,18 +81,20 @@ describe('Cross Currency fCash', () => {
     );
     const { strategyTokens: strategyTokensBefore } = vaultAccount.getPoolShare();
 
-    const { costToLend, newVaultAccount, redeemParams } = crossCurrency.simulateExitPreMaturityGivenRepayment(
+    const { costToRepay, newVaultAccount, redeemParams } = crossCurrency.simulateExitPreMaturityGivenRepayment(
       vaultAccount,
       TypedBigNumber.fromBalance(100e8, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
     const { strategyTokens: strategyTokensAfter } = newVaultAccount.getPoolShare();
 
     const { likelySlippage, worstCaseSlippage } = crossCurrency.getSlippageForRedeem(
       maturity,
-      costToLend,
+      costToRepay.neg().toUnderlying(),
       strategyTokensBefore.sub(strategyTokensAfter),
-      redeemParams
+      redeemParams,
+      blockTime
     );
     expect(likelySlippage).toBeLessThan(worstCaseSlippage);
     expect(crossCurrency.encodeRedeemParams(redeemParams)).toBeDefined();
@@ -100,13 +106,15 @@ describe('Cross Currency fCash', () => {
     const { strategyTokens, depositParams: depositParams1 } = crossCurrency.getStrategyTokensGivenDeposit(
       vaultAccount.maturity,
       depositAmount,
-      0.0025
+      0.0025,
+      blockTime
     );
 
     const { requiredDeposit, depositParams: depositParams2 } = crossCurrency.getDepositGivenStrategyTokens(
       vaultAccount.maturity,
       strategyTokens,
-      0.0025
+      0.0025,
+      blockTime
     );
 
     expect(requiredDeposit.toNumber()).toBeCloseTo(depositAmount.toNumber(), -3);
@@ -120,13 +128,15 @@ describe('Cross Currency fCash', () => {
     const { amountRedeemed, redeemParams: redeemParams1 } = crossCurrency.getRedeemGivenStrategyTokens(
       vaultAccount.maturity,
       strategyTokens,
-      0.0025
+      0.0025,
+      blockTime
     );
 
     const { strategyTokens: strategyTokens1, redeemParams: redeemParams2 } = crossCurrency.getStrategyTokensGivenRedeem(
       vaultAccount.maturity,
       amountRedeemed,
-      0.0025
+      0.0025,
+      blockTime
     );
     expect(strategyTokens1.toNumber()).toBeCloseTo(strategyTokens.toNumber(), -3);
     expect(redeemParams1.minPurchaseAmount.toString()).toBe(redeemParams2.minPurchaseAmount.toString());
@@ -142,7 +152,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       fCashToBorrow,
       TypedBigNumber.fromBalance(25e8, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
 
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -9);
@@ -165,7 +176,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       fCashToBorrow,
       TypedBigNumber.fromBalance(25e8, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
 
     expect(totalCashDeposit.add(assessedFee).toNumber()).toBeCloseTo(124.375e8, -9);
@@ -186,7 +198,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       TypedBigNumber.fromBalance(-100e8, 'DAI', true),
       TypedBigNumber.fromBalance(0, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
 
     // There is 2e8 asset cash from the settled vault
@@ -203,7 +216,8 @@ describe('Cross Currency fCash', () => {
         maturity,
         TypedBigNumber.fromBalance(-11_000e8, 'DAI', true),
         TypedBigNumber.fromBalance(25e8, 'DAI', true),
-        0.0025
+        0.0025,
+        blockTime
       );
     }).toThrow('Exceeds max primary borrow capacity');
   });
@@ -216,15 +230,18 @@ describe('Cross Currency fCash', () => {
       false
     );
 
-    const { costToLend, vaultSharesToRedeemAtCost, newVaultAccount } =
+    const { costToRepay, vaultSharesToRedeemAtCost, newVaultAccount } =
       crossCurrency.simulateExitPreMaturityGivenRepayment(
         vaultAccount,
         TypedBigNumber.fromBalance(100e8, 'DAI', true),
-        0.0025
+        0.0025,
+        blockTime
       );
 
-    expect(costToLend.toNumber()).toBeLessThan(100e8);
-    expect(costToLend.toNumber()).toBeGreaterThan(98.5e8);
+    console.log(costToRepay.toExactString());
+
+    expect(costToRepay.neg().toUnderlying().toNumber()).toBeLessThan(100e8);
+    expect(costToRepay.neg().toUnderlying().toNumber()).toBeGreaterThan(98.5e8);
     expect(vaultSharesToRedeemAtCost.toNumber()).toBeGreaterThan(100e8);
     expect(newVaultAccount.primaryBorrowfCash.isZero()).toBeTruthy();
     expect(vaultAccount.vaultShares.sub(newVaultAccount.vaultShares).toExactString()).toBe(
@@ -256,9 +273,10 @@ describe('Cross Currency fCash', () => {
     const { vaultSharesToRedeemAtCost, newVaultAccount } = crossCurrency.simulateExitPreMaturityGivenWithdraw(
       vaultAccount,
       TypedBigNumber.fromBalance(10e8, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
-    expect(vaultSharesToRedeemAtCost.toFloat()).toBeCloseTo(10, 1);
+    expect(vaultSharesToRedeemAtCost.toFloat()).toBeCloseTo(10.1, 1);
     expect(newVaultAccount.primaryBorrowfCash.eq(vaultAccount.primaryBorrowfCash)).toBeTruthy();
     expect(newVaultAccount.vaultShares.lt(vaultAccount.vaultShares)).toBeTruthy();
     expect(crossCurrency.getLeverageRatio(newVaultAccount)).toBeGreaterThan(
@@ -274,7 +292,7 @@ describe('Cross Currency fCash', () => {
       false
     );
 
-    const { newVaultAccount } = crossCurrency.getExitParamsFromLeverageRatio(vaultAccount, 4.0e9, 0.0025);
+    const { newVaultAccount } = crossCurrency.getExitParamsFromLeverageRatio(vaultAccount, 4.0e9, 0.0025, blockTime);
     expect(crossCurrency.getLeverageRatio(newVaultAccount)).toBeCloseTo(4.0e9, -7);
   });
 
@@ -286,15 +304,17 @@ describe('Cross Currency fCash', () => {
       maturity,
       TypedBigNumber.fromBalance(-100e8, 'DAI', true),
       TypedBigNumber.fromBalance(25e8, 'DAI', true),
-      0.0025
+      0.0025,
+      blockTime
     );
 
     expect(() => {
       crossCurrency.simulateRollPosition(
         newVaultAccount,
         maturity + SECONDS_IN_DAY,
+        TypedBigNumber.getZeroUnderlying(2),
         0.0025,
-        TypedBigNumber.getZeroUnderlying(2)
+        blockTime
       );
     }).toThrow('Cannot roll position in vault');
   });
@@ -306,7 +326,9 @@ describe('Cross Currency fCash', () => {
       vaultAccount.maturity,
       depositAmount,
       6e9,
-      0.025
+      0.025,
+      undefined,
+      blockTime
     );
 
     const { newVaultAccount } = crossCurrency.simulateEnter(
@@ -314,7 +336,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       fCashToBorrow,
       depositAmount,
-      0.0025
+      0.0025,
+      blockTime
     );
     expect(crossCurrency.getLeverageRatio(newVaultAccount)! / RATE_PRECISION).toBeCloseTo(6.0);
   });
@@ -326,7 +349,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       TypedBigNumber.fromBalance(-100e8, 'DAI', true),
       depositAmount,
-      0.0025
+      0.0025,
+      blockTime
     );
 
     const fCashToBorrow = crossCurrency.getfCashBorrowFromLeverageRatio(
@@ -334,7 +358,8 @@ describe('Cross Currency fCash', () => {
       depositAmount,
       6e9,
       0.025,
-      vaultAccount
+      vaultAccount,
+      blockTime
     );
 
     const { newVaultAccount: finalVaultAccount } = crossCurrency.simulateEnter(
@@ -342,7 +367,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       fCashToBorrow,
       depositAmount,
-      0.0025
+      0.0025,
+      blockTime
     );
     expect(crossCurrency.getLeverageRatio(finalVaultAccount) / RATE_PRECISION).toBeCloseTo(6.0);
   });
@@ -354,7 +380,9 @@ describe('Cross Currency fCash', () => {
       vaultAccount.maturity,
       depositAmount,
       4.7e9,
-      0.025
+      0.025,
+      undefined,
+      blockTime
     );
 
     const { newVaultAccount } = crossCurrency.simulateEnter(
@@ -362,7 +390,8 @@ describe('Cross Currency fCash', () => {
       maturity,
       fCashToBorrow,
       depositAmount,
-      0.0025
+      0.0025,
+      blockTime
     );
 
     const thresholds = crossCurrency.getLiquidationThresholds(newVaultAccount);
