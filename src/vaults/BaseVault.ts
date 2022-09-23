@@ -165,6 +165,24 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     return BaseVault.assessVaultFees(maturity, this.getVault(), cashBorrowed, blockTime);
   }
 
+  public getCostToRepay(vaultAccount: VaultAccount, fCashDebtToRepay: TypedBigNumber, blockTime = getNowSeconds()) {
+    const { assetCash } = vaultAccount.getPoolShare();
+    const vaultMarket = this.getVaultMarket(vaultAccount.maturity);
+    // Calculate the cost to exit the position
+    let costToLend: TypedBigNumber;
+    try {
+      // netCashToAccount is negative here
+      const { netCashToAccount } = vaultMarket.getCashAmountGivenfCashAmount(fCashDebtToRepay.neg(), blockTime);
+      costToLend = netCashToAccount.sub(assetCash);
+    } catch {
+      // If unable to lend then the cost to lend is at 0% interest
+      costToLend = fCashDebtToRepay.toAssetCash();
+    }
+
+    // Cost to lend returned is negative
+    return costToLend;
+  }
+
   public checkBorrowCapacity(fCashToBorrow: TypedBigNumber) {
     const fCashCurrency = System.getSystem().getCurrencyBySymbol(fCashToBorrow.symbol);
     const vault = this.getVault();
@@ -329,16 +347,13 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   ) {
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Exit, in Settlement');
-    const vaultMarket = this.getVaultMarket(vaultAccount.maturity);
     if (fCashToLend.add(vaultAccount.primaryBorrowfCash).isPositive()) throw Error('Cannot lend to positive balance');
 
     const newVaultAccount = VaultAccount.copy(vaultAccount);
-    const { netCashToAccount: costToLend } = vaultMarket.getCashAmountGivenfCashAmount(fCashToLend, blockTime);
-    const { assetCash } = vaultAccount.getPoolShare();
+    const costToRepay = this.getCostToRepay(vaultAccount, fCashToLend.neg(), blockTime);
     const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
       newVaultAccount.maturity,
-      // Asset cash from the vault will be used to offset lending
-      costToLend.neg().add(assetCash.toUnderlying()),
+      costToRepay.neg().toUnderlying(),
       slippageBuffer,
       blockTime
     );
@@ -349,7 +364,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid, true);
 
     return {
-      costToLend: costToLend.neg(),
+      costToRepay,
       vaultSharesToRedeemAtCost,
       redeemParams,
       newVaultAccount,
@@ -385,94 +400,55 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   }
 
   public simulateRollPosition(
-    vaultAccount: VaultAccount,
+    _vaultAccount: VaultAccount,
     newMaturity: number,
+    depositAmount: TypedBigNumber,
     slippageBuffer: number,
-    additionalCashToBorrow: TypedBigNumber,
     blockTime = getNowSeconds()
   ) {
     const vault = this.getVault();
     if (!vault.allowRollPosition) throw Error('Cannot roll position in vault');
+
+    const vaultAccount = VaultAccount.copy(_vaultAccount);
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Roll, in Settlement');
-    const vaultMarket = this.getVaultMarket(vaultAccount.maturity);
-    const newVaultMarket = this.getVaultMarket(newMaturity);
-    const newVaultAccount = VaultAccount.emptyVaultAccount(this.vaultAddress);
-    newVaultAccount.updateMaturity(newMaturity);
-    const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
-    newVaultAccount.addStrategyTokens(strategyTokens, true);
 
-    const { netCashToAccount } = vaultMarket.getCashAmountGivenfCashAmount(
-      vaultAccount.primaryBorrowfCash.neg(),
-      blockTime
-    );
-    const costToLend = netCashToAccount.sub(assetCash);
-
-    // Calculate amount to borrow
-    const assessedFee = this.assessVaultFees(newMaturity, costToLend.neg(), blockTime);
-    // TODO: buffer this slippage amount
-    let totalfCashToBorrow = newVaultMarket.getfCashAmountGivenCashAmount(costToLend.neg().add(assessedFee), blockTime);
-    // TODO: need to have some default set of values here...
-    let depositParams = this.getDepositParameters(
-      newMaturity,
-      TypedBigNumber.getZeroUnderlying(vault.primaryBorrowCurrency),
-      slippageBuffer
+    // This is a negative number in asset cash terms
+    const costToRepay = this.getCostToRepay(vaultAccount, vaultAccount.primaryBorrowfCash, blockTime).add(
+      depositAmount.toAssetCash()
     );
 
-    if (additionalCashToBorrow.isPositive()) {
-      totalfCashToBorrow = totalfCashToBorrow.add(
-        newVaultMarket.getfCashAmountGivenCashAmount(additionalCashToBorrow, blockTime)
-      );
+    // Calculate amount to borrow to get sufficient funds for cost to lend
+    let fCashToBorrowForRepayment: TypedBigNumber;
+    if (costToRepay.isNegative()) {
+      const newVaultMarket = this.getVaultMarket(newMaturity);
+      const assessedFee = this.assessVaultFees(newMaturity, costToRepay.neg(), blockTime);
+      fCashToBorrowForRepayment = newVaultMarket
+        .getfCashAmountGivenCashAmount(costToRepay.neg().add(assessedFee).toUnderlying(), blockTime)
+        // Buffer the fcash to borrow by some slippage amount
+        .scale(slippageBuffer + RATE_PRECISION, RATE_PRECISION);
 
-      const {
-        strategyTokens,
-        secondaryfCashBorrowed,
-        depositParams: _depositParams,
-      } = this.getStrategyTokensGivenDeposit(
-        newVaultAccount.maturity,
-        additionalCashToBorrow,
-        slippageBuffer,
-        blockTime
-      );
-
-      // TODO: does this always work?
-      depositParams = _depositParams;
-      newVaultAccount.addStrategyTokens(strategyTokens, true);
-      newVaultAccount.addSecondaryDebtShares(secondaryfCashBorrowed, true);
-
-      if (secondaryfCashBorrowed) {
-        const [debtOwedOne, debtOwedTwo] = vaultAccount.getSecondaryDebtOwed();
-
-        if (secondaryfCashBorrowed[0]) {
-          const netSecondaryBorrowed = debtOwedOne
-            ? secondaryfCashBorrowed[0].sub(debtOwedOne)
-            : secondaryfCashBorrowed[0];
-
-          if (!this.checkBorrowCapacity(netSecondaryBorrowed)) {
-            throw Error('Exceeds max secondary borrow capacity');
-          }
-        }
-
-        if (secondaryfCashBorrowed[1]) {
-          const netSecondaryBorrowed = debtOwedTwo
-            ? secondaryfCashBorrowed[1].sub(debtOwedTwo)
-            : secondaryfCashBorrowed[1];
-
-          if (!this.checkBorrowCapacity(netSecondaryBorrowed)) {
-            throw Error('Exceeds max secondary borrow capacity');
-          }
-        }
-      }
+      if (!this.checkBorrowCapacity(fCashToBorrowForRepayment.sub(vaultAccount.primaryBorrowfCash).neg()))
+        throw Error('Exceeds max primary borrow capacity');
+    } else {
+      // This may trip minimum borrow requirements
+      fCashToBorrowForRepayment = vaultAccount.primaryBorrowfCash.copy(0);
     }
 
-    if (!this.checkBorrowCapacity(totalfCashToBorrow.sub(vaultAccount.primaryBorrowfCash).neg()))
-      throw Error('Exceeds max primary borrow capacity');
+    // These strategy tokens are transferred from one maturity to the next
+    const { strategyTokens } = vaultAccount.getPoolShare();
+    const newVaultAccount = VaultAccount.emptyVaultAccount(this.vaultAddress);
+    newVaultAccount.updateMaturity(newMaturity);
+    newVaultAccount.addStrategyTokens(
+      TypedBigNumber.from(strategyTokens.n, BigNumberType.StrategyToken, newVaultAccount.vaultSymbol),
+      true
+    );
+    newVaultAccount.updatePrimaryBorrowfCash(fCashToBorrowForRepayment, true);
 
     return {
-      totalfCashToBorrow,
-      assessedFee,
+      fCashToBorrowForRepayment,
+      costToRepay,
       newVaultAccount,
-      depositParams,
     };
   }
 
@@ -537,7 +513,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     depositAmount: TypedBigNumber,
     maturity: number,
     fCashToBorrow: TypedBigNumber,
-    maxBorrowRate: number,
     slippageBuffer: number
   ) {
     const system = System.getSystem();
@@ -550,10 +525,16 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     const totalDepositAmount = cashToVault.toExternalPrecision().add(depositAmount);
     const depositParams = await this.getDepositParametersExact(maturity, totalDepositAmount, slippageBuffer);
 
+    // Get the market rate and set the maxBorrowRate given the slippage buffer, this is
+    // applied prior to fees are assessed.
+    const market = this.getVaultMarket(maturity);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCashToBorrow);
+    const maxBorrowRate = market.interestRate(fCashToBorrow, netCashToAccount) + slippageBuffer;
+
     return populateTxnAndGas(notional, account, 'enterVault', [
       account,
       this.vaultAddress,
-      depositAmount.toExternalPrecision().n,
+      depositAmount.n,
       maturity,
       fCashToBorrow.neg().n,
       maxBorrowRate,
@@ -567,7 +548,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     maturity: number,
     vaultSharesToRedeem: TypedBigNumber,
     fCashToLend: TypedBigNumber,
-    minLendRate: number, // todo: set this inside
     slippageBuffer: number,
     receiver?: string
   ) {
@@ -578,6 +558,11 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     fCashToLend.check(BigNumberType.InternalUnderlying, underlyingSymbol);
     const { strategyTokens } = this.getPoolShare(maturity, vaultSharesToRedeem);
     const redeemParams = await this.getRedeemParametersExact(maturity, strategyTokens, slippageBuffer);
+
+    // Get the market rate and set the minLendRate given the slippage buffer
+    const market = this.getVaultMarket(maturity);
+    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCashToLend);
+    const minLendRate = market.interestRate(fCashToLend, netCashToAccount) - slippageBuffer;
 
     return populateTxnAndGas(notional, account, 'exitVault', [
       account,
@@ -592,26 +577,45 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
 
   public async populateRollTransaction(
     account: string,
-    maturity: number,
+    newMaturity: number,
+    depositAmount: TypedBigNumber,
     fCashToBorrow: TypedBigNumber,
-    minLendRate: number, // set this inside
-    maxBorrowRate: number,
-    slippageBuffer: number
+    slippageBuffer: number,
+    vaultAccount: VaultAccount
   ) {
     const system = System.getSystem();
     const notional = system.getNotionalProxy();
     const underlyingSymbol = system.getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
+    depositAmount.check(BigNumberType.ExternalUnderlying, underlyingSymbol);
     fCashToBorrow.check(BigNumberType.InternalUnderlying, underlyingSymbol);
-    const { cashToVault } = this.getDepositedCashFromBorrow(maturity, fCashToBorrow);
-    // TODO: fix this here...
-    const totalDepositAmount = cashToVault; // .sub(costToLend);
-    const depositParams = await this.getDepositParametersExact(maturity, totalDepositAmount, slippageBuffer);
+    const { cashToVault } = this.getDepositedCashFromBorrow(newMaturity, fCashToBorrow);
+    const costToRepay = this.getCostToRepay(vaultAccount, vaultAccount.primaryBorrowfCash);
+    const totalDepositAmount = costToRepay
+      .toUnderlying()
+      .toExternalPrecision()
+      .add(cashToVault.toExternalPrecision())
+      .add(depositAmount);
+
+    if (totalDepositAmount.isNegative()) throw Error('Negative deposit amount during roll');
+    const depositParams = await this.getDepositParametersExact(newMaturity, totalDepositAmount, slippageBuffer);
+
+    // Get the market rate and set the minLendRate given the slippage buffer
+    const minLendRate =
+      this.getVaultMarket(vaultAccount.maturity).interestRate(
+        vaultAccount.primaryBorrowfCash,
+        costToRepay.toUnderlying()
+      ) - slippageBuffer;
+
+    const newMarket = this.getVaultMarket(newMaturity);
+    const { netCashToAccount } = newMarket.getCashAmountGivenfCashAmount(fCashToBorrow);
+    const maxBorrowRate = newMarket.interestRate(fCashToBorrow, netCashToAccount) + slippageBuffer;
 
     return populateTxnAndGas(notional, account, 'rollVaultPosition', [
       account,
       this.vaultAddress,
       fCashToBorrow.n,
-      maturity,
+      newMaturity,
+      depositAmount.n,
       minLendRate,
       maxBorrowRate,
       this.encodeDepositParams(depositParams),
