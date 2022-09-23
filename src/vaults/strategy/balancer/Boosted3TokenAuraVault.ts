@@ -93,13 +93,13 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
   }
 
   protected getBPTOut(tokenAmountIn: FixedPoint) {
-    let linearPoolBPT: FixedPoint;
+    let linearBPT: FixedPoint;
     {
       const balances = this.underlyingPoolBalances;
       const context = this.initParams.underlyingPoolContext;
       const { underlyingPoolTotalSupply, underlyingPoolParams, underlyingPoolScalingFactors } = this.initParams;
       const amountIn = tokenAmountIn.mul(underlyingPoolScalingFactors[context.mainTokenIndex]).div(FixedPoint.ONE);
-      linearPoolBPT = BalancerLinearMath.calcBptOutPerMainIn(
+      linearBPT = BalancerLinearMath.calcBptOutPerMainIn(
         amountIn,
         balances[0],
         balances[1],
@@ -108,7 +108,7 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
       );
     }
 
-    console.log(linearPoolBPT.n.toString());
+    console.log(linearBPT.n.toString());
 
     let boostedBPT: FixedPoint;
     {
@@ -116,7 +116,7 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
       const context = this.initParams.basePoolContext;
       const balances = this.basePoolBalances;
       const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
-      const amountIn = linearPoolBPT.mul(basePoolScalingFactors[context.primaryTokenIndex]).div(FixedPoint.ONE);
+      const amountIn = linearBPT.mul(basePoolScalingFactors[context.primaryTokenIndex]).div(FixedPoint.ONE);
       console.log(`
         scalingFactors = ${this.initParams.basePoolScalingFactors.map((b) => b.n.toString())}
         basePoolAmp = ${basePoolAmp.n.toString()}
@@ -140,38 +140,52 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
   }
 
   protected getUnderlyingOut(BPTIn: FixedPoint) {
-    /*let linearPoolBPT: FixedPoint;
+    let linearBPT: FixedPoint;
     {
-      const { basePoolAmp, basePoolContext } = this.initParams;
+      const { basePoolAmp, basePoolTotalSupply, basePoolScalingFactors } = this.initParams;
+      const context = this.initParams.basePoolContext;
       const balances = this.basePoolBalances;
       const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
-      linearPoolBPT = BalancerStableMath.calcOutGivenIn(
+      console.log(`
+        scalingFactors = ${this.initParams.basePoolScalingFactors.map((b) => b.n.toString())}
+        basePoolAmp = ${basePoolAmp.n.toString()}
+        basePoolTotalSupply = ${basePoolTotalSupply.n.toString()}
+        balances = ${balances.map((b) => b.n.toString())}
+        invariant = ${invariant.n.toString()}
+      `);
+      const amountOut = BalancerStableMath.calcTokenOutGivenExactBptIn(
         basePoolAmp,
         balances,
-        basePoolContext.tokenOutIndex,
-        basePoolContext.primaryTokenIndex,
+        // basePoolBalances() rearranges the balances so that primary is always in the
+        // zero index spot
+        0,
         BPTIn,
+        basePoolTotalSupply,
+        FixedPoint.from(0),
         invariant
       );
+      // Scale amountOut
+      linearBPT = amountOut.mul(FixedPoint.ONE).div(basePoolScalingFactors[context.primaryTokenIndex]);
     }
 
     let underlyingTokensOut: FixedPoint;
     {
-      const { underlyingPoolAmp, underlyingPoolContext } = this.initParams;
       const balances = this.underlyingPoolBalances;
-      const invariant = BalancerStableMath.calculateInvariant(underlyingPoolAmp, balances, true);
-      underlyingTokensOut = BalancerStableMath.calcOutGivenIn(
-        underlyingPoolAmp,
-        balances,
-        underlyingPoolContext.tokenOutIndex,
-        underlyingPoolContext.primaryTokenIndex,
-        linearPoolBPT,
-        invariant
+      const context = this.initParams.underlyingPoolContext;
+      const { underlyingPoolTotalSupply, underlyingPoolParams, underlyingPoolScalingFactors } = this.initParams;
+      const amountOut = BalancerLinearMath.calcMainOutPerBptIn(
+        linearBPT,
+        balances[0],
+        balances[1],
+        underlyingPoolTotalSupply,
+        underlyingPoolParams
       );
-    }*/
+      // Scale amountOut
+      underlyingTokensOut = amountOut.mul(FixedPoint.ONE).div(underlyingPoolScalingFactors[context.mainTokenIndex]);
+    }
 
     return TypedBigNumber.fromBalance(
-      BPTIn.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE),
+      underlyingTokensOut.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE),
       this.getPrimaryBorrowSymbol(),
       true
     );

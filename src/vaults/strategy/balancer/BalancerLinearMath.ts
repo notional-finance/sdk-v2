@@ -34,6 +34,23 @@ export default class BalancerLinearMath extends FixedPoint {
     return bptSupply.mul(deltaNominalMain).divNoScale(invariant, false);
   }
 
+  public static calcMainOutPerBptIn(
+    bptIn: FixedPoint,
+    mainBalance: FixedPoint,
+    wrappedBalance: FixedPoint,
+    bptSupply: FixedPoint,
+    params: BalancerLinearParams
+  ) {
+    // Amount out, so we round down overall.
+
+    const previousNominalMain = this._toNominal(mainBalance, params);
+    const invariant = this.calcInvariant(previousNominalMain, wrappedBalance);
+    const deltaNominalMain = invariant.mul(bptIn).divNoScale(bptSupply, false);
+    const afterNominalMain = previousNominalMain.sub(deltaNominalMain);
+    const newMainBalance = this._fromNominal(afterNominalMain, params);
+    return mainBalance.sub(newMainBalance);
+  }
+
   private static _toNominal(real: FixedPoint, params: BalancerLinearParams) {
     // Fees are always rounded down: either direction would work but we need to be consistent, and rounding down
     // uses less gas.
@@ -46,6 +63,18 @@ export default class BalancerLinearMath extends FixedPoint {
     } else {
       const fees = real.sub(params.upperTarget).mulDown(params.fee);
       return real.sub(fees);
+    }
+  }
+
+  private static _fromNominal(nominal: FixedPoint, params: BalancerLinearParams) {
+    // Since real = nominal + fees, rounding down fees is equivalent to rounding down real.
+
+    if (nominal.lt(params.lowerTarget)) {
+      return nominal.add(params.fee.mulDown(params.lowerTarget)).divDown(FixedPoint.ONE.add(params.fee));
+    } else if (nominal.lte(params.upperTarget)) {
+      return nominal;
+    } else {
+      return nominal.sub(params.fee.mulDown(params.upperTarget)).divDown(FixedPoint.ONE.sub(params.fee));
     }
   }
 }
