@@ -22,9 +22,9 @@ const poolABI = require('../../src/abi/BalancerStablePool.json');
 const BalancerVaultABI = require('../../src/abi/BalancerVault.json');
 
 const forkedBlockNumber = 15521384;
+const poolID = '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080';
 
-describe('balancer MetaStable vault test', () => {
-  const poolID = '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080';
+describe('balancer vault test', () => {
   let balancerVault: BalancerVault;
   let balancerPool: BalancerStablePool;
   let wethWhale: SignerWithAddress;
