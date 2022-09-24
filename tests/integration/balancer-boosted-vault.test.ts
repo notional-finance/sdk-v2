@@ -1,4 +1,4 @@
-//import { expect } from 'chai';
+import { expect } from 'chai';
 import {
   BigNumber,
   Contract,
@@ -63,6 +63,8 @@ describe('balancer Boosted vault test', () => {
   };
   let boosted: Boosted3TokenAuraVault;
 
+  system.setVault(vault);
+
   beforeEach(async () => {
     await setChainState(forkedBlockNumber);
     const [signer] = await ethers.getSigners();
@@ -79,8 +81,6 @@ describe('balancer Boosted vault test', () => {
     daiLinearPool = (await ethers.getContractAt(linearPoolABI, baseAssets[2])) as BalancerLinearPool;
     ({ balances: underlyingBalances } = await balancerVault.getPoolTokens(await daiLinearPool.getPoolId()));
     dai = (await ethers.getContractAt(ERC20ABI, await daiLinearPool.getMainToken())) as ERC20;
-
-    console.log(`baseBalances = ${baseBalances.map((b) => b.toString())}`);
 
     await dai.connect(daiWhale).approve(balancerVault.address, ethers.constants.MaxUint256);
 
@@ -116,14 +116,12 @@ describe('balancer Boosted vault test', () => {
     boosted = new Boosted3TokenAuraVault(vault.vaultAddress, initParams);
   });
 
-  it('calculates the appropriate bpt when joining', async () => {
+  it('calculates the appropriate amounts when joining and exiting', async () => {
     const { strategyTokens } = boosted.getStrategyTokensGivenDeposit(
       100,
       TypedBigNumber.fromBalance(1000e8, 'DAI', true),
       0
     );
-
-    console.log(strategyTokens.toString());
 
     await balancerVault.connect(daiWhale).swap(
       {
@@ -144,33 +142,6 @@ describe('balancer Boosted vault test', () => {
       Date.now() + 20000
     );
 
-    console.log(
-      balancerVault.connect(daiWhale).interface.encodeFunctionData('swap', [
-        {
-          poolId: await daiLinearPool.getPoolId(),
-          kind: 0,
-          assetIn: dai.address,
-          assetOut: daiLinearPool.address,
-          amount: ethers.utils.parseEther('1000'),
-          userData: [],
-        },
-        {
-          sender: daiWhale.address,
-          fromInternalBalance: false,
-          recipient: daiWhale.address,
-          toInternalBalance: false,
-        },
-        0,
-        Date.now() + 20000,
-      ])
-    );
-
-    const linearBptMinted = parseFloat(ethers.utils.formatUnits(await daiLinearPool.balanceOf(daiWhale.address), 18));
-    console.log(linearBptMinted);
-
-    const bptAmountBefore = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(daiWhale.address), 18));
-    console.log(`before = ${bptAmountBefore.toString()}`);
-
     await balancerVault.connect(daiWhale).swap(
       {
         poolId: poolID,
@@ -190,28 +161,53 @@ describe('balancer Boosted vault test', () => {
       Date.now() + 20000
     );
 
-    console.log(
-      balancerVault.connect(daiWhale).interface.encodeFunctionData('swap', [
-        {
-          poolId: poolID,
-          kind: 0,
-          assetIn: daiLinearPool.address,
-          assetOut: balancerPool.address,
-          amount: BigNumber.from('988832741440624222166'),
-          userData: [],
-        },
-        {
-          sender: daiWhale.address,
-          fromInternalBalance: false,
-          recipient: daiWhale.address,
-          toInternalBalance: false,
-        },
-        0,
-        Date.now() + 20000,
-      ])
+    const bptMinted = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(daiWhale.address), 18));
+    expect(strategyTokens.toFloat()).to.be.closeTo(bptMinted, 0.005);
+
+    const daiAmountBefore = await dai.balanceOf(daiWhale.address);
+
+    await balancerVault.connect(daiWhale).swap(
+      {
+        poolId: poolID,
+        kind: 0,
+        assetIn: balancerPool.address,
+        assetOut: daiLinearPool.address,
+        amount: await balancerPool.balanceOf(daiWhale.address),
+        userData: [],
+      },
+      {
+        sender: daiWhale.address,
+        fromInternalBalance: false,
+        recipient: daiWhale.address,
+        toInternalBalance: false,
+      },
+      0,
+      Date.now() + 20000
     );
 
-    const bptMinted = parseFloat(ethers.utils.formatUnits(await balancerPool.balanceOf(daiWhale.address), 18));
-    console.log(bptMinted);
+    await balancerVault.connect(daiWhale).swap(
+      {
+        poolId: await daiLinearPool.getPoolId(),
+        kind: 0,
+        assetIn: daiLinearPool.address,
+        assetOut: dai.address,
+        amount: await daiLinearPool.balanceOf(daiWhale.address),
+        userData: [],
+      },
+      {
+        sender: daiWhale.address,
+        fromInternalBalance: false,
+        recipient: daiWhale.address,
+        toInternalBalance: false,
+      },
+      0,
+      Date.now() + 20000
+    );
+
+    const daiAmountOut = parseFloat(
+      ethers.utils.formatUnits((await dai.balanceOf(daiWhale.address)).sub(daiAmountBefore), 18)
+    );
+    const underlyingOut = boosted.getRedeemGivenStrategyTokens(100, strategyTokens, 0);
+    expect(underlyingOut.amountRedeemed.toFloat()).to.be.closeTo(daiAmountOut, 0.005);
   });
 });

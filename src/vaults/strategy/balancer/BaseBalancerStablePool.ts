@@ -153,9 +153,6 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
       depositAmount.toInternalPrecision().scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n
     );
     const bptOut = this.getBPTOut(tokenAmountIn);
-
-    console.log(`bptOut = ${bptOut.n.toString()}`);
-
     return {
       strategyTokens: this.convertBPTToStrategyTokens(bptOut, maturity),
       secondaryfCashBorrowed: undefined,

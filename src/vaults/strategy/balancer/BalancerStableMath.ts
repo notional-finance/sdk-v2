@@ -147,8 +147,6 @@ export default class BalancerStableMath extends FixedPoint {
 
     // Get current and new invariants given swap fees
     const newInvariant = this.calculateInvariant(amp, newBalances, false);
-    console.log(`newInvariant = ${newInvariant.n.toString()}`);
-
     const invariantRatio = newInvariant.divDown(currentInvariant);
     // Invariant must increase or we don't mint BPT
     if (invariantRatio.gt(FixedPoint.ONE)) {

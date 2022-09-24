@@ -108,22 +108,17 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
       );
     }
 
-    console.log(linearBPT.n.toString());
-
     let boostedBPT: FixedPoint;
     {
-      const { basePoolAmp, basePoolTotalSupply, basePoolScalingFactors } = this.initParams;
+      const { basePoolAmp, basePoolTotalSupply, basePoolScalingFactors, basePoolFee } = this.initParams;
       const context = this.initParams.basePoolContext;
       const balances = this.basePoolBalances;
       const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
-      const amountIn = linearBPT.mul(basePoolScalingFactors[context.primaryTokenIndex]).div(FixedPoint.ONE);
-      console.log(`
-        scalingFactors = ${this.initParams.basePoolScalingFactors.map((b) => b.n.toString())}
-        basePoolAmp = ${basePoolAmp.n.toString()}
-        basePoolTotalSupply = ${basePoolTotalSupply.n.toString()}
-        balances = ${balances.map((b) => b.n.toString())}
-        invariant = ${invariant.n.toString()}
-      `);
+      const feeAmount = linearBPT.mulUp(basePoolFee);
+      const amountIn = linearBPT
+        .sub(feeAmount)
+        .mul(basePoolScalingFactors[context.primaryTokenIndex])
+        .div(FixedPoint.ONE);
       boostedBPT = BalancerStableMath.calcBptOutGivenExactTokensIn(
         basePoolAmp,
         balances,
@@ -142,17 +137,10 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
   protected getUnderlyingOut(BPTIn: FixedPoint) {
     let linearBPT: FixedPoint;
     {
-      const { basePoolAmp, basePoolTotalSupply, basePoolScalingFactors } = this.initParams;
+      const { basePoolAmp, basePoolTotalSupply, basePoolScalingFactors, basePoolFee } = this.initParams;
       const context = this.initParams.basePoolContext;
       const balances = this.basePoolBalances;
       const invariant = BalancerStableMath.calculateInvariant(basePoolAmp, balances, true);
-      console.log(`
-        scalingFactors = ${this.initParams.basePoolScalingFactors.map((b) => b.n.toString())}
-        basePoolAmp = ${basePoolAmp.n.toString()}
-        basePoolTotalSupply = ${basePoolTotalSupply.n.toString()}
-        balances = ${balances.map((b) => b.n.toString())}
-        invariant = ${invariant.n.toString()}
-      `);
       const amountOut = BalancerStableMath.calcTokenOutGivenExactBptIn(
         basePoolAmp,
         balances,
@@ -164,8 +152,9 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
         FixedPoint.from(0),
         invariant
       );
+      const feeAmount = amountOut.mulUp(basePoolFee);
       // Scale amountOut
-      linearBPT = amountOut.mul(FixedPoint.ONE).div(basePoolScalingFactors[context.primaryTokenIndex]);
+      linearBPT = amountOut.sub(feeAmount).mul(FixedPoint.ONE).div(basePoolScalingFactors[context.primaryTokenIndex]);
     }
 
     let underlyingTokensOut: FixedPoint;
@@ -185,7 +174,7 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
     }
 
     return TypedBigNumber.fromBalance(
-      underlyingTokensOut.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE),
+      underlyingTokensOut.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n,
       this.getPrimaryBorrowSymbol(),
       true
     );
