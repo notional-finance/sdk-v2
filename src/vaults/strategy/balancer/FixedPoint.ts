@@ -8,6 +8,9 @@ export default class FixedPoint {
   constructor(public n: BigNumber) {}
 
   public static from(v: any) {
+    if (v instanceof BigNumber) {
+      return new FixedPoint(v);
+    }
     return new FixedPoint(BigNumber.from(v));
   }
 
@@ -70,5 +73,12 @@ export default class FixedPoint {
 
   public complement() {
     return this.lt(FixedPoint.ONE) ? FixedPoint.ONE.sub(this) : FixedPoint.from(0);
+  }
+
+  public toJSON() {
+    return {
+      _isFixedPoint: true,
+      _hex: this.n.toHexString(),
+    };
   }
 }

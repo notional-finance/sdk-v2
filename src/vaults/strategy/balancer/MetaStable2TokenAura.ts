@@ -7,30 +7,34 @@ import { BalancerStablePool } from '../../../typechain/BalancerStablePool';
 import { MetaStable2Token } from '../../../typechain/MetaStable2Token';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
-import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
+import { BaseBalancerStablePool, BaseBalancerStablePoolInitParams, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
 const MetaStable2TokenAuraABI = require('../../../abi/MetaStable2Token.json');
 const BalancerStablePoolABI = require('../../../abi/BalancerStablePool.json');
 
-interface InitParams {
+interface InitParams extends BaseBalancerStablePoolInitParams {
   poolContext: PoolContext;
   scalingFactors: FixedPoint[];
   amplificationParameter: FixedPoint;
   totalSupply: FixedPoint;
   swapFeePercentage: FixedPoint;
-  oracleContext: {
-    bptPrice: FixedPoint;
-    pairPrice: FixedPoint;
-  };
+  bptPrice: FixedPoint;
+  pairPrice: FixedPoint;
+  // oracleContext: {
+  //   bptPrice: FixedPoint;
+  //   pairPrice: FixedPoint;
+  // };
 }
 
 export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitParams> {
   public get oraclePrice() {
     if (this.initParams.poolContext.primaryTokenIndex === 0) {
-      return this.initParams.oracleContext.bptPrice;
+      return this.initParams.bptPrice;
+      // return this.initParams.oracleContext.bptPrice;
     }
-    const { bptPrice, pairPrice } = this.initParams.oracleContext;
+    // const { bptPrice, pairPrice } = this.initParams.oracleContext;
+    const { bptPrice, pairPrice } = this.initParams;
     return bptPrice.mul(FixedPoint.ONE).div(pairPrice);
   }
 
@@ -43,6 +47,17 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   public initVaultParams() {
     const vaultContract = new Contract(this.vaultAddress, MetaStable2TokenAuraABI) as MetaStable2Token;
     return [
+      {
+        stage: 0,
+        target: vaultContract,
+        method: 'getStrategyContext',
+        args: [],
+        key: 'strategyContext',
+        transform: (r: Awaited<ReturnType<typeof vaultContract.getStrategyContext>>) => ({
+          totalStrategyTokensGlobal: FixedPoint.from(r.baseStrategy.vaultState.totalStrategyTokenGlobal),
+          totalBPTHeld: FixedPoint.from(r.baseStrategy.totalBPTHeld),
+        }),
+      },
       {
         stage: 0,
         target: vaultContract,
@@ -64,6 +79,8 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
             primaryTokenIndex: r.poolContext.primaryIndex,
             tokenOutIndex: r.poolContext.secondaryIndex,
             balances,
+            totalStrategyTokensGlobal: FixedPoint.from(r.baseStrategy.vaultState.totalStrategyTokenGlobal),
+            totalBPTHeld: FixedPoint.from(r.baseStrategy.totalBPTHeld),
           };
         },
       },
@@ -101,27 +118,43 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
       {
         stage: 1,
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-        method: 'getTimeWeightedAverage',
-        key: 'oracleContext',
-        args: [
-          [
-            {
-              variable: 0, // Pair Price
-              secs: 3600,
-              ago: 0,
-            },
-            {
-              variable: 1, // BPT Price
-              secs: 3600,
-              ago: 0,
-            },
-          ],
-        ],
-        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
-          pairPrice: FixedPoint.from(r[0]),
-          bptPrice: FixedPoint.from(r[1]),
-        }),
+        method: 'getLatest',
+        key: 'pairPrice',
+        args: [0],
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getLatest']>>) => FixedPoint.from(r),
       },
+      {
+        stage: 1,
+        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+        method: 'getLatest',
+        key: 'bptPrice',
+        args: [1],
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getLatest']>>) => FixedPoint.from(r),
+      },
+      // {
+      //   stage: 1,
+      //   target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
+      //   key: 'oracleContext',
+      //   method: 'getTimeWeightedAverage',
+      //   args: [
+      //     [
+      //       {
+      //         variable: 0, // Pair Price
+      //         secs: 3600,
+      //         ago: 0,
+      //       },
+      //       {
+      //         variable: 1, // BPT Price
+      //         secs: 3600,
+      //         ago: 0,
+      //       },
+      //     ],
+      //   ],
+      //   transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
+      //     pairPrice: FixedPoint.from(r[0]),
+      //     bptPrice: FixedPoint.from(r[1]),
+      //   }),
+      // },
     ] as AggregateCall[];
   }
 

@@ -8,7 +8,7 @@ import VaultAccount from '../../VaultAccount';
 import { BalancerLinearParams } from './BalancerLinearMath';
 import BalancerLinearMath from './BalancerLinearMath';
 import BalancerStableMath from './BalancerStableMath';
-import { BaseBalancerStablePool, PoolContext } from './BaseBalancerStablePool';
+import { BaseBalancerStablePool, BaseBalancerStablePoolInitParams, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
 
 // const Boosted3TokenAuraVaultABI = require('../../../abi/Boosted3TokenAuraVault.json');
@@ -24,7 +24,7 @@ export interface BoostedPoolContext extends PoolContext {
   tertiaryTokenIndex: number;
 }
 
-interface InitParams {
+interface InitParams extends BaseBalancerStablePoolInitParams {
   underlyingPoolContext: LinearPoolContext;
   underlyingPoolScalingFactors: FixedPoint[];
   underlyingPoolTotalSupply: FixedPoint;

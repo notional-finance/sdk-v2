@@ -29,7 +29,14 @@ export interface PoolContext {
   balances: FixedPoint[];
 }
 
-export abstract class BaseBalancerStablePool<I extends Record<string, any>> extends BaseVault<
+export interface BaseBalancerStablePoolInitParams extends Record<string, any> {
+  strategyContext: {
+    totalStrategyTokensGlobal: FixedPoint;
+    totalBPTHeld: FixedPoint;
+  };
+}
+
+export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolInitParams> extends BaseVault<
   DepositParams,
   RedeemParams,
   I
@@ -42,15 +49,27 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
     'tuple(uint32 minSecondaryLendRate, uint256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
 
   protected convertBPTToStrategyTokens(bptAmount: FixedPoint, maturity: number) {
-    return TypedBigNumber.from(
-      bptAmount.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n,
-      BigNumberType.StrategyToken,
-      this.getVaultSymbol(maturity)
-    );
+    const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
+    const tokens = totalBPTHeld.isZero()
+      ? bptAmount.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n
+      : // bptAmount * totalStrategyTokensGlobal / totalBPTHeld
+        totalStrategyTokensGlobal.mul(bptAmount).div(totalBPTHeld).n;
+
+    return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }
 
-  protected convertStrategyTokensToBPT(strategyTokens: TypedBigNumber) {
-    return FixedPoint.from(strategyTokens.scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n);
+  protected convertStrategyTokensToBPT(strategyTokens: TypedBigNumber, simulatedStrategyTokens?: TypedBigNumber) {
+    // If there are simulated strategy tokens, assume they are 1-1 with BPTs because there
+    // will be no BPT compounding during the simulation
+    const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
+    if (simulatedStrategyTokens) {
+      const totalStrategyTokens = totalStrategyTokensGlobal.add(FixedPoint.from(simulatedStrategyTokens.n));
+      const simulatedBPT = FixedPoint.from(simulatedStrategyTokens.n)
+        .mul(FixedPoint.ONE)
+        .div(FixedPoint.from(INTERNAL_TOKEN_PRECISION));
+      return totalBPTHeld.add(simulatedBPT).mul(FixedPoint.from(strategyTokens.n)).div(totalStrategyTokens);
+    }
+    return totalBPTHeld.mul(FixedPoint.from(strategyTokens.n)).div(totalStrategyTokensGlobal);
   }
 
   protected abstract getBPTValue(amountIn?: FixedPoint): FixedPoint;
@@ -62,10 +81,16 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
   public getStrategyTokenValue(vaultAccount: VaultAccount): TypedBigNumber {
     const { strategyTokens } = vaultAccount.getPoolShare();
     const oneBPTValue = this.getBPTValue();
-    const accountValue = strategyTokens.scale(oneBPTValue.n, FixedPoint.ONE.n).n;
-
+    const simulatedStrategyTokens = vaultAccount.getSimulatedStrategyTokens();
+    const bptClaim = this.convertStrategyTokensToBPT(strategyTokens, simulatedStrategyTokens);
     // This is in 8 decimal precision
-    return TypedBigNumber.fromBalance(accountValue, this.getPrimaryBorrowSymbol(), true);
+    const accountValue = bptClaim
+      .mul(oneBPTValue)
+      .mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION))
+      .div(FixedPoint.ONE)
+      .div(FixedPoint.ONE);
+
+    return TypedBigNumber.fromBalance(accountValue.n, this.getPrimaryBorrowSymbol(), true);
   }
 
   public getStrategyTokensFromValue(maturity: number, valuation: TypedBigNumber, _blockTime?: number) {
@@ -82,9 +107,10 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
     _slippageBuffer: number,
     _blockTime?: number
   ) {
+    // TODO: need to get minBPT
     return {
       minBPT: BigNumber.from(0),
-      tradeData: '',
+      tradeData: '0x',
     };
   }
 
@@ -103,11 +129,12 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
     _slippageBuffer: number,
     _blockTime?: number
   ) {
+    // TODO: need to get min primary and secondary, also specify trade
     return {
       minSecondaryLendRate: 0, // TODO: should this be here?
       minPrimary: BigNumber.from(0),
       minSecondary: BigNumber.from(0),
-      secondaryTradeParams: '',
+      secondaryTradeParams: '0x',
     };
   }
 
@@ -184,7 +211,9 @@ export abstract class BaseBalancerStablePool<I extends Record<string, any>> exte
     blockTime?: number,
     _vaultAccount?: VaultAccount
   ) {
-    const bptIn = this.convertStrategyTokensToBPT(strategyTokens);
+    // In this case, all strategy tokens are "simulated" in that they are additional tokens
+    // added to the pool
+    const bptIn = this.convertStrategyTokensToBPT(strategyTokens, strategyTokens);
     const RP = FixedPoint.from(RATE_PRECISION);
     // 1 bpt * oneBPTValue = depositAmount
     const initialMultiple = this.getBPTValue().mul(RP).div(FixedPoint.ONE).n.toNumber();

@@ -2,6 +2,7 @@ import { BigNumber, ethers, VoidSigner } from 'ethers';
 import Notional, { Contracts } from '../../src';
 import GraphClient from '../../src/data/GraphClient';
 import { decodeBinary, fetchAndEncodeSystem } from '../../src/data/SystemData';
+import { System } from '../../src/system';
 import { VaultFactory } from '../../src/vaults';
 
 require('dotenv').config();
@@ -21,19 +22,21 @@ describe('System Integration Test', () => {
     );
     const signer = new VoidSigner(ethers.constants.AddressZero, provider);
     contracts = Notional.getContracts(mainnetAddresses, signer);
+    notional = await Notional.load(5, provider);
   });
 
   it('loads account data', async () => {
-    const addr = '0xF1C2dD9bD863f2444086B739383F1043E6b88F69';
+    const addr = '0x4ba1d028e053A53842Ce31b0357C5864B40Ef909';
     const account = await notional.getAccount(addr);
     await account.accountData?.fetchHistory(addr);
-    console.log(account);
-    console.log(account.accountData?.accountHistory);
+    // console.log(account);
+    // console.log(account.accountData?.accountHistory);
+    account.accountData?.getFullTransactionHistory();
   });
 
   it.only('returns system configuration from the graph', async () => {
     const graphClient = new GraphClient(mainnetGraphEndpoint, 0, false);
-    const { binary, json } = await fetchAndEncodeSystem(
+    const { binary } = await fetchAndEncodeSystem(
       graphClient,
       provider,
       contracts,
@@ -42,14 +45,20 @@ describe('System Integration Test', () => {
       { USD: BigNumber.from(1) }
     );
 
-    decodeBinary(binary, provider);
-    console.log(json);
+    const initData = decodeBinary(binary, provider);
+    // console.log(json);
+
+    const system = new System('', {} as GraphClient, {} as Contracts, provider, 0, 'goerli', false, initData);
+    console.log(system.lastUpdateTimestamp);
+    const metaVault = VaultFactory.buildVaultFromCache('0x77721081', '0xe767769b639af18dbedc5fb534e263ff7be43456');
+
+    console.log(metaVault.initParams.strategyContext.totalStrategyTokensGlobal.n.toString());
   });
 
   it('initializes the meta stable vault', async () => {
     const { initParams } = await VaultFactory.buildVault(
       '0x77721081',
-      '0xE767769b639Af18dbeDc5FB534E263fF7BE43456',
+      '0xe767769b639af18dbedc5fb534e263ff7be43456',
       provider
     );
     console.log(initParams);

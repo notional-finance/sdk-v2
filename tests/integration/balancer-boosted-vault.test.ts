@@ -87,6 +87,10 @@ describe('balancer Boosted vault test', () => {
     const { lowerTarget, upperTarget } = await daiLinearPool.getTargets();
 
     const initParams: typeof boosted.initParams = {
+      strategyContext: {
+        totalBPTHeld: FixedPoint.from(0),
+        totalStrategyTokensGlobal: FixedPoint.from(0),
+      },
       underlyingPoolContext: {
         mainTokenIndex: (await daiLinearPool.getMainIndex()).toNumber(),
         wrappedTokenIndex: (await daiLinearPool.getWrappedIndex()).toNumber(),
