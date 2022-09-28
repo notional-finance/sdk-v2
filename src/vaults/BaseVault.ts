@@ -336,7 +336,10 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       // Need a custom adjustment here
       (m, d) => Math.floor(m - d * 2)
     );
-    return this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime);
+    return {
+      ...this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime),
+      fCashToLend,
+    };
   }
 
   public simulateExitPreMaturityGivenRepayment(
