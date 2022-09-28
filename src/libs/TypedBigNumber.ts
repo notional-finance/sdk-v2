@@ -274,7 +274,7 @@ class TypedBigNumber {
     });
 
     // If the return string is -0.00 or some variant, strip the negative
-    if (displayString.match(/-0\.?[0]*/)) {
+    if (displayString.match(/-0\.?[0]*$/)) {
       return displayString.replace('-', '');
     }
 
