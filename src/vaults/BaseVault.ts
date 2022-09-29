@@ -5,7 +5,7 @@ import { aggregate } from '../data/Multicall';
 import TypedBigNumber, { BigNumberType } from '../libs/TypedBigNumber';
 import { getNowSeconds, populateTxnAndGas } from '../libs/utils';
 import { System, CashGroup, Market } from '../system';
-import doBinarySearchApprox from './Approximation';
+import { doBisectionSearch, doBinarySearch } from './Approximation';
 import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
 
@@ -287,58 +287,78 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
 
   public getExitParamsFromLeverageRatio(
     vaultAccount: VaultAccount,
-    leverageRatio: number,
+    targetLeverageRatio: number,
     slippageBuffer: number,
     blockTime = getNowSeconds(),
     precision = BASIS_POINT * 50
   ) {
-    if (leverageRatio < RATE_PRECISION) throw new Error('Leverage Ratio below 1');
+    if (targetLeverageRatio < RATE_PRECISION) throw new Error('Leverage Ratio below 1');
     const currentLeverageRatio = this.getLeverageRatio(vaultAccount);
-    if (currentLeverageRatio === null || leverageRatio > currentLeverageRatio)
+    if (currentLeverageRatio === null || targetLeverageRatio > currentLeverageRatio)
       throw new Error('Leverage Ratio above current');
     const { minAccountBorrowSize } = this.getVault();
-    const tempVaultAccount = VaultAccount.copy(vaultAccount);
+    const assetValue = this.getCashValueOfShares(vaultAccount).toUnderlying();
+    // Given the net asset value, in order to achieve the target leverage
+    // ratio we must reduce debt outstanding to this figure:
+    //  debtOutstanding / (assetValue - debtOutstanding) + 1 = leverageRatio
+    //  =>
+    //  ((leverageRatio - 1) * assetValue) / leverageRatio = debtOutstanding
+    const targetDebtOutstanding = assetValue.scale(targetLeverageRatio - RATE_PRECISION, targetLeverageRatio).neg();
+    let fCashToLend: TypedBigNumber;
 
-    const calculationFunction = (multiple: number) => {
-      const assetValue = this.getCashValueOfShares(tempVaultAccount).toUnderlying();
-      // Given the net asset value, in order to achieve the target leverage
-      // ratio we must reduce debt outstanding to this figure:
-      //  debtOutstanding / (assetValue - debtOutstanding) + 1 = leverageRatio
-      //  =>
-      //  ((leverageRatio - 1) * assetValue) / leverageRatio = debtOutstanding
-      const targetDebtOutstanding = assetValue.scale(leverageRatio - RATE_PRECISION, leverageRatio).neg();
+    if (targetDebtOutstanding.abs().lt(minAccountBorrowSize)) {
+      fCashToLend = vaultAccount.primaryBorrowfCash.neg();
+    } else {
+      const calculationFunction = (multiple: number) => {
+        const fCashToLend = targetDebtOutstanding.sub(vaultAccount.primaryBorrowfCash).scale(multiple, RATE_PRECISION);
 
-      const fCashToLend = targetDebtOutstanding.abs().lt(minAccountBorrowSize)
-        ? vaultAccount.primaryBorrowfCash.neg()
-        : // We scale this lend amount by a multiple because assetValue will decrease as a result of
-          // selling tokens to lend
-          targetDebtOutstanding.sub(vaultAccount.primaryBorrowfCash).scale(multiple, RATE_PRECISION);
+        if (fCashToLend.add(vaultAccount.primaryBorrowfCash).abs().lt(minAccountBorrowSize)) {
+          // If the resulting position is less than the min borrow size, then
+          // we must exit the entire position
+          return {
+            actualMultiple: RATE_PRECISION,
+            breakLoop: true,
+            value: vaultAccount.primaryBorrowfCash.neg(),
+          };
+        }
 
-      const { newVaultAccount } = this.simulateExitPreMaturityGivenRepayment(
-        vaultAccount,
-        fCashToLend,
-        slippageBuffer,
-        blockTime
-      );
-      const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
+        const { newVaultAccount } = this.simulateExitPreMaturityGivenRepayment(
+          vaultAccount,
+          fCashToLend,
+          slippageBuffer,
+          blockTime
+        );
+        const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
 
-      return {
-        actualMultiple: actualLeverageRatio,
-        breakLoop: actualLeverageRatio === RATE_PRECISION,
-        value: fCashToLend,
+        return {
+          actualMultiple: actualLeverageRatio,
+          breakLoop: actualLeverageRatio === RATE_PRECISION,
+          value: fCashToLend,
+        };
       };
-    };
 
-    const initialMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / leverageRatio);
-    // prettier-ignore
-    const fCashToLend = doBinarySearchApprox(
-      initialMultiple,
-      leverageRatio,
-      calculationFunction,
-      precision,
-      // Need a custom adjustment here
-      (m, d) => Math.floor(m - d * 2)
-    );
+      // const upperBoundMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / targetLeverageRatio);
+      // Multiple used in this search determines the percentage of primary borrowed fCash
+      // to be lent (to be paid for by vault shares redeemed). targetLeverageRatio is defined to be
+      // less than currentLeverageRatio.
+      // lowerBound = targetLeverageRatio
+
+      // prettier-ignore
+      fCashToLend = doBisectionSearch(
+        // For the lower bound, we pay off a multiple equal to the target leverage
+        // ratio. This will undershoot the actual leverage ratio because there is
+        // some collateral deposit in the account that does not contribute to debt.
+        targetLeverageRatio,
+        // For the upper bound, we pay off exactly the amount of fCash required
+        // to get to target debt outstanding. The resulting leverage ratio will
+        // overshoot the targetLeverageRatio due to the nature of the ratio --
+        // we need to repay more debt to reach lower leverage ratios
+        RATE_PRECISION,
+        targetLeverageRatio,
+        calculationFunction,
+        precision
+      );
+    }
 
     return {
       ...this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime),
@@ -514,7 +534,16 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       initialMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / leverageRatio);
     }
 
-    return doBinarySearchApprox(initialMultiple, leverageRatio, calculationFunction, precision);
+    // Here we do a binary search because finding a reliable lower bound is not really
+    // easily done for the bi-section search due to the restriction of having a minimum
+    // borrow size. Empirically, the loop adjustment works fine here.
+    // prettier-ignore
+    return doBinarySearch(
+      initialMultiple,
+      leverageRatio,
+      calculationFunction,
+      precision
+    );
   }
 
   public async populateEnterTransaction(
