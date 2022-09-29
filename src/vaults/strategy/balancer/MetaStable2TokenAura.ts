@@ -19,12 +19,10 @@ interface InitParams extends BaseBalancerStablePoolInitParams {
   amplificationParameter: FixedPoint;
   totalSupply: FixedPoint;
   swapFeePercentage: FixedPoint;
-  bptPrice: FixedPoint;
-  pairPrice: FixedPoint;
-  // oracleContext: {
-  //   bptPrice: FixedPoint;
-  //   pairPrice: FixedPoint;
-  // };
+  oracleContext: {
+    bptPrice: FixedPoint;
+    pairPrice: FixedPoint;
+  };
 }
 
 export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitParams> {
@@ -118,43 +116,27 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
       {
         stage: 1,
         target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-        method: 'getLatest',
-        key: 'pairPrice',
-        args: [0],
-        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getLatest']>>) => FixedPoint.from(r),
+        key: 'oracleContext',
+        method: 'getTimeWeightedAverage',
+        args: [
+          [
+            {
+              variable: 0, // Pair Price
+              secs: 3600,
+              ago: 0,
+            },
+            {
+              variable: 1, // BPT Price
+              secs: 3600,
+              ago: 0,
+            },
+          ],
+        ],
+        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
+          pairPrice: FixedPoint.from(r[0]),
+          bptPrice: FixedPoint.from(r[1]),
+        }),
       },
-      {
-        stage: 1,
-        target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-        method: 'getLatest',
-        key: 'bptPrice',
-        args: [1],
-        transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getLatest']>>) => FixedPoint.from(r),
-      },
-      // {
-      //   stage: 1,
-      //   target: (r) => new Contract(r.poolContext.poolAddress, BalancerStablePoolABI),
-      //   key: 'oracleContext',
-      //   method: 'getTimeWeightedAverage',
-      //   args: [
-      //     [
-      //       {
-      //         variable: 0, // Pair Price
-      //         secs: 3600,
-      //         ago: 0,
-      //       },
-      //       {
-      //         variable: 1, // BPT Price
-      //         secs: 3600,
-      //         ago: 0,
-      //       },
-      //     ],
-      //   ],
-      //   transform: (r: Awaited<ReturnType<BalancerStablePool['functions']['getTimeWeightedAverage']>>) => ({
-      //     pairPrice: FixedPoint.from(r[0]),
-      //     bptPrice: FixedPoint.from(r[1]),
-      //   }),
-      // },
     ] as AggregateCall[];
   }
 
