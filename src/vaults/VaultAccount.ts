@@ -54,6 +54,10 @@ export default class VaultAccount {
     return System.getVaultSymbol(this.vaultAddress, this.maturity);
   }
 
+  public get hasLeverage() {
+    return this.primaryBorrowfCash.isNegative() && !this.canSettle();
+  }
+
   public getSimulatedStrategyTokens() {
     if (!this._simulatedVaultState) return undefined;
     const { totalStrategyTokens } = System.getSystem().getVaultState(this.vaultAddress, this.maturity);
@@ -259,6 +263,7 @@ export default class VaultAccount {
     };
   }
 
+  // TODO: should we run this automatically?
   public settleVaultAccount() {
     if (!this.canSettle()) throw Error('Vault not settled');
     const vaultState = this.getVaultState();

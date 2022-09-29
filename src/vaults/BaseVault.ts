@@ -92,7 +92,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
 
   // Account Descriptive Factors
   public getCollateralRatio(vaultAccount: VaultAccount) {
-    if (vaultAccount.primaryBorrowfCash.isZero()) return null;
+    if (!vaultAccount.hasLeverage) return null;
 
     const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
@@ -100,6 +100,8 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   }
 
   public getLeverageRatio(vaultAccount: VaultAccount) {
+    if (!vaultAccount.hasLeverage) return RATE_PRECISION;
+
     const debtOutstanding = vaultAccount.primaryBorrowfCash.toAssetCash().neg();
     const netAssetValue = this.getCashValueOfShares(vaultAccount).sub(debtOutstanding);
     if (netAssetValue.isZero()) return RATE_PRECISION;
@@ -327,15 +329,17 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       };
     };
 
+    const initialMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / leverageRatio);
     // prettier-ignore
     const fCashToLend = doBinarySearchApprox(
-      leverageRatio,
+      initialMultiple,
       leverageRatio,
       calculationFunction,
       precision,
       // Need a custom adjustment here
       (m, d) => Math.floor(m - d * 2)
     );
+
     return {
       ...this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime),
       fCashToLend,
@@ -362,7 +366,8 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     );
 
     const vaultSharesToRedeemAtCost = vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
-    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg(), true);
+    // This will also update vault shares
+    newVaultAccount.addStrategyTokens(strategyTokens.neg(), true);
     newVaultAccount.updatePrimaryBorrowfCash(fCashToLend, true);
     newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid, true);
 
@@ -392,7 +397,8 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     );
 
     const vaultSharesToRedeemAtCost = vaultState.totalVaultShares.scale(strategyTokens, vaultState.totalStrategyTokens);
-    newVaultAccount.updateVaultShares(vaultSharesToRedeemAtCost.neg(), true);
+    // This will also modify vault shares
+    newVaultAccount.addStrategyTokens(strategyTokens.neg(), true);
     newVaultAccount.addSecondaryDebtShares(secondaryfCashRepaid, true);
 
     return {
@@ -503,7 +509,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     // The initial multiple should be based on the account's current leverage ratio if
     // it is already set
     let initialMultiple = leverageRatio;
-    if (_vaultAccount) {
+    if (_vaultAccount && _vaultAccount.primaryBorrowfCash.isNegative() && !_vaultAccount.canSettle()) {
       const currentLeverageRatio = this.getLeverageRatio(_vaultAccount);
       initialMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / leverageRatio);
     }
