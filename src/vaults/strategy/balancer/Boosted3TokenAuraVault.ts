@@ -5,8 +5,7 @@ import { LiquidationThreshold } from '../../../libs/types';
 // import { Contract } from 'ethers';
 // import { Boosted3TokenAura } from '../../../typechain/Boosted3TokenAura';
 import VaultAccount from '../../VaultAccount';
-import { BalancerLinearParams } from './BalancerLinearMath';
-import BalancerLinearMath from './BalancerLinearMath';
+import BalancerLinearMath, { BalancerLinearParams } from './BalancerLinearMath';
 import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, BaseBalancerStablePoolInitParams, PoolContext } from './BaseBalancerStablePool';
 import FixedPoint from './FixedPoint';
@@ -39,7 +38,7 @@ interface InitParams extends BaseBalancerStablePoolInitParams {
 export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitParams> {
   public get basePoolBalances() {
     const context = this.initParams.basePoolContext;
-    const balances = context.balances;
+    const { balances } = context;
     const scalingFactors = this.initParams.basePoolScalingFactors;
 
     return [
@@ -51,7 +50,7 @@ export default class Boosted3TokenAuraVault extends BaseBalancerStablePool<InitP
 
   public get underlyingPoolBalances() {
     const context = this.initParams.underlyingPoolContext;
-    const balances = context.balances;
+    const { balances } = context;
     const scalingFactors = this.initParams.underlyingPoolScalingFactors;
 
     return [

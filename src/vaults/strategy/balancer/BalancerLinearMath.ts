@@ -58,12 +58,12 @@ export default class BalancerLinearMath extends FixedPoint {
     if (real.lt(params.lowerTarget)) {
       const fees = params.lowerTarget.sub(real).mulDown(params.fee);
       return real.sub(fees);
-    } else if (real.lte(params.upperTarget)) {
-      return real;
-    } else {
-      const fees = real.sub(params.upperTarget).mulDown(params.fee);
-      return real.sub(fees);
     }
+    if (real.lte(params.upperTarget)) {
+      return real;
+    }
+    const fees = real.sub(params.upperTarget).mulDown(params.fee);
+    return real.sub(fees);
   }
 
   private static _fromNominal(nominal: FixedPoint, params: BalancerLinearParams) {
@@ -71,10 +71,10 @@ export default class BalancerLinearMath extends FixedPoint {
 
     if (nominal.lt(params.lowerTarget)) {
       return nominal.add(params.fee.mulDown(params.lowerTarget)).divDown(FixedPoint.ONE.add(params.fee));
-    } else if (nominal.lte(params.upperTarget)) {
-      return nominal;
-    } else {
-      return nominal.sub(params.fee.mulDown(params.upperTarget)).divDown(FixedPoint.ONE.sub(params.fee));
     }
+    if (nominal.lte(params.upperTarget)) {
+      return nominal;
+    }
+    return nominal.sub(params.fee.mulDown(params.upperTarget)).divDown(FixedPoint.ONE.sub(params.fee));
   }
 }

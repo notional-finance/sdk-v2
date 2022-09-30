@@ -1,29 +1,5 @@
 [
   {
-    "inputs": [
-      {
-        "components": [
-          { "internalType": "contract IVault", "name": "vault", "type": "address" },
-          { "internalType": "string", "name": "name", "type": "string" },
-          { "internalType": "string", "name": "symbol", "type": "string" },
-          { "internalType": "contract IERC20[]", "name": "tokens", "type": "address[]" },
-          { "internalType": "contract IRateProvider[]", "name": "rateProviders", "type": "address[]" },
-          { "internalType": "uint256[]", "name": "tokenRateCacheDurations", "type": "uint256[]" },
-          { "internalType": "uint256", "name": "amplificationParameter", "type": "uint256" },
-          { "internalType": "uint256", "name": "swapFeePercentage", "type": "uint256" },
-          { "internalType": "uint256", "name": "pauseWindowDuration", "type": "uint256" },
-          { "internalType": "uint256", "name": "bufferPeriodDuration", "type": "uint256" },
-          { "internalType": "address", "name": "owner", "type": "address" }
-        ],
-        "internalType": "struct StablePhantomPool.NewPoolParams",
-        "name": "params",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "anonymous": false,
     "inputs": [
       { "indexed": false, "internalType": "uint256", "name": "startValue", "type": "uint256" },
