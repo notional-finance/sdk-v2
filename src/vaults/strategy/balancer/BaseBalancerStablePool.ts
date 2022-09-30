@@ -2,7 +2,7 @@ import { BigNumber, Contract } from 'ethers';
 import { INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../../config/constants';
 import TypedBigNumber, { BigNumberType } from '../../../libs/TypedBigNumber';
 import { BalancerVault } from '../../../typechain';
-import doBinarySearchApprox from '../../Approximation';
+import { doBinarySearch } from '../../Approximation';
 import BaseVault from '../../BaseVault';
 import VaultAccount from '../../VaultAccount';
 import FixedPoint from './FixedPoint';
@@ -231,7 +231,7 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
       };
     };
 
-    const requiredDepositFP = doBinarySearchApprox(initialMultiple, RATE_PRECISION, calculationFunction);
+    const requiredDepositFP = doBinarySearch(initialMultiple, RATE_PRECISION, calculationFunction);
 
     const requiredDeposit = TypedBigNumber.fromBalance(
       requiredDepositFP.mul(FixedPoint.from(INTERNAL_TOKEN_PRECISION)).div(FixedPoint.ONE).n,
@@ -272,7 +272,7 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
       };
     };
 
-    const strategyTokens = doBinarySearchApprox(initialMultiple, RATE_PRECISION, calculationFunction);
+    const strategyTokens = doBinarySearch(initialMultiple, RATE_PRECISION, calculationFunction);
     return {
       strategyTokens,
       secondaryfCashRepaid: undefined,

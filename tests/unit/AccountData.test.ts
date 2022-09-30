@@ -633,7 +633,7 @@ describe('Account Data', () => {
 
       expect(accountData.portfolio[0].currencyId).toBe(2);
       expect(accountData.portfolio[0].maturity).toBe(market.maturity);
-      expect(accountData.portfolio[0].notional.toFloat()).toBeCloseTo(100, 0);
+      expect(accountData.portfolio[0].notional.toFloat()).toBeCloseTo(100.5, 0);
 
       accountData.updateCollateralAction({
         type: CollateralActionType.LEND_FCASH,
@@ -643,7 +643,7 @@ describe('Account Data', () => {
 
       expect(accountData.portfolio[0].currencyId).toBe(2);
       expect(accountData.portfolio[0].maturity).toBe(market.maturity);
-      expect(accountData.portfolio[0].notional.toFloat()).toBeCloseTo(200, 0);
+      expect(accountData.portfolio[0].notional.toFloat()).toBeCloseTo(201, 0);
     });
   });
 });
