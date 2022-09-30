@@ -263,8 +263,7 @@ export default class VaultAccount {
     };
   }
 
-  // TODO: should we run this automatically?
-  public settleVaultAccount() {
+  public getSettlementValues() {
     if (!this.canSettle()) throw Error('Vault not settled');
     const vaultState = this.getVaultState();
     const vault = this.getVault();
@@ -322,6 +321,11 @@ export default class VaultAccount {
     const strategyTokens = vaultState.totalStrategyTokens.scale(totalAccountValue, settledVaultValue);
     const assetCash = residualAssetCashBalance.scale(totalAccountValue, settledVaultValue);
 
+    return { strategyTokens, assetCash };
+  }
+
+  public settleVaultAccount() {
+    const { strategyTokens, assetCash } = this.getSettlementValues();
     // Clear all vault data at settlement
     this._maturity = 0;
     this._primaryBorrowfCash = this.primaryBorrowfCash.copy(0);
