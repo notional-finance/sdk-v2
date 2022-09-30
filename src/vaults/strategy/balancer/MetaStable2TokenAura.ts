@@ -28,11 +28,9 @@ interface InitParams extends BaseBalancerStablePoolInitParams {
 export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitParams> {
   public get oraclePrice() {
     if (this.initParams.poolContext.primaryTokenIndex === 0) {
-      return this.initParams.bptPrice;
-      // return this.initParams.oracleContext.bptPrice;
+      return this.initParams.oracleContext.bptPrice;
     }
-    // const { bptPrice, pairPrice } = this.initParams.oracleContext;
-    const { bptPrice, pairPrice } = this.initParams;
+    const { bptPrice, pairPrice } = this.initParams.oracleContext;
     return bptPrice.mul(FixedPoint.ONE).div(pairPrice);
   }
 
