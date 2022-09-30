@@ -597,10 +597,14 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     const { strategyTokens } = this.getPoolShare(maturity, vaultSharesToRedeem);
     const redeemParams = await this.getRedeemParametersExact(maturity, strategyTokens, slippageBuffer);
 
-    // Get the market rate and set the minLendRate given the slippage buffer
-    const market = this.getVaultMarket(maturity);
-    const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCashToLend);
-    const minLendRate = market.interestRate(fCashToLend, netCashToAccount) - slippageBuffer;
+    let minLendRate = 0;
+    // Get the market rate and set the minLendRate given the slippage buffer if the exit is
+    // a pre-maturity exit
+    if (maturity > getNowSeconds()) {
+      const market = this.getVaultMarket(maturity);
+      const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCashToLend);
+      minLendRate = market.interestRate(fCashToLend, netCashToAccount) - slippageBuffer;
+    }
 
     return populateTxnAndGas(notional, account, 'exitVault', [
       account,
