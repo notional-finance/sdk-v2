@@ -15,7 +15,6 @@ export interface DepositParams {
 }
 
 export interface RedeemParams {
-  minSecondaryLendRate: number;
   minPrimary: BigNumber;
   minSecondary: BigNumber;
   secondaryTradeParams: string;
@@ -45,8 +44,7 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
 
-  readonly redeemTuple: string =
-    'tuple(uint32 minSecondaryLendRate, uint256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
+  readonly redeemTuple: string = 'tuple(int256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
 
   protected convertBPTToStrategyTokens(bptAmount: FixedPoint, maturity: number) {
     const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
