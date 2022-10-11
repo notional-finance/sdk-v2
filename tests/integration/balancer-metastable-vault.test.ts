@@ -185,5 +185,6 @@ describe('balancer vault test', () => {
 
     const thresholds = metaStable.getLiquidationThresholds(vaultAccount);
     console.log(thresholds);
+    console.log(thresholds[0].ethExchangeRate?.toExactString());
   });
 });

@@ -173,11 +173,16 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
       );
 
       // Update balances to account for the trade
-      const newBalances = this.balances.map((b, i) => {
-        if (i === tokenOutIndex) return b.add(secondaryTokensSold);
-        if (i === primaryTokenIndex) return b.sub(primaryTokenOut);
+      const newBalances = this.initParams.poolContext.balances.map((b, i) => {
+        const scalingFactor = this.initParams.scalingFactors[i];
+        let newB: FixedPoint;
+        if (i === tokenOutIndex) newB = b.add(secondaryTokensSold);
+        else if (i === primaryTokenIndex) newB = b.sub(primaryTokenOut);
         // Any other balances will remain unchanged
-        return b;
+        else newB = b;
+
+        // Apply the scaling factor after the balance adjustment
+        return newB.mul(scalingFactor).div(FixedPoint.ONE);
       });
 
       // Re-calculate the invariant at the new utilization
@@ -218,8 +223,8 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
         .n.toNumber();
 
       return {
-        breakLoop: Math.abs(delta) < 50 * BASIS_POINT,
-        actualMultiple: secondaryPercentSold + delta / 2,
+        actualMultiple: delta,
+        breakLoop: false,
         value: targetSecondaryPrice,
       };
     };
@@ -234,18 +239,25 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
     // prettier-ignore
     const targetSecondaryPrice = doBinarySearch(
       initialGuess, // this is the percentage difference from the threshold value
-      0, // no target value since the calculation function handles the break point
+      0, // no target value since the calculation function just returns a delta
       findLiquidationUtilization,
       50 * BASIS_POINT,
-      // Calculation function provides the multiple adjustment
-      (m) => m
+      // Change the adjustment faster since trading is quite sensitive
+      (m, d) => Math.floor(m - d / 4)
     );
+
+    // The target secondary price is quoted in terms of the primary borrow currency
+    const ethExchangeRate = TypedBigNumber.fromBalance(
+      targetSecondaryPrice.div(FixedPoint.from(1e10)).n,
+      this.getPrimaryBorrowSymbol(),
+      true
+    ).toETH(false);
 
     return [
       {
         name: 'Threshold',
         type: LiquidationThresholdType.exchangeRate,
-        ethExchangeRate: TypedBigNumber.fromBalance(targetSecondaryPrice.div(FixedPoint.from(1e10)), 'ETH', true),
+        ethExchangeRate,
       },
     ];
   }
