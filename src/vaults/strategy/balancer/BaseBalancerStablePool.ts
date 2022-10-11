@@ -40,6 +40,8 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
   RedeemParams,
   I
 > {
+  protected _simulateSettledStrategyTokens = false;
+
   BalancerVault = new Contract('0xBA12222222228d8Ba445958a75a0704d566BF2C8', BalancerVaultABI) as BalancerVault;
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';

@@ -10,6 +10,9 @@ import AbstractStrategy from './strategy/AbstractStrategy';
 import VaultAccount from './VaultAccount';
 
 export default abstract class BaseVault<D, R, I extends Record<string, any>> extends AbstractStrategy<D, R, I> {
+  // This setting can be overridden in child classes
+  protected _simulateSettledStrategyTokens = true;
+
   public static collateralToLeverageRatio(collateralRatio: number): number {
     return Math.floor((RATE_PRECISION / collateralRatio) * RATE_PRECISION) + RATE_PRECISION;
   }
@@ -234,9 +237,12 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     if (vaultAccount.canSettle()) {
       const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
       newVaultAccount.updateMaturity(maturity);
+
+      // If strategy tokens are migrated during settlement, check if we need to simulate the addition
+      // to the new maturity
       newVaultAccount.addStrategyTokens(
         TypedBigNumber.from(strategyTokens.n, BigNumberType.StrategyToken, newVaultAccount.vaultSymbol),
-        true
+        this._simulateSettledStrategyTokens
       );
       totalCashDeposit = totalCashDeposit.add(assetCash.toUnderlying());
     } else if (vaultAccount.maturity === 0) {
