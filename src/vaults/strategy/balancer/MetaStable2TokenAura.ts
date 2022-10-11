@@ -1,4 +1,4 @@
-import { BigNumber, Contract, utils } from 'ethers';
+import { Contract, utils } from 'ethers';
 import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../../config/constants';
 import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
@@ -363,12 +363,21 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
   private static dynamicTradeTuple =
     'tuple(uint16 dexId, uint8 tradeType, uint32 oracleSlippagePercent, bool tradeUnwrapped, bytes exchangeData) t';
 
-  public getRedeemParameters(
+  public async getRedeemParametersExact(
     _maturity: number,
-    _strategyTokens: TypedBigNumber,
-    _slippageBuffer: number,
+    strategyTokens: TypedBigNumber,
+    slippageBuffer: number,
     _blockTime?: number
   ) {
+    const bptClaim = this.convertStrategyTokensToBPT(strategyTokens);
+    const { totalSupply } = this.initParams;
+    const primaryBalanceOut = this.initParams.poolContext.balances[this.initParams.poolContext.primaryTokenIndex]
+      .mul(bptClaim)
+      .div(totalSupply);
+    const secondaryBalanceOut = this.initParams.poolContext.balances[this.initParams.poolContext.tokenOutIndex]
+      .mul(bptClaim)
+      .div(totalSupply);
+
     const secondaryTradeParams = utils.defaultAbiCoder.encode(
       [MetaStable2TokenAura.dynamicTradeTuple],
       [
@@ -383,9 +392,8 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
     );
 
     return {
-      minSecondaryLendRate: 0, // TODO: should this be here?
-      minPrimary: BigNumber.from(0),
-      minSecondary: BigNumber.from(0),
+      minPrimary: primaryBalanceOut.mul(FixedPoint.from(RATE_PRECISION - slippageBuffer).div(FixedPoint.ONE)).n,
+      minSecondary: secondaryBalanceOut.mul(FixedPoint.from(RATE_PRECISION - slippageBuffer).div(FixedPoint.ONE)).n,
       secondaryTradeParams,
     };
   }

@@ -265,16 +265,6 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     };
   }
 
-  public getDepositParameters(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime = getNowSeconds()
-  ) {
-    const { depositParams } = this._getDepositParameters(maturity, depositAmount, slippageBuffer, blockTime);
-    return depositParams;
-  }
-
   private _getRedeemParameters(
     maturity: number,
     strategyTokens: TypedBigNumber,
@@ -323,16 +313,6 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
       },
       buyEstimate,
     };
-  }
-
-  public getRedeemParameters(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime = getNowSeconds()
-  ) {
-    const { redeemParams } = this._getRedeemParameters(maturity, strategyTokens, slippageBuffer, blockTime);
-    return redeemParams;
   }
 
   public getSlippageForDeposit(
@@ -396,18 +376,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     };
   }
 
-  public getStrategyTokensGivenDeposit(
-    maturity: number,
-    depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ) {
-    const { buyEstimate, depositParams } = this._getDepositParameters(
-      maturity,
-      depositAmount,
-      slippageBuffer,
-      blockTime
-    );
+  public getStrategyTokensGivenDeposit(maturity: number, depositAmount: TypedBigNumber, blockTime?: number) {
+    const { buyEstimate } = this._getDepositParameters(maturity, depositAmount, 0, blockTime);
     const lendfCash = this.getLendMarket(maturity).getfCashAmountGivenCashAmount(
       buyEstimate.toInternalPrecision().neg(),
       blockTime
@@ -416,101 +386,46 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
     return {
       strategyTokens: this.fCashToStrategyTokens(lendfCash, maturity),
       secondaryfCashBorrowed: undefined,
-      depositParams,
     };
   }
 
-  public getRedeemGivenStrategyTokens(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ) {
-    const { buyEstimate, redeemParams } = this._getRedeemParameters(
-      maturity,
-      strategyTokens,
-      slippageBuffer,
-      blockTime
-    );
+  public getRedeemGivenStrategyTokens(maturity: number, strategyTokens: TypedBigNumber, blockTime?: number) {
+    const { buyEstimate } = this._getRedeemParameters(maturity, strategyTokens, 0, blockTime);
     if (!buyEstimate) throw Error('Unable to estimate trade');
 
     return {
       amountRedeemed: buyEstimate,
       secondaryfCashRepaid: undefined,
-      redeemParams,
     };
   }
 
-  public getDepositGivenStrategyTokens(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime = getNowSeconds()
-  ) {
+  public getDepositGivenStrategyTokens(maturity: number, strategyTokens: TypedBigNumber, blockTime = getNowSeconds()) {
     const market = this.getLendMarket(maturity);
     const fCash = this.strategyTokensTofCash(strategyTokens);
     const { netCashToAccount } = market.getCashAmountGivenfCashAmount(fCash, blockTime);
-
-    const { annualizedRate: minLendRate } = Market.getSlippageRate(
-      fCash,
-      netCashToAccount.neg(),
-      market.maturity,
-      -slippageBuffer * RATE_PRECISION,
-      blockTime
-    );
     const primaryBorrowSymbol = System.getSystem().getUnderlyingSymbol(this.getVault().primaryBorrowCurrency);
 
     const { sellEstimate: requiredDeposit } = TradeHandler.getSellEstimate(
       primaryBorrowSymbol,
       netCashToAccount.toExternalPrecision().neg()
     );
-    const minPurchaseAmount = TradeHandler.applySlippage(
-      netCashToAccount.toExternalPrecision().neg(),
-      -slippageBuffer
-    ).n;
 
     return {
       requiredDeposit: requiredDeposit.toInternalPrecision(),
       secondaryfCashBorrowed: undefined,
-      depositParams: {
-        minLendRate,
-        minPurchaseAmount,
-        dexId: 0,
-        exchangeData: '0x',
-      },
     };
   }
 
-  public getStrategyTokensGivenRedeem(
-    maturity: number,
-    redeemAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ) {
+  public getStrategyTokensGivenRedeem(maturity: number, redeemAmount: TypedBigNumber, blockTime?: number) {
     const market = this.getLendMarket(maturity);
     const { sellEstimate } = TradeHandler.getSellEstimate(
       System.getSystem().getUnderlyingSymbol(this.lendCurrencyId),
       redeemAmount.toExternalPrecision()
     );
     const lendfCash = market.getfCashAmountGivenCashAmount(sellEstimate.toInternalPrecision(), blockTime);
-    const { annualizedRate: maxBorrowRate } = Market.getSlippageRate(
-      lendfCash,
-      sellEstimate.toInternalPrecision(),
-      maturity,
-      slippageBuffer * RATE_PRECISION,
-      blockTime
-    );
-
-    const minPurchaseAmount = TradeHandler.applySlippage(redeemAmount.toExternalPrecision(), -slippageBuffer).n;
     return {
       strategyTokens: this.fCashToStrategyTokens(lendfCash.neg(), maturity),
       secondaryfCashRepaid: undefined,
-      redeemParams: {
-        minPurchaseAmount,
-        maxBorrowRate,
-        dexId: 0,
-        exchangeData: '0x',
-      },
     };
   }
 }

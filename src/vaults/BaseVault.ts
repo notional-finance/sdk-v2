@@ -221,7 +221,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     maturity: number,
     fCashToBorrow: TypedBigNumber,
     depositAmount: TypedBigNumber,
-    slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
     const vaultState = this.getVaultState(maturity);
@@ -245,10 +244,9 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     }
     if (newVaultAccount.maturity !== maturity) throw Error('Cannot Enter, Invalid Maturity');
 
-    const { strategyTokens, secondaryfCashBorrowed, depositParams } = this.getStrategyTokensGivenDeposit(
+    const { strategyTokens, secondaryfCashBorrowed } = this.getStrategyTokensGivenDeposit(
       newVaultAccount.maturity,
       totalCashDeposit,
-      slippageBuffer,
       blockTime
     );
     if (!this.checkBorrowCapacity(fCashToBorrow.neg())) throw Error('Exceeds max primary borrow capacity');
@@ -268,27 +266,24 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
       assessedFee,
       totalCashDeposit,
       newVaultAccount,
-      depositParams,
     };
   }
 
-  public simulateExitPostMaturity(vaultAccount: VaultAccount, slippageBuffer: number, blockTime = getNowSeconds()) {
+  public simulateExitPostMaturity(vaultAccount: VaultAccount, blockTime = getNowSeconds()) {
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (!vaultState.isSettled) throw Error('Cannot exit, not settled');
     const newVaultAccount = VaultAccount.copy(vaultAccount);
 
     const { assetCash, strategyTokens } = newVaultAccount.settleVaultAccount();
-    const { amountRedeemed, redeemParams } = this.getRedeemGivenStrategyTokens(
+    const { amountRedeemed } = this.getRedeemGivenStrategyTokens(
       // Pass the previous vault account prior to settlement (which clears all the attributes)
       vaultAccount.maturity,
       strategyTokens,
-      slippageBuffer,
       blockTime
     );
 
     return {
       amountRedeemed: amountRedeemed.toInternalPrecision().add(assetCash.toUnderlying(true)),
-      redeemParams,
       newVaultAccount,
     };
   }
@@ -296,7 +291,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   public getExitParamsFromLeverageRatio(
     vaultAccount: VaultAccount,
     targetLeverageRatio: number,
-    slippageBuffer: number,
     blockTime = getNowSeconds(),
     precision = BASIS_POINT * 50
   ) {
@@ -330,12 +324,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
           };
         }
 
-        const { newVaultAccount } = this.simulateExitPreMaturityGivenRepayment(
-          vaultAccount,
-          fCashToLend,
-          slippageBuffer,
-          blockTime
-        );
+        const { newVaultAccount } = this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, blockTime);
         const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
 
         return {
@@ -369,7 +358,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     }
 
     return {
-      ...this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, slippageBuffer, blockTime),
+      ...this.simulateExitPreMaturityGivenRepayment(vaultAccount, fCashToLend, blockTime),
       fCashToLend,
     };
   }
@@ -377,7 +366,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   public simulateExitPreMaturityGivenRepayment(
     vaultAccount: VaultAccount,
     fCashToLend: TypedBigNumber,
-    slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
     const vaultState = this.getVaultState(vaultAccount.maturity);
@@ -386,10 +374,9 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
 
     const newVaultAccount = VaultAccount.copy(vaultAccount);
     const costToRepay = this.getCostToRepay(vaultAccount, fCashToLend.neg(), blockTime);
-    const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
+    const { strategyTokens, secondaryfCashRepaid } = this.getStrategyTokensGivenRedeem(
       newVaultAccount.maturity,
       costToRepay.neg().toUnderlying(),
-      slippageBuffer,
       blockTime
     );
 
@@ -402,7 +389,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     return {
       costToRepay,
       vaultSharesToRedeemAtCost,
-      redeemParams,
       newVaultAccount,
     };
   }
@@ -410,17 +396,15 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
   public simulateExitPreMaturityGivenWithdraw(
     vaultAccount: VaultAccount,
     amountWithdrawn: TypedBigNumber,
-    slippageBuffer: number,
     blockTime = getNowSeconds()
   ) {
     const vaultState = this.getVaultState(vaultAccount.maturity);
     if (vaultState.maturity <= blockTime || vaultState.isSettled) throw Error('Cannot Exit, in Settlement');
 
     const newVaultAccount = VaultAccount.copy(vaultAccount);
-    const { strategyTokens, secondaryfCashRepaid, redeemParams } = this.getStrategyTokensGivenRedeem(
+    const { strategyTokens, secondaryfCashRepaid } = this.getStrategyTokensGivenRedeem(
       newVaultAccount.maturity,
       amountWithdrawn,
-      slippageBuffer,
       blockTime
     );
 
@@ -431,7 +415,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
 
     return {
       vaultSharesToRedeemAtCost,
-      redeemParams,
       newVaultAccount,
     };
   }
@@ -493,7 +476,6 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     maturity: number,
     depositAmount: TypedBigNumber,
     leverageRatio: number,
-    slippageBuffer: number,
     _vaultAccount?: VaultAccount,
     blockTime = getNowSeconds(),
     precision = BASIS_POINT * 50
@@ -506,7 +488,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
         .add(depositAmount)
         .scale(depositMultiple, RATE_PRECISION);
       const strategyTokens = this.getStrategyTokensFromValue(maturity, valuation, blockTime);
-      const { requiredDeposit } = this.getDepositGivenStrategyTokens(maturity, strategyTokens, slippageBuffer);
+      const { requiredDeposit } = this.getDepositGivenStrategyTokens(maturity, strategyTokens, blockTime);
       const borrowedCash = requiredDeposit.sub(depositAmount);
 
       // If borrowed cash is negative then floor it at zero
@@ -517,14 +499,7 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
         ? this.getVaultMarket(maturity).getfCashAmountGivenCashAmount(borrowedCash.add(fees), blockTime)
         : borrowedCash.copy(0);
 
-      const { newVaultAccount } = this.simulateEnter(
-        vaultAccount,
-        maturity,
-        fCashToBorrow,
-        depositAmount,
-        slippageBuffer,
-        blockTime
-      );
+      const { newVaultAccount } = this.simulateEnter(vaultAccount, maturity, fCashToBorrow, depositAmount, blockTime);
 
       const actualLeverageRatio = this.getLeverageRatio(newVaultAccount);
       return {
