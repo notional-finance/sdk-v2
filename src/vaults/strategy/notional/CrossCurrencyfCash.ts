@@ -105,6 +105,8 @@ export default class CrossCurrencyfCash extends BaseVault<DepositParams, RedeemP
 
     const thresholds = new Array<LiquidationThreshold>();
     const { perShareValue } = this.getLiquidationVaultShareValue(vaultAccount);
+    if (!perShareValue) return [];
+
     const lendCurrencySymbol = System.getSystem().getUnderlyingSymbol(this.lendCurrencyId);
     const riskAdjustedExchangeRate = Market.interestToExchangeRate(
       System.getSystem()

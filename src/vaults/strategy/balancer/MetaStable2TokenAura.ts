@@ -1,11 +1,12 @@
 import { BigNumber, Contract, utils } from 'ethers';
-import { INTERNAL_TOKEN_PRECISION } from '../../../config/constants';
+import { BASIS_POINT, INTERNAL_TOKEN_PRECISION, RATE_PRECISION } from '../../../config/constants';
 import { AggregateCall } from '../../../data/Multicall';
 import TypedBigNumber from '../../../libs/TypedBigNumber';
-import { LiquidationThreshold } from '../../../libs/types';
+import { LiquidationThreshold, LiquidationThresholdType } from '../../../libs/types';
 import { DexId, DexTradeType } from '../../../trading/TradeHandler';
 import { BalancerStablePool } from '../../../typechain/BalancerStablePool';
 import { MetaStable2Token } from '../../../typechain/MetaStable2Token';
+import { doBinarySearch } from '../../Approximation';
 import VaultAccount from '../../VaultAccount';
 import BalancerStableMath from './BalancerStableMath';
 import { BaseBalancerStablePool, BaseBalancerStablePoolInitParams, PoolContext } from './BaseBalancerStablePool';
@@ -139,8 +140,114 @@ export default class MetaStable2TokenAura extends BaseBalancerStablePool<InitPar
     ] as AggregateCall[];
   }
 
-  public getLiquidationThresholds(_: VaultAccount, __: number): Array<LiquidationThreshold> {
-    return [];
+  public getLiquidationThresholds(vaultAccount: VaultAccount): Array<LiquidationThreshold> {
+    const { perStrategyTokenValue } = this.getLiquidationVaultShareValue(vaultAccount);
+    if (!perStrategyTokenValue) return [] as LiquidationThreshold[];
+    const thresholdBPTValue = FixedPoint.from(perStrategyTokenValue.n);
+
+    // Finds how much the pool needs to move away from the primary token in order to hit
+    // the liquidation strategy token value.
+    const findLiquidationUtilization = (secondaryPercentSold: number) => {
+      const { primaryTokenIndex, tokenOutIndex } = this.initParams.poolContext;
+      // The multiple in this case is the percentage of the secondary token pool that should be
+      // sold to the pool in RATE_PRECISION
+      const secondaryTokensSold = this.balances[tokenOutIndex]
+        .mul(FixedPoint.from(secondaryPercentSold))
+        .div(FixedPoint.from(RATE_PRECISION));
+
+      const initialInvariant = BalancerStableMath.calculateInvariant(
+        this.initParams.amplificationParameter,
+        this.balances,
+        true
+      );
+
+      // Calculate the amount of primary tokens leaving the pool after selling
+      // the given amount of secondary tokens
+      const primaryTokenOut = BalancerStableMath.calcOutGivenIn(
+        this.initParams.amplificationParameter,
+        this.balances,
+        tokenOutIndex, // selling secondary
+        primaryTokenIndex, // purchasing primary
+        secondaryTokensSold,
+        initialInvariant
+      );
+
+      // Update balances to account for the trade
+      const newBalances = this.balances.map((b, i) => {
+        if (i === tokenOutIndex) return b.add(secondaryTokensSold);
+        if (i === primaryTokenIndex) return b.sub(primaryTokenOut);
+        // Any other balances will remain unchanged
+        return b;
+      });
+
+      // Re-calculate the invariant at the new utilization
+      const newInvariant = BalancerStableMath.calculateInvariant(
+        this.initParams.amplificationParameter,
+        newBalances,
+        true
+      );
+
+      let targetSecondaryPrice = FixedPoint.from(0);
+      const oneBPTValueSpotInPrimary = newBalances
+        // Returns the claims of one BPT on constituent tokens
+        .map((b) => b.mul(FixedPoint.ONE).div(this.initParams.totalSupply))
+        .reduce((totalValue, b, i) => {
+          if (i === primaryTokenIndex) return totalValue.add(b);
+
+          // Calculate how much primary token you get for one unit of
+          // secondary token to get the current spot price
+          const primaryTokenSpotPrice = BalancerStableMath.calcOutGivenIn(
+            this.initParams.amplificationParameter,
+            newBalances,
+            i, // selling the current token index
+            primaryTokenIndex, // purchasing primary token
+            b, // selling all of the secondary token claim
+            newInvariant
+          );
+
+          if (i === tokenOutIndex) targetSecondaryPrice = primaryTokenSpotPrice;
+          return totalValue.add(primaryTokenSpotPrice);
+        }, FixedPoint.from(0));
+
+      // Get the percentage difference in price in RATE_PRECISION
+      const delta = oneBPTValueSpotInPrimary
+        .div(FixedPoint.from(1e10))
+        .sub(thresholdBPTValue)
+        .mul(FixedPoint.from(RATE_PRECISION))
+        .div(thresholdBPTValue)
+        .n.toNumber();
+
+      return {
+        breakLoop: Math.abs(delta) < 50 * BASIS_POINT,
+        actualMultiple: secondaryPercentSold + delta / 2,
+        value: targetSecondaryPrice,
+      };
+    };
+
+    const bptValueInInternal = this.getBPTValue().div(FixedPoint.from(1e10));
+    const initialGuess = bptValueInInternal
+      .sub(thresholdBPTValue)
+      .mul(FixedPoint.from(RATE_PRECISION))
+      .div(bptValueInInternal)
+      .n.toNumber();
+
+    // prettier-ignore
+    const targetSecondaryPrice = doBinarySearch(
+      initialGuess, // this is the percentage difference from the threshold value
+      0, // no target value since the calculation function handles the break point
+      findLiquidationUtilization,
+      50 * BASIS_POINT,
+      // Calculation function provides the multiple adjustment
+      (m) => m
+    );
+
+    return [
+      {
+        name: 'Threshold',
+        type: LiquidationThresholdType.exchangeRate,
+        ethExchangeRate: TypedBigNumber.fromBalance(targetSecondaryPrice.div(FixedPoint.from(1e10)), 'ETH', true),
+      },
+    ];
   }
 
   protected getBPTValue(amountIn: FixedPoint = FixedPoint.ONE): FixedPoint {

@@ -59,8 +59,10 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     // is below the minimum required collateral ratio of the borrowed currency
     if (vaultAccount.vaultShares.isZero()) {
       return {
-        liquidationVaultSharesValue: vaultAccount.primaryBorrowfCash.copy(0),
-        perShareValue: vaultAccount.primaryBorrowfCash.copy(0),
+        liquidationVaultSharesValue: undefined,
+        perShareValue: undefined,
+        liquidationStrategyTokenValue: undefined,
+        perStrategyTokenValue: undefined,
       };
     }
 
@@ -73,9 +75,15 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
     // If the account's vault shares reach this value then they will become eligible for liquidation
     const liquidationVaultSharesValue = debtOutstanding.scale(minCollateralRatio + RATE_PRECISION, RATE_PRECISION);
 
+    const { assetCash, strategyTokens } = vaultAccount.getPoolShare();
+    const liquidationStrategyTokenValue = liquidationVaultSharesValue.sub(assetCash.toUnderlying(true));
+    const perStrategyTokenValue = liquidationStrategyTokenValue.scale(INTERNAL_TOKEN_PRECISION, strategyTokens);
+
     return {
       liquidationVaultSharesValue,
       perShareValue: liquidationVaultSharesValue.scale(INTERNAL_TOKEN_PRECISION, vaultAccount.vaultShares),
+      liquidationStrategyTokenValue,
+      perStrategyTokenValue,
     };
   }
 

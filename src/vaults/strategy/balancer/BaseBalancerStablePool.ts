@@ -129,7 +129,6 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
   ) {
     // TODO: need to get min primary and secondary, also specify trade
     return {
-      minSecondaryLendRate: 0, // TODO: should this be here?
       minPrimary: BigNumber.from(0),
       minSecondary: BigNumber.from(0),
       secondaryTradeParams: '0x',
