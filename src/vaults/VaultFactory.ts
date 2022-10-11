@@ -3,25 +3,19 @@ import { fetch as crossFetch } from 'cross-fetch';
 import { providers } from 'ethers';
 import { System } from '../system';
 import BaseVault from './BaseVault';
-import CrossCurrencyfCash from './strategy/notional/CrossCurrencyfCash';
 import { VaultReturn } from '../libs/types';
-import MetaStable2TokenAura from './strategy/balancer/MetaStable2TokenAura';
-import Boosted3TokenAuraVault from './strategy/balancer/Boosted3TokenAuraVault';
 import { RATE_PRECISION } from '../config/constants';
 import { decodeValue } from '../data/SystemData';
+import { CrossCurrencyfCash, MetaStable2TokenAura, Boosted3TokenAuraVault } from './strategy';
 
+// Private interface to ensure that types resolve when initializing vaults
 interface BaseVaultInstantiable<D, R, I extends Record<string, any>> {
   new (vaultAddress: string, initParams?: I): BaseVault<D, R, I>;
   initializeVault(): Promise<void>;
 }
 
 export default class VaultFactory {
-  private static names = [
-    'CrossCurrencyfCash',
-    'SimpleStrategyVault',
-    'MetaStable2TokenAura',
-    'Boosted3TokenAuraVault',
-  ];
+  private static names = ['CrossCurrencyfCash', 'MetaStable2TokenAura', 'Boosted3TokenAuraVault'];
 
   private static nameToClass: Record<string, any> = {
     CrossCurrencyfCash,
@@ -35,10 +29,16 @@ export default class VaultFactory {
     return m;
   }, new Map<string, string>());
 
+  // Resolves a hashed strategy id to a name
   public static resolveStrategyName(strategyId: string) {
     return this.idsToNames.get(strategyId);
   }
 
+  /**
+   * Resolves a strategy id to its generic base vault class
+   * @param strategyId
+   * @returns
+   */
   public static resolveBaseVaultClass<D, R, I extends Record<string, any>>(
     strategyId: string
   ): BaseVaultInstantiable<D, R, I> {
