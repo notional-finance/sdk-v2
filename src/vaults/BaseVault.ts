@@ -340,12 +340,9 @@ export default abstract class BaseVault<D, R, I extends Record<string, any>> ext
         };
       };
 
-      // const upperBoundMultiple = Math.floor((currentLeverageRatio * RATE_PRECISION) / targetLeverageRatio);
       // Multiple used in this search determines the percentage of primary borrowed fCash
       // to be lent (to be paid for by vault shares redeemed). targetLeverageRatio is defined to be
       // less than currentLeverageRatio.
-      // lowerBound = targetLeverageRatio
-
       // prettier-ignore
       fCashToLend = doBisectionSearch(
         // For the lower bound, we pay off a multiple equal to the target leverage
