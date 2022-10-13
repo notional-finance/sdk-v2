@@ -15,7 +15,6 @@ export interface DepositParams {
 }
 
 export interface RedeemParams {
-  minSecondaryLendRate: number;
   minPrimary: BigNumber;
   minSecondary: BigNumber;
   secondaryTradeParams: string;
@@ -41,12 +40,13 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
   RedeemParams,
   I
 > {
+  protected _simulateSettledStrategyTokens = false;
+
   BalancerVault = new Contract('0xBA12222222228d8Ba445958a75a0704d566BF2C8', BalancerVaultABI) as BalancerVault;
 
   readonly depositTuple: string = 'tuple(uint256 minBPT, bytes tradeData) d';
 
-  readonly redeemTuple: string =
-    'tuple(uint32 minSecondaryLendRate, uint256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
+  readonly redeemTuple: string = 'tuple(int256 minPrimary, uint256 minSecondary, bytes secondaryTradeParams) r';
 
   protected convertBPTToStrategyTokens(bptAmount: FixedPoint, maturity: number) {
     const { totalBPTHeld, totalStrategyTokensGlobal } = this.initParams.strategyContext;
@@ -101,78 +101,31 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     return TypedBigNumber.from(tokens, BigNumberType.StrategyToken, this.getVaultSymbol(maturity));
   }
 
-  public getDepositParameters(
-    _maturity: number,
-    _depositAmount: TypedBigNumber,
-    _slippageBuffer: number,
-    _blockTime?: number
-  ) {
-    // TODO: need to get minBPT
-    return {
-      minBPT: BigNumber.from(0),
-      tradeData: '0x',
-    };
-  }
-
   public async getDepositParametersExact(
-    maturity: number,
+    _maturity: number,
     depositAmount: TypedBigNumber,
     slippageBuffer: number,
-    blockTime?: number
-  ) {
-    return this.getDepositParameters(maturity, depositAmount, slippageBuffer, blockTime);
-  }
-
-  public getRedeemParameters(
-    _maturity: number,
-    _strategyTokens: TypedBigNumber,
-    _slippageBuffer: number,
     _blockTime?: number
   ) {
-    // TODO: need to get min primary and secondary, also specify trade
+    // Convert deposit amount to 18 decimals
+    const tokenAmountIn = FixedPoint.from(
+      depositAmount.toInternalPrecision().scale(FixedPoint.ONE.n, INTERNAL_TOKEN_PRECISION).n
+    );
+    const minBPT = this.getBPTOut(tokenAmountIn)
+      .mul(FixedPoint.from(RATE_PRECISION - slippageBuffer))
+      .div(FixedPoint.from(RATE_PRECISION)).n;
+
     return {
-      minSecondaryLendRate: 0, // TODO: should this be here?
-      minPrimary: BigNumber.from(0),
-      minSecondary: BigNumber.from(0),
-      secondaryTradeParams: '0x',
+      minBPT,
+      // By default we do not specify any traded data here
+      tradeData: '0x',
     };
-  }
-
-  public async getRedeemParametersExact(
-    maturity: number,
-    strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number
-  ) {
-    return this.getRedeemParameters(maturity, strategyTokens, slippageBuffer, blockTime);
-  }
-
-  public getSlippageForDeposit(
-    _maturity: number,
-    _depositAmount: TypedBigNumber,
-    _strategyTokens: TypedBigNumber,
-    _params: DepositParams,
-    _blockTime?: number
-  ) {
-    return { likelySlippage: 0, worstCaseSlippage: 0 };
-  }
-
-  // eslint-ignore unused-parameters
-  public getSlippageForRedeem(
-    _maturity: number,
-    _redeemAmount: TypedBigNumber,
-    _strategyTokens: TypedBigNumber,
-    _params: RedeemParams,
-    _blockTime?: number
-  ) {
-    return { likelySlippage: 0, worstCaseSlippage: 0 };
   }
 
   public getStrategyTokensGivenDeposit(
     maturity: number,
     depositAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
+    _blockTime?: number,
     _?: VaultAccount
   ) {
     // Convert deposit amount to 18 decimals
@@ -183,15 +136,13 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     return {
       strategyTokens: this.convertBPTToStrategyTokens(bptOut, maturity),
       secondaryfCashBorrowed: undefined,
-      depositParams: this.getDepositParameters(maturity, depositAmount, slippageBuffer, blockTime),
     };
   }
 
   public getRedeemGivenStrategyTokens(
-    maturity: number,
+    _maturity: number,
     strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
+    _blockTime?: number,
     _?: VaultAccount
   ) {
     // Convert strategy token amount to 18 decimals
@@ -200,15 +151,13 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     return {
       amountRedeemed,
       secondaryfCashRepaid: undefined,
-      redeemParams: this.getRedeemParameters(maturity, strategyTokens, slippageBuffer, blockTime),
     };
   }
 
   public getDepositGivenStrategyTokens(
     maturity: number,
     strategyTokens: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
+    _blockTime?: number,
     _vaultAccount?: VaultAccount
   ) {
     // In this case, all strategy tokens are "simulated" in that they are additional tokens
@@ -242,15 +191,13 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     return {
       requiredDeposit,
       secondaryfCashBorrowed: undefined,
-      depositParams: this.getDepositParameters(maturity, requiredDeposit, slippageBuffer, blockTime),
     };
   }
 
   public getStrategyTokensGivenRedeem(
     maturity: number,
     redeemAmount: TypedBigNumber,
-    slippageBuffer: number,
-    blockTime?: number,
+    _blockTime?: number,
     _vaultAccount?: VaultAccount
   ) {
     const RP = FixedPoint.from(RATE_PRECISION);
@@ -276,7 +223,6 @@ export abstract class BaseBalancerStablePool<I extends BaseBalancerStablePoolIni
     return {
       strategyTokens,
       secondaryfCashRepaid: undefined,
-      redeemParams: this.getRedeemParameters(maturity, strategyTokens, slippageBuffer, blockTime),
     };
   }
 }

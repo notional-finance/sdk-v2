@@ -399,7 +399,7 @@ export default class AccountData {
       const id = b.currencyId;
       let totalAssets = TypedBigNumber.getZeroUnderlying(id);
       let totalDebts = TypedBigNumber.getZeroUnderlying(id);
-      const cashGroup = system.getCashGroup(id);
+      const cashGroup = system.isTradable(id) ? system.getCashGroup(id) : undefined;
 
       const { totalCashClaims, fCashAssets } = FreeCollateral.getNetfCashPositions(
         id,
@@ -409,7 +409,7 @@ export default class AccountData {
       );
       totalAssets = totalAssets.add(totalCashClaims);
       fCashAssets.forEach((a) => {
-        const pv = cashGroup.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false);
+        const pv = cashGroup!.getfCashPresentValueUnderlyingInternal(a.maturity, a.notional, false);
         if (pv.isPositive()) {
           totalAssets = totalAssets.add(pv);
         } else {

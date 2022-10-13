@@ -12,10 +12,11 @@ import { BalancerStablePool, BalancerVault, ERC20 } from '../../src/typechain';
 import MetaStable2TokenAura from '../../src/vaults/strategy/balancer/MetaStable2TokenAura';
 import MockSystem from '../mocks/MockSystem';
 import { System } from '../../src/system';
-import { VaultConfig } from '../../src/data';
+import { VaultConfig, VaultState } from '../../src/data';
 import FixedPoint from '../../src/vaults/strategy/balancer/FixedPoint';
 import { BASIS_POINT } from '../../src/config/constants';
-import TypedBigNumber from '../../src/libs/TypedBigNumber';
+import TypedBigNumber, { BigNumberType } from '../../src/libs/TypedBigNumber';
+import { VaultAccount } from '../../src';
 
 const ERC20ABI = require('../../src/abi/ERC20.json');
 const poolABI = require('../../src/abi/BalancerStablePool.json');
@@ -61,7 +62,16 @@ describe('balancer vault test', () => {
     onlyVaultDeleverage: false,
     onlyVaultSettle: false,
     allowsReentrancy: true,
-    vaultStates: [],
+    vaultStates: [
+      {
+        maturity: 100,
+        isSettled: false,
+        totalPrimaryfCashBorrowed: TypedBigNumber.fromBalance(-100_000e8, 'ETH', true),
+        totalAssetCash: TypedBigNumber.fromBalance(0, 'cETH', true),
+        totalVaultShares: TypedBigNumber.from(100_000e8, BigNumberType.VaultShare, '0xabc:100'),
+        totalStrategyTokens: TypedBigNumber.from(100_000e8, BigNumberType.StrategyToken, '0xabc:100'),
+      } as unknown as VaultState,
+    ],
   };
   let metaStable: MetaStable2TokenAura;
 
@@ -165,5 +175,16 @@ describe('balancer vault test', () => {
     console.log(amountRedeemed.toExactString());
   });
 
-  it('calculates the value of tokens out when exiting', () => {});
+  it.only('calculates the liquidation price', () => {
+    const vaultAccount = VaultAccount.emptyVaultAccount(vault.vaultAddress, 100);
+    vaultAccount.updatePrimaryBorrowfCash(TypedBigNumber.fromBalance(-1e8, 'ETH', true), false);
+    vaultAccount.addStrategyTokens(TypedBigNumber.from(2e8, BigNumberType.StrategyToken, '0xabc:100'), false);
+
+    const { perStrategyTokenValue } = metaStable.getLiquidationVaultShareValue(vaultAccount);
+    console.log(perStrategyTokenValue?.toExactString());
+
+    const thresholds = metaStable.getLiquidationThresholds(vaultAccount);
+    console.log(thresholds);
+    console.log(thresholds[0].ethExchangeRate?.toExactString());
+  });
 });
