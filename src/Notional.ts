@@ -54,10 +54,11 @@ const TreasuryManagerABI = require('./abi/TreasuryManager.json');
 const ExchangeV3ABI = require('./abi/ExchangeV3.json');
 
 /* Endpoints */
-const kovanAddresses = require('./config/kovan.json');
 const goerliAddresses = require('./config/goerli.json');
 const mainnetAddresses = require('./config/mainnet.json');
 const graphEndpoints = require('./config/graph.json');
+
+const SUBGRAPH_API_KEY = process.env.NX_SUBGRAPH_API_KEY;
 
 /**
  * Provides an abstraction layer for interacting with Notional contracts.
@@ -113,7 +114,7 @@ export default class Notional extends TransactionBuilder {
     switch (chainId) {
       case 1:
         addresses = mainnetAddresses;
-        graphEndpoint = graphEndpoints['mainnet:http'];
+        graphEndpoint = graphEndpoints['mainnet:http'].replace('[apiKey]', SUBGRAPH_API_KEY);
         pollInterval = Number(graphEndpoints['mainnet:poll']);
         break;
       case 5:
@@ -121,14 +122,9 @@ export default class Notional extends TransactionBuilder {
         graphEndpoint = graphEndpoints['goerli:http'];
         pollInterval = Number(graphEndpoints['goerli:poll']);
         break;
-      case 42:
-        addresses = kovanAddresses;
-        graphEndpoint = graphEndpoints['kovan:http'];
-        pollInterval = Number(graphEndpoints['kovan:poll']);
-        break;
       case 1337:
         addresses = mainnetAddresses;
-        graphEndpoint = graphEndpoints['mainnet:http'];
+        graphEndpoint = graphEndpoints['mainnet:http'].replace('[apiKey]', SUBGRAPH_API_KEY);
         pollInterval = Number(graphEndpoints['local:poll']);
         // eslint-disable-next-line no-param-reassign
         refreshDataInterval = LOCAL_DATA_REFRESH_INTERVAL;
